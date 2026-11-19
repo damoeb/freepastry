@@ -59,12 +59,12 @@ class TransportLayersWireRoundTripTest {
 
   private final ErrorHandler<InetSocketAddress> inetErrors = new ErrorHandler<>() {
     @Override
-    public void receivedUnexpectedData(InetSocketAddress i, byte[] bytes, int location, Map<String, Object> options) {
-      errors.add("unexpected data from " + i + " at " + location);
+    public void receivedUnexpectedData(InetSocketAddress address, byte[] bytes, int location, Map<String, Object> options) {
+      errors.add("unexpected data from " + address + " at " + location);
     }
 
     @Override
-    public void receivedException(InetSocketAddress i, Throwable error) {
+    public void receivedException(InetSocketAddress address, Throwable error) {
       errors.add(error);
     }
   };
@@ -106,26 +106,26 @@ class TransportLayersWireRoundTripTest {
     final List<P2PSocket<I>> sockets = new ArrayList<>();
 
     @Override
-    public void messageReceived(I i, ByteBuffer m, Map<String, Object> options) {
+    public void messageReceived(I i, ByteBuffer msg, Map<String, Object> options) {
       messageSenders.add(i);
-      byte[] bytes = new byte[m.remaining()];
-      m.get(bytes);
+      byte[] bytes = new byte[msg.remaining()];
+      msg.get(bytes);
       messages.add(bytes);
     }
 
     @Override
-    public void incomingSocket(P2PSocket<I> s) {
-      socketPeers.add(s.getIdentifier());
-      sockets.add(s);
+    public void incomingSocket(P2PSocket<I> socket) {
+      socketPeers.add(socket.getIdentifier());
+      sockets.add(socket);
     }
   }
 
   private static byte[] payload(int length) {
-    byte[] b = new byte[length];
+    byte[] bytes = new byte[length];
     for (int i = 0; i < length; i++) {
-      b[i] = (byte) (i * 31 + 5);
+      bytes[i] = (byte) (i * 31 + 5);
     }
-    return b;
+    return bytes;
   }
 
   // ---- networkinfo
@@ -137,7 +137,7 @@ class TransportLayersWireRoundTripTest {
   private static ProbeStrategy strategy(Collection<InetSocketAddress> external) {
     return new ProbeStrategy() {
       @Override
-      public Cancellable requestProbe(MultiInetSocketAddress addr, long uid,
+      public Cancellable requestProbe(MultiInetSocketAddress address, long uid,
           Continuation<Boolean, Exception> deliverResultToMe) {
         deliverResultToMe.receiveResult(true);
         return null;
@@ -152,12 +152,12 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void networkInfoPassesMessagesThroughWithItsHeader() throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr(1, 9001));
     NetworkInfoTransportLayer b = networkInfo(addr(2, 9002));
     Recorder<InetSocketAddress> received = new Recorder<>();
     b.setCallback(received);
 
-    a.sendMessage(addr(2, 9002), ByteBuffer.wrap(payload(100)), null, null);
+    networkInfoTransportLayer.sendMessage(addr(2, 9002), ByteBuffer.wrap(payload(100)), null, null);
     net.run();
 
     assertEquals(List.of(addr(1, 9001)), received.messageSenders);
@@ -166,11 +166,11 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void networkInfoAnswersTheAddressOfTheAsker() throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr(1, 9001));
     networkInfo(addr(2, 9002));
     AtomicReference<InetSocketAddress> answer = new AtomicReference<>();
 
-    a.requestExternalAddress(addr(2, 9002), result(answer), null);
+    networkInfoTransportLayer.requestExternalAddress(addr(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(addr(1, 9001).getAddress(), answer.get().getAddress());
@@ -179,11 +179,11 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void networkInfoAnswersTheAddressOfAnIpv6Asker() throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr6(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr6(1, 9001));
     networkInfo(addr6(2, 9002));
     AtomicReference<InetSocketAddress> answer = new AtomicReference<>();
 
-    a.requestExternalAddress(addr6(2, 9002), result(answer), null);
+    networkInfoTransportLayer.requestExternalAddress(addr6(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(addr6(1, 9001).getAddress(), answer.get().getAddress());
@@ -207,7 +207,7 @@ class TransportLayersWireRoundTripTest {
   @ValueSource(ints = {0, 1, 2, 19, MAX_EXTERNAL_ADDRESSES})
   @DisplayName("NetworkInfo answers its external addresses, none up to the most it sends")
   void networkInfoAnswersExternalNodes(int count) throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr(1, 9001));
     NetworkInfoTransportLayer b = networkInfo(addr(2, 9002));
     List<InetSocketAddress> external = new ArrayList<>();
     for (int i = 0; i < count; i++) {
@@ -216,7 +216,7 @@ class TransportLayersWireRoundTripTest {
     b.setProbeStrategy(strategy(external));
     AtomicReference<Collection<InetSocketAddress>> answer = new AtomicReference<>();
 
-    a.getExternalNodes(addr(2, 9002), result(answer), null);
+    networkInfoTransportLayer.getExternalNodes(addr(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(external, new ArrayList<>(answer.get()));
@@ -225,7 +225,7 @@ class TransportLayersWireRoundTripTest {
   @Test
   @DisplayName("NetworkInfo with more external addresses than it sends answers the first ones")
   void networkInfoTruncatesExternalNodes() throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr(1, 9001));
     NetworkInfoTransportLayer b = networkInfo(addr(2, 9002));
     List<InetSocketAddress> external = new ArrayList<>();
     for (int i = 0; i < MAX_EXTERNAL_ADDRESSES + 5; i++) {
@@ -234,7 +234,7 @@ class TransportLayersWireRoundTripTest {
     b.setProbeStrategy(strategy(external));
     AtomicReference<Collection<InetSocketAddress>> answer = new AtomicReference<>();
 
-    a.getExternalNodes(addr(2, 9002), result(answer), null);
+    networkInfoTransportLayer.getExternalNodes(addr(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(external.subList(0, MAX_EXTERNAL_ADDRESSES), new ArrayList<>(answer.get()));
@@ -244,12 +244,12 @@ class TransportLayersWireRoundTripTest {
   @ValueSource(ints = {0, 1, 255, 70, MAX_ID_SIZE})
   @DisplayName("NetworkInfo answers the id of an index: empty, short and the largest the reader accepts")
   void networkInfoAnswersAnId(int size) throws IOException {
-    NetworkInfoTransportLayer a = networkInfo(addr(1, 9001));
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(addr(1, 9001));
     NetworkInfoTransportLayer b = networkInfo(addr(2, 9002));
     b.setId((byte) 7, payload(size));
     AtomicReference<byte[]> answer = new AtomicReference<>();
 
-    a.getId(addr(2, 9002), (byte) 7, result(answer), null);
+    networkInfoTransportLayer.getId(addr(2, 9002), (byte) 7, result(answer), null);
     net.run();
 
     assertArrayEquals(payload(size), answer.get());
@@ -260,16 +260,16 @@ class TransportLayersWireRoundTripTest {
   void networkInfoProbesBack() throws IOException {
     InetSocketAddress aAddress = addr(1, 9001);
     InetSocketAddress bAddress = addr(2, 9002);
-    NetworkInfoTransportLayer a = networkInfo(aAddress);
+    NetworkInfoTransportLayer networkInfoTransportLayer = networkInfo(aAddress);
     NetworkInfoTransportLayer b = networkInfo(bAddress);
     List<Long> probed = new ArrayList<>();
     b.setProbeStrategy(new ProbeStrategy() {
       @Override
-      public Cancellable requestProbe(MultiInetSocketAddress addr, long uid,
+      public Cancellable requestProbe(MultiInetSocketAddress address, long uid,
           Continuation<Boolean, Exception> deliverResultToMe) {
         // the third node of a real ring; here the probed node answers on the address the request carries
-        assertEquals(new MultiInetSocketAddress(aAddress, addr(50, 50)), addr);
-        b.probe(addr.getOutermostAddress(), uid, new Continuation<Long, Exception>() {
+        assertEquals(new MultiInetSocketAddress(aAddress, addr(50, 50)), address);
+        b.probe(address.getOutermostAddress(), uid, new Continuation<Long, Exception>() {
           @Override
           public void receiveResult(Long result) {
             probed.add(result);
@@ -291,7 +291,7 @@ class TransportLayersWireRoundTripTest {
     });
     List<String> events = new ArrayList<>();
 
-    a.verifyConnectivity(new MultiInetSocketAddress(aAddress, addr(50, 50)), bAddress, new ConnectivityResult() {
+    networkInfoTransportLayer.verifyConnectivity(new MultiInetSocketAddress(aAddress, addr(50, 50)), bAddress, new ConnectivityResult() {
       @Override
       public void udpSuccess(InetSocketAddress from, Map<String, Object> options) {
         events.add("udp " + from);
@@ -332,12 +332,12 @@ class TransportLayersWireRoundTripTest {
       aAddresses[i] = addr(1 + i * 10, 9001);
       bAddresses[i] = i % 2 == 0 ? addr(2 + i * 10, 9002) : addr6(2 + i * 10, 9002);
     }
-    MultiInetAddressTransportLayer a = multi(aAddresses);
+    MultiInetAddressTransportLayer multiInetAddressTransportLayer = multi(aAddresses);
     MultiInetAddressTransportLayer b = multi(bAddresses);
     Recorder<MultiInetSocketAddress> received = new Recorder<>();
     b.setCallback(received);
 
-    a.sendMessage(b.getLocalIdentifier(), ByteBuffer.wrap(payload(33)), null, null);
+    multiInetAddressTransportLayer.sendMessage(b.getLocalIdentifier(), ByteBuffer.wrap(payload(33)), null, null);
     net.run();
 
     assertEquals(List.of(new MultiInetSocketAddress(aAddresses)), received.messageSenders);
@@ -347,28 +347,28 @@ class TransportLayersWireRoundTripTest {
 
   @Test
   void multiInetAddressSocket() throws IOException {
-    MultiInetAddressTransportLayer a = multi(addr(1, 9001), addr(11, 9001));
+    MultiInetAddressTransportLayer multiInetAddressTransportLayer = multi(addr(1, 9001), addr(11, 9001));
     MultiInetAddressTransportLayer b = multi(addr(2, 9002));
     Recorder<MultiInetSocketAddress> received = new Recorder<>();
     b.setCallback(received);
     List<P2PSocket<MultiInetSocketAddress>> opened = new ArrayList<>();
 
-    a.openSocket(b.getLocalIdentifier(), new SocketCallback<>() {
+    multiInetAddressTransportLayer.openSocket(b.getLocalIdentifier(), new SocketCallback<>() {
       @Override
       public void receiveResult(SocketRequestHandle<MultiInetSocketAddress> cancellable,
-          P2PSocket<MultiInetSocketAddress> sock) {
-        opened.add(sock);
+          P2PSocket<MultiInetSocketAddress> socket) {
+        opened.add(socket);
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<MultiInetSocketAddress> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<MultiInetSocketAddress> request, Exception ex) {
         throw new AssertionError(ex);
       }
     }, null);
     net.run();
 
     assertEquals(1, opened.size());
-    assertEquals(List.of(a.getLocalIdentifier()), received.socketPeers);
+    assertEquals(List.of(multiInetAddressTransportLayer.getLocalIdentifier()), received.socketPeers);
   }
 
   // ---- simpleidentity
@@ -380,7 +380,7 @@ class TransportLayersWireRoundTripTest {
     InetSocketAddress aAddress = ipv6 ? addr6(1, 9001) : addr(1, 9001);
     InetSocketAddress bAddress = ipv6 ? addr6(2, 9002) : addr(2, 9002);
     InetSocketAddressSerializer serializer = new InetSocketAddressSerializer();
-    SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> a = new SimpleIdentityTransportLayer<>(
+    SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> simpleIdentityTransportLayer = new SimpleIdentityTransportLayer<>(
         net.lower(aAddress), serializer, null, env, inetErrors);
     SimpleIdentityTransportLayer<InetSocketAddress, ByteBuffer> b = new SimpleIdentityTransportLayer<>(
         net.lower(bAddress), serializer, null, env, inetErrors);
@@ -388,14 +388,14 @@ class TransportLayersWireRoundTripTest {
     b.setCallback(received);
     List<P2PSocket<InetSocketAddress>> opened = new ArrayList<>();
 
-    a.openSocket(bAddress, new SocketCallback<>() {
+    simpleIdentityTransportLayer.openSocket(bAddress, new SocketCallback<>() {
       @Override
-      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-        opened.add(sock);
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> socket) {
+        opened.add(socket);
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
         throw new AssertionError(ex);
       }
     }, null);
@@ -421,9 +421,9 @@ class TransportLayersWireRoundTripTest {
 
   private static final Serializer<byte[]> VALUES = new Serializer<>() {
     @Override
-    public void serialize(byte[] i, OutputBuffer buf) throws IOException {
-      buf.writeInt(i.length);
-      buf.write(i, 0, i.length);
+    public void serialize(byte[] bytes, OutputBuffer buf) throws IOException {
+      buf.writeInt(bytes.length);
+      buf.write(bytes, 0, bytes.length);
     }
 
     @Override
@@ -443,8 +443,8 @@ class TransportLayersWireRoundTripTest {
     }
 
     @Override
-    public byte[] put(Long k, byte[] v) {
-      return map.put(k, v);
+    public byte[] put(Long k, byte[] bytes) {
+      return map.put(k, bytes);
     }
 
     @Override
@@ -529,12 +529,12 @@ class TransportLayersWireRoundTripTest {
 
     client.openSocket(addr(2, 9002), new SocketCallback<>() {
       @Override
-      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-        opened.set(sock);
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> socket) {
+        opened.set(socket);
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
         throw new AssertionError(ex);
       }
     }, null);

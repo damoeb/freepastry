@@ -123,8 +123,8 @@ public class SocketInputBuffer implements InputBuffer {
     dis = new DataInputStream(new InputStream() {
 
       @Override
-      public int read(byte[] b) throws IOException {
-        return readInternal(b);
+      public int read(byte[] bytes) throws IOException {
+        return readInternal(bytes);
       }
 
       @Override
@@ -168,9 +168,9 @@ public class SocketInputBuffer implements InputBuffer {
    * @return the number of bytes read, always len
    * @throws InsufficientBytesException if fewer than len bytes are available (the read pointer is rewound)
    */
-  public int readInternal(byte[] b, int off, int len) throws IOException {
+  public int readInternal(byte[] bytes, int off, int len) throws IOException {
     needBytes(len, true);
-    readPtr.get(b, off, len);
+    readPtr.get(bytes, off, len);
     return len;
   }
 
@@ -180,8 +180,8 @@ public class SocketInputBuffer implements InputBuffer {
    * @return the number of bytes read, always b.length
    * @throws InsufficientBytesException if fewer than b.length bytes are available (the read pointer is rewound)
    */
-  public int readInternal(byte[] b) throws IOException {
-    return readInternal(b, 0, b.length);
+  public int readInternal(byte[] bytes) throws IOException {
+    return readInternal(bytes, 0, bytes.length);
   }
 
   /**
@@ -196,13 +196,13 @@ public class SocketInputBuffer implements InputBuffer {
 
 
   @Override
-  public int read(byte[] b, int off, int len) throws IOException {
-    return dis.read(b, off, len);
+  public int read(byte[] bytes, int off, int len) throws IOException {
+    return dis.read(bytes, off, len);
   }
 
   @Override
-  public int read(byte[] b) throws IOException {
-    return dis.read(b);
+  public int read(byte[] bytes) throws IOException {
+    return dis.read(bytes);
   }
 
   @Override
@@ -278,41 +278,41 @@ public class SocketInputBuffer implements InputBuffer {
    * Increases the writeBB
    */
   private int readBytesIntoCache(int num) throws IOException {
-    ByteBuffer in;
+    ByteBuffer buffer;
     switch(num) {
     case 0:
       return 0;
     case 1:
       if (one == null) one = ByteBuffer.allocate(num);
       one.clear();
-      in = one;
+      buffer = one;
       break;
     case 2:
       if (two == null) two = ByteBuffer.allocate(num);
       two.clear();
-      in = two;
+      buffer = two;
       break;
     case 4:
       if (four == null) four = ByteBuffer.allocate(num);
       four.clear();
-      in = four;
+      buffer = four;
       break;
     case 8:
       if (eight == null) eight = ByteBuffer.allocate(num);
       eight.clear();
-      in = eight;
+      buffer = eight;
       break;
     default:
-      in = ByteBuffer.allocate(num);
+      buffer = ByteBuffer.allocate(num);
     }
 
-    int ret = (int)socket.read(in);
+    int ret = (int)socket.read(buffer);
     if (ret == -1) throw new ClosedChannelException("Socket "+socket+" is already closed. (during read)");
-    in.flip();
+    buffer.flip();
     while (writePtr.remaining() < ret) {
       grow();
     }
-    writePtr.put(in);
+    writePtr.put(buffer);
 
     return ret;
   }

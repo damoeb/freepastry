@@ -125,13 +125,13 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
-    SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i,options, logger);
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
+    SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier,options, logger);
 
 
-    if (simulator.isAlive(i)) {
-      int delay = (int)Math.round(simulator.networkDelay(localIdentifier, i));
-      DirectAppSocket<Identifier, MessageType> socket = new DirectAppSocket<Identifier, MessageType>(i, localIdentifier, deliverSocketToMe, simulator, handle, options);
+    if (simulator.isAlive(identifier)) {
+      int delay = (int)Math.round(simulator.networkDelay(localIdentifier, identifier));
+      DirectAppSocket<Identifier, MessageType> socket = new DirectAppSocket<Identifier, MessageType>(identifier, localIdentifier, deliverSocketToMe, simulator, handle, options);
       CancelAndClose<Identifier, MessageType> cancelAndClose = new CancelAndClose<Identifier, MessageType>(socket, simulator.enqueueDelivery(socket.getAcceptorDelivery(),
           delay));
       handle.setSubCancellable(cancelAndClose);
@@ -147,20 +147,20 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   @Override
   public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(
-      Identifier i, MessageType m,
+      Identifier identifier, MessageType messageType,
       @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     if (!simulator.isAlive(localIdentifier)) return null; // just make this stop, the local node is dead, he shouldn't be doing anything
-    MessageRequestHandleImpl<Identifier, MessageType> handle = new MessageRequestHandleImpl<Identifier, MessageType>(i, m, options);
+    MessageRequestHandleImpl<Identifier, MessageType> handle = new MessageRequestHandleImpl<Identifier, MessageType>(identifier, messageType, options);
 
-    if (livenessProvider.getLiveness(i, null) >= LivenessTypes.LIVENESS_DEAD) {
-      logger.debug("Attempt to send message {} to a dead node {}!", m, i);
+    if (livenessProvider.getLiveness(identifier, null) >= LivenessTypes.LIVENESS_DEAD) {
+      logger.debug("Attempt to send message {} to a dead node {}!", messageType, identifier);
 
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(i));
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(identifier));
     } else {
-      if (simulator.isAlive(i)) {
-        int delay = (int)Math.round(simulator.networkDelay(localIdentifier, i));
-        handle.setSubCancellable(simulator.deliverMessage(m, i, localIdentifier, delay));
+      if (simulator.isAlive(identifier)) {
+        int delay = (int)Math.round(simulator.networkDelay(localIdentifier, identifier));
+        handle.setSubCancellable(simulator.deliverMessage(messageType, identifier, localIdentifier, delay));
         if (deliverAckToMe != null) deliverAckToMe.ack(handle);
       } else {
         // drop message because the node is dead
@@ -210,12 +210,12 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
     return seq++;
   }
 
-  public void incomingMessage(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
+  public void incomingMessage(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options) throws IOException {
     if (!acceptMessages) {
-      logger.debug("Dropping message from {}: not accepting messages", i);
+      logger.debug("Dropping message from {}: not accepting messages", identifier);
       return;
     }
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, messageType, options);
   }
 
   public Environment getEnvironment() {

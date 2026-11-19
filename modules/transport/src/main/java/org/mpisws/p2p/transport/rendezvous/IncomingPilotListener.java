@@ -37,6 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.rendezvous;
 
 public interface IncomingPilotListener<HighIdentifier> {
-  void pilotOpening(HighIdentifier i);
-  void pilotClosed(HighIdentifier i);
+  void pilotOpening(HighIdentifier highIdentifier);
+  void pilotClosed(HighIdentifier highIdentifier);
 }

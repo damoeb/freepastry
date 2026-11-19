@@ -181,7 +181,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       key = wire.getEnvironment().getSelectorManager().register(channel, this, 0);
       key.interestOps(SelectionKey.OP_READ);
       logger.info("UDPLayer bound to {}", wire.getLocalIdentifier());
-    } catch (BindException be) {
+    } catch (BindException bindException) {
       // Java's stupid exception isn't helpful, make a helpful one...
       throw new BindException("Address already in use:"+wire.getLocalIdentifier());
     } catch (IOException e) {
@@ -250,17 +250,17 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     try {
       synchronized (pendingMsgs) {
-        Iterator<Envelope> i = pendingMsgs.iterator();
+        Iterator<Envelope> iterator = pendingMsgs.iterator();
 
-        while (i.hasNext()) {
-          write = i.next();
+        while (iterator.hasNext()) {
+          write = iterator.next();
           try {
 
             int len = write.getMessage().remaining();
             logger.debug("writing {} to {}", len, write.getIdentifier());
             if (channel.send(write.getMessage(), write.getIdentifier()) == len) {
               if (write.continuation != null) write.continuation.ack(write);
-              i.remove();
+              iterator.remove();
             } else {
               break;
             }
@@ -270,7 +270,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
             } else {
               write.continuation.sendFailed(write, e);
             }
-            i.remove();
+            iterator.remove();
             return; // to get another call to write() later
           }
         }
@@ -331,7 +331,7 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   @Override
   public void destroy() {
-    Runnable r = () -> {
+    Runnable task = () -> {
       try {
         logger.info("destroy(): {}", channel);
         if (key != null) {
@@ -347,15 +347,15 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     // thread safety
     if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
-      r.run();
+      task.run();
     } else {
-      wire.getEnvironment().getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(task);
     }
   }
 
   @Override
   public void acceptMessages(final boolean b) {
-    Runnable r = () -> {
+    Runnable task = () -> {
       if (b) {
         key.interestOps(key.interestOps() | SelectionKey.OP_READ);
       } else {
@@ -365,9 +365,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
     // thread safety
     if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
-      r.run();
+      task.run();
     } else {
-      wire.getEnvironment().getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(task);
     }
   }
 }

@@ -96,7 +96,7 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
   private final PeerMessageWriterContext<Identifier> ctx;
   private final SelectorLoop selectorManager;
   private final Logger logger;
-  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> transportLayer;
   private final LivenessProvider<Identifier> livenessProvider;
   private final ProximityProvider<Identifier> proximityProvider;
   private final int MAX_MSG_SIZE;
@@ -120,7 +120,7 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
     this.ctx = ctx;
     this.selectorManager = ctx.selectorManager;
     this.logger = ctx.logger;
-    this.tl = ctx.tl;
+    this.transportLayer = ctx.tl;
     this.livenessProvider = ctx.livenessProvider;
     this.proximityProvider = ctx.proximityProvider;
     this.MAX_MSG_SIZE = ctx.maxMsgSize;
@@ -180,11 +180,11 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
    * @param receipt null if a remote node opened the socket
    */
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void primarySocketAvailable(P2PSocket<Identifier> s, @Nullable SocketRequestHandle<Identifier> receipt) {
+  public void primarySocketAvailable(P2PSocket<Identifier> socket, @Nullable SocketRequestHandle<Identifier> receipt) {
     // make sure we're on the selector thread so synchronization of writingSocket is simple
     if (!selectorManager.isSelectorThread()) throw new IllegalStateException("Must be called on the selector");
 
-    logger.debug("primarySocketAvailable({},{})", s, receipt);
+    logger.debug("primarySocketAvailable({},{})", socket, receipt);
 
     // set pendingSocket to null if possible
     synchronized(PeerMessageWriter.this) {
@@ -192,7 +192,7 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
         if (receipt == pendingSocket) {
           logger.info("{}.primarySocketAvailable setting pendingSocket to null {}", PeerMessageWriter.this, pendingSocket);
           stopLivenessChecker();
-          logger.debug("got socket:{} clearing pendingSocket:{}", s, pendingSocket);
+          logger.debug("got socket:{} clearing pendingSocket:{}", socket, pendingSocket);
           pendingSocket = null;  // this is the one we requested
         } else {
           // why would this ever be equal? -Jeff 01.11.08
@@ -200,24 +200,24 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
       }
     }
 
-    sockets.add(s);
+    sockets.add(socket);
     scheduleToWriteIfNeeded();
 
     // also, be able to read incoming messages on every socket
-    new SizeReader<Identifier>(this, s);
+    new SizeReader<Identifier>(this, socket);
   }
 
-  public void setWritingSocket(@Nullable P2PSocket<Identifier> s/*, String loc*/) {
-    logger.info("{}.setWritingSocket({})", this, s);
-    writingSocket = s;
+  public void setWritingSocket(@Nullable P2PSocket<Identifier> socket/*, String loc*/) {
+    logger.info("{}.setWritingSocket({})", this, socket);
+    writingSocket = socket;
     if (primarySocketListeners.isEmpty()) return;
-    if (s == null) {
-      for (PrimarySocketListener<Identifier> l : primarySocketListeners) {
-        l.notifyPrimarySocketClosed(identifier.get());
+    if (socket == null) {
+      for (PrimarySocketListener<Identifier> primarySocketListener : primarySocketListeners) {
+        primarySocketListener.notifyPrimarySocketClosed(identifier.get());
       }
     } else {
       for (PrimarySocketListener<Identifier> l : primarySocketListeners) {
-        l.notifyPrimarySocketOpened(s.getIdentifier(), s.getOptions());
+        l.notifyPrimarySocketOpened(socket.getIdentifier(), socket.getOptions());
       }
     }
   }
@@ -264,24 +264,24 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
     }
   }
 
-  public void openPrimarySocketHelper(final Identifier i, @Nullable Map<String, Object> options) {
+  public void openPrimarySocketHelper(final Identifier identifier, @Nullable Map<String, Object> options) {
     synchronized(this) {
       if (pendingSocket != null || writingSocket != null) return;
-      logger.debug("Opening Primary Socket to {}", i);
+      logger.debug("Opening Primary Socket to {}", identifier);
 
-      final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
+      final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier, options, logger) {
         @Override
         public boolean cancel() {
-          ctx.entityManagers.apply(i).receiveSocketException(this, new org.mpisws.p2p.transport.ClosedChannelException("Channel cancelled."));
+          ctx.entityManagers.apply(identifier).receiveSocketException(this, new org.mpisws.p2p.transport.ClosedChannelException("Channel cancelled."));
           return super.cancel();
         }
       };
 
       logger.info("{}.openPrimarySocketHelper() setting pendingSocket to {}", PeerMessageWriter.this, handle);
       pendingSocket = handle;
-      startLivenessChecker(i, options);
+      startLivenessChecker(identifier, options);
 
-      handle.setSubCancellable(tl.openSocket(i, new PrimarySocketOpener<Identifier>(i, handle, ctx), options));
+      handle.setSubCancellable(transportLayer.openSocket(identifier, new PrimarySocketOpener<Identifier>(identifier, handle, ctx), options));
 
     }
   }
@@ -448,8 +448,8 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
     }
 
     synchronized(sockets) {
-      for (P2PSocket<Identifier> sock : sockets) {
-          sock.close();
+      for (P2PSocket<Identifier> socket : sockets) {
+          socket.close();
       }
       sockets.clear();
     }
@@ -516,22 +516,22 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
         return ret;
       }
 
-      BigMessageSender<Identifier> pm;
+      BigMessageSender<Identifier> bigMessageSender;
       MessageRequestHandle<Identifier, ByteBuffer> ret2;
       boolean created = false;
       synchronized (pendingBigMessages) {
-        pm = pendingBigMessages.get(temp);
-        if (pm == null) {
-          pm = new BigMessageSender<Identifier>(temp, tl, logger, pendingBigMessages);
+        bigMessageSender = pendingBigMessages.get(temp);
+        if (bigMessageSender == null) {
+          bigMessageSender = new BigMessageSender<Identifier>(temp, transportLayer, logger, pendingBigMessages);
           // note, this fixes a timing issue, because the socket is closed if there are no pending big messages
-          ret2 = pm.addMessage(message, deliverAckToMe, options);
-          pendingBigMessages.put(temp, pm);
+          ret2 = bigMessageSender.addMessage(message, deliverAckToMe, options);
+          pendingBigMessages.put(temp, bigMessageSender);
           created = true;
         } else {
-          ret2 = pm.addMessage(message, deliverAckToMe, options);
+          ret2 = bigMessageSender.addMessage(message, deliverAckToMe, options);
         }
       }
-      if (created) pm.start(options);
+      if (created) bigMessageSender.start(options);
       return ret2;
     }
 

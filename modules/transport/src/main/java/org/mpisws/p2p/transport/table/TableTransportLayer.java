@@ -96,11 +96,11 @@ public class TableTransportLayer<Identifier, Key, Value>
    *
    * @param tableStore should be pre-populated with any persistent or initial values
    */
-  public TableTransportLayer(Serializer<Key> iSerializer, Serializer<Value> cSerializer, KeyValueStore<Key, Value> tableStore, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
+  public TableTransportLayer(Serializer<Key> iSerializer, Serializer<Value> cSerializer, KeyValueStore<Key, Value> tableStore, TransportLayer<Identifier, ByteBuffer> transportLayer, Environment env) {
     this.keySerializer = iSerializer;
     this.valueSerializer = cSerializer;
     this.knownValues = tableStore;
-    this.tl = tl;
+    this.tl = transportLayer;
 
     this.logger = env.getLogManager().getLogger(getClass(), null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(this.logger);
@@ -111,12 +111,12 @@ public class TableTransportLayer<Identifier, Key, Value>
    * REQUEST, int requestId, Key
    */
   public @Nullable Cancellable requestValue(final Identifier source,
-      final Key principal, final Continuation<Value, Exception> c,
+      final Key principal, final Continuation<Value, Exception> continuation,
       @Nullable Map<String, Object> options) {
 
     logger.debug("requestValue({},{})", source, principal);
     if (knownValues.containsKey(principal)) {
-      if (c != null) c.receiveResult(knownValues.get(principal));
+      if (continuation != null) continuation.receiveResult(knownValues.get(principal));
       return null;
     }
 
@@ -125,7 +125,7 @@ public class TableTransportLayer<Identifier, Key, Value>
 
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> sock) {
+          P2PSocket<Identifier> socket) {
         try {
           SimpleOutputBuffer sob = new SimpleOutputBuffer();
           keySerializer.serialize(principal,sob);
@@ -137,11 +137,11 @@ public class TableTransportLayer<Identifier, Key, Value>
           sob2.writeInt(sob.getWritten());
           sob2.write(sob.getBytes());
 
-          new BufferWriter<Identifier>(sob2.getByteBuffer(), sock, new Continuation<P2PSocket<Identifier>, Exception>() {
+          new BufferWriter<Identifier>(sob2.getByteBuffer(), socket, new Continuation<P2PSocket<Identifier>, Exception>() {
 
             @Override
             public void receiveException(Exception exception) {
-              c.receiveException(exception);
+              continuation.receiveException(exception);
             }
 
             @Override
@@ -160,62 +160,62 @@ public class TableTransportLayer<Identifier, Key, Value>
                       logger.trace("requestValue({},{}) got value {}", source, principal, value);
 
                       knownValues.put(principal, value);
-                      c.receiveResult(value);
+                      continuation.receiveResult(value);
                       break;
                     case RESPONSE_FAILED:
-                      c.receiveException(new UnknownValueException(source, principal));
+                      continuation.receiveException(new UnknownValueException(source, principal));
                       break;
                     default:
-                      c.receiveException(new IllegalStateException("Unknown response:"+response));
+                      continuation.receiveException(new IllegalStateException("Unknown response:"+response));
                       break;
                     }
                   } catch (Exception ioe) {
-                    c.receiveException(ioe);
+                    continuation.receiveException(ioe);
                   }
                 }
 
                 @Override
                 public void receiveException(Exception exception) {
-                  c.receiveException(exception);
+                  continuation.receiveException(exception);
                 }
 
               });
             }
           },false);
         } catch (IOException ioe) {
-          c.receiveException(ioe);
+          continuation.receiveException(ioe);
         }
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
-        c.receiveException(ex);
+        continuation.receiveException(ex);
       }
 
     }, options);
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i,
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier,
       final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
 
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
+    ret.setSubCancellable(tl.openSocket(identifier, new SocketCallback<Identifier>() {
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
         deliverSocketToMe.receiveException(ret, ex);
       }
 
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> sock) {
+          P2PSocket<Identifier> socket) {
         ByteBuffer writeMe = ByteBuffer.allocate(1);
         writeMe.put(PASSTHROUGH);
         writeMe.clear();
-        new BufferWriter<Identifier>(writeMe, sock, new Continuation<P2PSocket<Identifier>, Exception>() {
+        new BufferWriter<Identifier>(writeMe, socket, new Continuation<P2PSocket<Identifier>, Exception>() {
 
           @Override
           public void receiveException(Exception exception) {
@@ -235,41 +235,41 @@ public class TableTransportLayer<Identifier, Key, Value>
   }
 
   @Override
-  public void incomingSocket(final P2PSocket<Identifier> sock) throws IOException {
-    logger.trace("incomingSocket() from {}", sock);
-    new SocketBufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
+  public void incomingSocket(final P2PSocket<Identifier> socket) throws IOException {
+    logger.trace("incomingSocket() from {}", socket);
+    new SocketBufferReader<Identifier>(socket,new Continuation<ByteBuffer, Exception>() {
       @Override
       public void receiveResult(ByteBuffer result) {
         byte type = result.get();
-        logger.trace("incomingSocket() from {} {}", sock, type);
+        logger.trace("incomingSocket() from {} {}", socket, type);
 
         switch (type) {
         case PASSTHROUGH:
           try {
-            callback.incomingSocket(sock);
+            callback.incomingSocket(socket);
           } catch (IOException ioe) {
-            errorHandler.receivedException(sock.getIdentifier(), ioe);
+            errorHandler.receivedException(socket.getIdentifier(), ioe);
           }
           return;
         case REQUEST:
-          handleValueRequest(sock);
+          handleValueRequest(socket);
           return;
         default:
-          errorHandler.receivedUnexpectedData(sock.getIdentifier(), new byte[] {type}, 0, sock.getOptions());
-          sock.close();
+          errorHandler.receivedUnexpectedData(socket.getIdentifier(), new byte[] {type}, 0, socket.getOptions());
+          socket.close();
         }
       }
 
       @Override
       public void receiveException(Exception exception) {
-        errorHandler.receivedException(sock.getIdentifier(), exception);
+        errorHandler.receivedException(socket.getIdentifier(), exception);
       }
     },1);
   }
 
-  public void handleValueRequest(final P2PSocket<Identifier> sock) {
-    logger.trace("handleValueRequest() from {}", sock);
-    new SocketBufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
+  public void handleValueRequest(final P2PSocket<Identifier> socket) {
+    logger.trace("handleValueRequest() from {}", socket);
+    new SocketBufferReader<Identifier>(socket,new Continuation<ByteBuffer, Exception>() {
 
       @Override
       public void receiveResult(ByteBuffer result) {
@@ -287,23 +287,23 @@ public class TableTransportLayer<Identifier, Key, Value>
             writeMe.put(RESPONSE_FAILED);
             writeMe.clear();
           }
-          new BufferWriter<Identifier>(writeMe,sock,null);
+          new BufferWriter<Identifier>(writeMe,socket,null);
         } catch (Exception ioe) {
-          errorHandler.receivedException(sock.getIdentifier(), ioe);
-          sock.close();
+          errorHandler.receivedException(socket.getIdentifier(), ioe);
+          socket.close();
         }
       }
 
       @Override
       public void receiveException(Exception exception) {
-        errorHandler.receivedException(sock.getIdentifier(), exception);
+        errorHandler.receivedException(socket.getIdentifier(), exception);
       }
 
     });
   }
 
-  public boolean hasKey(Key i) {
-    return knownValues.containsKey(i);
+  public boolean hasKey(Key key) {
+    return knownValues.containsKey(key);
   }
 
   @Override
@@ -322,10 +322,10 @@ public class TableTransportLayer<Identifier, Key, Value>
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
-      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier,
+      ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    return tl.sendMessage(identifier, msg, deliverAckToMe, options);
   }
 
   @Override
@@ -344,8 +344,8 @@ public class TableTransportLayer<Identifier, Key, Value>
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m,
+  public void messageReceived(Identifier identifier, ByteBuffer msg,
       @Nullable Map<String, Object> options) throws IOException {
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, msg, options);
   }
 }

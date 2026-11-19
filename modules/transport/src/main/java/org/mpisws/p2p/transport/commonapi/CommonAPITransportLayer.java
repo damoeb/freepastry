@@ -89,7 +89,7 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
   private MessageOptionsDecorator optionsAdder;
 
   public CommonAPITransportLayer(
-      TransportLayer<Identifier, ByteBuffer> tl,
+      TransportLayer<Identifier, ByteBuffer> transportLayer,
       IdReader idFactory,
       RawMessageDeserializer deserializer,
       MessageOptionsDecorator optionsAdder,
@@ -97,14 +97,14 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
       Environment env) {
 
     this.logger = env.getLogManager().getLogger(CommonAPITransportLayer.class, null);
-    this.tl = tl;
+    this.tl = transportLayer;
     this.deserializer = deserializer;
     this.optionsAdder = optionsAdder;
     if (this.optionsAdder == null) {
       this.optionsAdder = (options, m) -> OptionsFactory.addOption(options, MSG_STRING, m.toString(), MSG_TYPE, m.getType(), MSG_CLASS, m.getClass().getName());
     }
 
-    if (tl == null) throw new IllegalArgumentException("tl must be non-null");
+    if (transportLayer == null) throw new IllegalArgumentException("tl must be non-null");
     if (idFactory == null) throw new IllegalArgumentException("idFactory must be non-null");
     if (deserializer == null) throw new IllegalArgumentException("deserializer must be non-null");
 
@@ -118,7 +118,7 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
     }
 
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
 
   }
 
@@ -139,16 +139,16 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
 
   @Override
   public @Nullable MessageRequestHandle<Identifier, RawMessage> sendMessage(
-      final Identifier i,
+      final Identifier identifier,
       final RawMessage m,
       final @Nullable MessageCallback<Identifier, RawMessage> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     if (destroyed) return null;
 
-    logger.debug("sendMessage({},{})", i, m);
+    logger.debug("sendMessage({},{})", identifier, m);
 
     final MessageRequestHandleImpl<Identifier, RawMessage> handle
-      = new MessageRequestHandleImpl<Identifier, RawMessage>(i, m, options);
+      = new MessageRequestHandleImpl<Identifier, RawMessage>(identifier, m, options);
     final ByteBuffer buf;
 
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
@@ -163,10 +163,10 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
       deserializer.serialize(m, sob);
     } catch (IOException ioe) {
       if (ioe instanceof NodeIsFaultyException) {
-        ioe = new NodeIsFaultyException(i,m, ioe);
+        ioe = new NodeIsFaultyException(identifier,m, ioe);
       }
       if (deliverAckToMe == null) {
-        errorHandler.receivedException(i, ioe);
+        errorHandler.receivedException(identifier, ioe);
       } else {
         deliverAckToMe.sendFailed(handle, ioe);
       }
@@ -174,17 +174,17 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
     }
 
     buf = ByteBuffer.wrap(sob.getBytes());
-    logger.trace("sendMessage({},{}) serialized:{}", i, m, buf);
+    logger.trace("sendMessage({},{}) serialized:{}", identifier, m, buf);
 
     handle.setSubCancellable(tl.sendMessage(
-        i,
+        identifier,
         buf,
         new MessageCallback<Identifier, ByteBuffer>() {
 
           @Override
           @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
-            logger.trace("sendMessage({},{}).ack()", i, m);
+            logger.trace("sendMessage({},{}).ack()", identifier, m);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe != null) deliverAckToMe.ack(handle);
           }
@@ -193,15 +193,15 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
           @SuppressWarnings("ReferenceEquality") // the same instance is meant
           public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
             if (ex instanceof NodeIsFaultyException) {
-              ex = new NodeIsFaultyException(i, m, ex);
+              ex = new NodeIsFaultyException(identifier, m, ex);
             }
             if (ex instanceof QueueOverflowException) {
-              ex = new QueueOverflowException(i, m, ex);
+              ex = new QueueOverflowException(identifier, m, ex);
             }
-            logger.info("sendFailed({},{})", i, m, ex);
+            logger.info("sendFailed({},{})", identifier, m, ex);
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe == null) {
-              errorHandler.receivedException(i, ex);
+              errorHandler.receivedException(identifier, ex);
             } else {
               deliverAckToMe.sendFailed(handle, ex);
             }
@@ -212,11 +212,11 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-    SimpleInputBuffer buf = new SimpleInputBuffer(ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m));
-    RawMessage ret = deserializer.deserialize(buf, i);
-    logger.debug("messageReceived({},{})", i, ret);
-    callback.messageReceived(i, ret, options);
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+    SimpleInputBuffer buf = new SimpleInputBuffer(ByteBuffers.arrayForRead(msg), ByteBuffers.arrayPosition(msg));
+    RawMessage ret = deserializer.deserialize(buf, identifier);
+    logger.debug("messageReceived({},{})", identifier, ret);
+    callback.messageReceived(identifier, ret, options);
   }
 
   @Override
@@ -242,20 +242,20 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
 
   @Override
   public @Nullable SocketRequestHandle<Identifier> openSocket(
-      final Identifier i,
+      final Identifier identifier,
       final SocketCallback<Identifier> deliverSocketToMe,
       @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
-    logger.debug("openSocket({})", i);
-    return tl.openSocket(i, deliverSocketToMe, options);
+    logger.debug("openSocket({})", identifier);
+    return tl.openSocket(identifier, deliverSocketToMe, options);
 
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    logger.debug("incomingSocket({})", s);
-    callback.incomingSocket(s);
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    logger.debug("incomingSocket({})", socket);
+    callback.incomingSocket(socket);
   }
 }

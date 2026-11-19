@@ -62,11 +62,11 @@ class LivenessTablesTest {
     target = new LivenessTransportLayer<>(lower, env, null, 0);
     target.setCallback(new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg, Map<String, Object> options) {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) {
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
       }
     });
     target.addLivenessListener((i, liveness, options) -> notified.add(liveness));
@@ -88,8 +88,8 @@ class LivenessTablesTest {
       try {
         action.run();
         done.complete(null);
-      } catch (Throwable t) {
-        done.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        done.completeExceptionally(throwable);
       }
     });
     done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -170,8 +170,8 @@ class LivenessTablesTest {
   }
 
   private static long sentTimeOf(ByteBuffer ping) {
-    ByteBuffer b = ping.duplicate();
-    assertEquals(LivenessTransportLayer.HDR_PING, b.get());
-    return b.getLong();
+    ByteBuffer buffer = ping.duplicate();
+    assertEquals(LivenessTransportLayer.HDR_PING, buffer.get());
+    return buffer.getLong();
   }
 }

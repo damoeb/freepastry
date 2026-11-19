@@ -76,10 +76,10 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
     return bytes;
   }
 
-  protected byte[] serializeAddress(InetSocketAddress addr) throws IOException {
-    LOG.info("Address changed to {}", addr);
+  protected byte[] serializeAddress(InetSocketAddress address) throws IOException {
+    LOG.info("Address changed to {}", address);
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    serializer.serialize(addr, sob);
+    serializer.serialize(address, sob);
     return sob.getBytes();
   }
 

@@ -78,7 +78,7 @@ final class PeerMessageWriterContext<Identifier> {
    */
   final Function<Identifier, PeerMessageWriter<Identifier>> entityManagers;
 
-  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> tl,
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       SelectorLoop selectorManager,
@@ -92,12 +92,12 @@ final class PeerMessageWriterContext<Identifier> {
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
       Function<Identifier, PeerMessageWriter<Identifier>> entityManagers) {
-    this(tl, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
+    this(transportLayer, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
         maxBigMsgSize, PriorityTransportLayer.DEFAULT_MAX_BIG_MSG_IN_FLIGHT, primarySocketListeners, listeners,
         errorHandler, callback, destroyed, entityManagers);
   }
 
-  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> tl,
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       SelectorLoop selectorManager,
@@ -112,7 +112,7 @@ final class PeerMessageWriterContext<Identifier> {
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
       Function<Identifier, PeerMessageWriter<Identifier>> entityManagers) {
-    this.tl = tl;
+    this.tl = transportLayer;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;
     this.selectorManager = selectorManager;

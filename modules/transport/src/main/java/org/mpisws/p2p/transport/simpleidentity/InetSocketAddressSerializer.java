@@ -61,55 +61,55 @@ public class InetSocketAddressSerializer implements IdentifierSerializer<InetSoc
   public static final int IPV6_BYTES = 16;
 
   @Override
-  public InetSocketAddress deserialize(InputBuffer b, @Nullable InetSocketAddress i,
+  public InetSocketAddress deserialize(InputBuffer input, @Nullable InetSocketAddress address,
       @Nullable Map<String, Object> options) throws IOException {
-    return deserializeAddress(b);
+    return deserializeAddress(input);
   }
 
   @Override
-  public void serialize(InetSocketAddress i, OutputBuffer b) throws IOException {
-    serializeAddress(i,b);
+  public void serialize(InetSocketAddress address, OutputBuffer output) throws IOException {
+    serializeAddress(address,output);
   }
 
-  public static InetSocketAddress deserializeAddress(InputBuffer b) throws IOException {
-    byte version = b.readByte();
-    byte[] addr;
+  public static InetSocketAddress deserializeAddress(InputBuffer input) throws IOException {
+    byte version = input.readByte();
+    byte[] bytes;
 
     switch(version) {
     case IPV4:
-      addr = new byte[IPV4_BYTES];
+      bytes = new byte[IPV4_BYTES];
       break;
     case IPV6:
-      addr = new byte[IPV6_BYTES];
+      bytes = new byte[IPV6_BYTES];
       break;
     default:
       throw new IOException("Incorrect IP version, expecting 4 or 6, got "+version);
     }
-    b.read(addr);
-    short port = b.readShort();
-    return new InetSocketAddress(InetAddress.getByAddress(addr),Short.toUnsignedInt(port));
+    input.read(bytes);
+    short port = input.readShort();
+    return new InetSocketAddress(InetAddress.getByAddress(bytes),Short.toUnsignedInt(port));
   }
 
-  public static void serializeAddress(InetSocketAddress i, OutputBuffer b) throws IOException {
-    byte[] addr = i.getAddress().getAddress();
+  public static void serializeAddress(InetSocketAddress address, OutputBuffer output) throws IOException {
+    byte[] bytes = address.getAddress().getAddress();
     // write version
-    switch (addr.length) {
+    switch (bytes.length) {
     case IPV4_BYTES:
-      b.writeByte(IPV4);
+      output.writeByte(IPV4);
       break;
     case IPV6_BYTES:
-      b.writeByte(IPV6);
+      output.writeByte(IPV6);
       break;
     default:
-      throw new IOException("Incorrect number of bytes for IPaddress, expecting 4 or 16, got "+addr.length);
+      throw new IOException("Incorrect number of bytes for IPaddress, expecting 4 or 16, got "+bytes.length);
     }
     // write addr
-    b.write(addr,0,addr.length);
-    b.writeShort((short)i.getPort());
+    output.write(bytes,0,bytes.length);
+    output.writeShort((short)address.getPort());
   }
 
-  public int getSerializedLength(InetSocketAddress i) {
-    return i.getAddress().getAddress().length+2+1;  // address+port+header
+  public int getSerializedLength(InetSocketAddress address) {
+    return address.getAddress().getAddress().length+2+1;  // address+port+header
   }
 
   @Override

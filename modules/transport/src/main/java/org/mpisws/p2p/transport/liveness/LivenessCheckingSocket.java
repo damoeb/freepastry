@@ -94,10 +94,10 @@ class LivenessCheckingSocket<Identifier> extends SocketWrapperSocket<Identifier,
 
   @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
-    LivenessTracker<Identifier> m = layer.getManager(socket.getIdentifier());
-    if (m.liveness > LIVENESS_SUSPECTED) {
-      m.updated = 0L;
-      m.checkLiveness(socket.getOptions());
+    LivenessTracker<Identifier> livenessTracker = layer.getManager(socket.getIdentifier());
+    if (livenessTracker.liveness > LIVENESS_SUSPECTED) {
+      livenessTracker.updated = 0L;
+      livenessTracker.checkLiveness(socket.getOptions());
     }
     if (canWrite) {
       stopLivenessCheckerTimer();

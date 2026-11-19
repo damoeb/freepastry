@@ -48,8 +48,8 @@ class IdentityFuzzTest {
     env = Environment.directEnvironment(1);
     IdentitySerializer<InetSocketAddress, InetSocketAddress, InetSocketAddress> serializer = new IdentitySerializer<>() {
       @Override
-      public void serialize(OutputBuffer buf, InetSocketAddress i) throws IOException {
-        InetSocketAddressSerializer.serializeAddress(i, buf);
+      public void serialize(OutputBuffer buf, InetSocketAddress address) throws IOException {
+        InetSocketAddressSerializer.serializeAddress(address, buf);
       }
 
       @Override
@@ -84,11 +84,11 @@ class IdentityFuzzTest {
     ((org.mpisws.p2p.transport.identity.LowerIdentity<InetSocketAddress, ByteBuffer>) identity.getLowerIdentity())
         .setCallback(new TransportLayerCallback<>() {
           @Override
-          public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
+          public void messageReceived(InetSocketAddress i, ByteBuffer msg, Map<String, Object> options) {
           }
 
           @Override
-          public void incomingSocket(P2PSocket<InetSocketAddress> s) {
+          public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
           }
         });
   }

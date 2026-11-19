@@ -82,11 +82,11 @@ class SourceRouteManagerPendingTest {
 
   private static final SocketCallback<InetSocketAddress> IGNORE = new SocketCallback<>() {
     @Override
-    public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
+    public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> socket) {
     }
 
     @Override
-    public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+    public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
     }
   };
 

@@ -94,14 +94,14 @@ public class PriorityMissingCallbackTest {
     env = new Environment();
     env.setExceptionStrategy(new ExceptionStrategy() {
       @Override
-      public void handleException(Object source, Throwable t) {
-        selectorExceptions.add(t);
+      public void handleException(Object source, Throwable throwable) {
+        selectorExceptions.add(throwable);
       }
     });
-    InetAddress addr = InetAddress.getLoopbackAddress();
-    int[] ports = FreePorts.freePorts(addr, 2);
-    alice = buildTL(new InetSocketAddress(addr, ports[0]));
-    bobAddr = new MultiInetSocketAddress(new InetSocketAddress(addr, ports[1]));
+    InetAddress address = InetAddress.getLoopbackAddress();
+    int[] ports = FreePorts.freePorts(address, 2);
+    alice = buildTL(new InetSocketAddress(address, ports[0]));
+    bobAddr = new MultiInetSocketAddress(new InetSocketAddress(address, ports[1]));
     bob = buildTL(bobAddr.getInnermostAddress());
     alice.setCallback(new Recorder());
     // bob's callback is deliberately not set
@@ -115,10 +115,10 @@ public class PriorityMissingCallbackTest {
     env.getSelectorManager().join(WAIT_MILLIS);
   }
 
-  private PriorityTransportLayer<MultiInetSocketAddress> buildTL(InetSocketAddress addr) throws IOException {
+  private PriorityTransportLayer<MultiInetSocketAddress> buildTL(InetSocketAddress address) throws IOException {
     LivenessTransportLayer<MultiInetSocketAddress> ltli = new LivenessTransportLayer<MultiInetSocketAddress>(
-        new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr),
-          new WireTransportLayer(addr, env, null), env, null, null),
+        new MultiInetAddressTransportLayer(new MultiInetSocketAddress(address),
+          new WireTransportLayer(address, env, null), env, null, null),
         env, null, 5000);
     return new PriorityTransportLayer<MultiInetSocketAddress>(ltli, ltli,
         new MinRTTProximityProvider<MultiInetSocketAddress>(ltli, env), env, 1024, 30, null);
@@ -127,12 +127,12 @@ public class PriorityMissingCallbackTest {
   static class Recorder implements TransportLayerCallback<MultiInetSocketAddress, ByteBuffer> {
     final BlockingQueue<ByteBuffer> messages = new ArrayBlockingQueue<ByteBuffer>(10);
     @Override
-    public void messageReceived(MultiInetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
-      messages.add(m);
+    public void messageReceived(MultiInetSocketAddress address, ByteBuffer msg, Map<String, Object> options) {
+      messages.add(msg);
     }
     @Override
-    public void incomingSocket(P2PSocket<MultiInetSocketAddress> s) {
-      s.close();
+    public void incomingSocket(P2PSocket<MultiInetSocketAddress> socket) {
+      socket.close();
     }
   }
 
@@ -166,7 +166,7 @@ public class PriorityMissingCallbackTest {
     final CountDownLatch bobRead = new CountDownLatch(1);
     bob.addTransportLayerListener(new TransportLayerListener<MultiInetSocketAddress>() {
       @Override
-      public void read(int bytes, MultiInetSocketAddress i, Map<String, Object> options, boolean passthrough, boolean socket) {
+      public void read(int bytes, MultiInetSocketAddress address, Map<String, Object> options, boolean passthrough, boolean socket) {
         if (bytes == first.length) bobRead.countDown();
       }
       @Override
@@ -237,7 +237,7 @@ public class PriorityMissingCallbackTest {
           });
         }
         @Override
-        public void receiveException(SocketRequestHandle<MultiInetSocketAddress> s, Exception ex) {
+        public void receiveException(SocketRequestHandle<MultiInetSocketAddress> request, Exception ex) {
           outcome.add(ex);
         }
       }, new HashMap<String, Object>()));

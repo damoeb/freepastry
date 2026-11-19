@@ -79,7 +79,7 @@ public interface RendezvousStrategy<Identifier> {
   /**
    * Sends the message via an out-of-band channel.  Usually routing.
    */
-  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options);
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier, ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options);
 
   public void setTransportLayer(RendezvousTransportLayer<Identifier> ret);
 }

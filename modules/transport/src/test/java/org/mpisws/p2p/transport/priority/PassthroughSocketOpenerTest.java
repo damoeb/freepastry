@@ -74,12 +74,12 @@ class PassthroughSocketOpenerTest {
         new SocketRequestHandleImpl<>("peer", null, LoggerFactory.getLogger(PassthroughSocketOpenerTest.class));
     return new PassthroughSocketOpener<>(handle, new SocketCallback<>() {
       @Override
-      public void receiveResult(SocketRequestHandle<String> cancellable, P2PSocket<String> sock) {
+      public void receiveResult(SocketRequestHandle<String> cancellable, P2PSocket<String> socket) {
         events.add("result");
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<String> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<String> request, Exception ex) {
         events.add("exception");
       }
     });

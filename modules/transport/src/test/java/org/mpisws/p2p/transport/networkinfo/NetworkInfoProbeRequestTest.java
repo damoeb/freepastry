@@ -49,10 +49,10 @@ class NetworkInfoProbeRequestTest {
     target = new NetworkInfoTransportLayer(lower, env, null);
     target.setCallback(new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {}
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg, Map<String, Object> options) {}
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) {}
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {}
     });
     target.setProbeStrategy(new ProbeStrategy() {
       @Override

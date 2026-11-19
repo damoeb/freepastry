@@ -146,70 +146,70 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
     this.keptBindings = new HashSet<MiddleIdentifier>();
 
     serializer.addSerializerListener(handle -> {
-      Runnable r = () -> {
+      Runnable task = () -> {
         addBinding(handle, null, null); // I hope setting the options to null is ok...
       };
       if (IdentityLayerCore.this.environment.getSelectorManager().isSelectorThread()) {
-        r.run();
+        task.run();
       } else {
-        IdentityLayerCore.this.environment.getSelectorManager().invoke(r);
+        IdentityLayerCore.this.environment.getSelectorManager().invoke(task);
       }
     });
   }
 
-  public void addPendingMessage(UpperIdentifier i, IdentityMessageHandle ret) {
-    logger.trace("addPendingMessage({},{})", i, ret);
+  public void addPendingMessage(UpperIdentifier upperIdentifier, IdentityMessageHandle ret) {
+    logger.trace("addPendingMessage({},{})", upperIdentifier, ret);
     synchronized(pendingMessages) {
-      Set<IdentityMessageHandle> set = pendingMessages.get(i);
+      Set<IdentityMessageHandle> set = pendingMessages.get(upperIdentifier);
       if (set == null) {
         set = new HashSet<IdentityMessageHandle>();
-        pendingMessages.put(i, set);
+        pendingMessages.put(upperIdentifier, set);
       }
       set.add(ret);
     }
   }
 
-  public void removePendingMessage(UpperIdentifier i, IdentityMessageHandle ret) {
+  public void removePendingMessage(UpperIdentifier upperIdentifier, IdentityMessageHandle ret) {
     synchronized(pendingMessages) {
-      Set<IdentityMessageHandle> set = pendingMessages.get(i);
+      Set<IdentityMessageHandle> set = pendingMessages.get(upperIdentifier);
       if (set == null) {
         return;
       }
       set.remove(ret);
       if (set.isEmpty()) {
-        pendingMessages.remove(i);
+        pendingMessages.remove(upperIdentifier);
       }
     }
   }
 
   @SuppressWarnings("NullAway.Init") // set by setOverrideLiveness() before the layer is used
   OverrideLiveness<LowerIdentifier> overrideLiveness;
-  public void setOverrideLiveness(OverrideLiveness<LowerIdentifier> ol) {
-    this.overrideLiveness = ol;
+  public void setOverrideLiveness(OverrideLiveness<LowerIdentifier> overrideLiveness) {
+    this.overrideLiveness = overrideLiveness;
   }
 
   /**
    * Put this in lower.
    */
-  public void setDeadForever(@Nullable LowerIdentifier l, UpperIdentifier i, @Nullable Map<String, Object> options) {
-    if (deadForever.contains(i)) return;
-    if (logger.isTraceEnabled()) logger.trace("setDeadForever({},{},{})", l, i, options, new Exception("Stack Trace"));
-    deadForever.add(i);
-      Map<String, Object> o2 = OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i);
+  public void setDeadForever(@Nullable LowerIdentifier lowerIdentifier, UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    if (deadForever.contains(upperIdentifier)) return;
+    if (logger.isTraceEnabled()) logger.trace("setDeadForever({},{},{})", lowerIdentifier, upperIdentifier, options, new Exception("Stack Trace"));
+    deadForever.add(upperIdentifier);
+      Map<String, Object> o2 = OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier);
       // how do we notify?  If we have a lower, then let it trickle through the TLs, otherwise, call it only on the upper
-      if (l == null) {
-        logger.info("setDeadForever({},{},{}): l == null", l, i, options);
-        upper().setLiveness(i, LIVENESS_DEAD_FOREVER, o2);
+      if (lowerIdentifier == null) {
+        logger.info("setDeadForever({},{},{}): l == null", lowerIdentifier, upperIdentifier, options);
+        upper().setLiveness(upperIdentifier, LIVENESS_DEAD_FOREVER, o2);
       } else {
-        overrideLiveness.setLiveness(l, LIVENESS_DEAD_FOREVER, o2);
+        overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_DEAD_FOREVER, o2);
       }
-    Set<IdentityMessageHandle> cancelMe = pendingMessages.remove(i);
+    Set<IdentityMessageHandle> cancelMe = pendingMessages.remove(upperIdentifier);
     if (cancelMe != null) {
       for (IdentityMessageHandle msg : cancelMe) {
         msg.deadForever();
       }
     }
-    upper().clearState(i);
+    upper().clearState(upperIdentifier);
   }
 
   private UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> upper() {
@@ -231,38 +231,38 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
   }
 
   /**
-   * @param l is optional, and is set when the lower-layer calls it
+   * @param lowerIdentifier is optional, and is set when the lower-layer calls it
    * @return false if the new binding is actually old (IE, don't upgrade it)
    */
-  protected boolean addBinding(UpperIdentifier u, @Nullable LowerIdentifier l, @Nullable Map<String, Object> options) {
+  protected boolean addBinding(UpperIdentifier upperIdentifier, @Nullable LowerIdentifier lowerIdentifier, @Nullable Map<String, Object> options) {
     if (!environment.getSelectorManager().isSelectorThread()) throw new RuntimeException("Must be called on selector thread.");
     // also for wire-deserialized handles (null options): the strategy decides what it accepts without options
     if (bindStrategy != null) {
-      if (!bindStrategy.accept(u, l, options)) return false;
+      if (!bindStrategy.accept(upperIdentifier, lowerIdentifier, options)) return false;
     }
-    MiddleIdentifier m = serializer.translateDown(u);
-      if (deadForever.contains(u)) return false;
+    MiddleIdentifier middleIdentifier = serializer.translateDown(upperIdentifier);
+      if (deadForever.contains(upperIdentifier)) return false;
 
-      UpperIdentifier old = bindings.get(m);
+      UpperIdentifier old = bindings.get(middleIdentifier);
       if (old == null) {
-        logger.debug("addBinding({},{}) old is null", u, l);
-        bindings.put(m, u);
-        keepIfStrategyKeeps(m, u, options);
+        logger.debug("addBinding({},{}) old is null", upperIdentifier, lowerIdentifier);
+        bindings.put(middleIdentifier, upperIdentifier);
+        keepIfStrategyKeeps(middleIdentifier, upperIdentifier, options);
         forgetBindingsOverCap();
-        if (l != null) {
-          overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+        if (lowerIdentifier != null) {
+          overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
         } else {
-          upper().setLiveness(u, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+          upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
         }
         return true;
       } else {
-        if (old.equals(u)) {
-          logger.trace("addBinding({},{}) old is equal", u, l);
-          keepIfStrategyKeeps(m, u, options);
-          if (l != null) {
-            overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+        if (old.equals(upperIdentifier)) {
+          logger.trace("addBinding({},{}) old is equal", upperIdentifier, lowerIdentifier);
+          keepIfStrategyKeeps(middleIdentifier, upperIdentifier, options);
+          if (lowerIdentifier != null) {
+            overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
           } else {
-            upper().setLiveness(u, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+            upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
           }
           return true;
         }
@@ -270,42 +270,42 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
         // they are different
         BindStrategy.Replacement replacement = bindStrategy == null
             ? BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY
-            : bindStrategy.replace(old, u, options);
+            : bindStrategy.replace(old, upperIdentifier, options);
         if (replacement == BindStrategy.Replacement.KEEP) {
-          logger.info("addBinding({},{}): the bind strategy keeps {}", u, l, old);
+          logger.info("addBinding({},{}): the bind strategy keeps {}", upperIdentifier, lowerIdentifier, old);
           return false;
         }
         boolean replace;
         if (replacement == BindStrategy.Replacement.REPLACE) {
-          logger.info("addBinding({},{}): the bind strategy replaces {}", u, l, old);
-          setDeadForever(l, old, options);
+          logger.info("addBinding({},{}): the bind strategy replaces {}", upperIdentifier, lowerIdentifier, old);
+          setDeadForever(lowerIdentifier, old, options);
           replace = true;
         } else {
-          replace = destinationChanged(old, u, l, options);
+          replace = destinationChanged(old, upperIdentifier, lowerIdentifier, options);
         }
         if (replace) {
-          bindings.put(m, u);
-          keptBindings.remove(m);
-          keepIfStrategyKeeps(m, u, options);
-          logger.debug("addBinding({},{}) old {} is dead", u, l, old);
-          if (l == null) {
-            logger.info("addBinding({},{}): l == null", u, l);
-            upper().setLiveness(u, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+          bindings.put(middleIdentifier, upperIdentifier);
+          keptBindings.remove(middleIdentifier);
+          keepIfStrategyKeeps(middleIdentifier, upperIdentifier, options);
+          logger.debug("addBinding({},{}) old {} is dead", upperIdentifier, lowerIdentifier, old);
+          if (lowerIdentifier == null) {
+            logger.info("addBinding({},{}): l == null", upperIdentifier, lowerIdentifier);
+            upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
           } else {
-            overrideLiveness.setLiveness(l, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, u));
+            overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
           }
           return true;
         } else {
           // mark the new one as faulty
-          logger.info("The nodeChangeStrategy found identifier {} to be stale.  Should be using {}", u, old);
+          logger.info("The nodeChangeStrategy found identifier {} to be stale.  Should be using {}", upperIdentifier, old);
           return false;
         }
       }
   }
 
-  private void keepIfStrategyKeeps(MiddleIdentifier m, UpperIdentifier u, @Nullable Map<String, Object> options) {
-    if (bindStrategy != null && bindStrategy.shouldKeepBinding(u, options)) {
-      keptBindings.add(m);
+  private void keepIfStrategyKeeps(MiddleIdentifier middleIdentifier, UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    if (bindStrategy != null && bindStrategy.shouldKeepBinding(upperIdentifier, options)) {
+      keptBindings.add(middleIdentifier);
     }
   }
 
@@ -315,20 +315,20 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
    * address.
    */
   private void forgetBindingsOverCap() {
-    Iterator<Map.Entry<MiddleIdentifier, UpperIdentifier>> it = bindings.entrySet().iterator();
-    while (bindings.size() > maxBindings && it.hasNext()) {
-      Map.Entry<MiddleIdentifier, UpperIdentifier> binding = it.next();
+    Iterator<Map.Entry<MiddleIdentifier, UpperIdentifier>> iterator = bindings.entrySet().iterator();
+    while (bindings.size() > maxBindings && iterator.hasNext()) {
+      Map.Entry<MiddleIdentifier, UpperIdentifier> binding = iterator.next();
       if (keptBindings.contains(binding.getKey()) || hasPendingMessages(binding.getValue())) {
         continue;
       }
       logger.debug("forgetting the binding {} -> {}", binding.getKey(), binding.getValue());
-      it.remove();
+      iterator.remove();
     }
   }
 
-  private boolean hasPendingMessages(UpperIdentifier u) {
+  private boolean hasPendingMessages(UpperIdentifier upperIdentifier) {
     synchronized(pendingMessages) {
-      return pendingMessages.containsKey(u);
+      return pendingMessages.containsKey(upperIdentifier);
     }
   }
 
@@ -339,7 +339,7 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
    *
    * True if they are the same
    */
-  public boolean destinationChanged(UpperIdentifier oldDest, UpperIdentifier newDest, @Nullable LowerIdentifier i, @Nullable Map<String, Object> options) {
+  public boolean destinationChanged(UpperIdentifier oldDest, UpperIdentifier newDest, @Nullable LowerIdentifier lowerIdentifier, @Nullable Map<String, Object> options) {
     if (oldDest.equals(newDest)) {
       // don't do anything
       return true;
@@ -352,19 +352,19 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
       }
 
       if (nodeChangeStrategy.isChangeAllowed(oldDest, newDest)) {
-        logger.info("destinationChanged({}->{},{},{})", oldDest, newDest, i, options);
-        setDeadForever(i, oldDest, options);
+        logger.info("destinationChanged({}->{},{},{})", oldDest, newDest, lowerIdentifier, options);
+        setDeadForever(lowerIdentifier, oldDest, options);
         return true;
       } else {
-        logger.info("destinationDidntChange({}->{},{},{})", newDest, oldDest, i, options);
-        setDeadForever(i, newDest, options);
+        logger.info("destinationDidntChange({}->{},{},{})", newDest, oldDest, lowerIdentifier, options);
+        setDeadForever(lowerIdentifier, newDest, options);
         return false;
       }
     }
   }
 
-  public void initLowerLayer(TransportLayer<LowerIdentifier, ByteBuffer> tl, ErrorHandler<LowerIdentifier> handler) {
-    lower = new LowerIdentityImpl<>(this, tl, handler);
+  public void initLowerLayer(TransportLayer<LowerIdentifier, ByteBuffer> transportLayer, ErrorHandler<LowerIdentifier> handler) {
+    lower = new LowerIdentityImpl<>(this, transportLayer, handler);
   }
 
   public @Nullable LowerIdentity<LowerIdentifier, ByteBuffer> getLowerIdentity() {
@@ -377,12 +377,12 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
     return upper;
   }
 
-  public void initUpperLayer(UpperIdentifier localIdentifier, TransportLayer<MiddleIdentifier, UpperMsgType> tl,
+  public void initUpperLayer(UpperIdentifier localIdentifier, TransportLayer<MiddleIdentifier, UpperMsgType> transportLayer,
       LivenessProvider<MiddleIdentifier> live,
       ProximityProvider<MiddleIdentifier> prox,
       OverrideLiveness<LowerIdentifier> overrideLiveness) {
     if (upper != null) throw new IllegalStateException("upper already initialized:"+upper);
-    upper = new UpperIdentityImpl<>(this, localIdentifier, tl, live, prox);
+    upper = new UpperIdentityImpl<>(this, localIdentifier, transportLayer, live, prox);
 
     setOverrideLiveness(overrideLiveness);
   }

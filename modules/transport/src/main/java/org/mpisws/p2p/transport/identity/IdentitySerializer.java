@@ -42,13 +42,13 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public interface IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> {
-  public void serialize(OutputBuffer buf, UpperIdentifier i) throws IOException;
+  public void serialize(OutputBuffer buf, UpperIdentifier upperIdentifier) throws IOException;
 
-  public UpperIdentifier deserialize(InputBuffer buf, LowerIdentifier l) throws IOException;
+  public UpperIdentifier deserialize(InputBuffer buf, LowerIdentifier lowerIdentifier) throws IOException;
 
-  public MiddleIdentifier translateDown(UpperIdentifier i);
+  public MiddleIdentifier translateDown(UpperIdentifier upperIdentifier);
 
-  public MiddleIdentifier translateUp(LowerIdentifier i);
+  public MiddleIdentifier translateUp(LowerIdentifier lowerIdentifier);
 
   public void addSerializerListener(SerializerListener<UpperIdentifier> listener);
   public void removeSerializerListener(SerializerListener<UpperIdentifier> listener);

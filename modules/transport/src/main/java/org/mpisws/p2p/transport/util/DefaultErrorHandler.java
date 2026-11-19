@@ -84,8 +84,8 @@ public class DefaultErrorHandler<Identifier> implements
   }
 
   @Override
-  public void receivedException(@Nullable Identifier i, Throwable error) {
-    logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(i));
+  public void receivedException(@Nullable Identifier identifier, Throwable error) {
+    logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(identifier));
   }
 
 }

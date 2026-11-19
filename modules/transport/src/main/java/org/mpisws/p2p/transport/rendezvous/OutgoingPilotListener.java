@@ -42,6 +42,6 @@ package org.mpisws.p2p.transport.rendezvous;
  * @author Jeff Hoye
  */
 public interface OutgoingPilotListener<HighIdentifier> {
-  void pilotOpening(HighIdentifier i);
-  void pilotClosed(HighIdentifier i);
+  void pilotOpening(HighIdentifier highIdentifier);
+  void pilotClosed(HighIdentifier highIdentifier);
 }

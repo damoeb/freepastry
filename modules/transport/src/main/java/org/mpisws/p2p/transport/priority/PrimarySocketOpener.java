@@ -51,7 +51,7 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
  * {@link PeerMessageWriter}. Failures go to the PeerMessageWriter too, which then retries or gives up.
  */
 final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier> {
-  private final Identifier i;
+  private final Identifier identifier;
 
   /**
    * the receipt the PeerMessageWriter holds as its pendingSocket
@@ -60,28 +60,28 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
 
   private final PeerMessageWriterContext<Identifier> ctx;
 
-  PrimarySocketOpener(Identifier i, SocketRequestHandleImpl<Identifier> handle, PeerMessageWriterContext<Identifier> ctx) {
-    this.i = i;
+  PrimarySocketOpener(Identifier identifier, SocketRequestHandleImpl<Identifier> handle, PeerMessageWriterContext<Identifier> ctx) {
+    this.identifier = identifier;
     this.handle = handle;
     this.ctx = ctx;
   }
 
   @Override
-  public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
+  public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> socket) {
     handle.setSubCancellable(() -> {
-      sock.close();
+      socket.close();
       return true;
     });
-    sock.register(false, true, new HeaderWriter());
+    socket.register(false, true, new HeaderWriter());
   }
 
   @Override
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-    if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException(
+  public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
+    if (handle.getSubCancellable() != null && request != handle.getSubCancellable()) throw new IllegalArgumentException(
         "s != handle.getSubCancellable() must be a bug. s:"+
-        s+" sub:"+handle.getSubCancellable());
-    ctx.entityManagers.apply(s.getIdentifier()).receiveSocketException(handle, ex);
+        request+" sub:"+handle.getSubCancellable());
+    ctx.entityManagers.apply(request.getIdentifier()).receiveSocketException(handle, ex);
   }
 
   /**
@@ -93,9 +93,9 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
     @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       if (canRead || !canWrite) throw new IllegalArgumentException("expected to write!  canRead:"+canRead+" canWrite:"+canWrite);
-      ctx.logger.debug("Opened Primary socket {} to {}", socket, i);
+      ctx.logger.debug("Opened Primary socket {} to {}", socket, identifier);
       if (socket.write(writeMe) == -1) {
-        ctx.entityManagers.apply(i).stopLivenessChecker();
+        ctx.entityManagers.apply(identifier).stopLivenessChecker();
         ctx.entityManagers.apply(socket.getIdentifier()).receiveSocketException(handle, new org.mpisws.p2p.transport.ClosedChannelException("Channel closed while writing."));
         return;
       }
@@ -113,7 +113,7 @@ final class PrimarySocketOpener<Identifier> implements SocketCallback<Identifier
 
     @Override
     public String toString() {
-      return "PriorityTLi: Primary Socket shim to "+i;
+      return "PriorityTLi: Primary Socket shim to "+identifier;
     }
   }
 }

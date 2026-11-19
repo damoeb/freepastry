@@ -106,13 +106,13 @@ public final class PipeNetwork {
     }
 
     @Override
-    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress i, ByteBuffer m,
+    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress i, ByteBuffer msg,
         MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
-      MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> handle = new MessageRequestHandleImpl<>(i, m, options);
-      ByteBuffer copy = ByteBuffer.allocate(m.remaining());
-      copy.put(m.duplicate());
+      MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> handle = new MessageRequestHandleImpl<>(i, msg, options);
+      ByteBuffer copy = ByteBuffer.allocate(msg.remaining());
+      copy.put(msg.duplicate());
       copy.flip();
-      m.position(m.limit());
+      msg.position(msg.limit());
       Lower target = layers.get(i);
       tasks.add(() -> {
         if (target == null) {

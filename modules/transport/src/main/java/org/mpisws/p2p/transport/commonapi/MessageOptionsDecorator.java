@@ -46,6 +46,6 @@ public interface MessageOptionsDecorator {
   /**
    * Add any options related to this message
    */
-  public Map<String, Object> addOptions(@Nullable Map<String, Object> options,RawMessage m);
+  public Map<String, Object> addOptions(@Nullable Map<String, Object> options,RawMessage msg);
 
 }

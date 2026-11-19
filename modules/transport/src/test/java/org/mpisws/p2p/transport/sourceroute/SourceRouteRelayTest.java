@@ -72,10 +72,10 @@ class SourceRouteRelayTest {
         new SourceRouteTransportLayer<>(new WireSourceRouteFactory(), wire, strategy, env, null);
     layer.setCallback(new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(SourceRoute<InetSocketAddress> i, ByteBuffer m, @Nullable Map<String, Object> o) {}
+      public void messageReceived(SourceRoute<InetSocketAddress> sourceRoute, ByteBuffer msg, @Nullable Map<String, Object> o) {}
 
       @Override
-      public void incomingSocket(P2PSocket<SourceRoute<InetSocketAddress>> s) {}
+      public void incomingSocket(P2PSocket<SourceRoute<InetSocketAddress>> socket) {}
     });
   }
 
@@ -104,8 +104,8 @@ class SourceRouteRelayTest {
 
   /** Opens a source-routed socket through the hop and returns the connection that reached the TCP target, or null. */
   private @Nullable Socket relaySocket() throws IOException {
-    try (Socket s = new Socket(LOOPBACK, hop.getPort())) {
-      OutputStream out = s.getOutputStream();
+    try (Socket socket = new Socket(LOOPBACK, hop.getPort())) {
+      OutputStream out = socket.getOutputStream();
       out.write(route((InetSocketAddress) tcpTarget.getLocalSocketAddress()));
       out.flush();
       try {

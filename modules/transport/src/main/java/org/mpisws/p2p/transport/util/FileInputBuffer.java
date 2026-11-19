@@ -48,9 +48,9 @@ public class FileInputBuffer extends DataInputStream implements InputBuffer {
   Logger logger;
   Path file;
 
-  public FileInputBuffer(Path f, Logger logger) throws IOException {
-    super(Files.newInputStream(f));
-    this.file = f;
+  public FileInputBuffer(Path path, Logger logger) throws IOException {
+    super(Files.newInputStream(path));
+    this.file = path;
     this.logger = logger;
   }
 

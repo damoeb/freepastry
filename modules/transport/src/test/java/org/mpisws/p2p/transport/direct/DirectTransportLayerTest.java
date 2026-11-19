@@ -33,7 +33,7 @@ class DirectTransportLayerTest {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<String> s) throws IOException {
+      public void incomingSocket(P2PSocket<String> socket) throws IOException {
         if (socketFailure != null) {
           throw socketFailure;
         }

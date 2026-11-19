@@ -63,17 +63,17 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
 
    int pingThrottle = 5000; // TODO: Make configurable
 
-  public MinRTTProximityProvider(Pinger<Identifier> tl, Environment env) {
-    this.tl = tl;
+  public MinRTTProximityProvider(Pinger<Identifier> pinger, Environment env) {
+    this.tl = pinger;
     this.logger = env.getLogManager().getLogger(MinRTTProximityProvider.class, null);
     this.time = env.getTimeSource();
-    tl.addPingListener(this);
+    pinger.addPingListener(this);
     this.managers = new HashMap<Identifier, PeerMessageWriter>();
   }
 
   @Override
-  public int proximity(Identifier i, @Nullable Map<String, Object> options) {
-    PeerMessageWriter manager = getManager(i);
+  public int proximity(Identifier identifier, @Nullable Map<String, Object> options) {
+    PeerMessageWriter manager = getManager(identifier);
     int ret = manager.proximity;
     if (ret == DEFAULT_PROXIMITY) {
       manager.ping(options);
@@ -82,29 +82,29 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
   }
 
   @Override
-  public void pingResponse(Identifier i, int rtt, @Nullable Map<String, Object> options) {
-    getManager(i).markProximity(rtt, options);
+  public void pingResponse(Identifier identifier, int rtt, @Nullable Map<String, Object> options) {
+    getManager(identifier).markProximity(rtt, options);
   }
 
   @Override
-  public void pingReceived(Identifier i, @Nullable Map<String, Object> options) {
+  public void pingReceived(Identifier identifier, @Nullable Map<String, Object> options) {
 
   }
 
   @Override
-  public void clearState(Identifier i) {
+  public void clearState(Identifier identifier) {
     synchronized(managers) {
-      managers.remove(i);
+      managers.remove(identifier);
     }
   }
 
-  public PeerMessageWriter getManager(Identifier i) {
+  public PeerMessageWriter getManager(Identifier identifier) {
     synchronized(managers) {
-      PeerMessageWriter manager = managers.get(i);
+      PeerMessageWriter manager = managers.get(identifier);
       if (manager == null) {
-        manager = new PeerMessageWriter(i);
-        logger.trace("Creating EM for {}", i);
-        managers.put(i,manager);
+        manager = new PeerMessageWriter(identifier);
+        logger.trace("Creating EM for {}", identifier);
+        managers.put(identifier,manager);
       }
       return manager;
     }
@@ -176,9 +176,9 @@ public class MinRTTProximityProvider<Identifier> implements ProximityProvider<Id
     return listeners.remove(listener);
   }
 
-  public void notifyProximityListeners(Identifier i, int prox, @Nullable Map<String, Object> options) {
-    for (ProximityListener<Identifier> p : listeners) {
-      p.proximityChanged(i, prox, options);
+  public void notifyProximityListeners(Identifier identifier, int prox, @Nullable Map<String, Object> options) {
+    for (ProximityListener<Identifier> proximityListener : listeners) {
+      proximityListener.proximityChanged(identifier, prox, options);
     }
   }
 }

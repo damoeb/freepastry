@@ -46,9 +46,9 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public interface ContactDeserializer<Identifier, HighIdentifier> {
 
-  void serialize(HighIdentifier i, OutputBuffer buf) throws IOException;
+  void serialize(HighIdentifier highIdentifier, OutputBuffer buf) throws IOException;
 
-  ByteBuffer serialize(HighIdentifier i) throws IOException;
+  ByteBuffer serialize(HighIdentifier highIdentifier) throws IOException;
   HighIdentifier deserialize(InputBuffer sib) throws IOException;
 
   Identifier convert(HighIdentifier high);

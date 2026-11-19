@@ -84,23 +84,23 @@ public interface TransportLayer<Identifier, MessageType> extends Destructible {
   /**
    * Open a socket to the Identifier
    *
-   * @param i who to open the socket to
+   * @param identifier who to open the socket to
    * @param deliverSocketToMe the callback when the socket is opened
    * @param options options on how to open the socket (don't source route, encrypt etc) (may not be respected if layer cannot provide service)
    * @return an object to cancel opening the socket if it takes to long, or is no longer relevant
    */
-  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options);
+  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier identifier, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options);
 
   /**
    * Send the message to the identifier
    *
-   * @param i the destination
-   * @param m the message
+   * @param identifier the destination
+   * @param messageType the message
    * @param options delivery options (don't source route, encrypt etc) (may not be respected if layer cannot provide service)
    * @param deliverAckToMe layer dependent notification when the message is sent (can indicate placed on the wire, point-to-point acknowledgment, or end-to-end acknowledgement)
    * @return ability to cancel the message if no longer relevant
    */
-  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options);
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier identifier, MessageType messageType, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options);
 
   /**
    * The local node.

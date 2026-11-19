@@ -61,14 +61,14 @@ public class MutableInetSocketAddressStrategyTest {
     int calls;
 
     @Override
-    public void serialize(InetSocketAddress i, OutputBuffer b) throws IOException {
+    public void serialize(InetSocketAddress address, OutputBuffer output) throws IOException {
       calls++;
-      byte[] addr = i.getAddress().getAddress();
-      b.write(addr, 0, addr.length);
+      byte[] bytes = address.getAddress().getAddress();
+      output.write(bytes, 0, bytes.length);
     }
 
     @Override
-    public InetSocketAddress deserialize(InputBuffer b, InetSocketAddress i, Map<String, Object> options) {
+    public InetSocketAddress deserialize(InputBuffer input, InetSocketAddress address, Map<String, Object> options) {
       throw new UnsupportedOperationException();
     }
   }

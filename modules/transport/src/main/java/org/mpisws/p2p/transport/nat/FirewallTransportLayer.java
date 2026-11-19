@@ -68,7 +68,7 @@ public class FirewallTransportLayer<Identifier, MessageType> implements Transpor
    */
   private final Map<Identifier, Long> udpTable;
 
-  private final TransportLayer<Identifier, MessageType> tl;
+  private final TransportLayer<Identifier, MessageType> transportLayer;
 
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
@@ -83,50 +83,50 @@ public class FirewallTransportLayer<Identifier, MessageType> implements Transpor
    *
    * @param udpOpenMillis how long the udp hole remains open
    */
-  public FirewallTransportLayer(TransportLayer<Identifier, MessageType> tl, int udpOpenMillis, Environment env) {
+  public FirewallTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, int udpOpenMillis, Environment env) {
     this.UDP_OPEN_MILLIS = udpOpenMillis;
     this.environment = env;
     this.timeSource = environment.getTimeSource();
     this.logger = env.getLogManager().getLogger(FirewallTransportLayer.class, null);
     this.udpTable = new HashMap<Identifier, Long>();
-    this.tl = tl;
-    tl.setCallback(this);
-    tl.acceptSockets(false);
+    this.transportLayer = transportLayer;
+    transportLayer.setCallback(this);
+    transportLayer.acceptSockets(false);
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier identifier, MessageType messageType, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
     long now = timeSource.currentTimeMillis();
-    udpTable.put(i,now);
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    udpTable.put(identifier,now);
+    return transportLayer.sendMessage(identifier, messageType, deliverAckToMe, options);
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
-    if (udpTable.containsKey(i)) {
+  public void messageReceived(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options) throws IOException {
+    if (udpTable.containsKey(identifier)) {
       long now = timeSource.currentTimeMillis();
-      if (udpTable.get(i)+UDP_OPEN_MILLIS >= now) {
-        logger.trace("accepting messageReceived({},{},{})", i, m, options);
-        udpTable.put(i,now);
-        callback.messageReceived(i, m, options);
+      if (udpTable.get(identifier)+UDP_OPEN_MILLIS >= now) {
+        logger.trace("accepting messageReceived({},{},{})", identifier, messageType, options);
+        udpTable.put(identifier,now);
+        callback.messageReceived(identifier, messageType, options);
         return;
       }
     }
-    logger.debug("dropping messageReceived({},{},{})", i, m, options);
+    logger.debug("dropping messageReceived({},{},{})", identifier, messageType, options);
   }
 
   /**
    * Only allow outgoing sockets.
    */
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    logger.debug("closing incomingSocket({})", s);
-    s.close();
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    logger.debug("closing incomingSocket({})", socket);
+    socket.close();
   }
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
 
   @Override
@@ -135,12 +135,12 @@ public class FirewallTransportLayer<Identifier, MessageType> implements Transpor
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   @Override
-  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier i, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
-    return tl.openSocket(i, deliverSocketToMe, options);
+  public @Nullable SocketRequestHandle<Identifier> openSocket(Identifier identifier, SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
+    return transportLayer.openSocket(identifier, deliverSocketToMe, options);
   }
 
   @Override
@@ -154,6 +154,6 @@ public class FirewallTransportLayer<Identifier, MessageType> implements Transpor
 
   @Override
   public void destroy() {
-    tl.destroy();
+    transportLayer.destroy();
   }
 }

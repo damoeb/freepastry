@@ -35,7 +35,7 @@ class EntityManagerConcurrentSendTest {
 
   @SuppressWarnings("unchecked")
   private PeerMessageWriter<String> target() {
-    TransportLayer<String, ByteBuffer> tl = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
+    TransportLayer<String, ByteBuffer> transportLayer = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> {
           if (method.getName().equals("openSocket")) openedSockets.incrementAndGet();
           return null;
@@ -44,7 +44,7 @@ class EntityManagerConcurrentSendTest {
         getClass().getClassLoader(), new Class<?>[] {LivenessProvider.class}, (proxy, method, args) -> 0);
     // never started: not the selector thread for anybody, and what is invoked on it is never run
     SelectorLoop selector = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager());
-    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(tl, alive, null, selector,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(transportLayer, alive, null, selector,
         LoggerFactory.getLogger(EntityManagerConcurrentSendTest.class), MAX_MSG_SIZE,
         THREADS * PER_THREAD, MAX_BIG_MSG_SIZE, List.of(), new TransportListeners<>(), () -> null, () -> null,
         () -> false, id -> null);
@@ -69,8 +69,8 @@ class EntityManagerConcurrentSendTest {
       }
       start.countDown();
       List<MessageRequestHandle<String, ByteBuffer>> all = new ArrayList<>();
-      for (Future<List<MessageRequestHandle<String, ByteBuffer>>> f : futures) {
-        all.addAll(f.get(30, TimeUnit.SECONDS));
+      for (Future<List<MessageRequestHandle<String, ByteBuffer>>> future : futures) {
+        all.addAll(future.get(30, TimeUnit.SECONDS));
       }
       return all;
     } finally {
@@ -88,8 +88,8 @@ class EntityManagerConcurrentSendTest {
       List<MessageRequestHandle<String, ByteBuffer>> handles = sendFromThreads(target, MAX_MSG_SIZE);
 
       Set<Integer> seqs = new HashSet<>();
-      for (MessageRequestHandle<String, ByteBuffer> h : handles) {
-        seqs.add(((MessageWrapper<?>) h).seq);
+      for (MessageRequestHandle<String, ByteBuffer> request : handles) {
+        seqs.add(((MessageWrapper<?>) request).seq);
       }
       int total = THREADS * PER_THREAD;
       assertEquals(total, handles.size(), "round " + round);

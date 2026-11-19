@@ -68,7 +68,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType>{
 
-  private final TransportLayer<Identifier, MessageType> tl;
+  private final TransportLayer<Identifier, MessageType> transportLayer;
   private final Logger logger;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
@@ -82,9 +82,9 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
    */
   class DefaultLocalIdentifierStrategy<Identifier2> implements LocalIdentifierStrategy<Identifier2> {
     byte[] localIdentifierBytes;
-    public DefaultLocalIdentifierStrategy(Identifier2 i) throws IOException {
+    public DefaultLocalIdentifierStrategy(Identifier2 identifier2) throws IOException {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      serializer.serialize(tl.getLocalIdentifier(), sob);
+      serializer.serialize(transportLayer.getLocalIdentifier(), sob);
       localIdentifierBytes = sob.getBytes();
     }
     @Override
@@ -93,38 +93,38 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     }
   }
 
-  public SimpleIdentityTransportLayer(TransportLayer<Identifier, MessageType> tl, IdentifierSerializer<Identifier> serializer, LocalIdentifierStrategy<Identifier> localIdStrategy, Environment env, ErrorHandler<Identifier> handler) throws IOException {
-    this.tl = tl;
-    this.tl.setCallback(this);
+  public SimpleIdentityTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, IdentifierSerializer<Identifier> serializer, LocalIdentifierStrategy<Identifier> localIdStrategy, Environment env, ErrorHandler<Identifier> handler) throws IOException {
+    this.transportLayer = transportLayer;
+    this.transportLayer.setCallback(this);
     this.errorHandler = handler;
     this.logger = env.getLogManager().getLogger(getClass(), null);
     this.serializer = serializer;
     this.localIdStrategy = localIdStrategy;
     if (this.localIdStrategy == null) {
-      this.localIdStrategy = new DefaultLocalIdentifierStrategy<Identifier>(tl.getLocalIdentifier());
+      this.localIdStrategy = new DefaultLocalIdentifierStrategy<Identifier>(transportLayer.getLocalIdentifier());
     }
   }
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
 
   @Override
   public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+    transportLayer.acceptSockets(b);
   }
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i,
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier,
       final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
+    ret.setSubCancellable(transportLayer.openSocket(identifier, new SocketCallback<Identifier>() {
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
@@ -157,7 +157,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
         }
       }
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
         deliverSocketToMe.receiveException(ret, ex);
       }
@@ -167,10 +167,10 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
 
   @Override
   public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(
-      Identifier i, MessageType m,
+      Identifier identifier, MessageType messageType,
       @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
       @Nullable Map<String, Object> options) {
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    return transportLayer.sendMessage(identifier, messageType, deliverAckToMe, options);
   }
 
   @Override
@@ -214,9 +214,9 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m,
+  public void messageReceived(Identifier identifier, MessageType messageType,
       @Nullable Map<String, Object> options) throws IOException {
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, messageType, options);
   }
 
 }

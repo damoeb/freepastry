@@ -49,16 +49,16 @@ public interface TransportLayerCallback<Identifier, MessageType> {
   /**
    * Called when a new message is received.
    *
-   * @param i The node it is coming from
-   * @param m the message
+   * @param identifier The node it is coming from
+   * @param messageType the message
    * @param options describe how the message arrived (udp/tcp, encrypted etc)
    * @throws IOException if there is a problem decoding the message
    */
-  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException;
+  public void messageReceived(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options) throws IOException;
   /**
    * Notification of a new socket.
    *
-   * @param s the incoming socket
+   * @param socket the incoming socket
    */
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException;
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException;
 }

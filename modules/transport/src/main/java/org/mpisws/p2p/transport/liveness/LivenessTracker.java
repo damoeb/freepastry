@@ -159,8 +159,8 @@ public class LivenessTracker<Identifier> {
   public LivenessTransportLayer<Identifier>.@Nullable DeadChecker getPending() {
     return pendingDeadchecker;
   }
-  public void setPending(LivenessTransportLayer<Identifier>.@Nullable DeadChecker d) {
-    pendingDeadchecker = d;
+  public void setPending(LivenessTransportLayer<Identifier>.@Nullable DeadChecker livenessTransportLayer) {
+    pendingDeadchecker = livenessTransportLayer;
   }
 
   public void removeSocket(LivenessCheckingSocket<Identifier> socket) {
@@ -251,9 +251,9 @@ public class LivenessTracker<Identifier> {
       temp = new ArrayList<LivenessCheckingSocket<Identifier>>(sockets);
       sockets.clear();
     }
-    for (LivenessCheckingSocket<Identifier> sock : temp) {
-      logger.info("closing {}", sock);
-      sock.close();
+    for (LivenessCheckingSocket<Identifier> livenessCheckingSocket : temp) {
+      logger.info("closing {}", livenessCheckingSocket);
+      livenessCheckingSocket.close();
     }
   }
 
@@ -319,7 +319,7 @@ public class LivenessTracker<Identifier> {
     if (ret) {
       final int theRTO = rto;
 
-      Runnable r = new Runnable() {
+      Runnable task = new Runnable() {
         @Override
         public void run() {
           if (getPending() == null) return;  // could have been set to null in the meantime
@@ -336,9 +336,9 @@ public class LivenessTracker<Identifier> {
         }
       };
       if (layer.environment.getSelectorManager().isSelectorThread()) {
-        r.run();
+        task.run();
       } else {
-        layer.environment.getSelectorManager().invoke(r);
+        layer.environment.getSelectorManager().invoke(task);
       }
     }
 

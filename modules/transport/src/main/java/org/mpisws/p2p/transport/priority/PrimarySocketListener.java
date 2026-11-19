@@ -47,7 +47,7 @@ import org.jspecify.annotations.Nullable;
  */
 public interface PrimarySocketListener<Identifier> {
 
-  public void notifyPrimarySocketOpened(Identifier i, @Nullable Map<String, Object> options);
+  public void notifyPrimarySocketOpened(Identifier identifier, @Nullable Map<String, Object> options);
 
-  public void notifyPrimarySocketClosed(@Nullable Identifier i);
+  public void notifyPrimarySocketClosed(@Nullable Identifier identifier);
 }

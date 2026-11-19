@@ -51,8 +51,8 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
   private final P2PSocket<Identifier> s;
   private final PeerMessageWriterContext<Identifier> ctx;
 
-  IncomingSocketDispatcher(P2PSocket<Identifier> s, PeerMessageWriterContext<Identifier> ctx) {
-    this.s = s;
+  IncomingSocketDispatcher(P2PSocket<Identifier> socket, PeerMessageWriterContext<Identifier> ctx) {
+    this.s = socket;
     this.ctx = ctx;
   }
 

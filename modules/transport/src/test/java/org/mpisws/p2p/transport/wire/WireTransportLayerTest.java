@@ -41,8 +41,8 @@ class WireTransportLayerTest {
         wire.acceptSockets(false);
         wire.acceptSockets(true);
         thrown.complete(null);
-      } catch (Throwable t) {
-        thrown.complete(t);
+      } catch (Throwable throwable) {
+        thrown.complete(throwable);
       }
     });
 
@@ -63,8 +63,8 @@ class WireTransportLayerTest {
       try {
         MessageRequestHandle<InetSocketAddress, ByteBuffer> handle = wire.sendMessage(destination, message, null, options);
         actual.complete(List.of(handle.cancel(), handle.cancel(), handle.getIdentifier(), handle.getMessage(), handle.getOptions()));
-      } catch (Throwable t) {
-        actual.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        actual.completeExceptionally(throwable);
       }
     });
 

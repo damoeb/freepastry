@@ -95,7 +95,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   UpperIdentityImpl(
       IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
       UpperIdentifier local,
-      TransportLayer<MiddleIdentifier, UpperMsgType> tl,
+      TransportLayer<MiddleIdentifier, UpperMsgType> transportLayer,
       LivenessProvider<MiddleIdentifier> live,
       ProximityProvider<MiddleIdentifier> prox) {
     this.identity = identity;
@@ -105,52 +105,52 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     this.sanityChecker = identity.sanityChecker;
     this.bindStrategy = identity.bindStrategy;
     this.localIdentifier = local;
-    this.tl = tl;
+    this.tl = transportLayer;
     this.livenessProvider = live;
     this.prox = prox;
     logger = environment.getLogManager().getLogger(IdentityLayerCore.class, "upper");
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
     livenessProvider.addLivenessListener(this);
     prox.addProximityListener(this);
   }
 
   @Override
-  public void clearState(UpperIdentifier i) {
-    livenessProvider.clearState(serializer.translateDown(i));
+  public void clearState(UpperIdentifier upperIdentifier) {
+    livenessProvider.clearState(serializer.translateDown(upperIdentifier));
   }
 
   @Override
   public SocketRequestHandle<UpperIdentifier> openSocket(
-      final UpperIdentifier i,
+      final UpperIdentifier upperIdentifier,
       final SocketCallback<UpperIdentifier> deliverSocketToMe,
       final @Nullable Map<String, Object> options) {
-    logger.debug("openSocket({},{},{})", i, deliverSocketToMe, options);
+    logger.debug("openSocket({},{},{})", upperIdentifier, deliverSocketToMe, options);
 
     final SocketRequestHandleImpl<UpperIdentifier> handle =
-      new SocketRequestHandleImpl<UpperIdentifier>(i, options, logger);
+      new SocketRequestHandleImpl<UpperIdentifier>(upperIdentifier, options, logger);
 
-    MiddleIdentifier middle = serializer.translateDown(i);
+    MiddleIdentifier middle = serializer.translateDown(upperIdentifier);
 
-    if (identity.addBinding(i, null, options)) {
+    if (identity.addBinding(upperIdentifier, null, options)) {
       // no problem, sending message
     } else {
-      deliverSocketToMe.receiveException(handle, new NodeIsFaultyException(i));
+      deliverSocketToMe.receiveException(handle, new NodeIsFaultyException(upperIdentifier));
       return handle;
     }
 
     @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
-    newOptions.put(NODE_HANDLE_FROM_INDEX, i);
+    newOptions.put(NODE_HANDLE_FROM_INDEX, upperIdentifier);
 
 
     handle.setSubCancellable(tl.openSocket(middle, new SocketCallback<MiddleIdentifier>(){
       @Override
-      public void receiveException(SocketRequestHandle<MiddleIdentifier> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<MiddleIdentifier> request, Exception ex) {
         deliverSocketToMe.receiveException(handle, ex);
       }
       @Override
-      public void receiveResult(SocketRequestHandle<MiddleIdentifier> cancellable, P2PSocket<MiddleIdentifier> sock) {
-        deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(i,sock,logger,errorHandler,options));
+      public void receiveResult(SocketRequestHandle<MiddleIdentifier> cancellable, P2PSocket<MiddleIdentifier> socket) {
+        deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(upperIdentifier,socket,logger,errorHandler,options));
       }
     }, newOptions));
     return handle;
@@ -162,97 +162,97 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
    */
   @Override
   public MessageRequestHandle<UpperIdentifier, UpperMsgType> sendMessage(
-      UpperIdentifier i,
-      UpperMsgType m,
+      UpperIdentifier upperIdentifier,
+      UpperMsgType upperMsgType,
       @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     if (!environment.getSelectorManager().isSelectorThread()) throw new RuntimeException("Must be called on selector thread.");
-    logger.debug("sendMessage({},{},{})", i, m, options);
+    logger.debug("sendMessage({},{},{})", upperIdentifier, upperMsgType, options);
 
     // how to synchronized this properly?  It's too bad that we have to hold the lock for the calls into the lower levels.
     // an alternative would be to re-synchronized and check again, and immediately cancel the message
-    if (deadForever.contains(i)) {
+    if (deadForever.contains(upperIdentifier)) {
       MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
-        new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
+        new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(upperIdentifier, upperMsgType, options);
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(upperIdentifier, upperMsgType));
       return mrh;
     }
 
     IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier>.IdentityMessageHandle ret;
 
-    MiddleIdentifier middle = serializer.translateDown(i);
-    if (identity.addBinding(i, null, options)) {
+    MiddleIdentifier middle = serializer.translateDown(upperIdentifier);
+    if (identity.addBinding(upperIdentifier, null, options)) {
       // no problem, sending message
     } else {
       MessageRequestHandle<UpperIdentifier, UpperMsgType> mrh =
-        new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(i, m, options);
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(i, m));
+        new MessageRequestHandleImpl<UpperIdentifier, UpperMsgType>(upperIdentifier, upperMsgType, options);
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(mrh, new NodeIsFaultyException(upperIdentifier, upperMsgType));
       return mrh;
     }
 
       options = OptionsFactory.copyOptions(options);
-      options.put(NODE_HANDLE_FROM_INDEX, i);
-      ret = identity.new IdentityMessageHandle(i, m, options, deliverAckToMe);
-      identity.addPendingMessage(i, ret);
+      options.put(NODE_HANDLE_FROM_INDEX, upperIdentifier);
+      ret = identity.new IdentityMessageHandle(upperIdentifier, upperMsgType, options, deliverAckToMe);
+      identity.addPendingMessage(upperIdentifier, ret);
 
     // the synchronization problem is here, if it goes dead now, then this message won't
     // be cancelled... TODO: get this correct, it's probably currently broken, maybe
     // need cancelled bit in ret so that it knows it's cancelled.
-    ret.setSubCancellable(tl.sendMessage(middle, m, ret, options));
+    ret.setSubCancellable(tl.sendMessage(middle, upperMsgType, ret, options));
     return ret;
   }
 
   @Override
-  public void incomingSocket(P2PSocket<MiddleIdentifier> s) throws IOException {
-    logger.debug("incomingSocket({})", s);
-    final UpperIdentifier from = identity.getIntendedDest(s.getOptions());
+  public void incomingSocket(P2PSocket<MiddleIdentifier> socket) throws IOException {
+    logger.debug("incomingSocket({})", socket);
+    final UpperIdentifier from = identity.getIntendedDest(socket.getOptions());
 
     if (from == null) {
-      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+s.getIdentifier()+" index="+IdentityLayerCore.index(s.getOptions())));
-      s.close();
+      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+socket.getIdentifier()+" index="+IdentityLayerCore.index(socket.getOptions())));
+      socket.close();
       return;
     }
 
 
-    if (sanityChecker.isSane(from, s.getIdentifier())) {
-      callback.incomingSocket(new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(from, s, logger, errorHandler, s.getOptions()));
+    if (sanityChecker.isSane(from, socket.getIdentifier())) {
+      callback.incomingSocket(new SocketWrapperSocket<UpperIdentifier, MiddleIdentifier>(from, socket, logger, errorHandler, socket.getOptions()));
     } else {
-      logger.warn("incomingSocket() Sanity checker did not match {} to {} options:{}", from, s.getIdentifier(), s.getOptions(), new Exception("Stack Trace"));
-      s.close();
+      logger.warn("incomingSocket() Sanity checker did not match {} to {} options:{}", from, socket.getIdentifier(), socket.getOptions(), new Exception("Stack Trace"));
+      socket.close();
     }
   }
 
   @Override
-  public void messageReceived(MiddleIdentifier i, UpperMsgType m, @Nullable Map<String, Object> options) throws IOException {
-    logger.debug("messageReceived({},{},{})", i, m, options);
+  public void messageReceived(MiddleIdentifier middleIdentifier, UpperMsgType upperMsgType, @Nullable Map<String, Object> options) throws IOException {
+    logger.debug("messageReceived({},{},{})", middleIdentifier, upperMsgType, options);
     final UpperIdentifier from = identity.getIntendedDest(options);
 
     if (from == null) {
-      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityLayerCore.index(options)+" dropping message"+m));
+      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+middleIdentifier+" index="+IdentityLayerCore.index(options)+" dropping message"+upperMsgType));
       return;
     }
 
     if (bindStrategy != null && !bindStrategy.acceptsMessage(from, options)) {
-      logger.info("messageReceived() dropping a message from {} via {}: the bind strategy does not accept it from that channel", from, i);
+      logger.info("messageReceived() dropping a message from {} via {}: the bind strategy does not accept it from that channel", from, middleIdentifier);
       return;
     }
 
-    if (sanityChecker.isSane(from, i)) {
-      callback.messageReceived(from, m, options);
+    if (sanityChecker.isSane(from, middleIdentifier)) {
+      callback.messageReceived(from, upperMsgType, options);
     } else {
-      logger.warn("messageReceived() Sanity checker did not match {} to {} options:{}", from, i, options, new Exception("Stack Trace"));
+      logger.warn("messageReceived() Sanity checker did not match {} to {} options:{}", from, middleIdentifier, options, new Exception("Stack Trace"));
     }
   }
 
 
   @Override
-  public boolean checkLiveness(UpperIdentifier i, @Nullable Map<String, Object> options) {
-    logger.debug("checkLiveness({},{})", i, options);
-    if (deadForever.contains(i)) return false;
+  public boolean checkLiveness(UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    logger.debug("checkLiveness({},{})", upperIdentifier, options);
+    if (deadForever.contains(upperIdentifier)) return false;
 
     options = OptionsFactory.copyOptions(options);
-    options.put(NODE_HANDLE_FROM_INDEX, i);
-    return livenessProvider.checkLiveness(serializer.translateDown(i), options);
+    options.put(NODE_HANDLE_FROM_INDEX, upperIdentifier);
+    return livenessProvider.checkLiveness(serializer.translateDown(upperIdentifier), options);
   }
 
   final List<LivenessListener<UpperIdentifier>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<UpperIdentifier>>();
@@ -267,20 +267,20 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public int getLiveness(UpperIdentifier i, @Nullable Map<String, Object> options) {
-    logger.trace("getLiveness({},{})", i, options);
-    if (deadForever.contains(i)) return LIVENESS_DEAD_FOREVER;
+  public int getLiveness(UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    logger.trace("getLiveness({},{})", upperIdentifier, options);
+    if (deadForever.contains(upperIdentifier)) return LIVENESS_DEAD_FOREVER;
     options = OptionsFactory.copyOptions(options);
-    options.put(NODE_HANDLE_FROM_INDEX, i);
+    options.put(NODE_HANDLE_FROM_INDEX, upperIdentifier);
 
-    return livenessProvider.getLiveness(serializer.translateDown(i), options);
+    return livenessProvider.getLiveness(serializer.translateDown(upperIdentifier), options);
   }
 
   @Override
-  public void livenessChanged(MiddleIdentifier i, int val, @Nullable Map<String, Object> options) {
-    if (deadForever.contains(i)) {
+  public void livenessChanged(MiddleIdentifier middleIdentifier, int val, @Nullable Map<String, Object> options) {
+    if (deadForever.contains(middleIdentifier)) {
       if (val < LIVENESS_DEAD) {
-        logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", i, val);
+        logger.error("Node {} came back from the dead!  It's a miracle! {} Ignoring.", middleIdentifier, val);
       }
       return;
     }
@@ -296,26 +296,26 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   /**
    * This is a guard so we don't notify about changes in liveness too many times.
    */
-  protected void setLiveness(UpperIdentifier i, int val, @Nullable Map<String, Object> options) {
+  protected void setLiveness(UpperIdentifier upperIdentifier, int val, @Nullable Map<String, Object> options) {
     // handle the first time
     int oldLiveness = -55;
-    if (liveness.containsKey(i)) {
-      oldLiveness = liveness.get(i);
+    if (liveness.containsKey(upperIdentifier)) {
+      oldLiveness = liveness.get(upperIdentifier);
     }
 
     if (val != oldLiveness) {
-      liveness.put(i, val);
-      notifyLivenessListeners(i, val, options);
+      liveness.put(upperIdentifier, val);
+      notifyLivenessListeners(upperIdentifier, val, options);
     }
   }
 
   // todo, make this a timer weak hash map
   private final Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
 
-  protected void notifyLivenessListeners(UpperIdentifier i, int liveness, @Nullable Map<String, Object> options) {
-    logger.trace("notifyLivenessListeners({},{})", i, liveness);
+  protected void notifyLivenessListeners(UpperIdentifier upperIdentifier, int liveness, @Nullable Map<String, Object> options) {
+    logger.trace("notifyLivenessListeners({},{})", upperIdentifier, liveness);
     for (LivenessListener<UpperIdentifier> listener : livenessListeners) {
-      listener.livenessChanged(i, liveness, options);
+      listener.livenessChanged(upperIdentifier, liveness, options);
     }
   }
 
@@ -332,14 +332,14 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public int proximity(UpperIdentifier i, @Nullable Map<String, Object> options) {
-    logger.trace("proximity({})", i);
-    if (deadForever.contains(i)) return Integer.MAX_VALUE;
-    return prox.proximity(serializer.translateDown(i), OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, i));
+  public int proximity(UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    logger.trace("proximity({})", upperIdentifier);
+    if (deadForever.contains(upperIdentifier)) return Integer.MAX_VALUE;
+    return prox.proximity(serializer.translateDown(upperIdentifier), OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
   }
 
   @Override
-  public void proximityChanged(MiddleIdentifier i, int newProx, @Nullable Map<String, Object> options) {
+  public void proximityChanged(MiddleIdentifier middleIdentifier, int newProx, @Nullable Map<String, Object> options) {
     UpperIdentifier upper = identity.getIntendedDest(options);
     if (upper == null) {
       logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for "+IdentityLayerCore.index(options)+" collected suppressing proximityChanged()");
@@ -349,10 +349,10 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     notifyProximityListeners(upper, newProx, options);
   }
 
-  private void notifyProximityListeners(UpperIdentifier i, int newProx, @Nullable Map<String, Object> options) {
-    logger.trace("notifyProximityListeners({},{})", i, newProx);
+  private void notifyProximityListeners(UpperIdentifier upperIdentifier, int newProx, @Nullable Map<String, Object> options) {
+    logger.trace("notifyProximityListeners({},{})", upperIdentifier, newProx);
     for (ProximityListener<UpperIdentifier> listener : proxListeners) {
-      listener.proximityChanged(i, newProx, options);
+      listener.proximityChanged(upperIdentifier, newProx, options);
     }
   }
 

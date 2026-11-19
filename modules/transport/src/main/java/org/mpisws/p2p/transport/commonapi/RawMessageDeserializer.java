@@ -44,7 +44,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 public interface RawMessageDeserializer {
-  public RawMessage deserialize(InputBuffer b, NodeHandle sender) throws IOException;
+  public RawMessage deserialize(InputBuffer input, NodeHandle sender) throws IOException;
 
-  public void serialize(RawMessage m, OutputBuffer b) throws IOException;
+  public void serialize(RawMessage msg, OutputBuffer output) throws IOException;
 }

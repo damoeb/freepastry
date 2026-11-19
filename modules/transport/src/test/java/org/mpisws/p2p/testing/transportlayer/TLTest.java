@@ -106,12 +106,12 @@ public abstract class TLTest<Identifier> {
     bob = null;
     SelectorLoop selector = env.getSelectorManager();
     Runnable destroyTLs = () -> {
-      for (Destructible d : tls) {
+      for (Destructible destructible : tls) {
         try {
-          d.destroy();
-        } catch (RuntimeException re) {
+          destructible.destroy();
+        } catch (RuntimeException runtimeException) {
           // may already have been destroyed by a test
-          if (logger != null && logger.isDebugEnabled()) logger.debug("destroying "+d, re);
+          if (logger != null && logger.isDebugEnabled()) logger.debug("destroying "+destructible, runtimeException);
         }
       }
     };
@@ -148,7 +148,7 @@ public abstract class TLTest<Identifier> {
    * @return A's view of b
    */
   public Identifier getIdentifier(
-      TransportLayer<Identifier, ByteBuffer> a,
+      TransportLayer<Identifier, ByteBuffer> transportLayer,
       TransportLayer<Identifier, ByteBuffer> b) {
     return b.getLocalIdentifier();
   }
@@ -179,7 +179,7 @@ public abstract class TLTest<Identifier> {
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
 
       @Override
-      public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options)
+      public void messageReceived(Identifier identifier, ByteBuffer msg, Map<String, Object> options)
           throws IOException {
 
       }
@@ -197,7 +197,7 @@ public abstract class TLTest<Identifier> {
 
     alice().openSocket(getIdentifier(alice(), bob()), new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> s, P2PSocket<Identifier> result) {
+      public void receiveResult(SocketRequestHandle<Identifier> request, P2PSocket<Identifier> result) {
         synchronized(lock) {
           aliceSockets.add(result);
           lock.notify();
@@ -229,20 +229,20 @@ public abstract class TLTest<Identifier> {
     // Part II sending data
     final byte[] sentBytes = {0,1,2,3,4,5,6,7};
     final ByteBuffer sentBuffer = ByteBuffer.wrap(sentBytes);
-    final ByteBuffer in = ByteBuffer.allocate(sentBytes.length);
+    final ByteBuffer buffer = ByteBuffer.allocate(sentBytes.length);
 
     bobSockets.get(0).register(true, false, new P2PSocketReceiver<Identifier>() {
       @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead,
           boolean canWrite) throws IOException {
 
-        socket.read(in);
+        socket.read(buffer);
 
-        if (in.hasRemaining()) {
+        if (buffer.hasRemaining()) {
           socket.register(true, false, this);
         } else {
           synchronized(lock) {
-            receivedList.add(in);
+            receivedList.add(buffer);
             lock.notify();
           }
         }
@@ -397,8 +397,8 @@ public abstract class TLTest<Identifier> {
     class Tupel<Identifier2> {
       Identifier2 i;
       ByteBuffer buf;
-      Tupel(Identifier2 i, ByteBuffer buf) {
-        this.i = i;
+      Tupel(Identifier2 identifier2, ByteBuffer buf) {
+        this.i = identifier2;
         this.buf = buf;
       }
     }
@@ -412,14 +412,14 @@ public abstract class TLTest<Identifier> {
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
       @Override
-      public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
+      public void messageReceived(Identifier identifier, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
-          receivedList.add(new Tupel<Identifier>(i, buf));
+          receivedList.add(new Tupel<Identifier>(identifier, buf));
           lock.notify();
         }
       }
       @Override
-      public void incomingSocket(P2PSocket<Identifier> s) {}
+      public void incomingSocket(P2PSocket<Identifier> socket) {}
     });
 
     MessageRequestHandle<Identifier, ByteBuffer> handle = alice().sendMessage(
@@ -529,8 +529,8 @@ public abstract class TLTest<Identifier> {
     class Tupel<Identifier2> {
       Identifier2 i;
       ByteBuffer buf;
-      Tupel(Identifier2 i, ByteBuffer buf) {
-        this.i = i;
+      Tupel(Identifier2 identifier2, ByteBuffer buf) {
+        this.i = identifier2;
         this.buf = buf;
       }
     }
@@ -543,14 +543,14 @@ public abstract class TLTest<Identifier> {
     // make a way for bob to receive the callback
     bob().setCallback(new TransportLayerCallback<Identifier, ByteBuffer>() {
       @Override
-      public void messageReceived(Identifier i, ByteBuffer buf, Map<String, Object> options) throws IOException {
+      public void messageReceived(Identifier identifier, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
-          receivedList.add(new Tupel<Identifier>(i, buf));
+          receivedList.add(new Tupel<Identifier>(identifier, buf));
           lock.notify();
         }
       }
       @Override
-      public void incomingSocket(P2PSocket<Identifier> s) {}
+      public void incomingSocket(P2PSocket<Identifier> socket) {}
     });
 
     alice().sendMessage(

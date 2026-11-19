@@ -108,20 +108,20 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     srFactory = new MultiAddressSourceRouteFactory();
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 4);
-    Parameters p = env.getParameters();
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 4);
+    Parameters parameters = env.getParameters();
     timer = env.getSelectorManager().getTimer();
 
     // this makes the liveness check super fast
-      p.setInt("pastry_socket_scm_num_ping_tries", 2);
-      p.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
-      p.setInt("pastry_socket_srm_rto_ubound", 500);//240000; // 240 seconds
+      parameters.setInt("pastry_socket_scm_num_ping_tries", 2);
+      parameters.setInt("pastry_socket_srm_default_rto", 400); // 3000 // 3 seconds
+      parameters.setInt("pastry_socket_srm_rto_ubound", 500);//240000; // 240 seconds
 
-    alice = buildTL("alice", addr, ports[0], env);
-    bob = buildTL("bob", addr, ports[1], env);
-    carol = buildTL("carol", addr, ports[2], env);
-    dave = buildTL("dave", addr, ports[3], env);
+    alice = buildTL("alice", address, ports[0], env);
+    bob = buildTL("bob", address, ports[1], env);
+    carol = buildTL("carol", address, ports[2], env);
+    dave = buildTL("dave", address, ports[3], env);
     otherTLs.add(carol);
     otherTLs.add(dave);
 
@@ -141,13 +141,13 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final MultiInetSocketAddress aliceId = (MultiInetSocketAddress)alice.getLocalIdentifier();
     final MultiInetSocketAddress bobId = (MultiInetSocketAddress)bob.getLocalIdentifier();
     final Object lock = new Object();
-    LivenessListener<MultiInetSocketAddress> ll = (i, val, options) -> {
+    LivenessListener<MultiInetSocketAddress> livenessListener = (i, val, options) -> {
       synchronized(lock) {
         lock.notify();
       }
     };
-    aliceLP.addLivenessListener(ll);
-    bobLP.addLivenessListener(ll);
+    aliceLP.addLivenessListener(livenessListener);
+    bobLP.addLivenessListener(livenessListener);
     aliceLP.checkLiveness(bobId, null);
     bobLP.checkLiveness(aliceId, null);
     long timeout = env.getTimeSource().currentTimeMillis()+10000;
@@ -158,13 +158,13 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         lock.wait(500);
       }
     }
-    aliceLP.removeLivenessListener(ll);
-    bobLP.removeLivenessListener(ll);
+    aliceLP.removeLivenessListener(livenessListener);
+    bobLP.removeLivenessListener(livenessListener);
     assertTrue(aliceLP.getLiveness(bobId, null) == LivenessTypes.LIVENESS_ALIVE, "alice->bob:"+aliceLP.getLiveness(bobId, null));
     assertTrue(bobLP.getLiveness(aliceId, null) == LivenessTypes.LIVENESS_ALIVE, "bob->alice:"+bobLP.getLiveness(aliceId, null));
   }
 
-  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress address, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(),
         env.getProcessor(),
@@ -174,7 +174,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         env.getParameters(),
         env.getExceptionStrategy());
     env.addDestructable(env_a);
-    InetSocketAddress addr_a = new InetSocketAddress(addr,port);
+    InetSocketAddress addr_a = new InetSocketAddress(address,port);
     MultiInetAddressTransportLayer myEpochLayer = new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
         new MagicNumberTransportLayer<InetSocketAddress>(
           new WireTransportLayer(addr_a,env_a, null),
@@ -199,9 +199,9 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
           }
 
           @Override
-          public void messageReceived(MultiInetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
+          public void messageReceived(MultiInetSocketAddress i, ByteBuffer msg, Map<String, Object> options) throws IOException {
             if (connectionAllowed(myAddr, i, "message")) {
-              super.messageReceived(i, m, options);
+              super.messageReceived(i, msg, options);
             }
           }
 
@@ -220,14 +220,14 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         new TestSRS(temp.getLocalIdentifier().getLastHop()));
   }
 
-  static boolean connectionAllowed(MultiInetSocketAddress a, MultiInetSocketAddress b, String context) {
-    if (a.equals(alice_addr)) {
+  static boolean connectionAllowed(MultiInetSocketAddress address, MultiInetSocketAddress b, String context) {
+    if (address.equals(alice_addr)) {
       if (b.equals(bob_addr)) {
         return false;
       }
     }
     if (b.equals(alice_addr)) {
-      if (a.equals(bob_addr)) {
+      if (address.equals(bob_addr)) {
         return false;
       }
     }
@@ -270,22 +270,22 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   }
 
   static class TestLivenessTransportLayerImpl extends LivenessTransportLayer<SourceRoute<MultiInetSocketAddress>> {
-    public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl, Environment env, ErrorHandler<SourceRoute<MultiInetSocketAddress>> errorHandler) {
-      super(tl, env, errorHandler, 5000);
+    public TestLivenessTransportLayerImpl(TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> transportLayer, Environment env, ErrorHandler<SourceRoute<MultiInetSocketAddress>> errorHandler) {
+      super(transportLayer, env, errorHandler, 5000);
     }
 
     @Override
-    public void pong(final SourceRoute<MultiInetSocketAddress> i, final long senderTime, final Map<String, Object> options) {
+    public void pong(final SourceRoute<MultiInetSocketAddress> sourceRoute, final long senderTime, final Map<String, Object> options) {
       timer.schedule(new TimerTask() {
         @Override
         public void run() {
-          TestLivenessTransportLayerImpl.super.pong(i, senderTime, options);
+          TestLivenessTransportLayerImpl.super.pong(sourceRoute, senderTime, options);
         }
-      }, getDelay(getLocalIdentifier(), i));
+      }, getDelay(getLocalIdentifier(), sourceRoute));
     }
   }
 
-  public static int getDelay(SourceRoute<MultiInetSocketAddress> a, SourceRoute<MultiInetSocketAddress> b) {
+  public static int getDelay(SourceRoute<MultiInetSocketAddress> sourceRoute, SourceRoute<MultiInetSocketAddress> b) {
     if (b.getLastHop().equals(bob.getLocalIdentifier()) &&
         b.getFirstHop().equals(alice.getLocalIdentifier())) {
        return 150;
@@ -298,11 +298,11 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     final Map<MultiInetSocketAddress, Tupel> pingResponse = new HashMap<MultiInetSocketAddress, Tupel>();
     final Object lock = new Object();
 
-    PingListener<SourceRoute<MultiInetSocketAddress>> pl = new PingListener<SourceRoute<MultiInetSocketAddress>>() {
+    PingListener<SourceRoute<MultiInetSocketAddress>> pingListener = new PingListener<SourceRoute<MultiInetSocketAddress>>() {
       @Override
-      public void pingResponse(SourceRoute<MultiInetSocketAddress> i, int rtt, Map<String, Object> options) {
+      public void pingResponse(SourceRoute<MultiInetSocketAddress> sourceRoute, int rtt, Map<String, Object> options) {
         synchronized(lock) {
-          pingResponse.put(i.getLastHop(), new Tupel(i.getLastHop(), rtt));
+          pingResponse.put(sourceRoute.getLastHop(), new Tupel(sourceRoute.getLastHop(), rtt));
           lock.notify();
         }
       }
@@ -313,7 +313,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       }
     };
 
-    bob_pinger.addPingListener(pl);
+    bob_pinger.addPingListener(pingListener);
 
     ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options); // initial check, causes ping if no data
     ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options); // initial check, causes ping if no data
@@ -326,7 +326,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
         lock.wait(1000);
       }
     }
-    bob_pinger.removePingListener(pl);
+    bob_pinger.removePingListener(pingListener);
 
     int aliceProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(alice().getLocalIdentifier(), options);
     int carolProx = ((ProximityProvider<MultiInetSocketAddress>)bob).proximity(carol.getLocalIdentifier(), options);
@@ -338,8 +338,8 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
     MultiInetSocketAddress sr;
     int val;
 
-    public Tupel(MultiInetSocketAddress i, int val) {
-      this.sr = i;
+    public Tupel(MultiInetSocketAddress address, int val) {
+      this.sr = address;
       this.val = val;
     }
   }

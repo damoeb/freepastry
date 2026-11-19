@@ -46,8 +46,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public class FileOutputBuffer extends DataOutputStream implements OutputBuffer {
 
-  public FileOutputBuffer(Path f) throws IOException {
-    super(Files.newOutputStream(f));
+  public FileOutputBuffer(Path path) throws IOException {
+    super(Files.newOutputStream(path));
   }
 
   @Override

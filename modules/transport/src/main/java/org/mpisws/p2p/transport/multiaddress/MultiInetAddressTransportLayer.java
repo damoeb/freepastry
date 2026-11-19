@@ -128,15 +128,15 @@ public class MultiInetAddressTransportLayer
   // ******************************** Sockets **************************
   @Override
   public @Nullable SocketRequestHandle<MultiInetSocketAddress> openSocket(
-      final MultiInetSocketAddress i,
+      final MultiInetSocketAddress address,
       final SocketCallback<MultiInetSocketAddress> deliverSocketToMe,
       @Nullable Map<String, Object> options) {
 
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
 
-    final SocketRequestHandleImpl<MultiInetSocketAddress> handle = new SocketRequestHandleImpl<MultiInetSocketAddress>(i, options, logger);
+    final SocketRequestHandleImpl<MultiInetSocketAddress> handle = new SocketRequestHandleImpl<MultiInetSocketAddress>(address, options, logger);
 
-    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
+    logger.info("openSocket({},{},{})", address, deliverSocketToMe, options);
     SimpleOutputBuffer sob = new SimpleOutputBuffer(localAddress.getSerializedLength());
     try {
       localAddress.serialize(sob);
@@ -144,24 +144,24 @@ public class MultiInetAddressTransportLayer
       deliverSocketToMe.receiveException(handle, ioe);
       return null;
     }
-    final ByteBuffer b = sob.getByteBuffer();
+    final ByteBuffer buffer = sob.getByteBuffer();
 
-    InetSocketAddress addr = strategy.getAddress(getLocalIdentifier(), i);
+    InetSocketAddress addr = strategy.getAddress(getLocalIdentifier(), address);
 
     handle.setSubCancellable(wire.openSocket(addr,
         new SocketCallback<InetSocketAddress>(){
 
       @Override
       @SuppressWarnings("ReferenceEquality") // the same instance is meant
-      public void receiveResult(SocketRequestHandle<InetSocketAddress> c, final P2PSocket<InetSocketAddress> result) {
-        if (handle.getSubCancellable() != null && c != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> request, final P2PSocket<InetSocketAddress> result) {
+        if (handle.getSubCancellable() != null && request != handle.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+request+" sub:"+handle.getSubCancellable());
 
         handle.setSubCancellable(() -> {
           result.close();
           return true;
         });
 
-        logger.trace("openSocket({}):receiveResult({})", i, result);
+        logger.trace("openSocket({}):receiveResult({})", address, result);
         result.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
           @Override
           public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
@@ -169,16 +169,16 @@ public class MultiInetAddressTransportLayer
             if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
 
             // do the work
-            if (socket.write(b) < 0) {
+            if (socket.write(buffer) < 0) {
               deliverSocketToMe.receiveException(handle, new ClosedChannelException("Remote node closed socket while opening.  Try again."));
               return;
             }
 
             // keep working or pass up the new socket
-            if (b.hasRemaining()) {
+            if (buffer.hasRemaining()) {
               socket.register(false, true, this);
             } else {
-              deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(i, socket, logger, errorHandler, socket.getOptions()));
+              deliverSocketToMe.receiveResult(handle, new SocketWrapperSocket<MultiInetSocketAddress, InetSocketAddress>(address, socket, logger, errorHandler, socket.getOptions()));
             }
           }
 
@@ -234,15 +234,15 @@ public class MultiInetAddressTransportLayer
   // ************************** Messages ***************************
   @Override
   public MessageRequestHandle<MultiInetSocketAddress, ByteBuffer> sendMessage(
-      final MultiInetSocketAddress i,
+      final MultiInetSocketAddress address,
       final ByteBuffer m,
       final @Nullable MessageCallback<MultiInetSocketAddress, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
 
-    logger.debug("sendMessage({},{})", i, m);
+    logger.debug("sendMessage({},{})", address, m);
 
     final MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer> handle
-      = new MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer>(i, m, options);
+      = new MessageRequestHandleImpl<MultiInetSocketAddress, ByteBuffer>(address, m, options);
     final ByteBuffer buf;
     SimpleOutputBuffer sob = new SimpleOutputBuffer(m.remaining() + localAddress.getSerializedLength());
     try {
@@ -250,7 +250,7 @@ public class MultiInetAddressTransportLayer
       sob.write(ByteBuffers.array(m), ByteBuffers.arrayPosition(m), m.remaining());
     } catch (IOException ioe) {
       if (deliverAckToMe == null) {
-        errorHandler.receivedException(i, ioe);
+        errorHandler.receivedException(address, ioe);
       } else {
         deliverAckToMe.sendFailed(handle, ioe);
       }
@@ -259,7 +259,7 @@ public class MultiInetAddressTransportLayer
     buf = ByteBuffer.wrap(sob.getBytes());
 
     handle.setSubCancellable(wire.sendMessage(
-        strategy.getAddress(getLocalIdentifier(), i),
+        strategy.getAddress(getLocalIdentifier(), address),
         buf,
         new MessageCallback<InetSocketAddress, ByteBuffer>() {
 
@@ -276,7 +276,7 @@ public class MultiInetAddressTransportLayer
             if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
             if (deliverAckToMe == null) {
               if (ex instanceof NodeIsFaultyException) return;
-              errorHandler.receivedException(i, ex);
+              errorHandler.receivedException(address, ex);
             } else {
               deliverAckToMe.sendFailed(handle, ex);
             }
@@ -292,25 +292,25 @@ public class MultiInetAddressTransportLayer
   }
 
   @Override
-  public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-    logger.debug("messageReceived({},{})", i, m);
+  public void messageReceived(InetSocketAddress address, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+    logger.debug("messageReceived({},{})", address, msg);
     // read numAddresses
-    byte[] array = ByteBuffers.arrayForRead(m);
-    int pos = ByteBuffers.arrayPosition(m);
+    byte[] array = ByteBuffers.arrayForRead(msg);
+    int pos = ByteBuffers.arrayPosition(msg);
     SimpleInputBuffer sib = new SimpleInputBuffer(array, pos);
 
     MultiInetSocketAddress eisa;
     try {
       eisa = MultiInetSocketAddress.build(sib, maxNumAddresses);
     } catch (IOException ioe) {
-      errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(i), array, pos, null);
+      errorHandler.receivedUnexpectedData(new MultiInetSocketAddress(address), array, pos, null);
       return;
     }
 
     // make sure to leave m at the proper position
-    ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
+    ByteBuffers.setArrayPosition(msg, array.length - sib.bytesRemaining());
 
-    callback.messageReceived(eisa, m, options);
+    callback.messageReceived(eisa, msg, options);
   }
 
   // ***************************** Other ******************************

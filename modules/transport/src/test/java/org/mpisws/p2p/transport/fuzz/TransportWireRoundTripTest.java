@@ -51,10 +51,10 @@ class TransportWireRoundTripTest {
   }
 
   private static <T> T readAll(byte[] bytes, Reader<T> reader, Object value) throws IOException {
-    SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-    T read = reader.read(in);
+    SimpleInputBuffer input = new SimpleInputBuffer(bytes);
+    T read = reader.read(input);
     assertNotNull(read, () -> "read " + value);
-    assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + value);
+    assertEquals(0, input.bytesRemaining(), () -> "bytes left after reading " + value);
     return read;
   }
 

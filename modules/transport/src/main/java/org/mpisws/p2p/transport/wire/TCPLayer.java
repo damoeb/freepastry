@@ -98,9 +98,9 @@ public class TCPLayer extends SelectionKeyHandler {
       wire.broadcastChannelOpened(destination, options, true);
 
       synchronized (sockets) {
-        WireSocket sm = new WireSocket(this, destination, deliverSocketToMe, options);
-        sockets.add(sm);
-        return sm;
+        WireSocket wireSocket = new WireSocket(this, destination, deliverSocketToMe, options);
+        sockets.add(wireSocket);
+        return wireSocket;
       }
     } catch (IOException e) {
       logger.warn("GOT ERROR {} OPENING PATH - MARKING PATH {} AS DEAD!", e, destination, e);
@@ -112,9 +112,9 @@ public class TCPLayer extends SelectionKeyHandler {
 
   final Collection<WireSocket> sockets = new HashSet<WireSocket>();
 
-  protected void socketClosed(WireSocket sm) {
-    wire.broadcastChannelClosed(sm.addr, sm.options);
-    sockets.remove(sm);
+  protected void socketClosed(WireSocket wireSocket) {
+    wire.broadcastChannelClosed(wireSocket.addr, wireSocket.options);
+    sockets.remove(wireSocket);
   }
 
   public void destroy() {
@@ -139,7 +139,7 @@ public class TCPLayer extends SelectionKeyHandler {
   public void acceptSockets(final boolean b) {
     final SelectionKey serverKey = key;
     if (serverKey == null) return; // no TCP server, nothing to accept from
-    Runnable r = () -> {
+    Runnable task = () -> {
       if (b) {
         serverKey.interestOps(serverKey.interestOps() | SelectionKey.OP_ACCEPT);
       } else {
@@ -149,9 +149,9 @@ public class TCPLayer extends SelectionKeyHandler {
 
     // thread safety
     if (wire.getEnvironment().getSelectorManager().isSelectorThread()) {
-      r.run();
+      task.run();
     } else {
-      wire.getEnvironment().getSelectorManager().invoke(r);
+      wire.getEnvironment().getSelectorManager().invoke(task);
     }
   }
 
@@ -174,17 +174,17 @@ public class TCPLayer extends SelectionKeyHandler {
         logger.debug("accept() found no pending connection");
         return;
       }
-      WireSocket sm;
+      WireSocket wireSocket;
       try {
-        sm = new WireSocket(this, channel);
+        wireSocket = new WireSocket(this, channel);
       } catch (IOException e) {
         channel.close();
         throw e;
       }
       synchronized (sockets) {
-        sockets.add(sm);
+        sockets.add(wireSocket);
       }
-      wire.incomingSocket(sm);
+      wire.incomingSocket(wireSocket);
     } catch (IOException e) {
       logger.atWarn().log(() -> "ERROR (accepting connection): " + e);
       wire.getErrorHandler().receivedException(null, e);

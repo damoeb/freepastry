@@ -51,8 +51,8 @@ public record SourceRouteManagerConfig(int numSourceRouteAttempts) {
   /**
    * @throws IllegalArgumentException if the value is negative
    */
-  public static SourceRouteManagerConfig fromParameters(Parameters p) {
+  public static SourceRouteManagerConfig fromParameters(Parameters parameters) {
     return new SourceRouteManagerConfig(
-      requireNonNegative("pastry_socket_srm_num_source_route_attempts", p.getInt("pastry_socket_srm_num_source_route_attempts")));
+      requireNonNegative("pastry_socket_srm_num_source_route_attempts", parameters.getInt("pastry_socket_srm_num_source_route_attempts")));
   }
 }

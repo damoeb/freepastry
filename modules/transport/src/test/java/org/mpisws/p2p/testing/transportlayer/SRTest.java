@@ -73,10 +73,10 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
   @Override
   public SourceRoute<MultiInetSocketAddress> getIdentifier(
-      TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> a,
+      TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> transportLayer,
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> b) {
 
-    SourceRoute<MultiInetSocketAddress> src = a.getLocalIdentifier();
+    SourceRoute<MultiInetSocketAddress> src = transportLayer.getLocalIdentifier();
     SourceRoute<MultiInetSocketAddress> intermediate = carol.getLocalIdentifier();
     SourceRoute<MultiInetSocketAddress> dest = b.getLocalIdentifier();
 
@@ -104,17 +104,17 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     srFactory = new MultiAddressSourceRouteFactory();
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 3);
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 3);
 
-    alice = buildTL("alice", addr, ports[0], env);
-    bob = buildTL("bob", addr, ports[1], env);
-    carol_tap = buildTL("carol", addr, ports[2], env);
+    alice = buildTL("alice", address, ports[0], env);
+    bob = buildTL("bob", address, ports[1], env);
+    carol_tap = buildTL("carol", address, ports[2], env);
     carol = carol_tap;
     otherTLs.add(carol);
   }
 
-  private static SourceRouteTransportLayer<MultiInetSocketAddress> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static SourceRouteTransportLayer<MultiInetSocketAddress> buildTL(String name, InetAddress address, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(),
         env.getProcessor(),
@@ -124,7 +124,7 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
         env.getParameters(),
         env.getExceptionStrategy());
     env.addDestructable(env_a);
-    InetSocketAddress addr_a = new InetSocketAddress(addr,port);
+    InetSocketAddress addr_a = new InetSocketAddress(address,port);
     return
       new SourceRouteTransportLayer<MultiInetSocketAddress>(srFactory,
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
@@ -141,9 +141,9 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
     P2PSocket<MultiInetSocketAddress> a,b;
     ByteBuffer m;
 
-    public Triplet(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
+    public Triplet(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> socket, P2PSocket<MultiInetSocketAddress> b) {
       this.path = path;
-      this.a = a;
+      this.a = socket;
       this.b = b;
     }
   }
@@ -160,15 +160,15 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
     SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){
       @Override
-      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
+      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> socket, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
-          opened.add(new Triplet(path, a, b));
+          opened.add(new Triplet(path, socket, b));
           lock.notify();
         }
       }
 
       @Override
-      public void receivedMessage(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path) {
+      public void receivedMessage(ByteBuffer msg, SourceRoute<MultiInetSocketAddress> path) {
         bad.add(new Triplet(path, null, null));
       }
 
@@ -183,9 +183,9 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
       @Override
       public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
         synchronized(lock) {
-          Triplet t = new Triplet(path, a, b);
-          t.m = m;
-          received.add(t);
+          Triplet triplet = new Triplet(path, a, b);
+          triplet.m = m;
+          received.add(triplet);
           lock.notify();
         }
       }
@@ -232,11 +232,11 @@ public class SRTest extends TLTest<SourceRoute<MultiInetSocketAddress>> {
 
     SourceRouteTap<MultiInetSocketAddress> tap = new SourceRouteTap<MultiInetSocketAddress>(){
       @Override
-      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
+      public void socketOpened(SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> socket, P2PSocket<MultiInetSocketAddress> b) {
       }
 
       @Override
-      public void receivedBytes(ByteBuffer m, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
+      public void receivedBytes(ByteBuffer msg, SourceRoute<MultiInetSocketAddress> path, P2PSocket<MultiInetSocketAddress> a, P2PSocket<MultiInetSocketAddress> b) {
 
       }
 

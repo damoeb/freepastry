@@ -37,12 +37,12 @@ class BigMessageReaderTest {
   private PeerMessageWriterContext<String> context(int max, long budget) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {
-        delivered.add(m);
+      public void messageReceived(String i, ByteBuffer msg, Map<String, Object> options) {
+        delivered.add(msg);
       }
 
       @Override
-      public void incomingSocket(P2PSocket<String> s) {}
+      public void incomingSocket(P2PSocket<String> socket) {}
     };
     PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(null, null, null, null,
         LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, max, budget, List.of(), listeners,

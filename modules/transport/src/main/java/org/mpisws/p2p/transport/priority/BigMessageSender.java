@@ -59,7 +59,7 @@ import rice.p2p.util.MathUtils;
  * for them alone; the socket is closed when the last one is out.
  */
 final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, P2PSocketReceiver<Identifier> {
-  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> transportLayer;
   private final Logger logger;
 
   /**
@@ -78,31 +78,31 @@ final class BigMessageSender<Identifier> implements SocketCallback<Identifier>, 
   @Nullable P2PSocket<Identifier> socket;
   ByteBuffer header;
 
-  BigMessageSender(Identifier i, TransportLayer<Identifier, ByteBuffer> tl, Logger logger,
+  BigMessageSender(Identifier identifier, TransportLayer<Identifier, ByteBuffer> transportLayer, Logger logger,
       Map<Identifier, BigMessageSender<Identifier>> pendingBigMessages) {
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     this.logger = logger;
     this.pendingBigMessages = pendingBigMessages;
-    this.i = i;
+    this.i = identifier;
     header = ByteBuffer.wrap(PriorityTransportLayer.BIG_MSG_SOCKET);
   }
 
   public void start(@Nullable Map<String,Object> options) {
     logger.trace("Opening BIG message socket to:{}", i);
-    tl.openSocket(i, this, options);
+    transportLayer.openSocket(i, this, options);
   }
 
   public MessageRequestHandle<Identifier, ByteBuffer> addMessage(
-      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+      ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
-    logger.debug("Sending BIG message of size:{} to:{}", m.remaining(), i);
-    PendingMessage ret = new PendingMessage(m,deliverAckToMe,options);
+    logger.debug("Sending BIG message of size:{} to:{}", msg.remaining(), i);
+    PendingMessage ret = new PendingMessage(msg,deliverAckToMe,options);
     msgs.addLast(ret);
     return ret;
   }
 
   @Override
-  public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
+  public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
     receiveException(ex);
   }
   @Override

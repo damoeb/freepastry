@@ -53,11 +53,11 @@ public interface ProbeStrategy {
    *
    * calls Prober.probe() on another node
    *
-   * @param addr the location of the requestor (who we need to probe)
+   * @param address the location of the requestor (who we need to probe)
    * @param uid a unique identifier created by the original requestor at addr
    * @return can cancel the operation
    */
-  Cancellable requestProbe(MultiInetSocketAddress addr, long uid, Continuation<Boolean, Exception> deliverResultToMe);
+  Cancellable requestProbe(MultiInetSocketAddress address, long uid, Continuation<Boolean, Exception> deliverResultToMe);
 
   /**
    * Returns some known external addresses.

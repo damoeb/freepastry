@@ -46,28 +46,28 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
   /**
    * Get the environment related to a specific node.
    */
-  public Environment getEnvironment(Identifier i);
+  public Environment getEnvironment(Identifier identifier);
 
   /**
    * Determines delivery time from a to b.
    *
-   * @param a a node id.
+   * @param identifier a node id.
    * @param b another node id.
    *
    * @return delay of b from a.
    */
-  public float networkDelay(Identifier a, Identifier b);
+  public float networkDelay(Identifier identifier, Identifier b);
 
 
   /**
    * Deliver message.
    *
    * @param msg message to deliver.
-   * @param to the node to deliver it to.
+   * @param identifier the node to deliver it to.
    * @param from the node that sent it.
    * @param delay how long to delay to deliver the message
    */
-  public Cancellable deliverMessage(MessageType msg, Identifier to, Identifier from, int delay);
+  public Cancellable deliverMessage(MessageType msg, Identifier identifier, Identifier from, int delay);
 
   /**
    * Schedule a delivery.
@@ -77,14 +77,14 @@ public interface GenericNetworkSimulator<Identifier, MessageType> extends Livene
    */
   public CancellableTask enqueueDelivery(Delivery del, int delay);
 
-  public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i);
+  public DirectTransportLayer<Identifier, MessageType> getTL(Identifier identifier);
 
-  public boolean isAlive(Identifier i);
+  public boolean isAlive(Identifier identifier);
 
   /**
    * Kill identifier.
    */
-  public void remove(Identifier i);
+  public void remove(Identifier identifier);
 
 
 }

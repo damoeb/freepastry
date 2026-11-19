@@ -18,7 +18,7 @@ class IncomingSocketDispatcherTest {
   private IncomingSocketDispatcher<String> dispatcher(FakeSocket socket) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {}
+      public void messageReceived(String i, ByteBuffer msg, Map<String, Object> options) {}
 
       @Override
       public void incomingSocket(P2PSocket<String> s) {

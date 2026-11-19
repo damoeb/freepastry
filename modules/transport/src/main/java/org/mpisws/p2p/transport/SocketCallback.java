@@ -38,6 +38,6 @@ package org.mpisws.p2p.transport;
 
 
 public interface SocketCallback<Identifier> {
-  public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock);
-  public void receiveException(SocketRequestHandle<Identifier> s, Exception ex);
+  public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket);
+  public void receiveException(SocketRequestHandle<Identifier> request, Exception ex);
 }

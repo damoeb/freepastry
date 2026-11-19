@@ -48,14 +48,14 @@ public interface PingListener<Identifier> {
   /**
    * Pong received.
    *
-   * @param i Where the ping was from
+   * @param identifier Where the ping was from
    * @param rtt the RTT
    * @param options how the ping was sent (source route/udp etc)
    */
-  public void pingResponse(Identifier i, int rtt, @Nullable Map<String, Object> options);
+  public void pingResponse(Identifier identifier, int rtt, @Nullable Map<String, Object> options);
 
   /**
    * Called when we receive a ping (not a pong)
    */
-  public void pingReceived(Identifier i, @Nullable Map<String, Object> options);
+  public void pingReceived(Identifier identifier, @Nullable Map<String, Object> options);
 }

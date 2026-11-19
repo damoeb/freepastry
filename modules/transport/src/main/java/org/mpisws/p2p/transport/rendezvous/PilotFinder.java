@@ -50,5 +50,5 @@ public interface PilotFinder<HighIdentifier> {
   /**
    * Return null if there isn't one.
    */
-  public HighIdentifier findPilot(HighIdentifier i);
+  public HighIdentifier findPilot(HighIdentifier highIdentifier);
 }

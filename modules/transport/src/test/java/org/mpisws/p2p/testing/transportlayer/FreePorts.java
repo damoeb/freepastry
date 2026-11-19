@@ -57,36 +57,36 @@ public final class FreePorts {
   private FreePorts() {}
 
   /** Returns a port on the address that both a UDP and a TCP socket could just bind. */
-  public static int freePort(InetAddress addr) throws IOException {
-    return freePorts(addr, 1)[0];
+  public static int freePort(InetAddress address) throws IOException {
+    return freePorts(address, 1)[0];
   }
 
   /** Returns count distinct ports on the address that both a UDP and a TCP socket could just bind. */
-  public static int[] freePorts(InetAddress addr, int count) throws IOException {
+  public static int[] freePorts(InetAddress address, int count) throws IOException {
     List<Closeable> held = new ArrayList<Closeable>();
     try {
       int[] ports = new int[count];
       for (int i = 0; i < count; i++) {
-        ports[i] = holdFreePort(addr, held);
+        ports[i] = holdFreePort(address, held);
       }
       return ports;
     } finally {
-      for (Closeable c : held) c.close();
+      for (Closeable closeable : held) closeable.close();
     }
   }
 
   /** Binds a UDP and a TCP socket to the same ephemeral port, adds both to held and returns the port. */
-  private static int holdFreePort(InetAddress addr, List<Closeable> held) throws IOException {
+  private static int holdFreePort(InetAddress address, List<Closeable> held) throws IOException {
     BindException last = null;
     for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
       DatagramSocket udp = new DatagramSocket(null);
       udp.setReuseAddress(false);
-      udp.bind(new InetSocketAddress(addr, 0));
+      udp.bind(new InetSocketAddress(address, 0));
       int port = udp.getLocalPort();
       ServerSocket tcp = new ServerSocket();
       try {
         tcp.setReuseAddress(true);
-        tcp.bind(new InetSocketAddress(addr, port));
+        tcp.bind(new InetSocketAddress(address, port));
         held.add(udp);
         held.add(tcp);
         return port;

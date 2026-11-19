@@ -48,8 +48,8 @@ public class SocketRequestHandleImpl<Identifier> implements SocketRequestHandle<
   @Nullable Map<String, Object> options;
   @Nullable Cancellable subCancellable;
 
-  public SocketRequestHandleImpl(Identifier i, @Nullable Map<String, Object> options, Logger logger) {
-    this.identifier = i;
+  public SocketRequestHandleImpl(Identifier identifier, @Nullable Map<String, Object> options, Logger logger) {
+    this.identifier = identifier;
     this.options = options;
     if (logger == null) throw new IllegalArgumentException("logger is null");
   }

@@ -65,17 +65,17 @@ class SourceRouteLoopTest {
     }
 
     @Override
-    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress i, ByteBuffer m,
+    public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(InetSocketAddress address, ByteBuffer msg,
         @Nullable MessageCallback<InetSocketAddress, ByteBuffer> ack, @Nullable Map<String, Object> options) {
       forwards++;
-      byte[] copy = new byte[m.remaining()];
-      m.duplicate().get(copy);
-      wire.add(new Object[] {local, i, copy});
+      byte[] copy = new byte[msg.remaining()];
+      msg.duplicate().get(copy);
+      wire.add(new Object[] {local, address, copy});
       return null;
     }
 
     @Override
-    public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress i, SocketCallback<InetSocketAddress> cb,
+    public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress address, SocketCallback<InetSocketAddress> socketCallback,
         @Nullable Map<String, Object> options) {
       return null;
     }
@@ -92,8 +92,8 @@ class SourceRouteLoopTest {
     public void acceptMessages(boolean b) {}
 
     @Override
-    public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> cb) {
-      callback = cb;
+    public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> transportLayerCallback) {
+      callback = transportLayerCallback;
     }
 
     @Override
@@ -106,19 +106,19 @@ class SourceRouteLoopTest {
   /** Injects a datagram for route[1] from route[0] and pumps the wire until it drains or the limit is hit. */
   private void run(List<InetSocketAddress> route, List<InetSocketAddress> nodes) throws Exception {
     List<QueueLayer> layers = new ArrayList<>();
-    for (InetSocketAddress n : nodes) {
-      QueueLayer q = new QueueLayer(n);
-      layers.add(q);
+    for (InetSocketAddress address : nodes) {
+      QueueLayer queueLayer = new QueueLayer(address);
+      layers.add(queueLayer);
       SourceRouteTransportLayer<InetSocketAddress> impl =
-          new SourceRouteTransportLayer<>(factory, q, AddressPolicyForwardStrategy.forInetSocketAddress(n), env, null);
+          new SourceRouteTransportLayer<>(factory, queueLayer, AddressPolicyForwardStrategy.forInetSocketAddress(address), env, null);
       impl.setCallback(new TransportLayerCallback<>() {
         @Override
-        public void messageReceived(SourceRoute<InetSocketAddress> i, ByteBuffer m, @Nullable Map<String, Object> o) {
-          delivered.add(n);
+        public void messageReceived(SourceRoute<InetSocketAddress> sourceRoute, ByteBuffer msg, @Nullable Map<String, Object> o) {
+          delivered.add(address);
         }
 
         @Override
-        public void incomingSocket(P2PSocket<SourceRoute<InetSocketAddress>> s) {}
+        public void incomingSocket(P2PSocket<SourceRoute<InetSocketAddress>> socket) {}
       });
     }
     SimpleOutputBuffer out = new SimpleOutputBuffer();
@@ -139,8 +139,8 @@ class SourceRouteLoopTest {
             }
           }
         }
-      } catch (Throwable t) {
-        failure.set(t);
+      } catch (Throwable throwable) {
+        failure.set(throwable);
       } finally {
         done.countDown();
       }
@@ -153,9 +153,9 @@ class SourceRouteLoopTest {
 
   @Test
   void routeBouncingBetweenTwoNodesStops() throws Exception {
-    InetSocketAddress x = addr(1), a = addr(2), b = addr(3), z = addr(4);
+    InetSocketAddress address = addr(1), a = addr(2), b = addr(3), z = addr(4);
 
-    run(List.of(x, a, b, a, z), List.of(a, b, z));
+    run(List.of(address, a, b, a, z), List.of(a, b, z));
 
     assertTrue(forwards < FORWARD_LIMIT, "forwarded " + forwards + " times, expected the route to be dropped");
     assertEquals(0, delivered.size());
@@ -163,9 +163,9 @@ class SourceRouteLoopTest {
 
   @Test
   void routeForwardingToItselfStops() throws Exception {
-    InetSocketAddress x = addr(1), a = addr(2), z = addr(4);
+    InetSocketAddress address = addr(1), a = addr(2), z = addr(4);
 
-    run(List.of(x, a, a, z), List.of(a, z));
+    run(List.of(address, a, a, z), List.of(a, z));
 
     assertTrue(forwards < FORWARD_LIMIT, "forwarded " + forwards + " times, expected the route to be dropped");
     assertEquals(0, delivered.size());
@@ -173,9 +173,9 @@ class SourceRouteLoopTest {
 
   @Test
   void relayedRouteIsStillDeliveredToTheLastHop() throws Exception {
-    InetSocketAddress x = addr(1), r = addr(2), z = addr(4);
+    InetSocketAddress address = addr(1), r = addr(2), z = addr(4);
 
-    run(List.of(x, r, z), List.of(r, z));
+    run(List.of(address, r, z), List.of(r, z));
 
     assertEquals(1, forwards);
     assertEquals(List.of(z), delivered);

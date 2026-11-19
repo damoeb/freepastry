@@ -64,20 +64,20 @@ final class PassthroughSocketOpener<Identifier> implements SocketCallback<Identi
   }
 
   @Override
-  public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> sock) {
+  public void receiveResult(SocketRequestHandle<Identifier> cancellable, final P2PSocket<Identifier> socket) {
 
     handle.setSubCancellable(() -> {
-      sock.close();
+      socket.close();
       return true;
     });
 
-    sock.register(false, true, new HeaderWriter());
+    socket.register(false, true, new HeaderWriter());
   }
 
   @Override
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-    if (handle.getSubCancellable() != null && s != handle.getSubCancellable()) throw new IllegalArgumentException("s != handle.getSubCancellable() must be a bug. s:"+s+" sub:"+handle.getSubCancellable());
+  public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
+    if (handle.getSubCancellable() != null && request != handle.getSubCancellable()) throw new IllegalArgumentException("s != handle.getSubCancellable() must be a bug. s:"+request+" sub:"+handle.getSubCancellable());
     if (deliverSocketToMe != null) deliverSocketToMe.receiveException(handle, ex);
   }
 

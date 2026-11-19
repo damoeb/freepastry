@@ -117,7 +117,7 @@ public class LivenessTransportLayer<Identifier>
   double gainG;
 
 
-  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> transportLayer;
   final Logger logger;
   final Environment environment;
   final TimeSource time;
@@ -145,12 +145,12 @@ public class LivenessTransportLayer<Identifier>
 
   ErrorHandler<Identifier> errorHandler;
 
-  public LivenessTransportLayer(TransportLayer<Identifier, ByteBuffer> tl, Environment env, ErrorHandler<Identifier> errorHandler, int checkDeadThrottle) {
-    this(tl, env, errorHandler, LivenessConfig.fromParameters(env.getParameters()).withCheckDeadThrottle(checkDeadThrottle));
+  public LivenessTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer, Environment env, ErrorHandler<Identifier> errorHandler, int checkDeadThrottle) {
+    this(transportLayer, env, errorHandler, LivenessConfig.fromParameters(env.getParameters()).withCheckDeadThrottle(checkDeadThrottle));
   }
 
-  public LivenessTransportLayer(TransportLayer<Identifier, ByteBuffer> tl, Environment env, ErrorHandler<Identifier> errorHandler, LivenessConfig config) {
-    this.tl = tl;
+  public LivenessTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer, Environment env, ErrorHandler<Identifier> errorHandler, LivenessConfig config) {
+    this.transportLayer = transportLayer;
     this.environment = env;
     this.logger = env.getLogManager().getLogger(LivenessTransportLayer.class, null);
     this.time = env.getTimeSource();
@@ -170,7 +170,7 @@ public class LivenessTransportLayer<Identifier>
     gainH = config.gainH();
     gainG = config.gainG();
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
     this.errorHandler = errorHandler;
     if (this.errorHandler == null) {
       this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
@@ -178,31 +178,31 @@ public class LivenessTransportLayer<Identifier>
   }
 
   @Override
-  public void clearState(Identifier i) {
-    logger.debug("clearState({})", i);
-    removeTracker(i);
+  public void clearState(Identifier identifier) {
+    logger.debug("clearState({})", identifier);
+    removeTracker(identifier);
   }
 
   @Override
-  public boolean checkLiveness(Identifier i, @Nullable Map<String, Object> options) {
-    return getManager(i).checkLiveness(options);
+  public boolean checkLiveness(Identifier identifier, @Nullable Map<String, Object> options) {
+    return getManager(identifier).checkLiveness(options);
   }
 
-  public P2PSocket<Identifier> wrapSocketWithLivenessCheck(P2PSocket<Identifier> s, LivenessTracker<Identifier> manager) {
-    LivenessCheckingSocket<Identifier> sock = new LivenessCheckingSocket<>(this, manager, s, manager.identifier.get());
+  public P2PSocket<Identifier> wrapSocketWithLivenessCheck(P2PSocket<Identifier> socket, LivenessTracker<Identifier> manager) {
+    LivenessCheckingSocket<Identifier> livenessCheckingSocket = new LivenessCheckingSocket<>(this, manager, socket, manager.identifier.get());
     synchronized(manager.sockets) {
-      manager.sockets.add(sock);
+      manager.sockets.add(livenessCheckingSocket);
     }
-    return sock;
+    return livenessCheckingSocket;
   }
 
-  public LivenessTracker<Identifier> getManager(Identifier i) {
+  public LivenessTracker<Identifier> getManager(Identifier identifier) {
     synchronized(managers) {
       long now = time.currentTimeMillis();
-      LivenessTracker<Identifier> manager = managers.get(i);
+      LivenessTracker<Identifier> manager = managers.get(identifier);
       if (manager == null) {
-        manager = new LivenessTracker<>(this, i);
-        managers.put(i,manager);
+        manager = new LivenessTracker<>(this, identifier);
+        managers.put(identifier,manager);
         forgetIdleTrackers(now);
       }
       manager.lastUsed = now;
@@ -217,17 +217,17 @@ public class LivenessTransportLayer<Identifier>
    * the least recently used one goes anyway, so the table stays bounded. Called with {@link #managers} locked.
    */
   private void forgetIdleTrackers(long now) {
-    Iterator<LivenessTracker<Identifier>> it = managers.values().iterator();
+    Iterator<LivenessTracker<Identifier>> iterator = managers.values().iterator();
     int scanned = 0;
-    while (it.hasNext() && scanned < MAX_TRACKERS_SCANNED) {
-      LivenessTracker<Identifier> manager = it.next();
+    while (iterator.hasNext() && scanned < MAX_TRACKERS_SCANNED) {
+      LivenessTracker<Identifier> manager = iterator.next();
       scanned++;
       boolean full = managers.size() > maxTrackers;
       if (!full && now - manager.lastUsed < MANAGER_IDLE_MILLIS) {
         return; // the rest were used more recently
       }
       if (!manager.inUse(now)) {
-        it.remove();
+        iterator.remove();
       }
     }
     if (managers.size() > maxTrackers) {
@@ -237,9 +237,9 @@ public class LivenessTransportLayer<Identifier>
     }
   }
 
-  public @Nullable LivenessTracker<Identifier> removeTracker(Identifier i) {
+  public @Nullable LivenessTracker<Identifier> removeTracker(Identifier identifier) {
     synchronized(managers) {
-      LivenessTracker<Identifier> manager = managers.remove(i);
+      LivenessTracker<Identifier> manager = managers.remove(identifier);
       if (manager != null) {
         if (manager.getPending() != null) manager.getPending().cancel();
       }
@@ -248,10 +248,10 @@ public class LivenessTransportLayer<Identifier>
   }
 
   @Override
-  public int getLiveness(Identifier i, @Nullable Map<String, Object> options) {
-    logger.trace("getLiveness({},{})", i, options);
+  public int getLiveness(Identifier identifier, @Nullable Map<String, Object> options) {
+    logger.trace("getLiveness({},{})", identifier, options);
     synchronized(managers) {
-      LivenessTracker<Identifier> manager = managers.get(i);
+      LivenessTracker<Identifier> manager = managers.get(identifier);
       if (manager != null) {
         manager.lastUsed = time.currentTimeMillis();
         return manager.liveness;
@@ -262,17 +262,17 @@ public class LivenessTransportLayer<Identifier>
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
 
   @Override
   public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+    transportLayer.acceptSockets(b);
   }
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   /**
@@ -281,44 +281,44 @@ public class LivenessTransportLayer<Identifier>
   boolean connectionExceptionMeansFaulty = true;
 
   @Override
-  public @Nullable SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
+  public @Nullable SocketRequestHandle<Identifier> openSocket(final Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
     // this code marks the Identifier faulty if there is an error connecting the socket.  It's possible that this
     // should be moved to the source route manager, but there needs to be a way to cancel the liveness
     // checks, or maybe the higher layer can ignore them.
-    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
+    logger.info("openSocket({},{},{})", identifier, deliverSocketToMe, options);
     if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
-    return tl.openSocket(i, new SocketCallback<Identifier>(){
+    return transportLayer.openSocket(identifier, new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        deliverSocketToMe.receiveResult(cancellable, wrapSocketWithLivenessCheck(sock,getManager(i)));
+      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket) {
+        deliverSocketToMe.receiveResult(cancellable, wrapSocketWithLivenessCheck(socket,getManager(identifier)));
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
         // the upper layer is probably going to retry, so mark this dead first
         if (ex instanceof java.nio.channels.ClosedChannelException) {
           // don't mark dead
         } else {
-          logger.trace("Marking {} dead due to exception opening socket.", s, ex);
-          getManager(i).markDead(options);
+          logger.trace("Marking {} dead due to exception opening socket.", request, ex);
+          getManager(identifier).markDead(options);
         }
-        deliverSocketToMe.receiveException(s, ex);
+        deliverSocketToMe.receiveException(request, ex);
       }
     }, options);
   }
 
   @Override
   public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(
-      final Identifier i,
+      final Identifier identifier,
       final ByteBuffer m,
       final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     final MessageRequestHandleImpl<Identifier, ByteBuffer> handle =
-      new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
+      new MessageRequestHandleImpl<Identifier, ByteBuffer>(identifier, m, options);
 
-    LivenessTracker<Identifier> mgr = getManager(i);
+    LivenessTracker<Identifier> mgr = getManager(identifier);
     if ((mgr != null) && (mgr.liveness >= LIVENESS_DEAD)) {
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(i, m));
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(handle, new NodeIsFaultyException(identifier, m));
       return handle;
     }
 
@@ -327,7 +327,7 @@ public class LivenessTransportLayer<Identifier>
     m.get(msgBytes, 1, m.remaining());
     final ByteBuffer myMsg = ByteBuffer.wrap(msgBytes);
 
-    handle.setSubCancellable(tl.sendMessage(i, myMsg, new MessageCallback<Identifier, ByteBuffer>() {
+    handle.setSubCancellable(transportLayer.sendMessage(identifier, myMsg, new MessageCallback<Identifier, ByteBuffer>() {
       @Override
       @SuppressWarnings("ReferenceEquality") // the same instance is meant
       public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
@@ -339,7 +339,7 @@ public class LivenessTransportLayer<Identifier>
       public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception ex) {
         if (handle.getSubCancellable() != null && msg != handle.getSubCancellable()) throw new RuntimeException("msg != handle.getSubCancelable() (indicates a bug in the code) msg:"+msg+" sub:"+handle.getSubCancellable());
         if (deliverAckToMe == null) {
-          errorHandler.receivedException(i, ex);
+          errorHandler.receivedException(identifier, ex);
         } else {
           deliverAckToMe.sendFailed(handle, ex);
         }
@@ -349,32 +349,32 @@ public class LivenessTransportLayer<Identifier>
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
     assert environment.getSelectorManager().isSelectorThread() : "transport callbacks run on the selector thread";
-    if (!m.hasRemaining()) {
-      throw new IOException("Empty liveness message from " + i);
+    if (!msg.hasRemaining()) {
+      throw new IOException("Empty liveness message from " + identifier);
     }
-    byte hdr = m.get();
+    byte hdr = msg.get();
     switch(hdr) {
     case HDR_NORMAL:
-      logger.trace("messageReceived({},{})", i, m);
-      callback.messageReceived(i, m, options);
+      logger.trace("messageReceived({},{})", identifier, msg);
+      callback.messageReceived(identifier, msg, options);
       return;
     case HDR_PING:
-      logger.trace("messageReceived({}, PING)", i);
-      pong(i, readTimeStamp(i, m), options);      // it's important to the rendezvous layer to reuse the options
-      notifyPingListenersPing(i);
+      logger.trace("messageReceived({}, PING)", identifier);
+      pong(identifier, readTimeStamp(identifier, msg), options);      // it's important to the rendezvous layer to reuse the options
+      notifyPingListenersPing(identifier);
       return;
     case HDR_PONG:
-      logger.trace("messageReceived({}, PONG)", i);
-      long sendTime = readTimeStamp(i, m);
+      logger.trace("messageReceived({}, PONG)", identifier);
+      long sendTime = readTimeStamp(identifier, msg);
       // only the pong to a ping this node sent on this route counts: anyone can send a pong
       LivenessTracker<Identifier> manager;
       synchronized(managers) {
-        manager = managers.get(i);
+        manager = managers.get(identifier);
       }
       if (manager == null || !manager.pongReceived(sendTime)) {
-        logger.debug("messageReceived({}, PONG {}): no such ping outstanding, ignored", i, sendTime);
+        logger.debug("messageReceived({}, PONG {}): no such ping outstanding, ignored", identifier, sendTime);
         return;
       }
       int rtt = (int)(time.currentTimeMillis()-sendTime);
@@ -386,23 +386,23 @@ public class LivenessTransportLayer<Identifier>
           }
         }
         manager.markAlive(options); // do this outside of the synchronized block
-        notifyPingListenersPong(i,rtt, options);
+        notifyPingListenersPong(identifier,rtt, options);
       } else {
         logger.warn("I think the clock is fishy, rtt must be >= 0, was:{}", rtt);
-        errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
+        errorHandler.receivedUnexpectedData(identifier, ByteBuffers.arrayForRead(msg), ByteBuffers.arrayStart(msg), null);
       }
       return;
     default:
-      errorHandler.receivedUnexpectedData(i, ByteBuffers.arrayForRead(m), ByteBuffers.arrayStart(m), null);
+      errorHandler.receivedUnexpectedData(identifier, ByteBuffers.arrayForRead(msg), ByteBuffers.arrayStart(msg), null);
     }
   }
 
   /** Reads the time stamp of a ping or pong, which a peer may have cut short. */
-  private static long readTimeStamp(Object from, ByteBuffer m) throws IOException {
-    if (m.remaining() < Long.BYTES) {
-      throw new IOException("Ping or pong from " + from + " has " + m.remaining() + " bytes, not a time stamp");
+  private static long readTimeStamp(Object from, ByteBuffer msg) throws IOException {
+    if (msg.remaining() < Long.BYTES) {
+      throw new IOException("Ping or pong from " + from + " has " + msg.remaining() + " bytes, not a time stamp");
     }
-    return m.getLong();
+    return msg.getLong();
   }
 
   @Override
@@ -414,32 +414,32 @@ public class LivenessTransportLayer<Identifier>
    * Send the ping.
    */
   @Override
-  public boolean ping(final Identifier i, final @Nullable Map<String, Object> options) {
-    logger.trace("ping({})", i);
-    if (i.equals(tl.getLocalIdentifier())) return false;
+  public boolean ping(final Identifier identifier, final @Nullable Map<String, Object> options) {
+    logger.trace("ping({})", identifier);
+    if (identifier.equals(transportLayer.getLocalIdentifier())) return false;
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PING);
       final long now = time.currentTimeMillis();
       new PingMessage(now).serialize(sob);
-      getManager(i).pingSent(now);
-      tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
+      getManager(identifier).pingSent(now);
+      transportLayer.sendMessage(identifier, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
         @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         }
         @Override
         public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception reason) {
           if (logger.isTraceEnabled()) {
-            logger.trace("ping("+i+","+now+","+options+") failed", reason);
+            logger.trace("ping("+identifier+","+now+","+options+") failed", reason);
           } else {
-            logger.atDebug().log(() -> "ping("+i+","+now+","+options+") failed "+reason);
+            logger.atDebug().log(() -> "ping("+identifier+","+now+","+options+") failed "+reason);
           }
         }
       }, options);
       return true;
     } catch (IOException ioe) {
       //Should not happen.  There must be a bug in our serialization code.
-      errorHandler.receivedException(i, ioe);
+      errorHandler.receivedException(identifier, ioe);
     }
     return false;
   }
@@ -447,28 +447,28 @@ public class LivenessTransportLayer<Identifier>
   /**
    * Send the pong();
    */
-  public void pong(final Identifier i, final long senderTime, final @Nullable Map<String, Object> options) {
-    logger.trace("pong({},{})", i, senderTime);
+  public void pong(final Identifier identifier, final long senderTime, final @Nullable Map<String, Object> options) {
+    logger.trace("pong({},{})", identifier, senderTime);
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer(PING_BUFFER_SIZE);
       sob.writeByte(HDR_PONG);
       new PongMessage(senderTime).serialize(sob);
-      tl.sendMessage(i, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
+      transportLayer.sendMessage(identifier, ByteBuffer.wrap(sob.getBytes()), new MessageCallback<Identifier, ByteBuffer>(){
         @Override
         public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         }
         @Override
         public void sendFailed(MessageRequestHandle<Identifier, ByteBuffer> msg, Exception reason) {
           if (logger.isTraceEnabled()) {
-            logger.trace("pong("+i+","+senderTime+","+options+") failed", reason);
+            logger.trace("pong("+identifier+","+senderTime+","+options+") failed", reason);
           } else {
-            logger.atDebug().log(() -> "pong("+i+","+senderTime+","+options+") failed "+reason);
+            logger.atDebug().log(() -> "pong("+identifier+","+senderTime+","+options+") failed "+reason);
           }
         }
       }, options);
     } catch (IOException ioe) {
       //Should not happen.  There must be a bug in our serialization code.
-      errorHandler.receivedException(i, ioe);
+      errorHandler.receivedException(identifier, ioe);
     }
   }
 
@@ -491,7 +491,7 @@ public class LivenessTransportLayer<Identifier>
     if (destroyed) return;
     logger.info("destroy()");
     destroyed = true;
-    tl.destroy();
+    transportLayer.destroy();
     livenessListeners.clear();
     pingListeners.clear();
     List<LivenessTracker<Identifier>> all;
@@ -499,19 +499,19 @@ public class LivenessTransportLayer<Identifier>
       all = new ArrayList<>(managers.values());
       managers.clear();
     }
-    for (LivenessTracker<Identifier> em : all) {
-      em.destroy();
+    for (LivenessTracker<Identifier> livenessTracker : all) {
+      livenessTracker.destroy();
     }
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    LivenessTracker<Identifier> m = getManager(s.getIdentifier());
-    if (m.liveness > LIVENESS_SUSPECTED) {
-      m.updated = 0L;
-      m.checkLiveness(s.getOptions());
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    LivenessTracker<Identifier> livenessTracker = getManager(socket.getIdentifier());
+    if (livenessTracker.liveness > LIVENESS_SUSPECTED) {
+      livenessTracker.updated = 0L;
+      livenessTracker.checkLiveness(socket.getOptions());
     }
-    callback.incomingSocket(wrapSocketWithLivenessCheck(s, getManager(s.getIdentifier())));
+    callback.incomingSocket(wrapSocketWithLivenessCheck(socket, getManager(socket.getIdentifier())));
   }
 
   final List<LivenessListener<Identifier>> livenessListeners;
@@ -527,11 +527,11 @@ public class LivenessTransportLayer<Identifier>
     return livenessListeners.remove(name);
   }
 
-  void notifyLivenessListeners(Identifier i, int liveness, @Nullable Map<String, Object> options) {
+  void notifyLivenessListeners(Identifier identifier, int liveness, @Nullable Map<String, Object> options) {
     if (destroyed) return;
-    logger.trace("notifyLivenessListeners({},{})", i, liveness);
+    logger.trace("notifyLivenessListeners({},{})", identifier, liveness);
     for (LivenessListener<Identifier> listener : livenessListeners) {
-      listener.livenessChanged(i, liveness, options);
+      listener.livenessChanged(identifier, liveness, options);
     }
   }
 
@@ -548,18 +548,18 @@ public class LivenessTransportLayer<Identifier>
     return pingListeners.remove(name);
   }
 
-  private void notifyPingListenersPing(Identifier i) {
+  private void notifyPingListenersPing(Identifier identifier) {
     // the lower layer may still deliver a message (e.g. a queued datagram) after we were destroyed
     if (destroyed) return;
     for (PingListener<Identifier> listener : pingListeners) {
-      listener.pingReceived(i, null);
+      listener.pingReceived(identifier, null);
     }
   }
 
-  private void notifyPingListenersPong(Identifier i, int rtt, @Nullable Map<String, Object> options) {
+  private void notifyPingListenersPong(Identifier identifier, int rtt, @Nullable Map<String, Object> options) {
     if (destroyed) return;
     for (PingListener<Identifier> listener : pingListeners) {
-      listener.pingResponse(i, rtt, options);
+      listener.pingResponse(identifier, rtt, options);
     }
   }
 
@@ -671,8 +671,8 @@ public class LivenessTransportLayer<Identifier>
 
 
   @Override
-  public void setLiveness(Identifier i, int liveness, @Nullable Map<String, Object> options) {
-    LivenessTracker<Identifier> man = getManager(i);
+  public void setLiveness(Identifier identifier, int liveness, @Nullable Map<String, Object> options) {
+    LivenessTracker<Identifier> man = getManager(identifier);
     switch(liveness) {
     case LIVENESS_ALIVE:
       man.markAlive(options);

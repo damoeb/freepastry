@@ -62,14 +62,14 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
   public static void setUpBeforeClass() throws Exception {
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 2);
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 2);
 
-    alice = buildTL("alice", addr, ports[0], env);
-    bob = buildTL("bob", addr, ports[1], env);
+    alice = buildTL("alice", address, ports[0], env);
+    bob = buildTL("bob", address, ports[1], env);
   }
 
-  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<MultiInetSocketAddress, ByteBuffer> buildTL(String name, InetAddress address, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(),
         env.getProcessor(),
@@ -79,7 +79,7 @@ public class EpochTest extends TLTest<MultiInetSocketAddress>{
         env.getParameters(),
         env.getExceptionStrategy());
     env.addDestructable(env_a);
-    InetSocketAddress addr_a = new InetSocketAddress(addr,port);
+    InetSocketAddress addr_a = new InetSocketAddress(address,port);
     return
         new MultiInetAddressTransportLayer(new MultiInetSocketAddress(addr_a),
           new MagicNumberTransportLayer<InetSocketAddress>(

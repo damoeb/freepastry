@@ -52,13 +52,13 @@ import rice.p2p.commonapi.Cancellable;
 public interface Prober {
   /**
    *
-   * @param addr the address to probe
+   * @param address the address to probe
    * @param uid the uid with the probe
    * @param deliverResponseToMe let me know how it goes
    * @param options tl options
    * @return call me to cancel
    */
-  public Cancellable probe(InetSocketAddress addr,
+  public Cancellable probe(InetSocketAddress address,
       long uid,
       Continuation<Long, Exception> deliverResponseToMe,
       @Nullable Map<String, Object> options);

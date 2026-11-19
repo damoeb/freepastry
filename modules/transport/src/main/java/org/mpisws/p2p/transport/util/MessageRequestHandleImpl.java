@@ -48,9 +48,9 @@ public class MessageRequestHandleImpl<Identifier, MessageType> implements Messag
   MessageType msg;
   @Nullable Map<String, Object> options;
 
-  public MessageRequestHandleImpl(Identifier i, MessageType m, @Nullable Map<String, Object> options) {
-    this.identifier = i;
-    this.msg = m;
+  public MessageRequestHandleImpl(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options) {
+    this.identifier = identifier;
+    this.msg = messageType;
     this.options = options;
   }
 

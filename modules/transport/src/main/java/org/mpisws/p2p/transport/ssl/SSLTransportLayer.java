@@ -77,7 +77,7 @@ public class SSLTransportLayer<Identifier, MessageType>
   public static final int CLIENT_AUTH_NONE = 0;
   public static final int CLIENT_AUTH_REQUIRED = 1;
 
-  private final TransportLayer<Identifier, MessageType> tl;
+  private final TransportLayer<Identifier, MessageType> transportLayer;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private ErrorHandler<Identifier> errorHandler;
@@ -90,8 +90,8 @@ public class SSLTransportLayer<Identifier, MessageType>
 
   private final Predicate<String> subjectValidator;
 
-  public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
-    this(tl,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
+  public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
+    this(transportLayer,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
   }
 
   /**
@@ -100,28 +100,28 @@ public class SSLTransportLayer<Identifier, MessageType>
    * @param trustStore the certificates to trust
    * @param clientAuth CLIENT_AUTH_NONE or CLIENT_AUTH_REQUIRED, used on the server side
    */
-  public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
-    this(tl, keyStore, trustStore, clientAuth, subject -> true, env);
+  public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, KeyStore trustStore, int clientAuth, Environment env) throws IOException {
+    this(transportLayer, keyStore, trustStore, clientAuth, subject -> true, env);
   }
 
   /**
    * @param subjectValidator strict mode: a handshake fails unless the peer certificate's common name passes
    *     this test (certified node ids pass one that requires the CN to be a node id); the default accepts any CN
    */
-  public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
-    this(tl, keyStore, new char[0], trustStore, clientAuth, subjectValidator, env);
+  public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
+    this(transportLayer, keyStore, new char[0], trustStore, clientAuth, subjectValidator, env);
   }
 
   /**
    * @param keyPassword the password of the private key entry in keyStore (blank if it has none)
    */
-  public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, char[] keyPassword, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
+  public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, char[] keyPassword, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
     this.subjectValidator = subjectValidator;
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
 
     this.environment = env;
     this.logger = env.getLogManager().getLogger(SSLTransportLayer.class, null);
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     errorHandler = new DefaultErrorHandler<Identifier>(logger, Level.WARN);
     this.clientAuth = clientAuth;
 
@@ -137,7 +137,7 @@ public class SSLTransportLayer<Identifier, MessageType>
     TrustManager[] tms = tmf.getTrustManagers();
     context.init(kmf.getKeyManagers(), tms, null);
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
     } catch (GeneralSecurityException gse) {
       throw new RuntimeException(gse);
     }
@@ -145,21 +145,21 @@ public class SSLTransportLayer<Identifier, MessageType>
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i,
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier,
       final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
+    ret.setSubCancellable(transportLayer.openSocket(identifier, new SocketCallback<Identifier>() {
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
-        deliverSocketToMe.receiveException(s, ex);
+        deliverSocketToMe.receiveException(request, ex);
       }
 
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> sock) {
-        getSocketManager(SSLTransportLayer.this, sock, new Continuation<SSLSocketManager<Identifier>, Exception>() {
+          P2PSocket<Identifier> socket) {
+        getSocketManager(SSLTransportLayer.this, socket, new Continuation<SSLSocketManager<Identifier>, Exception>() {
 
           @Override
           public void receiveException(Exception exception) {
@@ -180,12 +180,12 @@ public class SSLTransportLayer<Identifier, MessageType>
    * TODO: support SSL session resumption
    */
   @Override
-  public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
-    getSocketManager(this,s,new Continuation<SSLSocketManager<Identifier>, Exception>() {
+  public void incomingSocket(final P2PSocket<Identifier> socket) throws IOException {
+    getSocketManager(this,socket,new Continuation<SSLSocketManager<Identifier>, Exception>() {
 
       @Override
       public void receiveException(Exception exception) {
-        errorHandler.receivedException(s.getIdentifier(), exception);
+        errorHandler.receivedException(socket.getIdentifier(), exception);
       }
 
       @Override
@@ -194,7 +194,7 @@ public class SSLTransportLayer<Identifier, MessageType>
           callback.incomingSocket(result);
         } catch (IOException ioe) {
           result.close();
-          errorHandler.receivedException(s.getIdentifier(), ioe);
+          errorHandler.receivedException(socket.getIdentifier(), ioe);
         }
       }},true, clientAuth != CLIENT_AUTH_NONE);
   }
@@ -206,29 +206,29 @@ public class SSLTransportLayer<Identifier, MessageType>
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
 
   @Override
   public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+    transportLayer.acceptSockets(b);
   }
 
   @Override
   public void destroy() {
-    tl.destroy();
+    transportLayer.destroy();
   }
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i,
-      MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier identifier,
+      MessageType messageType, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe,
       @Nullable Map<String, Object> options) {
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    return transportLayer.sendMessage(identifier, messageType, deliverAckToMe, options);
   }
 
   @Override
@@ -237,15 +237,15 @@ public class SSLTransportLayer<Identifier, MessageType>
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m,
+  public void messageReceived(Identifier identifier, MessageType messageType,
       @Nullable Map<String, Object> options) throws IOException {
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, messageType, options);
   }
 
   protected SSLSocketManager<Identifier> getSocketManager(SSLTransportLayer<Identifier, ?> sslTL,
-      P2PSocket<Identifier> s,
-      Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
-    return new SSLSocketManager<Identifier>(sslTL,s,c,server,useClientAuth);
+      P2PSocket<Identifier> socket,
+      Continuation<SSLSocketManager<Identifier>, Exception> continuation, boolean server, boolean useClientAuth) {
+    return new SSLSocketManager<Identifier>(sslTL,socket,continuation,server,useClientAuth);
   }
 
   /** Tests the common name of a peer certificate; a handshake with a peer whose CN fails it is aborted. */

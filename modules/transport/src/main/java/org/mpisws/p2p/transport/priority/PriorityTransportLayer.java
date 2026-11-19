@@ -142,26 +142,26 @@ public class PriorityTransportLayer<Identifier>
    * @param env the environment
    * @param config the priority parameters
    */
-  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       Environment env,
       PriorityConfig config,
       ErrorHandler<Identifier> handler) {
-    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), config.maxBigMsgInFlight(), handler);
+    this(transportLayer, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), config.maxBigMsgInFlight(), handler);
   }
 
-  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       Environment env,
       int maxMsgSize,
       int maxQueueSize,
       ErrorHandler<Identifier> handler) {
-    this(tl, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, DEFAULT_MAX_BIG_MSG_SIZE, handler);
+    this(transportLayer, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, DEFAULT_MAX_BIG_MSG_SIZE, handler);
   }
 
-  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       Environment env,
@@ -169,10 +169,10 @@ public class PriorityTransportLayer<Identifier>
       int maxQueueSize,
       int maxBigMsgSize,
       ErrorHandler<Identifier> handler) {
-    this(tl, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, maxBigMsgSize, DEFAULT_MAX_BIG_MSG_IN_FLIGHT, handler);
+    this(transportLayer, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, maxBigMsgSize, DEFAULT_MAX_BIG_MSG_IN_FLIGHT, handler);
   }
 
-  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
       Environment env,
@@ -188,12 +188,12 @@ public class PriorityTransportLayer<Identifier>
     this.environment = env;
     this.MAX_MSG_SIZE = maxMsgSize;
     this.MAX_QUEUE_SIZE = maxQueueSize;
-    this.tl = tl;
+    this.tl = transportLayer;
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
-    this.entityManagerContext = new PeerMessageWriterContext<Identifier>(tl, livenessProvider, proximityProvider,
+    this.entityManagerContext = new PeerMessageWriterContext<Identifier>(transportLayer, livenessProvider, proximityProvider,
         selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
         () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
     livenessProvider.addLivenessListener(this);
     this.errorHandler = handler;
     if (this.errorHandler == null) {
@@ -206,16 +206,16 @@ public class PriorityTransportLayer<Identifier>
    * primary (our layer tried to open it) or a BIG message socket; see {@link IncomingSocketDispatcher}.
    */
   @Override
-  public void incomingSocket(final P2PSocket<Identifier> s) throws IOException {
-    s.register(true, false, new IncomingSocketDispatcher<Identifier>(s, entityManagerContext));
+  public void incomingSocket(final P2PSocket<Identifier> socket) throws IOException {
+    socket.register(true, false, new IncomingSocketDispatcher<Identifier>(socket, entityManagerContext));
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     if (deliverSocketToMe == null) throw new IllegalArgumentException("No handle to return socket to! (deliverSocketToMe must be non-null!)");
 
-    final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i, options, logger);
-    handle.setSubCancellable(tl.openSocket(i, new PassthroughSocketOpener<Identifier>(handle, deliverSocketToMe), options));
+    final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier, options, logger);
+    handle.setSubCancellable(tl.openSocket(identifier, new PassthroughSocketOpener<Identifier>(handle, deliverSocketToMe), options));
 
     return handle;
   }
@@ -236,15 +236,15 @@ public class PriorityTransportLayer<Identifier>
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
     assert selectorManager.isSelectorThread() : "transport callbacks run on the selector thread";
-    callback.messageReceived(i, m, options);
-    notifyListenersRead(m.remaining(), i, options);
+    callback.messageReceived(identifier, msg, options);
+    notifyListenersRead(msg.remaining(), identifier, options);
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier i, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> opts) {
-    logger.debug("sendMessage({},{},{},{})", i, m, deliverAckToMe, opts);
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier identifier, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> opts) {
+    logger.debug("sendMessage({},{},{},{})", identifier, m, deliverAckToMe, opts);
     // callers may pass null options, but queued messages need non-null options (e.g. PeerMessageWriter.startLivenessChecker())
     final @Nullable Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
 
@@ -255,11 +255,11 @@ public class PriorityTransportLayer<Identifier>
         if (val != null &&
             val.intValue() == WireTransportLayer.TRANSPORT_TYPE_DATAGRAM) {
           final int originalSize = m.remaining();
-          return tl.sendMessage(i, m, new MessageCallback<Identifier, ByteBuffer>() {
+          return tl.sendMessage(identifier, m, new MessageCallback<Identifier, ByteBuffer>() {
 
             @Override
             public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
-              notifyListenersWrote(originalSize, i, options);
+              notifyListenersWrote(originalSize, identifier, options);
               if (deliverAckToMe != null) deliverAckToMe.ack(msg);
             }
 
@@ -267,7 +267,7 @@ public class PriorityTransportLayer<Identifier>
             public void sendFailed(
                 MessageRequestHandle<Identifier, ByteBuffer> msg,
                 Exception reason) {
-              notifyListenersDropped(originalSize, i, options);
+              notifyListenersDropped(originalSize, identifier, options);
               if (deliverAckToMe != null) deliverAckToMe.sendFailed(msg, reason);
             }
 
@@ -275,7 +275,7 @@ public class PriorityTransportLayer<Identifier>
         }
     }
 
-    return getEntityManager(i).send(i, m, deliverAckToMe, options);
+    return getEntityManager(identifier).send(identifier, m, deliverAckToMe, options);
   }
 
   @Override
@@ -289,14 +289,14 @@ public class PriorityTransportLayer<Identifier>
    */
   class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
     @Override
-    public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-      logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", m.remaining(), i);
+    public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+      logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", msg.remaining(), identifier);
     }
 
     @Override
-    public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-      logger.warn("No TransportLayerCallback set, closing incoming socket {}", s);
-      s.close();
+    public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+      logger.warn("No TransportLayerCallback set, closing incoming socket {}", socket);
+      socket.close();
     }
   }
 
@@ -317,20 +317,20 @@ public class PriorityTransportLayer<Identifier>
     }
   }
 
-  private PeerMessageWriter<Identifier> newEntityManager(Identifier i) {
-    return new PeerMessageWriter<Identifier>(i, entityManagerContext);
+  private PeerMessageWriter<Identifier> newEntityManager(Identifier identifier) {
+    return new PeerMessageWriter<Identifier>(identifier, entityManagerContext);
   }
 
-  protected PeerMessageWriter<Identifier> getEntityManager(Identifier i) {
-    return entityManagers.get(i, selectorManager.isSelectorThread());
+  protected PeerMessageWriter<Identifier> getEntityManager(Identifier identifier) {
+    return entityManagers.get(identifier, selectorManager.isSelectorThread());
   }
 
   @Override
-  public void livenessChanged(Identifier i, int val, @Nullable Map<String, Object> options) {
+  public void livenessChanged(Identifier identifier, int val, @Nullable Map<String, Object> options) {
     if (val >= LivenessTypes.LIVENESS_DEAD) {
-      getEntityManager(i).markDead();
+      getEntityManager(identifier).markDead();
       if (selectorManager.isSelectorThread()) {
-        entityManagers.forgetIfIdle(i);
+        entityManagers.forgetIfIdle(identifier);
       }
     }
   }
@@ -373,8 +373,8 @@ public class PriorityTransportLayer<Identifier>
    *
    * @return STATUS_NOT_CONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
    */
-  public int connectionStatus(Identifier i) {
-    PeerMessageWriter<Identifier> manager = getEntityManager(i);
+  public int connectionStatus(Identifier identifier) {
+    PeerMessageWriter<Identifier> manager = getEntityManager(identifier);
     // this may not be thread safe, but ... who cares, it at least won't throw an exception.
     if (manager.writingSocket != null) return STATUS_CONNECTED;
     if (manager.pendingSocket != null) return STATUS_CONNECTING;
@@ -384,8 +384,8 @@ public class PriorityTransportLayer<Identifier>
   /**
    * open a primary connection; PrimarySocketListeners are notified when it is open
    */
-  public void openPrimaryConnection(Identifier i, @Nullable Map<String, Object> options) {
-    getEntityManager(i).openPrimarySocketHelper(i, options);
+  public void openPrimaryConnection(Identifier identifier, @Nullable Map<String, Object> options) {
+    getEntityManager(identifier).openPrimarySocketHelper(identifier, options);
   }
 
   public void addPrimarySocketListener(PrimarySocketListener<Identifier> listener) {

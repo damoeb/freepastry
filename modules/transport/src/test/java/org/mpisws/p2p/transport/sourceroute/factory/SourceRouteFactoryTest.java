@@ -83,9 +83,9 @@ class SourceRouteFactoryTest {
     WireSourceRouteFactory target = new WireSourceRouteFactory();
     for (int n = 1; n <= 3; n++) {
       SourceRoute<InetSocketAddress> route = target.getSourceRoute(hops(n));
-      for (SourceRoute<InetSocketAddress> r : List.of(route, target.reverse(route))) {
-        SourceRoute<InetSocketAddress> read = target.build(new SimpleInputBuffer(serialized(r)), null, null);
-        assertEquals(r, read);
+      for (SourceRoute<InetSocketAddress> sourceRoute : List.of(route, target.reverse(route))) {
+        SourceRoute<InetSocketAddress> read = target.build(new SimpleInputBuffer(serialized(sourceRoute)), null, null);
+        assertEquals(sourceRoute, read);
       }
     }
   }

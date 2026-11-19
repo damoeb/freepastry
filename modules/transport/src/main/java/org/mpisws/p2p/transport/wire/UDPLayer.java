@@ -50,7 +50,7 @@ public interface UDPLayer extends Destructible {
   void acceptMessages(boolean b);
 
   MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-      InetSocketAddress destination, ByteBuffer m,
+      InetSocketAddress destination, ByteBuffer msg,
       @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options);
 }

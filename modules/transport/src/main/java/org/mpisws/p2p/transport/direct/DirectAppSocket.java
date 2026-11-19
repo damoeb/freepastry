@@ -153,10 +153,10 @@ public class DirectAppSocket<Identifier, MessageType> {
         if (byteDeliveries.getFirst() == EOF) {
           return -1;
         }
-        Iterator<byte[]> i = byteDeliveries.iterator();
+        Iterator<byte[]> iterator = byteDeliveries.iterator();
         // loop over all messages to be delivered
-        while(i.hasNext()) {
-          byte[] msg = (byte[])i.next();
+        while(iterator.hasNext()) {
+          byte[] msg = (byte[])iterator.next();
 
           // loop through all the dsts, and fill them with the current message if possible
             ByteBuffer curBuffer = dsts;
@@ -175,7 +175,7 @@ public class DirectAppSocket<Identifier, MessageType> {
 
           // see if we finished a message
           if (firstOffset == msg.length) {
-            i.remove();
+            iterator.remove();
             firstOffset = 0;
           } else {
             break; // i.hasNext() loop

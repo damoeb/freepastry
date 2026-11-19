@@ -79,18 +79,18 @@ public record LivenessConfig(
    * @throws IllegalArgumentException if a ping delay, timeout or the tracker cap is not positive, or the ping tries or
    *         the throttle are negative
    */
-  public static LivenessConfig fromParameters(Parameters p) {
+  public static LivenessConfig fromParameters(Parameters parameters) {
     return new LivenessConfig(
-      requirePositive("pastry_socket_scm_ping_delay", p.getInt("pastry_socket_scm_ping_delay")),
-      p.getFloat("pastry_socket_scm_ping_jitter"),
-      requireNonNegative("pastry_socket_scm_num_ping_tries", p.getInt("pastry_socket_scm_num_ping_tries")),
-      requireNonNegative("pastry_socket_srm_check_dead_throttle", p.getInt("pastry_socket_srm_check_dead_throttle")),
-      requirePositive("pastry_socket_srm_default_rto", p.getInt("pastry_socket_srm_default_rto")),
-      requirePositive("pastry_socket_srm_rto_ubound", p.getInt("pastry_socket_srm_rto_ubound")),
-      requirePositive("pastry_socket_srm_rto_lbound", p.getInt("pastry_socket_srm_rto_lbound")),
-      p.getDouble("pastry_socket_srm_gain_h"),
-      p.getDouble("pastry_socket_srm_gain_g"),
-      requirePositive("pastry_socket_liveness_max_trackers", p.getInt("pastry_socket_liveness_max_trackers")));
+      requirePositive("pastry_socket_scm_ping_delay", parameters.getInt("pastry_socket_scm_ping_delay")),
+      parameters.getFloat("pastry_socket_scm_ping_jitter"),
+      requireNonNegative("pastry_socket_scm_num_ping_tries", parameters.getInt("pastry_socket_scm_num_ping_tries")),
+      requireNonNegative("pastry_socket_srm_check_dead_throttle", parameters.getInt("pastry_socket_srm_check_dead_throttle")),
+      requirePositive("pastry_socket_srm_default_rto", parameters.getInt("pastry_socket_srm_default_rto")),
+      requirePositive("pastry_socket_srm_rto_ubound", parameters.getInt("pastry_socket_srm_rto_ubound")),
+      requirePositive("pastry_socket_srm_rto_lbound", parameters.getInt("pastry_socket_srm_rto_lbound")),
+      parameters.getDouble("pastry_socket_srm_gain_h"),
+      parameters.getDouble("pastry_socket_srm_gain_g"),
+      requirePositive("pastry_socket_liveness_max_trackers", parameters.getInt("pastry_socket_liveness_max_trackers")));
   }
 
   /**

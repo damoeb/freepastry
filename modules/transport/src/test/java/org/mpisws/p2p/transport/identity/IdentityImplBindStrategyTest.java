@@ -64,8 +64,8 @@ class IdentityImplBindStrategyTest {
     env.getSelectorManager().invoke(() -> {
       try {
         result.complete(identity.addBinding("peer", null, null));
-      } catch (Throwable t) {
-        result.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        result.completeExceptionally(throwable);
       }
     });
     return result.get(10, TimeUnit.SECONDS);

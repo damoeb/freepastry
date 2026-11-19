@@ -90,19 +90,19 @@ public class MagicNumberTest extends WireTest {
   public static void setUpBeforeClass() throws Exception {
     env = new Environment();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 4);
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 4);
     alice = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayer(new InetSocketAddress(addr,ports[0]),env, null)
+        new WireTransportLayer(new InetSocketAddress(address,ports[0]),env, null)
         ,env, null,GOOD_HDR, 2000);
     bob = new MagicNumberTransportLayer<InetSocketAddress>(
-      new WireTransportLayer(new InetSocketAddress(addr,ports[1]),env, null)
+      new WireTransportLayer(new InetSocketAddress(address,ports[1]),env, null)
       ,env, null, GOOD_HDR, 2000);
     carol = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayer(new InetSocketAddress(addr,ports[2]),env, null)
+        new WireTransportLayer(new InetSocketAddress(address,ports[2]),env, null)
         ,env, null,BAD_HDR, 2000);
     dave = new MagicNumberTransportLayer<InetSocketAddress>(
-        new WireTransportLayer(new InetSocketAddress(addr,ports[3]),env, null)
+        new WireTransportLayer(new InetSocketAddress(address,ports[3]),env, null)
         ,env, null,NO_HDR, 2000);
     otherTLs.add(carol);
     otherTLs.add(dave);
@@ -131,16 +131,16 @@ public class MagicNumberTest extends WireTest {
     carol.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options)
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg, Map<String, Object> options)
           throws IOException {
 
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s)
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket)
           throws IOException {
         synchronized(lock) {
-          carolSockets.add(s);
+          carolSockets.add(socket);
           lock.notify();
         }
       }
@@ -175,7 +175,7 @@ public class MagicNumberTest extends WireTest {
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception exception) {
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception exception) {
         synchronized(lock) {
           exceptionList.add(exception);
           lock.notify();
@@ -228,15 +228,15 @@ public class MagicNumberTest extends WireTest {
     // Part I opening a connection
     alice().setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options)
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg, Map<String, Object> options)
           throws IOException {
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s)
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket)
           throws IOException {
         synchronized(lock) {
-          aliceSockets.add(s);
+          aliceSockets.add(socket);
           lock.notify();
         }
       }
@@ -267,7 +267,7 @@ public class MagicNumberTest extends WireTest {
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception exception) {
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception exception) {
         synchronized(lock) {
           exceptionList.add(exception);
           lock.notify();
@@ -324,14 +324,14 @@ public class MagicNumberTest extends WireTest {
     // make a way for bob to receive the callback
     carol.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer buf, Map<String, Object> options) throws IOException {
+      public void messageReceived(InetSocketAddress address, ByteBuffer buf, Map<String, Object> options) throws IOException {
         synchronized(lock) {
           receivedList.add(buf);
           lock.notify();
         }
       }
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) {}
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {}
     });
 
     carol.setErrorHandler(new ErrorHandler<InetSocketAddress>() {

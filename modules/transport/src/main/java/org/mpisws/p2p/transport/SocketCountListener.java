@@ -40,6 +40,6 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public interface SocketCountListener<Identifier> {
-  public void socketOpened(Identifier i, @Nullable Map<String, Object> options, boolean outgoing);
-  public void socketClosed(Identifier i, @Nullable Map<String, Object> options);
+  public void socketOpened(Identifier identifier, @Nullable Map<String, Object> options, boolean outgoing);
+  public void socketClosed(Identifier identifier, @Nullable Map<String, Object> options);
 }

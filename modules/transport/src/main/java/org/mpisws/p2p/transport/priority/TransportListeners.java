@@ -78,32 +78,32 @@ final class TransportListeners<Identifier> {
       @Nullable Map<String, Object> options) {
 
     if (listeners.isEmpty()) return;
-    for (TransportLayerListener<Identifier> l : listeners) {
-      l.read(size, source, options, true, true);
+    for (TransportLayerListener<Identifier> transportLayerListener : listeners) {
+      transportLayerListener.read(size, source, options, true, true);
     }
   }
 
   void notifyWrote(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (listeners.isEmpty()) return;
-    for (TransportLayerListener<Identifier> l : listeners) {
-      l.wrote(size, dest, options, true, true);
+    for (TransportLayerListener<Identifier> transportLayerListener : listeners) {
+      transportLayerListener.wrote(size, dest, options, true, true);
     }
   }
 
   void notifyEnqueued(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
-    for (PriorityTransportLayerListener<Identifier> l : plisteners) {
-      l.enqueued(size, dest, options, true, true);
+    for (PriorityTransportLayerListener<Identifier> priorityTransportLayerListener : plisteners) {
+      priorityTransportLayerListener.enqueued(size, dest, options, true, true);
     }
   }
 
   void notifyDropped(int size, Identifier dest,
       @Nullable Map<String, Object> options) {
     if (plisteners.isEmpty()) return;
-    for (PriorityTransportLayerListener<Identifier> l : plisteners) {
-      l.dropped(size, dest, options, true, true);
+    for (PriorityTransportLayerListener<Identifier> priorityTransportLayerListener : plisteners) {
+      priorityTransportLayerListener.dropped(size, dest, options, true, true);
     }
   }
 }

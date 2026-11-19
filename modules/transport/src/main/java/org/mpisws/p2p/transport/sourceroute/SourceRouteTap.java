@@ -50,15 +50,15 @@ public interface SourceRouteTap<Identifier> {
   /**
    * We are the intermediate node for a message.
    */
-  public void receivedMessage(ByteBuffer m, SourceRoute<Identifier> path);
+  public void receivedMessage(ByteBuffer msg, SourceRoute<Identifier> path);
 
-  public void socketOpened(SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
+  public void socketOpened(SourceRoute<Identifier> path, P2PSocket<Identifier> socket, P2PSocket<Identifier> b);
 
-  public void socketClosed(@Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
+  public void socketClosed(@Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> socket, P2PSocket<Identifier> b);
 
   /**
    * We are the intermediate node for some bytes from Socket a to Socket b
    */
-  public void receivedBytes(ByteBuffer m, @Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> a, P2PSocket<Identifier> b);
+  public void receivedBytes(ByteBuffer msg, @Nullable SourceRoute<Identifier> path, P2PSocket<Identifier> socket, P2PSocket<Identifier> b);
 
 }

@@ -48,9 +48,9 @@ public class StalledSocketException extends IOException {
     this.addr = addr;
   }
 
-  public StalledSocketException(InetSocketAddress addr) {
-    super(addr.toString());
-    this.addr = addr;
+  public StalledSocketException(InetSocketAddress address) {
+    super(address.toString());
+    this.addr = address;
   }
 
   public Object getIdentifier() {

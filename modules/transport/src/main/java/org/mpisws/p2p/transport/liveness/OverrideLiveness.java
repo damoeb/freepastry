@@ -40,5 +40,5 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public interface OverrideLiveness<Identifier> {
-  void setLiveness(Identifier i, int liveness, @Nullable Map<String, Object> options);
+  void setLiveness(Identifier identifier, int liveness, @Nullable Map<String, Object> options);
 }

@@ -31,11 +31,11 @@ class BigMessageWireRoundTripTest {
   }
 
   private static byte[] payload(int length, int seed) {
-    byte[] b = new byte[length];
+    byte[] bytes = new byte[length];
     for (int i = 0; i < length; i++) {
-      b[i] = (byte) (seed + i * 31);
+      bytes[i] = (byte) (seed + i * 31);
     }
-    return b;
+    return bytes;
   }
 
   @Test
@@ -48,15 +48,15 @@ class BigMessageWireRoundTripTest {
     List<InetSocketAddress> senders = new ArrayList<>();
     TransportLayerCallback<InetSocketAddress, ByteBuffer> upper = new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) {
-        senders.add(i);
-        byte[] bytes = new byte[m.remaining()];
-        m.get(bytes);
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg, Map<String, Object> options) {
+        senders.add(address);
+        byte[] bytes = new byte[msg.remaining()];
+        msg.get(bytes);
         received.add(bytes);
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) {
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
       }
     };
     PeerMessageWriterContext<InetSocketAddress> ctx = new PeerMessageWriterContext<>(null, null, null, null,

@@ -111,9 +111,9 @@ class OutgoingPilot<Identifier, HighIdentifier extends RendezvousContact> extend
   /**
    * Must call init(), but don't do it while holding a lock
    */
-  OutgoingPilot(RendezvousTransportLayerImpl<Identifier, HighIdentifier> layer, HighIdentifier i, @Nullable Map<String, Object> options) {
+  OutgoingPilot(RendezvousTransportLayerImpl<Identifier, HighIdentifier> layer, HighIdentifier highIdentifier, @Nullable Map<String, Object> options) {
     super(layer);
-    this.i = i;
+    this.i = highIdentifier;
     this.options = options;
   }
 

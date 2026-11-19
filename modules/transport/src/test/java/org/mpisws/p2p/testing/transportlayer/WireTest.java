@@ -56,13 +56,13 @@ public class WireTest extends TLTest<InetSocketAddress> {
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(WireTest.class, null);
 
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 2);
-    alice = buildTL("alice", addr, ports[0], env);
-    bob = buildTL("bob", addr, ports[1], env);
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 2);
+    alice = buildTL("alice", address, ports[0], env);
+    bob = buildTL("bob", address, ports[1], env);
   }
 
-  private static TransportLayer<InetSocketAddress, ByteBuffer> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static TransportLayer<InetSocketAddress, ByteBuffer> buildTL(String name, InetAddress address, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(),
         env.getProcessor(),
@@ -72,7 +72,7 @@ public class WireTest extends TLTest<InetSocketAddress> {
         env.getParameters(),
         env.getExceptionStrategy());
     env.addDestructable(env_a);
-    InetSocketAddress addr_a = new InetSocketAddress(addr,port);
+    InetSocketAddress addr_a = new InetSocketAddress(address,port);
     return new WireTransportLayer(addr_a,env_a, null);
   }
 

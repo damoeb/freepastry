@@ -151,7 +151,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    */
   private final String RENDEZVOUS_CONTACT_STRING;  // usually: identity.node_handle_to_index
 
-  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> transportLayer;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
   private final PilotFinder<HighIdentifier> pilotFinder;
@@ -167,7 +167,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   private ErrorHandler<Identifier> errorHandler;
 
   public RendezvousTransportLayerImpl(
-      TransportLayer<Identifier, ByteBuffer> tl,
+      TransportLayer<Identifier, ByteBuffer> transportLayer,
       String RENDEZVOUS_CONTACT_STRING,
       HighIdentifier myRendezvousContact,
       ContactDeserializer<Identifier, HighIdentifier> deserializer,
@@ -179,7 +179,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       Environment env) {
     this.random = env.getRandomSource();
     this.selectorManager = env.getSelectorManager();
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     this.localNodeHandle = myRendezvousContact;
     this.serializer = deserializer;
     this.RENDEZVOUS_CONTACT_STRING = RENDEZVOUS_CONTACT_STRING;
@@ -191,14 +191,14 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
-    logger.trace("openSocket({},{},{})", i, deliverSocketToMe, options);
+  public SocketRequestHandle<Identifier> openSocket(final Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
+    logger.trace("openSocket({},{},{})", identifier, deliverSocketToMe, options);
 
-    final SocketRequestHandle<Identifier> handle = new SocketRequestHandleImpl<Identifier>(i,options,logger);
+    final SocketRequestHandle<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
 
     // TODO: throw proper exception if options == null, or !contains(R_C_S)
     final HighIdentifier contact = getHighIdentifier(options);
@@ -209,11 +209,11 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         if (contact != null) {
           s = contact+" strat:"+contactDirectStrategy.canContactDirect(contact);
         }
-        logger.trace("openSocket("+i+","+deliverSocketToMe+","+options+") contact:"+s);
+        logger.trace("openSocket("+identifier+","+deliverSocketToMe+","+options+") contact:"+s);
       }
 
       // write NORMAL_SOCKET and continue
-      tl.openSocket(i, new SocketCallback<Identifier>(){
+      transportLayer.openSocket(identifier, new SocketCallback<Identifier>(){
         @Override
         public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
           sock.register(false, true, new ByteWriter<>(NORMAL_SOCKET, new Continuation<P2PSocket<Identifier>, Exception>() {
@@ -230,7 +230,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         }
 
         @Override
-        public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
+        public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
           deliverSocketToMe.receiveException(handle, ex);
         }
       }, options);
@@ -355,7 +355,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     final ByteBuffer readBuffer = ByteBuffer.allocate(1);  // to read success
 
     // open the socket
-    tl.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
+    transportLayer.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
@@ -418,7 +418,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         }
       }
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
         deliverSocketToMe.receiveException(handle, ex);
       }
@@ -683,8 +683,8 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     if (one == null) {
       if (logger.isTraceEnabled()) {
         String s = "";
-        for (HighIdentifier h : expectedIncomingSockets.keySet()) {
-          s+=" "+h;
+        for (HighIdentifier highIdentifier : expectedIncomingSockets.keySet()) {
+          s+=" "+highIdentifier;
         }
         logger.trace("removeExpectedIncomingSocket("+target+"@"+System.identityHashCode(target)+","+uid+") had no first level entry for target"+s);
       }
@@ -710,9 +710,9 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
 
 
-  protected void createForwarder(P2PSocket<Identifier> a, P2PSocket<Identifier> b, HighIdentifier connector, HighIdentifier acceptor, int uid) {
-    logger.atDebug().log(() -> "createForwarder("+a+","+b+","+connector+","+acceptor+","+uid+")");
-    new Forwarder<Identifier>(null,a,b,logger);
+  protected void createForwarder(P2PSocket<Identifier> socket, P2PSocket<Identifier> b, HighIdentifier connector, HighIdentifier acceptor, int uid) {
+    logger.atDebug().log(() -> "createForwarder("+socket+","+b+","+connector+","+acceptor+","+uid+")");
+    new Forwarder<Identifier>(null,socket,b,logger);
   }
 
   /**
@@ -807,7 +807,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     final ByteBuffer readBuffer = ByteBuffer.allocate(1);  // to read success
 
 
-    tl.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
+    transportLayer.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
           P2PSocket<Identifier> sock) {
@@ -870,7 +870,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
         if (ex instanceof BindException) {
           // Address already in use: no further information
@@ -888,22 +888,22 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    * Usually called from the higher level app, who probably used routing to get the message here.
    */
   @Override
-  public void messageReceivedFromOverlay(HighIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-    logger.trace("messageReceivedFromOverlay({},{},{})", i, m, options);
-    messageReceived(serializer.convert(i),m,OptionsFactory.addOption(options, FROM_OVERLAY, true));
+  public void messageReceivedFromOverlay(HighIdentifier highIdentifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+    logger.trace("messageReceivedFromOverlay({},{},{})", highIdentifier, msg, options);
+    messageReceived(serializer.convert(highIdentifier),msg,OptionsFactory.addOption(options, FROM_OVERLAY, true));
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
-    logger.debug("messageReceived({},{},{})", i, m, options);
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+    logger.debug("messageReceived({},{},{})", identifier, msg, options);
     if (options != null && options.containsKey(FROM_OVERLAY) && ((Boolean)options.get(FROM_OVERLAY)) == true) {
       // do nothing
     } else {
       // this will be the ephemeral UDP port
-      responseStrategy.messageReceived(i, m, options);
-      options = OptionsFactory.addOption(options, TAG_KEY, ephemeralDB.getTagForEphemeral(i));
+      responseStrategy.messageReceived(identifier, msg, options);
+      options = OptionsFactory.addOption(options, TAG_KEY, ephemeralDB.getTagForEphemeral(identifier));
     }
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, msg, options);
   }
 
   protected @Nullable HighIdentifier getHighIdentifier(@Nullable Map<String, Object> options) {
@@ -923,26 +923,26 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    *   ConnectRequest UDP only?  For now always use UDP_AND_TCP
    */
   @Override
-  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options) {
-    logger.trace("sendMessage({},{},{},{})", i, m, deliverAckToMe, options);
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> options) {
+    logger.trace("sendMessage({},{},{},{})", identifier, m, deliverAckToMe, options);
 
     HighIdentifier high = getHighIdentifier(options);
     if (high == null) {
       // try to use a tag
       long tag = getTag(options);
       if (tag != NO_TAG) {
-        Identifier ephemeral = ephemeralDB.getEphemeral(tag, i);
-        if (ephemeral != null) i = ephemeral;
+        Identifier ephemeral = ephemeralDB.getEphemeral(tag, identifier);
+        if (ephemeral != null) identifier = ephemeral;
       }
 
-      responseStrategy.messageSent(i, m, options);
-      return tl.sendMessage(i, m, deliverAckToMe, options);
+      responseStrategy.messageSent(identifier, m, options);
+      return transportLayer.sendMessage(identifier, m, deliverAckToMe, options);
     } else {
       if (high.canContactDirect() || contactDirectStrategy.canContactDirect(high)) {
         // this is the typical case
         // pass-through, need to allow for null during bootstrap, we assume pass-through works
-        responseStrategy.messageSent(i, m, options);
-        return tl.sendMessage(i, m, deliverAckToMe, options);
+        responseStrategy.messageSent(identifier, m, options);
+        return transportLayer.sendMessage(identifier, m, deliverAckToMe, options);
       } else {
         // rendezvous (we know it's a NATted node)
 
@@ -962,11 +962,11 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
           // send directly if the strategy allows for it
           logger.debug("Sending directly on ephemeral {} for {}", ephemeral, high);
           responseStrategy.messageSent(ephemeral, m, options);
-          return tl.sendMessage(ephemeral, m, deliverAckToMe, options);
+          return transportLayer.sendMessage(ephemeral, m, deliverAckToMe, options);
         }
         logger.debug("Not sending directly on ephemeral {} for {}", ephemeral, high);
 
-        final MessageRequestHandleImpl<Identifier, ByteBuffer> ret = new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
+        final MessageRequestHandleImpl<Identifier, ByteBuffer> ret = new MessageRequestHandleImpl<Identifier, ByteBuffer>(identifier, m, options);
         MessageCallback<HighIdentifier, ByteBuffer> ack;
         if (deliverAckToMe == null) {
           ack = null;
@@ -1001,15 +1001,15 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
   @Override
   public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+    transportLayer.acceptSockets(b);
   }
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
   @Override
   public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
@@ -1021,7 +1021,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   }
   @Override
   public void destroy() {
-    tl.destroy();
+    transportLayer.destroy();
   }
 
   // *************Pilot Sockets (used to connect leafset members) ******************
@@ -1031,16 +1031,16 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   // listener
   final List<OutgoingPilotListener<HighIdentifier>> opListeners = new CopyOnWriteArrayList<OutgoingPilotListener<HighIdentifier>>();
-  protected void notifyOutgoingPilotAdded(HighIdentifier i) {
+  protected void notifyOutgoingPilotAdded(HighIdentifier highIdentifier) {
     // avoid cme
-    for (OutgoingPilotListener<HighIdentifier> l : opListeners) {
-      l.pilotOpening(i);
+    for (OutgoingPilotListener<HighIdentifier> outgoingPilotListener : opListeners) {
+      outgoingPilotListener.pilotOpening(highIdentifier);
     }
   }
-  protected void notifyOutgoingPilotRemoved(HighIdentifier i) {
+  protected void notifyOutgoingPilotRemoved(HighIdentifier highIdentifier) {
     // avoid cme
-    for (OutgoingPilotListener<HighIdentifier> l : opListeners) {
-      l.pilotClosed(i);
+    for (OutgoingPilotListener<HighIdentifier> outgoingPilotListener : opListeners) {
+      outgoingPilotListener.pilotClosed(highIdentifier);
     }
   }
 
@@ -1060,39 +1060,39 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    * Opens a pilot socket to a "lifeline" node.  These are usually nodes near the local node in the id space.
    */
   @Override
-  public SocketRequestHandle<HighIdentifier> openPilot(final HighIdentifier i,
+  public SocketRequestHandle<HighIdentifier> openPilot(final HighIdentifier highIdentifier,
       final Continuation<SocketRequestHandle<HighIdentifier>, Exception> deliverAckToMe) {
-    logger.debug("openPilot({})", i);
-    if (!i.canContactDirect()) throw new IllegalArgumentException("can't open pilot to natted node:"+i);
-    OutgoingPilot<Identifier, HighIdentifier> o2;
+    logger.debug("openPilot({})", highIdentifier);
+    if (!highIdentifier.canContactDirect()) throw new IllegalArgumentException("can't open pilot to natted node:"+highIdentifier);
+    OutgoingPilot<Identifier, HighIdentifier> outgoingPilot;
     @Nullable Map<String, Object> options;
 
     // make sure we don't open multiple pilots
     synchronized(outgoingPilots) {
-      if (outgoingPilots.containsKey(i)) {
-        logger.trace("openPilot({}) already had one.", i);
-        if (deliverAckToMe != null) deliverAckToMe.receiveResult(outgoingPilots.get(i));
-        return outgoingPilots.get(i);
+      if (outgoingPilots.containsKey(highIdentifier)) {
+        logger.trace("openPilot({}) already had one.", highIdentifier);
+        if (deliverAckToMe != null) deliverAckToMe.receiveResult(outgoingPilots.get(highIdentifier));
+        return outgoingPilots.get(highIdentifier);
       }
 
-      options = serializer.getOptions(i);
-      o2 = new OutgoingPilot<>(this, i, options);
-      outgoingPilots.put(i, o2);
+      options = serializer.getOptions(highIdentifier);
+      outgoingPilot = new OutgoingPilot<>(this, highIdentifier, options);
+      outgoingPilots.put(highIdentifier, outgoingPilot);
     }
-    o2.init(); // don't want to do this while holding a lock
+    outgoingPilot.init(); // don't want to do this while holding a lock
 
-    notifyOutgoingPilotAdded(i);
+    notifyOutgoingPilotAdded(highIdentifier);
 
-    final OutgoingPilot<Identifier, HighIdentifier> o = o2;
-    o.setCancellable(tl.openSocket(serializer.convert(i), new SocketCallback<Identifier>(){
+    final OutgoingPilot<Identifier, HighIdentifier> o = outgoingPilot;
+    o.setCancellable(transportLayer.openSocket(serializer.convert(highIdentifier), new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        o.setSocket(sock);
+      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket) {
+        o.setSocket(socket);
         if (deliverAckToMe != null) deliverAckToMe.receiveResult(o);
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
         o.receiveException(ex);
         if (deliverAckToMe != null) deliverAckToMe.receiveException(ex);
       }
@@ -1102,11 +1102,11 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   }
 
   @Override
-  public void closePilot(HighIdentifier i) {
-    logger.debug("closePilot({})", i);
+  public void closePilot(HighIdentifier highIdentifier) {
+    logger.debug("closePilot({})", highIdentifier);
     OutgoingPilot<Identifier, HighIdentifier> closeMe;
     synchronized(outgoingPilots) {
-      closeMe = outgoingPilots.remove(i);
+      closeMe = outgoingPilots.remove(highIdentifier);
     }
 
     // notifyOutgoingPilotRemoved(i) is called in cancel()
@@ -1135,16 +1135,16 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
   // listener
   final List<IncomingPilotListener<HighIdentifier>> ipListeners = new CopyOnWriteArrayList<IncomingPilotListener<HighIdentifier>>();
-  protected void notifyIncomingPilotAdded(HighIdentifier i) {
+  protected void notifyIncomingPilotAdded(HighIdentifier highIdentifier) {
     // avoid cme
-    for (IncomingPilotListener<HighIdentifier> l : ipListeners) {
-      l.pilotOpening(i);
+    for (IncomingPilotListener<HighIdentifier> incomingPilotListener : ipListeners) {
+      incomingPilotListener.pilotOpening(highIdentifier);
     }
   }
-  protected void notifyIncomingPilotRemoved(HighIdentifier i) {
+  protected void notifyIncomingPilotRemoved(HighIdentifier highIdentifier) {
     // avoid cme
-    for (IncomingPilotListener<HighIdentifier> l : ipListeners) {
-      l.pilotClosed(i);
+    for (IncomingPilotListener<HighIdentifier> incomingPilotListener : ipListeners) {
+      incomingPilotListener.pilotClosed(highIdentifier);
     }
   }
 

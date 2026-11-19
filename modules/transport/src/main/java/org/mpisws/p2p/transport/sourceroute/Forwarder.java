@@ -66,16 +66,16 @@ public class Forwarder<Identifier> {
   int numShutdown = 0;
   boolean closed = false;
 
-  public Forwarder(@Nullable SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
-    this(sr, socka, sockb, logger, Collections.<SourceRouteTap<Identifier>>emptyList());
+  public Forwarder(@Nullable SourceRoute<Identifier> sourceRoute, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger) {
+    this(sourceRoute, socka, sockb, logger, Collections.<SourceRouteTap<Identifier>>emptyList());
   }
 
   /**
    * @param taps notified via {@link SourceRouteTap#receivedBytes} and {@link SourceRouteTap#socketClosed};
    * the collection is read live, so taps added/removed later are honored
    */
-  public Forwarder(@Nullable SourceRoute<Identifier> sr, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger, Collection<SourceRouteTap<Identifier>> taps) {
-    this.sr = sr;
+  public Forwarder(@Nullable SourceRoute<Identifier> sourceRoute, P2PSocket<Identifier> socka, P2PSocket<Identifier> sockb, Logger logger, Collection<SourceRouteTap<Identifier>> taps) {
+    this.sr = sourceRoute;
     this.socka = socka;
     this.sockb = sockb;
     this.logger = logger;
@@ -113,9 +113,9 @@ public class Forwarder<Identifier> {
     P2PSocket<Identifier> to;
     ByteBuffer buf;
 
-    HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> to) {
+    HalfPipe(P2PSocket<Identifier> from, P2PSocket<Identifier> socket) {
       this.from = from;
-      this.to = to;
+      this.to = socket;
       buf = ByteBuffer.allocate(PIPE_BUFFER_SIZE);
       from.register(true, false, this);
     }

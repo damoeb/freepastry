@@ -42,6 +42,6 @@ package org.mpisws.p2p.transport.table;
  */
 public interface KeyValueStore<Key, Value> {
   public boolean containsKey(Key key);
-  public Value put(Key k, Value v);
-  public Value get(Key k);
+  public Value put(Key key, Value value);
+  public Value get(Key key);
 }

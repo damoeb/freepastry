@@ -44,6 +44,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 public interface IdentifierSerializer<Identifier> {
-  public void serialize(Identifier i, OutputBuffer b) throws IOException;
-  public Identifier deserialize(InputBuffer b, @Nullable Identifier i, @Nullable Map<String, Object> options) throws IOException;
+  public void serialize(Identifier identifier, OutputBuffer output) throws IOException;
+  public Identifier deserialize(InputBuffer input, @Nullable Identifier identifier, @Nullable Map<String, Object> options) throws IOException;
 }

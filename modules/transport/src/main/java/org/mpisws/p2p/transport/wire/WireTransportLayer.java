@@ -178,11 +178,11 @@ public class WireTransportLayer
   @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination,
-      ByteBuffer m,
+      ByteBuffer msg,
       @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
-    logger.debug("sendMessage({},{})", destination, m);
-    return udp.sendMessage(destination, m, deliverAckToMe, options);
+    logger.debug("sendMessage({},{})", destination, msg);
+    return udp.sendMessage(destination, msg, deliverAckToMe, options);
   }
 
   @Override
@@ -226,9 +226,9 @@ public class WireTransportLayer
     callback.messageReceived(address, buffer, options);
   }
 
-  protected void incomingSocket(P2PSocket<InetSocketAddress> sm) throws IOException {
-    broadcastChannelOpened(sm.getIdentifier(), sm.getOptions(), false);
-    callback.incomingSocket(sm);
+  protected void incomingSocket(P2PSocket<InetSocketAddress> socket) throws IOException {
+    broadcastChannelOpened(socket.getIdentifier(), socket.getOptions(), false);
+    callback.incomingSocket(socket);
   }
 
   final Collection<TransportLayerListener<InetSocketAddress>> listeners =
@@ -260,14 +260,14 @@ public class WireTransportLayer
   }
 
 
-  public void broadcastChannelOpened(InetSocketAddress addr, @Nullable Map<String, Object> options, boolean outgoing) {
+  public void broadcastChannelOpened(InetSocketAddress address, @Nullable Map<String, Object> options, boolean outgoing) {
     for (SocketCountListener<InetSocketAddress> listener : slisteners)
-      listener.socketOpened(addr, options, outgoing);
+      listener.socketOpened(address, options, outgoing);
   }
 
-  public void broadcastChannelClosed(InetSocketAddress addr, @Nullable Map<String, Object> options) {
+  public void broadcastChannelClosed(InetSocketAddress address, @Nullable Map<String, Object> options) {
     for (SocketCountListener<InetSocketAddress> listener : slisteners)
-      listener.socketClosed(addr, options);
+      listener.socketClosed(address, options);
   }
 
   public Environment getEnvironment() {

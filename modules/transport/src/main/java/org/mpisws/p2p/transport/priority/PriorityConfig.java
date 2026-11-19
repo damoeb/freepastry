@@ -58,11 +58,11 @@ public record PriorityConfig(int maxMsgSize, int maxQueueLength, int maxBigMsgSi
   /**
    * @throws IllegalArgumentException if a value is not positive
    */
-  public static PriorityConfig fromParameters(Parameters p) {
+  public static PriorityConfig fromParameters(Parameters parameters) {
     return new PriorityConfig(
-      requirePositive("pastry_socket_writer_max_msg_size", p.getInt("pastry_socket_writer_max_msg_size")),
-      requirePositive("pastry_socket_writer_max_queue_length", p.getInt("pastry_socket_writer_max_queue_length")),
-      requirePositive("pastry_socket_writer_max_big_msg_size", p.getInt("pastry_socket_writer_max_big_msg_size")),
-      requirePositive("pastry_socket_writer_max_big_msg_in_flight", p.getLong("pastry_socket_writer_max_big_msg_in_flight")));
+      requirePositive("pastry_socket_writer_max_msg_size", parameters.getInt("pastry_socket_writer_max_msg_size")),
+      requirePositive("pastry_socket_writer_max_queue_length", parameters.getInt("pastry_socket_writer_max_queue_length")),
+      requirePositive("pastry_socket_writer_max_big_msg_size", parameters.getInt("pastry_socket_writer_max_big_msg_size")),
+      requirePositive("pastry_socket_writer_max_big_msg_in_flight", parameters.getLong("pastry_socket_writer_max_big_msg_in_flight")));
   }
 }

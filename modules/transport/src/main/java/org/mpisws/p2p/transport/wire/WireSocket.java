@@ -111,15 +111,15 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
    * across the greeting message. Once the response greeting message is
    * received, everything proceeds as normal.
    *
-   * @param addr The destination of this socket
-   * @param c receives the socket once it is connected
+   * @param address The destination of this socket
+   * @param socketCallback receives the socket once it is connected
    * @throws IOException An error
    */
-  public WireSocket(final TCPLayer tcp, final InetSocketAddress addr, final SocketCallback<InetSocketAddress> c, @Nullable Map<String, Object> options) throws IOException {
+  public WireSocket(final TCPLayer tcp, final InetSocketAddress address, final SocketCallback<InetSocketAddress> socketCallback, @Nullable Map<String, Object> options) throws IOException {
     this.tcp = tcp;
     this.options = options;
     logger = tcp.logger;
-    this.addr = addr;
+    this.addr = address;
 
     channel = SocketChannel.open();
     channel.socket().setSendBufferSize(tcp.SOCKET_BUFFER_SIZE);
@@ -127,13 +127,13 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
     if (tcp.wire.isForceBindAddress() && tcp.wire.getLocalIdentifier() != null) channel.socket().bind(new InetSocketAddress(tcp.wire.getLocalIdentifier().getAddress(),0));
     channel.configureBlocking(false);
 
-    logger.debug("(SM) Initiating socket connection to {}", addr);
+    logger.debug("(SM) Initiating socket connection to {}", address);
 
-    if (channel.connect(addr)) {
+    if (channel.connect(address)) {
       key = tcp.wire.getEnvironment().getSelectorManager().register(channel, this, 0);
       delivered = true;
       logger.debug("delivering1 {}", WireSocket.this);
-      c.receiveResult(WireSocket.this, WireSocket.this);
+      socketCallback.receiveResult(WireSocket.this, WireSocket.this);
     } else {
       key = tcp.wire.getEnvironment().getSelectorManager().register(channel, new SelectionKeyHandler(){
 
@@ -168,18 +168,18 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
               } catch (CancelledKeyException closing) {
                 // close() on another thread (TCPLayer.destroy() closes all sockets on the caller's) cancelled the key
                 // and is about to close the channel: fail like a connect on a closed channel
-                throw new ClosedChannelException("Socket " + addr + " was closed while connecting.");
+                throw new ClosedChannelException("Socket " + address + " was closed while connecting.");
               }
               delivered = true;
               logger.debug("delivering2 {}", WireSocket.this);
-              tcp.wire.broadcastChannelOpened(addr, WireSocket.this.options, true);
-              c.receiveResult(WireSocket.this, WireSocket.this);
+              tcp.wire.broadcastChannelOpened(address, WireSocket.this.options, true);
+              socketCallback.receiveResult(WireSocket.this, WireSocket.this);
             }
           } catch (IOException e) {
-            if (c == null) {
-              tcp.wire.getErrorHandler().receivedException(addr, e);
+            if (socketCallback == null) {
+              tcp.wire.getErrorHandler().receivedException(address, e);
             } else {
-              c.receiveException(WireSocket.this, e);
+              socketCallback.receiveException(WireSocket.this, e);
             }
             close();
           }

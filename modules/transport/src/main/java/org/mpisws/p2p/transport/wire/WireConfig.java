@@ -67,13 +67,13 @@ public record WireConfig(
   /**
    * @throws IllegalArgumentException if a buffer size is not positive
    */
-  public static WireConfig fromParameters(Parameters p) {
+  public static WireConfig fromParameters(Parameters parameters) {
     return new WireConfig(
-      p.contains("wire_forceBindAddress") && p.getBoolean("wire_forceBindAddress"),
-      p.getInt("pastry_socket_scm_max_open_sockets"),
-      requirePositive("pastry_socket_scm_socket_buffer_size", p.getInt("pastry_socket_scm_socket_buffer_size")),
-      p.contains("transport_tcp_no_delay") && p.getBoolean("transport_tcp_no_delay"),
-      requirePositive("transport_wire_datagram_receive_buffer_size", p.getInt("transport_wire_datagram_receive_buffer_size")),
-      requirePositive("transport_wire_datagram_send_buffer_size", p.getInt("transport_wire_datagram_send_buffer_size")));
+      parameters.contains("wire_forceBindAddress") && parameters.getBoolean("wire_forceBindAddress"),
+      parameters.getInt("pastry_socket_scm_max_open_sockets"),
+      requirePositive("pastry_socket_scm_socket_buffer_size", parameters.getInt("pastry_socket_scm_socket_buffer_size")),
+      parameters.contains("transport_tcp_no_delay") && parameters.getBoolean("transport_tcp_no_delay"),
+      requirePositive("transport_wire_datagram_receive_buffer_size", parameters.getInt("transport_wire_datagram_receive_buffer_size")),
+      requirePositive("transport_wire_datagram_send_buffer_size", parameters.getInt("transport_wire_datagram_send_buffer_size")));
   }
 }

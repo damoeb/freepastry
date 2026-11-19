@@ -62,14 +62,14 @@ class SocketManagerCloseTest {
         try {
           start.await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
           socket.close();
-        } catch (Throwable t) {
-          failures.add(t);
+        } catch (Throwable throwable) {
+          failures.add(throwable);
         }
       };
-      Thread other = new Thread(close, "closer");
-      other.start();
+      Thread thread = new Thread(close, "closer");
+      thread.start();
       close.run();
-      other.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+      thread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
     }
 
     assertEquals(List.of(), failures);
@@ -102,7 +102,7 @@ class SocketManagerCloseTest {
             }
 
             @Override
-            public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+            public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
               connectFailure.complete(ex);
             }
           }, null);
@@ -184,23 +184,23 @@ class SocketManagerCloseTest {
   }
 
   /** @return a socket that has finished connecting, so that only the closes race */
-  private WireSocket openSocket(TCPLayer tcp, InetSocketAddress to) throws Exception {
+  private WireSocket openSocket(TCPLayer tcp, InetSocketAddress address) throws Exception {
     CompletableFuture<WireSocket> connected = new CompletableFuture<WireSocket>();
     env.getSelectorManager().invoke(() -> {
       try {
-        new WireSocket(tcp, to, new SocketCallback<InetSocketAddress>() {
+        new WireSocket(tcp, address, new SocketCallback<InetSocketAddress>() {
           @Override
-          public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-            connected.complete((WireSocket) sock);
+          public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> socket) {
+            connected.complete((WireSocket) socket);
           }
 
           @Override
-          public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+          public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
             connected.completeExceptionally(ex);
           }
         }, null);
-      } catch (Throwable t) {
-        connected.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        connected.completeExceptionally(throwable);
       }
     });
     return connected.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);

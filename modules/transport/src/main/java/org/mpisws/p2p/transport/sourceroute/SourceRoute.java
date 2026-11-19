@@ -62,8 +62,8 @@ public abstract class SourceRoute<Identifier> {
     this.path = new ArrayList<Identifier>(path);
 
     // assertion
-    for (Identifier i : this.path) {
-      if (i == null) throw new IllegalArgumentException("path["+i+"] is null");
+    for (Identifier identifier : this.path) {
+      if (identifier == null) throw new IllegalArgumentException("path["+identifier+"] is null");
     }
   }
 
@@ -87,8 +87,8 @@ public abstract class SourceRoute<Identifier> {
   public int hashCode() {
     int result = 399388937;
 
-    for (Identifier i : path)
-      result ^= i.hashCode();
+    for (Identifier identifier : path)
+      result ^= identifier.hashCode();
 
     return result;
   }

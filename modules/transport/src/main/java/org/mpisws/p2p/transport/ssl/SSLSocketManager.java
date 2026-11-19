@@ -92,7 +92,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private final int appBufferMax;
   private final int netBufferMax;
 
-  private final Continuation<SSLSocketManager<Identifier>, Exception> c;
+  private final Continuation<SSLSocketManager<Identifier>, Exception> continuation;
 
   private boolean doneHandshaking = false;
 
@@ -109,12 +109,12 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   @SuppressWarnings("JdkObsolete") // a short FIFO; LinkedList is fine here
   public SSLSocketManager(SSLTransportLayer<Identifier, ?> sslTL,
       P2PSocket<Identifier> s,
-      Continuation<SSLSocketManager<Identifier>, Exception> c, boolean server, boolean useClientAuth) {
+      Continuation<SSLSocketManager<Identifier>, Exception> continuation, boolean server, boolean useClientAuth) {
     this.server = server;
     this.useClientAuth = useClientAuth;
     this.sslTL = sslTL;
     this.socket = s;
-    this.c = c;
+    this.continuation = continuation;
     this.logger = sslTL.getLogger();
 
     engine = sslTL.getContext().createSSLEngine(s.getIdentifier().toString(), 0);
@@ -148,12 +148,12 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       boolean canRead, boolean canWrite) throws IOException {
     if (handshakeFail) return;
     if (canWrite) {
-      Iterator<ByteBuffer> i = writeMe.iterator();
-      while (i.hasNext()) {
-        ByteBuffer b = i.next();
-        socket.write(b);
-        if (b.hasRemaining()) break;
-        i.remove();
+      Iterator<ByteBuffer> iterator = writeMe.iterator();
+      while (iterator.hasNext()) {
+        ByteBuffer buffer = iterator.next();
+        socket.write(buffer);
+        if (buffer.hasRemaining()) break;
+        iterator.remove();
       }
       if (writeMe.isEmpty()) {
         if (registeredToWrite != null) {
@@ -219,7 +219,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     if (unwrapMe.size() > 1) {
       // a record can be split across socket reads: coalesce, so that the engine sees it whole
       int len = 0;
-      for (ByteBuffer b : unwrapMe) len += b.remaining();
+      for (ByteBuffer buffer : unwrapMe) len += buffer.remaining();
       ByteBuffer all = ByteBuffer.allocate(len);
       for (ByteBuffer b : unwrapMe) all.put(b);
       all.flip();
@@ -261,13 +261,13 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   protected void fail(Exception e) {
     if (doneHandshaking) return;
     logger.warn("fail:", e);
-    Throwable e2 = e;
-    while (e2.getCause() != null) {
-      logger.warn("fail cause:", e2.getCause());
-      e2 = e2.getCause();
+    Throwable throwable = e;
+    while (throwable.getCause() != null) {
+      logger.warn("fail cause:", throwable.getCause());
+      throwable = throwable.getCause();
     }
     handshakeFail = true;
-    c.receiveException(e);
+    continuation.receiveException(e);
     socket.close();
     doneHandshaking = true;
   }
@@ -325,7 +325,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         }
       }
       doneHandshaking = true;
-      c.receiveResult(this);
+      continuation.receiveResult(this);
       return true;
     }
     return false;
@@ -483,6 +483,6 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
-    c.receiveException(ioe);
+    continuation.receiveException(ioe);
   }
 }

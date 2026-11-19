@@ -51,5 +51,5 @@ public interface RendezvousTransportLayer<HighIdentifier> {
   /**
    * Called when a message was routed by the overlay to this node.
    */
-  public void messageReceivedFromOverlay(HighIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException;
+  public void messageReceivedFromOverlay(HighIdentifier highIdentifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException;
 }

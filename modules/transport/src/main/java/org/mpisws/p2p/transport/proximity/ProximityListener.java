@@ -40,5 +40,5 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public interface ProximityListener<Identifier> {
-  public void proximityChanged(Identifier i, int newProximity, @Nullable Map<String, Object> options);
+  public void proximityChanged(Identifier identifier, int newProximity, @Nullable Map<String, Object> options);
 }

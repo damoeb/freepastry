@@ -15,8 +15,8 @@ public record MultiInetAddressConfig(int maxNumAddresses) {
   /**
    * @throws IllegalArgumentException if a value is not positive
    */
-  public static MultiInetAddressConfig fromParameters(Parameters p) {
+  public static MultiInetAddressConfig fromParameters(Parameters parameters) {
     return new MultiInetAddressConfig(
-      requirePositive("transport_epoch_max_num_addresses", p.getInt("transport_epoch_max_num_addresses")));
+      requirePositive("transport_epoch_max_num_addresses", parameters.getInt("transport_epoch_max_num_addresses")));
   }
 }

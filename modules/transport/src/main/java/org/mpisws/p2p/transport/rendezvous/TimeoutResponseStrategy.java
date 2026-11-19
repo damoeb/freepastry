@@ -66,20 +66,20 @@ public class TimeoutResponseStrategy<Identifier> implements ResponseStrategy<Ide
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
-    lastTimeReceived.put(i, time.currentTimeMillis());
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String,Object> options) {
+    lastTimeReceived.put(identifier, time.currentTimeMillis());
   }
 
   @Override
-  public void messageSent(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
+  public void messageSent(Identifier identifier, ByteBuffer msg, @Nullable Map<String,Object> options) {
 
   }
 
   @Override
-  public boolean sendDirect(Identifier i, ByteBuffer msg, @Nullable Map<String,Object> options) {
+  public boolean sendDirect(Identifier identifier, ByteBuffer msg, @Nullable Map<String,Object> options) {
     long lastTime = 0;
-    if (lastTimeReceived.containsKey(i)) {
-      lastTime = lastTimeReceived.get(i);
+    if (lastTimeReceived.containsKey(identifier)) {
+      lastTime = lastTimeReceived.get(identifier);
     }
     return time.currentTimeMillis() <= (lastTime+timeout);
   }

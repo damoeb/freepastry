@@ -121,29 +121,29 @@ public class EphemeralIdentifierRegistry<Identifier, HighIdentifier> {
    *
    * only a getter
    *
-   * @param i the default identifier
+   * @param identifier the default identifier
    */
-  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier i) {
+  public @Nullable Identifier getEphemeral(long tag, @Nullable Identifier identifier) {
     Ephemeral<Identifier> ret = tagToEphemeral.get(tag);
     if (ret == null) {
-      logger.debug("getEphemeral({},{}):{}", tag, i, i);
-      return i;
+      logger.debug("getEphemeral({},{}):{}", tag, identifier, identifier);
+      return identifier;
     }
     if (ret.lastUsed() < time.currentTimeMillis()-STALE_PORT_TIME) {
       clear(tag);
-      logger.debug("getEphemeral({},{}):{}", tag, i, i);
-      return i;
+      logger.debug("getEphemeral({},{}):{}", tag, identifier, identifier);
+      return identifier;
     }
-    logger.atDebug().log(() -> "getEphemeral("+tag+","+i+"):"+ret.addr());
+    logger.atDebug().log(() -> "getEphemeral("+tag+","+identifier+"):"+ret.addr());
     return ret.addr();
   }
 
   /**
    * Get the existing tag, or make a new one if needed
    */
-  public long getTagForEphemeral(Identifier addr) {
+  public long getTagForEphemeral(Identifier identifier) {
     long now = time.currentTimeMillis();
-    Long tag = ephemeralToTag.get(addr);
+    Long tag = ephemeralToTag.get(identifier);
     if (tag == null) {
       // it doesn't exist
     } else {
@@ -154,17 +154,17 @@ public class EphemeralIdentifierRegistry<Identifier, HighIdentifier> {
       } else {
         // update timestamp
         tagToEphemeral.put(tag, new Ephemeral<Identifier>(ret.addr(), now));
-        logger.debug("getTagForEphemeral({}):{}", addr, tag);
+        logger.debug("getTagForEphemeral({}):{}", identifier, tag);
         return tag;
       }
     }
 
     // if we're here, we need to create a new one
     tag = nextTag++;
-    Ephemeral<Identifier> ret = new Ephemeral<Identifier>(addr, now);
-    ephemeralToTag.put(addr, tag);
+    Ephemeral<Identifier> ret = new Ephemeral<Identifier>(identifier, now);
+    ephemeralToTag.put(identifier, tag);
     tagToEphemeral.put(tag,ret);
-    logger.debug("getTagForEphemeral({}):{}", addr, tag);
+    logger.debug("getTagForEphemeral({}):{}", identifier, tag);
     return tag;
   }
 

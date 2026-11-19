@@ -47,14 +47,14 @@ class RendezvousPilotTest {
 
   private static class Serializer implements ContactDeserializer<String, Contact> {
     @Override
-    public void serialize(Contact i, OutputBuffer buf) throws IOException {
-      buf.writeUTF(i.name());
-      buf.writeBoolean(i.direct());
+    public void serialize(Contact contact, OutputBuffer buf) throws IOException {
+      buf.writeUTF(contact.name());
+      buf.writeBoolean(contact.direct());
     }
 
     @Override
-    public ByteBuffer serialize(Contact i) throws IOException {
-      return bytes(i);
+    public ByteBuffer serialize(Contact contact) throws IOException {
+      return bytes(contact);
     }
 
     @Override
@@ -73,10 +73,10 @@ class RendezvousPilotTest {
     }
   }
 
-  private static ByteBuffer bytes(Contact c) throws IOException {
+  private static ByteBuffer bytes(Contact contact) throws IOException {
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    sob.writeUTF(c.name());
-    sob.writeBoolean(c.direct());
+    sob.writeUTF(contact.name());
+    sob.writeBoolean(contact.direct());
     return sob.getByteBuffer();
   }
 
@@ -103,9 +103,9 @@ class RendezvousPilotTest {
     }
 
     void fire(boolean canRead, boolean canWrite) throws IOException {
-      P2PSocketReceiver<String> r = receiver;
-      assertNotNull(r, "nobody is registered on the socket");
-      r.receiveSelectResult(this, canRead, canWrite);
+      P2PSocketReceiver<String> p2PSocketReceiver = receiver;
+      assertNotNull(p2PSocketReceiver, "nobody is registered on the socket");
+      p2PSocketReceiver.receiveSelectResult(this, canRead, canWrite);
     }
 
     @Override
@@ -137,8 +137,8 @@ class RendezvousPilotTest {
     }
 
     @Override
-    public void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<String> r) {
-      receiver = r;
+    public void register(boolean wantToRead, boolean wantToWrite, P2PSocketReceiver<String> p2PSocketReceiver) {
+      receiver = p2PSocketReceiver;
     }
 
     @Override
@@ -168,7 +168,7 @@ class RendezvousPilotTest {
     @Override
     public @Nullable MessageRequestHandle<String, ByteBuffer> sendMessage(
         String i,
-        ByteBuffer m,
+        ByteBuffer msg,
         @Nullable MessageCallback<String, ByteBuffer> deliverAckToMe,
         @Nullable Map<String, Object> options) {
       return null;
@@ -224,13 +224,13 @@ class RendezvousPilotTest {
     final List<String> events = new ArrayList<>();
 
     @Override
-    public void pilotOpening(Contact i) {
-      events.add("open:" + i.name());
+    public void pilotOpening(Contact contact) {
+      events.add("open:" + contact.name());
     }
 
     @Override
-    public void pilotClosed(Contact i) {
-      events.add("closed:" + i.name());
+    public void pilotClosed(Contact contact) {
+      events.add("closed:" + contact.name());
     }
   }
 

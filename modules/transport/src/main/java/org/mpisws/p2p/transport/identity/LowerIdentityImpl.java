@@ -90,7 +90,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
   LowerIdentityImpl(
       IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
-      TransportLayer<LowerIdentifier, ByteBuffer> tl,
+      TransportLayer<LowerIdentifier, ByteBuffer> transportLayer,
       ErrorHandler<LowerIdentifier> handler) {
     this.identity = identity;
     this.environment = identity.environment;
@@ -98,7 +98,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     this.serializer = identity.serializer;
     this.bindings = identity.bindings;
     this.bindStrategy = identity.bindStrategy;
-    this.tl = tl;
+    this.tl = transportLayer;
     logger = environment.getLogManager().getLogger(IdentityLayerCore.class, "lower");
     if (handler != null) {
       this.errorHandler = handler;
@@ -106,19 +106,19 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       this.errorHandler = new DefaultErrorHandler<LowerIdentifier>(logger);
     }
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
   }
 
   @Override
   public SocketRequestHandle<LowerIdentifier> openSocket(
-      final LowerIdentifier i,
+      final LowerIdentifier lowerIdentifier,
       final SocketCallback<LowerIdentifier> deliverSocketToMe,
       final @Nullable Map<String, Object> options) {
-    logger.info("openSocket({},{},{})", i, deliverSocketToMe, options);
+    logger.info("openSocket({},{},{})", lowerIdentifier, deliverSocketToMe, options);
 
     // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?
     // May need to re-think this SRHI at all the layers
-    final SocketRequestHandleImpl<LowerIdentifier> ret = new SocketRequestHandleImpl<LowerIdentifier>(i, options, logger);
+    final SocketRequestHandleImpl<LowerIdentifier> ret = new SocketRequestHandleImpl<LowerIdentifier>(lowerIdentifier, options, logger);
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     try {
       if ((options == null) || (options.containsKey(DONT_VERIFY) && ((Boolean)options.get(DONT_VERIFY)).booleanValue())) {
@@ -130,14 +130,14 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
         final UpperIdentifier dest = identity.getIntendedDest(options);
 
         if (dest == null) {
-          deliverSocketToMe.receiveException(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+options.get(NODE_HANDLE_FROM_INDEX)));
+          deliverSocketToMe.receiveException(ret, new MemoryExpiredException("No record of the upper identifier for "+lowerIdentifier+" index="+options.get(NODE_HANDLE_FROM_INDEX)));
           return ret;
         }
 
-        if (identity.addBinding(dest, i, options)) {
+        if (identity.addBinding(dest, lowerIdentifier, options)) {
           // no problem, sending message
         } else {
-          deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
+          deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(lowerIdentifier));
           return ret;
         }
 
@@ -152,7 +152,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     }
     final ByteBuffer buf;
     buf = sob.getByteBuffer();
-    ret.setSubCancellable(tl.openSocket(i,
+    ret.setSubCancellable(tl.openSocket(lowerIdentifier,
         new SocketCallback<LowerIdentifier>(){
 
           @Override
@@ -201,20 +201,20 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
                           byte answer = responseBuffer.array()[0];
                           if (answer == FAILURE) {
                             // wrong address, read more
-                            logger.info("openSocket({},{}) answer = FAILURE", i, deliverSocketToMe);
-                            UpperIdentifier newDest = serializer.deserialize(new SocketInputBuffer(socket, localIdentifier.length), i);
+                            logger.info("openSocket({},{}) answer = FAILURE", lowerIdentifier, deliverSocketToMe);
+                            UpperIdentifier newDest = serializer.deserialize(new SocketInputBuffer(socket, localIdentifier.length), lowerIdentifier);
 
                             // the socket's options: they may carry the peer's certificate, which vouches for newDest
-                            if (identity.addBinding(newDest, i, socket.getOptions())) {
+                            if (identity.addBinding(newDest, lowerIdentifier, socket.getOptions())) {
                             } else {
                               // This is really bad if we get here, because someone responded to us who is dead, maybe a big network lag could cause this?
                               socket.close();
-                              deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
+                              deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(lowerIdentifier));
                             }
 
                             // need to do this so the bootstrapper knows the proper identity
                             // done in addBinding now
-                            deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
+                            deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(lowerIdentifier));
                           } else {
                             ret.setSubCancellable(() -> {
                               throw new IllegalStateException("Can't cancel, already delivered. ret:"+ret+" sock:"+socket);
@@ -224,9 +224,9 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
                               // subject: let the strategy check the destination against it (an outgoing connection
                               // authenticates the peer just as an incoming one does)
                               UpperIdentifier dest = identity.getIntendedDest(options);
-                              if (dest != null && !bindStrategy.accept(dest, i, socket.getOptions())) {
+                              if (dest != null && !bindStrategy.accept(dest, lowerIdentifier, socket.getOptions())) {
                                 socket.close();
-                                deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(i));
+                                deliverSocketToMe.receiveException(ret, new NodeIsFaultyException(lowerIdentifier));
                                 return;
                               }
                             }
@@ -249,7 +249,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
           }
 
           @Override
-          public void receiveException(SocketRequestHandle<LowerIdentifier> s, Exception ex) {
+          public void receiveException(SocketRequestHandle<LowerIdentifier> request, Exception ex) {
             deliverSocketToMe.receiveException(ret, ex);
           }
 
@@ -440,22 +440,22 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
    */
   @Override
   public MessageRequestHandle<LowerIdentifier, ByteBuffer> sendMessage(
-      final LowerIdentifier i,
+      final LowerIdentifier lowerIdentifier,
       ByteBuffer m,
       final @Nullable MessageCallback<LowerIdentifier, ByteBuffer> deliverAckToMe,
       final @Nullable Map<String, Object> options) {
 
     if (logger.isTraceEnabled()) {
-      byte[] b = ByteBuffers.peekRemaining(m);
-      logger.trace("sendMessage("+i+","+m+")"+Arrays.toString(b));
+      byte[] bytes = ByteBuffers.peekRemaining(m);
+      logger.trace("sendMessage("+lowerIdentifier+","+m+")"+Arrays.toString(bytes));
     } else {
-      logger.debug("sendMessage({},{})", i, m);
+      logger.debug("sendMessage({},{})", lowerIdentifier, m);
     }
 
     // what happens if they cancel after the socket has been received by a lower layer, but is still reading the header?
     // May need to re-think this SRHI at all the layers
     final MessageRequestHandleImpl<LowerIdentifier, ByteBuffer> ret =
-      new MessageRequestHandleImpl<LowerIdentifier, ByteBuffer>(i, m, options);
+      new MessageRequestHandleImpl<LowerIdentifier, ByteBuffer>(lowerIdentifier, m, options);
 
     byte[] msgWithHeader;
     if (options != null && options.containsKey(NODE_HANDLE_FROM_INDEX)) {
@@ -471,14 +471,14 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       UpperIdentifier dest = identity.getIntendedDest(options);
 
       if (dest == null) {
-        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityLayerCore.index(options)));
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+lowerIdentifier+" index="+IdentityLayerCore.index(options)));
         return ret;
       }
 
-      if (identity.addBinding(dest, i, options)) {
+      if (identity.addBinding(dest, lowerIdentifier, options)) {
         // no problem, sending message
       } else {
-        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(i, m));
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new NodeIsFaultyException(lowerIdentifier, m));
         return ret;
       }
 
@@ -503,7 +503,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
     final ByteBuffer buf = ByteBuffer.wrap(msgWithHeader);
 
-    ret.setSubCancellable(tl.sendMessage(i, buf,
+    ret.setSubCancellable(tl.sendMessage(lowerIdentifier, buf,
         new MessageCallback<LowerIdentifier, ByteBuffer>(){
 
           @Override
@@ -522,7 +522,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
               throw new RuntimeException("msg != cancellable.getSubCancellable() (indicates a bug in the code) msg:"+
                   msg+" sub:"+ret.getSubCancellable());
             if (deliverAckToMe == null) {
-              errorHandler.receivedException(i, ex);
+              errorHandler.receivedException(lowerIdentifier, ex);
             } else {
               deliverAckToMe.sendFailed(ret, ex);
             }
@@ -533,25 +533,25 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   }
 
   @Override
-  public void messageReceived(LowerIdentifier i, ByteBuffer m, @Nullable Map<String, Object> options) throws IOException {
+  public void messageReceived(LowerIdentifier lowerIdentifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
     @Nullable Map<String, Object> newOptions = OptionsFactory.copyOptions(options);
 
-    if (!m.hasRemaining()) {
-      throw new IOException("Empty message from " + i);
+    if (!msg.hasRemaining()) {
+      throw new IOException("Empty message from " + lowerIdentifier);
     }
-    byte msgType = m.get();
-    logger.debug("messageReceived({},{}):{}", i, m, msgType);
+    byte msgType = msg.get();
+    logger.debug("messageReceived({},{}):{}", lowerIdentifier, msg, msgType);
     switch(msgType) {
       case NORMAL:
         // this is a normal message, make sure it's for me
-        if (m.remaining() < localIdentifier.length) {
-          throw new IOException("Message from " + i + " is too short for the destination identity: " + m.remaining() + " bytes");
+        if (msg.remaining() < localIdentifier.length) {
+          throw new IOException("Message from " + lowerIdentifier + " is too short for the destination identity: " + msg.remaining() + " bytes");
         }
         byte[] dest = new byte[localIdentifier.length];
-        m.get(dest);
+        msg.get(dest);
         if (!Arrays.equals(dest, localIdentifier)) {
           // send back an error
-          logger.atInfo().log(() -> "received message for wrong node from:"+i+
+          logger.atInfo().log(() -> "received message for wrong node from:"+lowerIdentifier+
               " intended:"+Arrays.toString(dest)+
               " me:"+Arrays.toString(localIdentifier));
 
@@ -559,24 +559,24 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
           errorMessage[0] = INCORRECT_IDENTITY;
           System.arraycopy(localIdentifier, 0, errorMessage, 1, localIdentifier.length);
           ByteBuffer buf = ByteBuffer.wrap(errorMessage);
-          tl.sendMessage(i, buf, null, options);   // it's important to the rendezvous layer to reuse the options
+          tl.sendMessage(lowerIdentifier, buf, null, options);   // it's important to the rendezvous layer to reuse the options
           return;
         }
         // fall through: a message for me is read like one without an id
 
       case NO_ID:
-        byte[] array = ByteBuffers.arrayForRead(m);
-        SimpleInputBuffer sib = new SimpleInputBuffer(array, ByteBuffers.arrayPosition(m));
-        UpperIdentifier from = serializer.deserialize(sib, i);
-        ByteBuffers.setArrayPosition(m, array.length - sib.bytesRemaining());
+        byte[] array = ByteBuffers.arrayForRead(msg);
+        SimpleInputBuffer sib = new SimpleInputBuffer(array, ByteBuffers.arrayPosition(msg));
+        UpperIdentifier from = serializer.deserialize(sib, lowerIdentifier);
+        ByteBuffers.setArrayPosition(msg, array.length - sib.bytesRemaining());
 
-        if (identity.addBinding(from, i, options)) {
+        if (identity.addBinding(from, lowerIdentifier, options)) {
 
           // need to do this so the bootstrapper knows the proper identity
         } else {
           logger.atWarn().log(() -> "Warning.  Received message from stale identifier:"+
-              from+". Current identifier is "+bindings.get(serializer.translateUp(i))+" lower:"+i+" Probably a delayed message, dropping.");
-          errorHandler.receivedUnexpectedData(i, array, ByteBuffers.arrayPosition(m), newOptions);
+              from+". Current identifier is "+bindings.get(serializer.translateUp(lowerIdentifier))+" lower:"+lowerIdentifier+" Probably a delayed message, dropping.");
+          errorHandler.receivedUnexpectedData(lowerIdentifier, array, ByteBuffers.arrayPosition(msg), newOptions);
           return;
         }
 
@@ -585,19 +585,19 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
         // it's for me, no problem
         if (logger.isTraceEnabled()) {
-          byte[] b = ByteBuffers.peekRemaining(m);
-          logger.trace("received message for me from:"+from+"("+from+"("+i+")) "+Arrays.toString(b));
+          byte[] bytes = ByteBuffers.peekRemaining(msg);
+          logger.trace("received message for me from:"+from+"("+from+"("+lowerIdentifier+")) "+Arrays.toString(bytes));
         }
-        callback.messageReceived(i, m, newOptions);
+        callback.messageReceived(lowerIdentifier, msg, newOptions);
         break;
       case INCORRECT_IDENTITY:
         // it's an error, read it in
-        UpperIdentifier oldDest = bindings.get(serializer.translateUp(i));
+        UpperIdentifier oldDest = bindings.get(serializer.translateUp(lowerIdentifier));
 
-        UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(ByteBuffers.arrayForRead(m), ByteBuffers.arrayPosition(m)), i);
-        logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", i, oldDest, newDest);
+        UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(ByteBuffers.arrayForRead(msg), ByteBuffers.arrayPosition(msg)), lowerIdentifier);
+        logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", lowerIdentifier, oldDest, newDest);
 
-        if (identity.addBinding(newDest, i, options)) { // should call setDeadForever
+        if (identity.addBinding(newDest, lowerIdentifier, options)) { // should call setDeadForever
 
           // need to do this so the bootstrapper knows the proper identity
         }

@@ -58,15 +58,15 @@ public class DefaultCallback<Identifier, MessageType> implements
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s)
+  public void incomingSocket(P2PSocket<Identifier> socket)
       throws IOException {
-    logger.info("incomingSocket({})", s);
+    logger.info("incomingSocket({})", socket);
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options)
+  public void messageReceived(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options)
       throws IOException {
-    logger.info("messageReceived({},{})", i, m);
+    logger.info("messageReceived({},{})", identifier, messageType);
   }
 
 }

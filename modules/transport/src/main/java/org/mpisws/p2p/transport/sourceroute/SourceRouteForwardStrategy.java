@@ -45,5 +45,5 @@ import org.jspecify.annotations.Nullable;
  * @author Jeff Hoye
  */
 public interface SourceRouteForwardStrategy<Identifier> {
-  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sr, boolean socket, @Nullable Map<String, Object> options);
+  public boolean forward(Identifier nextHop, SourceRoute<Identifier> sourceRoute, boolean socket, @Nullable Map<String, Object> options);
 }

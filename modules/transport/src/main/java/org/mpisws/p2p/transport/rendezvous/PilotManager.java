@@ -52,12 +52,12 @@ public interface PilotManager<Identifier> {
    *
    * @param deliverAckToMe optional
    */
-  SocketRequestHandle<Identifier> openPilot(Identifier i, Continuation<SocketRequestHandle<Identifier>, Exception> deliverAckToMe);
+  SocketRequestHandle<Identifier> openPilot(Identifier identifier, Continuation<SocketRequestHandle<Identifier>, Exception> deliverAckToMe);
 
   /**
    * Tells the manager that the pilot to the Identifier is no longer useful
    */
-  void closePilot(Identifier i);
+  void closePilot(Identifier identifier);
 
   public void addOutgoingPilotListener(OutgoingPilotListener<Identifier> listener);
   public void removeOutgoingPilotListener(OutgoingPilotListener<Identifier> listener);

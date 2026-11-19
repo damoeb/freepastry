@@ -93,8 +93,8 @@ class IdentityBindingsBoundTest {
       try {
         action.run();
         done.complete(null);
-      } catch (Throwable t) {
-        done.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        done.completeExceptionally(throwable);
       }
     });
     done.get(10, TimeUnit.SECONDS);

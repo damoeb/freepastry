@@ -99,9 +99,9 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   final Map<Identifier, Tuple<int[], Collection<MySocket>>> measured = new HashMap<Identifier, Tuple<int[], Collection<MySocket>>>();
   private final rice.environment.time.TimeSource time;
 
-  public BandwidthMeasuringTransportLayer(int measurementPeriod, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
-    this.tl = tl;
-    tl.setCallback(this);
+  public BandwidthMeasuringTransportLayer(int measurementPeriod, TransportLayer<Identifier, ByteBuffer> transportLayer, Environment env) {
+    this.tl = transportLayer;
+    transportLayer.setCallback(this);
     this.logger = env.getLogManager().getLogger(BandwidthMeasuringTransportLayer.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
     this.time = env.getTimeSource();
@@ -128,8 +128,8 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       long now = time.currentTimeMillis();
       int diff = (int)(now - lastMeasure);
       lastMeasure = now;
-      for (Identifier i : measured.keySet()) {
-        Tuple<int[], Collection<MySocket>> t = measured.get(i);
+      for (Identifier identifier : measured.keySet()) {
+        Tuple<int[], Collection<MySocket>> t = measured.get(identifier);
         int[] vals = t.first();
         vals[LAST_DOWN] = vals[CUR_DOWN]*1000/diff;
         vals[LAST_UP] = vals[CUR_UP]*1000/diff;
@@ -140,8 +140,8 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
 
         // see if anyone was waiting to write
         if (vals[LAST_SATURATED] == NOT_SATURATED) {
-          for (MySocket s : t.second()) {
-            if (s.wantsToWrite()) {
+          for (MySocket mySocket : t.second()) {
+            if (mySocket.wantsToWrite()) {
               vals[LAST_SATURATED] = SATURATED;
               break;
             }
@@ -154,11 +154,11 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   /**
    * Should be holding the lock on measured
    */
-  public Tuple<int[], Collection<MySocket>> getOrCreateMeasurements(Identifier i) {
-    Tuple<int[], Collection<MySocket>> ret = measured.get(i);
+  public Tuple<int[], Collection<MySocket>> getOrCreateMeasurements(Identifier identifier) {
+    Tuple<int[], Collection<MySocket>> ret = measured.get(identifier);
     if (ret == null) {
       ret = new Tuple<int[], Collection<MySocket>>(new int[NUM_VALS], new ArrayList<MySocket>());
-      measured.put(i, ret);
+      measured.put(identifier, ret);
     }
     return ret;
   }
@@ -180,18 +180,18 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   public Map<Identifier, BandwidthUsed> getBandwidthUsed() {
     synchronized(measured) {
       HashMap<Identifier, BandwidthUsed> ret = new HashMap<Identifier, BandwidthUsed>();
-      for (Identifier i : measured.keySet()) {
-        Tuple<int[], Collection<MySocket>> t = measured.get(i);
+      for (Identifier identifier : measured.keySet()) {
+        Tuple<int[], Collection<MySocket>> t = measured.get(identifier);
         int[] vals = t.first();
-        ret.put(i,new BandwidthUsed(vals[LAST_DOWN], vals[LAST_UP], vals[LAST_SATURATED] == SATURATED));
+        ret.put(identifier,new BandwidthUsed(vals[LAST_DOWN], vals[LAST_UP], vals[LAST_SATURATED] == SATURATED));
       }
       return ret;
     }
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    callback.incomingSocket(new MySocket(s.getIdentifier(),s,logger,errorHandler,s.getOptions()));
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    callback.incomingSocket(new MySocket(socket.getIdentifier(),socket,logger,errorHandler,socket.getOptions()));
   }
 
   class MySocket extends SocketWrapperSocket<Identifier, Identifier> {
@@ -260,42 +260,42 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m,
+  public void messageReceived(Identifier identifier, ByteBuffer msg,
       @Nullable Map<String, Object> options) throws IOException {
     synchronized (measured) {
-      getOrCreateMeasurements(i).first()[CUR_DOWN]+=m.remaining();
+      getOrCreateMeasurements(identifier).first()[CUR_DOWN]+=msg.remaining();
     }
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, msg, options);
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i,
-      ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier,
+      ByteBuffer msg, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     synchronized (measured) {
-      getOrCreateMeasurements(i).first()[CUR_UP]+=m.remaining();
+      getOrCreateMeasurements(identifier).first()[CUR_UP]+=msg.remaining();
     }
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    return tl.sendMessage(identifier, msg, deliverAckToMe, options);
   }
 
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i,
+  public SocketRequestHandle<Identifier> openSocket(final Identifier identifier,
       final SocketCallback<Identifier> deliverSocketToMe,
       final @Nullable Map<String, Object> options) {
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i,options,logger);
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>() {
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
+    ret.setSubCancellable(tl.openSocket(identifier, new SocketCallback<Identifier>() {
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s,
+      public void receiveException(SocketRequestHandle<Identifier> request,
           Exception ex) {
-        deliverSocketToMe.receiveException(s, ex);
+        deliverSocketToMe.receiveException(request, ex);
       }
 
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> sock) {
-        deliverSocketToMe.receiveResult(ret, new MySocket(i,sock,logger,errorHandler,options));
+          P2PSocket<Identifier> socket) {
+        deliverSocketToMe.receiveResult(ret, new MySocket(identifier,socket,logger,errorHandler,options));
       }
 
     }, options));

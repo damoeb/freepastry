@@ -44,13 +44,13 @@ class EntityManagerQueueTest {
 
   @SuppressWarnings("unchecked")
   private PeerMessageWriter<String> target() {
-    TransportLayer<String, ByteBuffer> tl = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
+    TransportLayer<String, ByteBuffer> transportLayer = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> null);
     LivenessProvider<String> alive = (LivenessProvider<String>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {LivenessProvider.class}, (proxy, method, args) -> 0);
     // never started: not the selector thread for anybody, and what is invoked on it is never run
     SelectorLoop selector = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager());
-    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(tl, alive, null, selector,
+    PeerMessageWriterContext<String> ctx = new PeerMessageWriterContext<>(transportLayer, alive, null, selector,
         LoggerFactory.getLogger(EntityManagerQueueTest.class), 100, MAX_QUEUE_SIZE, 1000, List.of(),
         new TransportListeners<>(), () -> null, () -> null, () -> false, id -> null);
     return new PeerMessageWriter<>("peer", ctx);
@@ -96,12 +96,12 @@ class EntityManagerQueueTest {
   @DisplayName("purge fails every queued message in queue order and leaves the manager idle")
   void purgeFailsEveryQueuedMessage() {
     PeerMessageWriter<String> target = target();
-    MessageRequestHandle<String, ByteBuffer> a = send(target, 1);
+    MessageRequestHandle<String, ByteBuffer> request = send(target, 1);
     MessageRequestHandle<String, ByteBuffer> b = send(target, 0);
 
     target.purge(new IOException("boom"));
 
-    assertEquals(List.of(b, a), failed);
+    assertEquals(List.of(b, request), failed);
     assertTrue(target.isIdle());
   }
 }

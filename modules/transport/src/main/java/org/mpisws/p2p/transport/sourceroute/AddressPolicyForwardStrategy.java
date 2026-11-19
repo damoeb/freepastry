@@ -58,7 +58,7 @@ public class AddressPolicyForwardStrategy<Identifier> implements SourceRouteForw
 
   @Override
   public boolean forward(
-      Identifier nextHop, SourceRoute<Identifier> sr, boolean socket, @Nullable Map<String, Object> options) {
+      Identifier nextHop, SourceRoute<Identifier> sourceRoute, boolean socket, @Nullable Map<String, Object> options) {
     return isAcceptable(localAddresses, contactedAddress.apply(nextHop));
   }
 
@@ -66,25 +66,25 @@ public class AddressPolicyForwardStrategy<Identifier> implements SourceRouteForw
    * Whether a node with the addresses {@code local} may contact {@code target} on behalf of someone else.
    */
   public static boolean isAcceptable(Collection<InetSocketAddress> local, InetSocketAddress target) {
-    InetAddress ip = target.getAddress();
-    if (ip == null || target.getPort() == 0 || local.contains(target)) {
+    InetAddress address = target.getAddress();
+    if (address == null || target.getPort() == 0 || local.contains(target)) {
       return false;
     }
-    if (ip.isAnyLocalAddress() || ip.isMulticastAddress()) {
+    if (address.isAnyLocalAddress() || address.isMulticastAddress()) {
       return false;
     }
-    if (ip.isLoopbackAddress()) {
+    if (address.isLoopbackAddress()) {
       return anyLocal(local, InetAddress::isLoopbackAddress);
     }
-    if (ip.isLinkLocalAddress()) {
+    if (address.isLinkLocalAddress()) {
       return anyLocal(local, InetAddress::isLinkLocalAddress);
     }
     return true;
   }
 
   private static boolean anyLocal(Collection<InetSocketAddress> local, Predicate<InetAddress> test) {
-    for (InetSocketAddress l : local) {
-      InetAddress ip = l.getAddress();
+    for (InetSocketAddress address : local) {
+      InetAddress ip = address.getAddress();
       if (ip != null && test.test(ip)) {
         return true;
       }

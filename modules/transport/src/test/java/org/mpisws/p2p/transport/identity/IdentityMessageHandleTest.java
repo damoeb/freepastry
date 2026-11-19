@@ -36,9 +36,9 @@ class IdentityMessageHandleTest {
   }
 
   private static Map<?, ?> pendingMessages(IdentityLayerCore<?, ?, ?, ?> identity) throws ReflectiveOperationException {
-    Field f = IdentityLayerCore.class.getDeclaredField("pendingMessages");
-    f.setAccessible(true);
-    return (Map<?, ?>) f.get(identity);
+    Field field = IdentityLayerCore.class.getDeclaredField("pendingMessages");
+    field.setAccessible(true);
+    return (Map<?, ?>) field.get(identity);
   }
 
   @Test

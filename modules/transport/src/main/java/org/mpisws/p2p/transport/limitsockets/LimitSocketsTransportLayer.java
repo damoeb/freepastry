@@ -75,7 +75,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   private static final int CLOSE_AFTER_SHUTDOWN_MILLIS = 3000;
 
   int MAX_SOCKETS;
-  private final TransportLayer<Identifier, MessageType> tl;
+  private final TransportLayer<Identifier, MessageType> transportLayer;
   private final LinkedHashMap<LSSocket, LSSocket> cache;
   private final Logger logger;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
@@ -84,9 +84,9 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   private ErrorHandler<Identifier> handler;
 
 
-  public LimitSocketsTransportLayer(int maxSockets, TransportLayer<Identifier, MessageType> tl, ErrorHandler<Identifier> handler, Environment env) {
+  public LimitSocketsTransportLayer(int maxSockets, TransportLayer<Identifier, MessageType> transportLayer, ErrorHandler<Identifier> handler, Environment env) {
     this.MAX_SOCKETS = maxSockets;
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     this.logger = env.getLogManager().getLogger(LimitSocketsTransportLayer.class, null);
     this.timer = env.getSelectorManager().getTimer();
     this.cache = new LinkedHashMap<LSSocket, LSSocket>(MAX_SOCKETS,0.75f,true);
@@ -95,40 +95,40 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
       this.handler = new DefaultErrorHandler<Identifier>(logger);
     }
 
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
-    if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, i, deliverSocketToMe, options, new Exception("Stack Trace"));
+  public SocketRequestHandle<Identifier> openSocket(final Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, final @Nullable Map<String, Object> options) {
+    if (logger.isTraceEnabled()) logger.trace("{}.openSocket({},{},{})", LimitSocketsTransportLayer.this, identifier, deliverSocketToMe, options, new Exception("Stack Trace"));
 
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger) {
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier, options, logger) {
       @Override
       public boolean cancel() {
-        logger.trace("{}.openSocket({},{}):{}.cancel()", this, i, deliverSocketToMe, this);
+        logger.trace("{}.openSocket({},{}):{}.cancel()", this, identifier, deliverSocketToMe, this);
         return super.cancel();
       }
 
       @Override
       public String toString() {
-        return LimitSocketsTransportLayer.this+"RequestHandle.openSocket("+i+","+deliverSocketToMe+","+options+")";
+        return LimitSocketsTransportLayer.this+"RequestHandle.openSocket("+identifier+","+deliverSocketToMe+","+options+")";
       }
     };
 
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
+    ret.setSubCancellable(transportLayer.openSocket(identifier, new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, i, deliverSocketToMe, ret);
-        deliverSocketToMe.receiveResult(ret, wrapAndTrackSocket(sock));
+      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket) {
+        logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, identifier, deliverSocketToMe, ret);
+        deliverSocketToMe.receiveResult(ret, wrapAndTrackSocket(socket));
       }
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-        logger.atTrace().log(() -> this+".openSocket("+i+","+deliverSocketToMe+"):"+ret+".receiveException("+ex+")");
+      public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
+        logger.atTrace().log(() -> this+".openSocket("+identifier+","+deliverSocketToMe+"):"+ret+".receiveException("+ex+")");
         deliverSocketToMe.receiveException(ret, ex);
       }
       @Override
       public String toString() {
-        return LimitSocketsTransportLayer.this+"SocketCallback.openSocket("+i+","+deliverSocketToMe+","+options+")";
+        return LimitSocketsTransportLayer.this+"SocketCallback.openSocket("+identifier+","+deliverSocketToMe+","+options+")";
       }
 
     }, options));
@@ -137,13 +137,13 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    logger.trace("{}.incomingSocket({})", this, s);
-    callback.incomingSocket(wrapAndTrackSocket(s));
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    logger.trace("{}.incomingSocket({})", this, socket);
+    callback.incomingSocket(wrapAndTrackSocket(socket));
   }
 
-  protected LSSocket wrapAndTrackSocket(P2PSocket<Identifier> sock) {
-    LSSocket ret = new LSSocket(sock);
+  protected LSSocket wrapAndTrackSocket(P2PSocket<Identifier> socket) {
+    LSSocket ret = new LSSocket(socket);
     cache.put(ret,ret);
     closeIfNecessary();
     return ret;
@@ -153,13 +153,13 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
     Collection<LSSocket> closeMe = new ArrayList<LSSocket>();
     synchronized(cache) {
       while (cache.size() > MAX_SOCKETS) {
-        Iterator<LSSocket> i = cache.keySet().iterator();
-        closeMe.add(i.next());
-        i.remove();
+        Iterator<LSSocket> iterator = cache.keySet().iterator();
+        closeMe.add(iterator.next());
+        iterator.remove();
       }
     }
-    for (LSSocket sock : closeMe) {
-      sock.forceClose();
+    for (LSSocket lSSocket : closeMe) {
+      lSSocket.forceClose();
     }
   }
 
@@ -260,27 +260,27 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
 
   @Override
   public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+    transportLayer.acceptMessages(b);
   }
 
   @Override
   public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+    transportLayer.acceptSockets(b);
   }
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   @Override
-  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier i, MessageType m, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+  public @Nullable MessageRequestHandle<Identifier, MessageType> sendMessage(Identifier identifier, MessageType messageType, @Nullable MessageCallback<Identifier, MessageType> deliverAckToMe, @Nullable Map<String, Object> options) {
+    return transportLayer.sendMessage(identifier, messageType, deliverAckToMe, options);
   }
 
   @Override
-  public void messageReceived(Identifier i, MessageType m, @Nullable Map<String, Object> options) throws IOException {
-    callback.messageReceived(i, m, options);
+  public void messageReceived(Identifier identifier, MessageType messageType, @Nullable Map<String, Object> options) throws IOException {
+    callback.messageReceived(identifier, messageType, options);
   }
 
   @Override
@@ -291,12 +291,12 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.handler = handler;
-    tl.setErrorHandler(handler);
+    transportLayer.setErrorHandler(handler);
   }
 
   @Override
   public void destroy() {
-    tl.destroy();
+    transportLayer.destroy();
   }
 
 

@@ -45,13 +45,13 @@ import org.jspecify.annotations.Nullable;
  */
 public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
   /**
-   * @param u the upper identifier offered for the lower one
-   * @param l the lower identifier, or null when the upper one was learned without a connection (for example
+   * @param upperIdentifier the upper identifier offered for the lower one
+   * @param lowerIdentifier the lower identifier, or null when the upper one was learned without a connection (for example
    *     deserialized from a message)
    * @param options the options of the connection or message it came with, or null
    * @return false to refuse the binding
    */
-  public boolean accept(UpperIdentifier u, @Nullable LowerIdentifier l, @Nullable Map<String, Object> options);
+  public boolean accept(UpperIdentifier upperIdentifier, @Nullable LowerIdentifier lowerIdentifier, @Nullable Map<String, Object> options);
 
   /**
    * Whether a received message may go up to the layers above with {@code from} as its sender. The identity layer
@@ -83,11 +83,11 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
    * {@code u} is replaced. Keep only bindings a sender cannot offer at will, such as those confirmed by the node's
    * certificate.
    *
-   * @param u the upper identifier bound now
+   * @param upperIdentifier the upper identifier bound now
    * @param options the options of the connection or message it was offered or confirmed with, or null
    * @return false by default
    */
-  default boolean shouldKeepBinding(UpperIdentifier u, @Nullable Map<String, Object> options) {
+  default boolean shouldKeepBinding(UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
     return false;
   }
 
@@ -96,11 +96,11 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
    * asked after {@link #accept} has accepted {@code u} with the same options.
    *
    * @param old the upper identifier bound now
-   * @param u the upper identifier offered instead
+   * @param upperIdentifier the upper identifier offered instead
    * @param options the options of the connection or message {@code u} came with, or null
    * @return {@link Replacement#ASK_NODE_CHANGE_STRATEGY} by default
    */
-  default Replacement replace(UpperIdentifier old, UpperIdentifier u, @Nullable Map<String, Object> options) {
+  default Replacement replace(UpperIdentifier old, UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
     return Replacement.ASK_NODE_CHANGE_STRATEGY;
   }
 }

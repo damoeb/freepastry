@@ -79,10 +79,10 @@ public class WireSourceRouteFactory implements SourceRouteFactory<InetSocketAddr
     for (int i = 0; i < numInPath; i++) {
       byte[] addrBytes = new byte[WireSourceRoute.IPV4_BYTES];
       buf.read(addrBytes);
-      InetAddress addr = InetAddress.getByAddress(addrBytes);
+      InetAddress address = InetAddress.getByAddress(addrBytes);
       short port = buf.readShort();
 
-      path.add(new InetSocketAddress(addr, Short.toUnsignedInt(port)));
+      path.add(new InetSocketAddress(address, Short.toUnsignedInt(port)));
     }
     SourceRoutes.requireDistinctHops(path);
     return new WireSourceRoute(path);

@@ -50,11 +50,11 @@ public class DisabledUdpLayer implements UDPLayer {
 
   @Override
   public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-      InetSocketAddress destination, ByteBuffer m,
+      InetSocketAddress destination, ByteBuffer msg,
       @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     MessageRequestHandle<InetSocketAddress, ByteBuffer> ret =
-      new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(destination, m, options);
+      new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(destination, msg, options);
     if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new IOException("UDP is disabled.  To use this feature, enable UDP in the WireTransportLayer constructor."));
     return ret;
   }

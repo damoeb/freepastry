@@ -189,12 +189,12 @@ class IdentityLayersTest {
     }
 
     @Override
-    public void addProximityListener(ProximityListener<String> l) {
-      listener = l;
+    public void addProximityListener(ProximityListener<String> proximityListener) {
+      listener = proximityListener;
     }
 
     @Override
-    public boolean removeProximityListener(ProximityListener<String> l) {
+    public boolean removeProximityListener(ProximityListener<String> proximityListener) {
       return true;
     }
 
@@ -230,14 +230,14 @@ class IdentityLayersTest {
     lowerInput = (TransportLayerCallback<String, ByteBuffer>) lower;
     lower.setCallback(new TransportLayerCallback<>() {
       @Override
-      public void messageReceived(String i, ByteBuffer m, @Nullable Map<String, Object> options) {
-        assertEquals(PAYLOAD.length, m.remaining());
+      public void messageReceived(String i, ByteBuffer msg, @Nullable Map<String, Object> options) {
+        assertEquals(PAYLOAD.length, msg.remaining());
         lowerReceived.add(i);
         lowerReceivedOptions.add(options);
       }
 
       @Override
-      public void incomingSocket(P2PSocket<String> s) {}
+      public void incomingSocket(P2PSocket<String> socket) {}
     });
     UpperIdentity<String, String> upper = identity.getUpperIdentity();
     assertNotNull(upper);
@@ -259,8 +259,8 @@ class IdentityLayersTest {
     env.getSelectorManager().invoke(() -> {
       try {
         result.complete(task.call());
-      } catch (Throwable t) {
-        result.completeExceptionally(t);
+      } catch (Throwable throwable) {
+        result.completeExceptionally(throwable);
       }
     });
     return result.get(10, TimeUnit.SECONDS);
@@ -367,9 +367,9 @@ class IdentityLayersTest {
   @DisplayName("a message addressed to another identity is answered with INCORRECT_IDENTITY")
   void messageForWrongNodeIsAnswered() throws Exception {
     build((oldDest, newDest) -> false, null);
-    byte[] other = serialized("other@me");
-    ByteBuffer message = ByteBuffer.allocate(1 + other.length);
-    message.put(IdentityLayerCore.NORMAL).put(other).flip();
+    byte[] bytes = serialized("other@me");
+    ByteBuffer message = ByteBuffer.allocate(1 + bytes.length);
+    message.put(IdentityLayerCore.NORMAL).put(bytes).flip();
 
     onSelector(() -> {
       lowerInput.messageReceived(ADDRESS, message, null);

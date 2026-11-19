@@ -69,10 +69,10 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
 
   @Override
   public SourceRoute<InetSocketAddress> getIdentifier(
-      TransportLayer<SourceRoute<InetSocketAddress>, ByteBuffer> a,
+      TransportLayer<SourceRoute<InetSocketAddress>, ByteBuffer> transportLayer,
       TransportLayer<SourceRoute<InetSocketAddress>, ByteBuffer> b) {
 
-    SourceRoute<InetSocketAddress> src = a.getLocalIdentifier();
+    SourceRoute<InetSocketAddress> src = transportLayer.getLocalIdentifier();
     SourceRoute<InetSocketAddress> intermediate = carol.getLocalIdentifier();
     SourceRoute<InetSocketAddress> dest = b.getLocalIdentifier();
 
@@ -95,17 +95,17 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
     srFactory = new WireSourceRouteFactory();
     TLTest.setUpBeforeClass();
     logger = env.getLogManager().getLogger(MagicNumberTest.class, null);
-    InetAddress addr = InetAddress.getLocalHost();
-    int[] ports = FreePorts.freePorts(addr, 3);
+    InetAddress address = InetAddress.getLocalHost();
+    int[] ports = FreePorts.freePorts(address, 3);
 
-    alice = buildTL("alice", addr, ports[0], env);
-    bob = buildTL("bob", addr, ports[1], env);
-    carol_tap = buildTL("carol", addr, ports[2], env);
+    alice = buildTL("alice", address, ports[0], env);
+    bob = buildTL("bob", address, ports[1], env);
+    carol_tap = buildTL("carol", address, ports[2], env);
     carol = carol_tap;
     otherTLs.add(carol);
   }
 
-  private static SourceRouteTransportLayer<InetSocketAddress> buildTL(String name, InetAddress addr, int port, Environment env) throws IOException {
+  private static SourceRouteTransportLayer<InetSocketAddress> buildTL(String name, InetAddress address, int port, Environment env) throws IOException {
     Environment env_a = new Environment(
         env.getSelectorManager(),
         env.getProcessor(),
@@ -115,7 +115,7 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
         env.getParameters(),
         env.getExceptionStrategy());
     env.addDestructable(env_a);
-    InetSocketAddress addr_a = new InetSocketAddress(addr,port);
+    InetSocketAddress addr_a = new InetSocketAddress(address,port);
     return
       new SourceRouteTransportLayer<InetSocketAddress>(srFactory,
         new MagicNumberTransportLayer<InetSocketAddress>(
@@ -129,9 +129,9 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
     P2PSocket<InetSocketAddress> a,b;
     ByteBuffer m;
 
-    public Triplet(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
+    public Triplet(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> socket, P2PSocket<InetSocketAddress> b) {
       this.path = path;
-      this.a = a;
+      this.a = socket;
       this.b = b;
     }
   }
@@ -148,15 +148,15 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
 
     SourceRouteTap<InetSocketAddress> tap = new SourceRouteTap<InetSocketAddress>(){
       @Override
-      public void socketOpened(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
+      public void socketOpened(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> socket, P2PSocket<InetSocketAddress> b) {
         synchronized(lock) {
-          opened.add(new Triplet(path, a, b));
+          opened.add(new Triplet(path, socket, b));
           lock.notify();
         }
       }
 
       @Override
-      public void receivedMessage(ByteBuffer m, SourceRoute<InetSocketAddress> path) {
+      public void receivedMessage(ByteBuffer msg, SourceRoute<InetSocketAddress> path) {
         bad.add(new Triplet(path, null, null));
       }
 
@@ -171,9 +171,9 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
       @Override
       public void receivedBytes(ByteBuffer m, SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
         synchronized(lock) {
-          Triplet t = new Triplet(path, a, b);
-          t.m = m;
-          received.add(t);
+          Triplet triplet = new Triplet(path, a, b);
+          triplet.m = m;
+          received.add(triplet);
           lock.notify();
         }
       }
@@ -220,11 +220,11 @@ public class WireSRTest extends TLTest<SourceRoute<InetSocketAddress>> {
 
     SourceRouteTap<InetSocketAddress> tap = new SourceRouteTap<InetSocketAddress>(){
       @Override
-      public void socketOpened(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
+      public void socketOpened(SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> socket, P2PSocket<InetSocketAddress> b) {
       }
 
       @Override
-      public void receivedBytes(ByteBuffer m, SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
+      public void receivedBytes(ByteBuffer msg, SourceRoute<InetSocketAddress> path, P2PSocket<InetSocketAddress> a, P2PSocket<InetSocketAddress> b) {
 
       }
 

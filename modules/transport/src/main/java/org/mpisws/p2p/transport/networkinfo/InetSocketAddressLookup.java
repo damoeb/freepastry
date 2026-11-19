@@ -60,10 +60,10 @@ public interface InetSocketAddressLookup extends Destructible {
    * find nodes outside of our firewall so I can boot
    *
    * @param bootstrap the node to ask
-   * @param c receives the external addresses
+   * @param continuation receives the external addresses
    */
   public Cancellable getExternalNodes(InetSocketAddress bootstrap,
-      Continuation<Collection<InetSocketAddress>, IOException> c,
+      Continuation<Collection<InetSocketAddress>, IOException> continuation,
       @Nullable Map<String, Object> options);
 
 
@@ -72,12 +72,12 @@ public interface InetSocketAddressLookup extends Destructible {
    * Returns the local node's InetSocketAddress
    *
    * @param bootstrap who to ask
-   * @param c where the return value is delivered
+   * @param continuation where the return value is delivered
    * @param options can be null
    * @return you can cancel the operation
    */
   public Cancellable requestExternalAddress(InetSocketAddress bootstrap,
-      Continuation<InetSocketAddress, IOException> c,
+      Continuation<InetSocketAddress, IOException> continuation,
       @Nullable Map<String, Object> options);
 
   /**

@@ -137,9 +137,9 @@ abstract class AbstractPilot<Identifier, HighIdentifier extends RendezvousContac
     return Objects.requireNonNull(sib, "the pilot is not connected yet");
   }
 
-  protected void enqueue(ByteBuffer bb) {
-    logger.trace("{}.enqueue({})", this, bb);
-    queue.add(bb);
+  protected void enqueue(ByteBuffer buffer) {
+    logger.trace("{}.enqueue({})", this, buffer);
+    queue.add(buffer);
     socket().register(false, true, this);
   }
 

@@ -49,17 +49,17 @@ import org.jspecify.annotations.Nullable;
  */
 public interface ErrorHandler<Identifier> {
   /**
-   * @param i the sender of the message (as can best be determined)
+   * @param identifier the sender of the message (as can best be determined)
    * @param bytes the entire message/socket header
    * @param location the location in the bytes that is unexpected
    */
-  public void receivedUnexpectedData(Identifier i, byte[] bytes, int location, @Nullable Map<String, Object> options);
+  public void receivedUnexpectedData(Identifier identifier, byte[] bytes, int location, @Nullable Map<String, Object> options);
 
   /**
    * We got an exception.
    *
-   * @param i the identifier responsible (if any)
+   * @param identifier the identifier responsible (if any)
    * @param error the exception
    */
-  public void receivedException(@Nullable Identifier i, Throwable error);
+  public void receivedException(@Nullable Identifier identifier, Throwable error);
 }
