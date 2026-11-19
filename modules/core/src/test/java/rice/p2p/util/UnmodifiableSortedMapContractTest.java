@@ -3,13 +3,15 @@ package rice.p2p.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 
-class ImmutableSortedMapTest {
+class UnmodifiableSortedMapContractTest {
   private final TreeMap<String, Integer> backing = new TreeMap<>(Map.of("a", 1, "b", 2));
-  private final ImmutableSortedMap<String, Integer> testObj = new ImmutableSortedMap<>(backing);
+  private final SortedMap<String, Integer> testObj = Collections.unmodifiableSortedMap(backing);
 
   @Test
   void keySetCannotBeModified() {
@@ -37,7 +39,7 @@ class ImmutableSortedMapTest {
     assertThrows(UnsupportedOperationException.class, () -> testObj.put("z", 9));
     assertThrows(UnsupportedOperationException.class, () -> testObj.remove("a"));
     assertThrows(UnsupportedOperationException.class, () -> testObj.putAll(Map.of("z", 9)));
-    assertThrows(UnsupportedOperationException.class, testObj::clear);
+    assertThrows(UnsupportedOperationException.class, () -> testObj.clear());
     assertEquals(2, backing.size());
   }
 

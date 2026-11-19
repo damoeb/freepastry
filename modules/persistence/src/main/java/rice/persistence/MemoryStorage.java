@@ -45,6 +45,7 @@ package rice.persistence;
  *
  * @version $Id: MemoryStorage.java 4654 2009-01-08 16:33:07Z jeffh $
  */
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -55,7 +56,6 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.util.ConcurrentRingMap;
-import rice.p2p.util.ImmutableSortedMap;
 import rice.p2p.util.ReverseTreeMap;
 
 /**
@@ -288,7 +288,7 @@ public class MemoryStorage implements Storage {
     else if (range.getCounterClockwiseBound().equals(range.getClockwiseBound()))
       return scanMetadata();
     else
-      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound())));
+      return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound())));
   }
 
   /**
@@ -299,7 +299,7 @@ public class MemoryStorage implements Storage {
    */
   @Override
   public SortedMap<Id, Object> scanMetadata() {
-    return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keyMap()));
+    return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keyMap()));
   }
 
   /**
@@ -311,7 +311,7 @@ public class MemoryStorage implements Storage {
    */
   @Override
   public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
-    return new ImmutableSortedMap<Id, Object>(metadata.valueHeadMap(value));
+    return Collections.unmodifiableSortedMap(metadata.valueHeadMap(value));
   }
 
   /**
@@ -321,7 +321,7 @@ public class MemoryStorage implements Storage {
    */
   @Override
   public SortedMap<Id, Object> scanMetadataValuesNull() {
-    return new ImmutableSortedMap<Id, Object>(metadata.valueNullMap());
+    return Collections.unmodifiableSortedMap(metadata.valueNullMap());
   }
 
   /**

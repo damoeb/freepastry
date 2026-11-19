@@ -44,6 +44,7 @@ import java.io.OutputStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,7 +57,6 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.util.ImmutableSortedMap;
 import rice.p2p.util.ReverseTreeMap;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -144,7 +144,7 @@ final class MetadataIndex {
    */
   SortedMap<Id, Object> keyMap() {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keyMap()));
+      return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keyMap()));
     }
   }
 
@@ -153,20 +153,20 @@ final class MetadataIndex {
    */
   SortedMap<Id, Object> keySubMap(Id ccw, Id cw) {
     synchronized (metadata) {
-      return new ImmutableSortedMap<Id, Object>(new TreeMap<Id, Object>(metadata.keySubMap(ccw, cw)));
+      return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keySubMap(ccw, cw)));
     }
   }
 
   SortedMap<Id, Object> keyMapUnlocked() {
-    return new ImmutableSortedMap<Id, Object>(metadata.keyMap());
+    return Collections.unmodifiableSortedMap(metadata.keyMap());
   }
 
   SortedMap<Id, Object> valueHeadMapUnlocked(Object value) {
-    return new ImmutableSortedMap<Id, Object>(metadata.valueHeadMap(value));
+    return Collections.unmodifiableSortedMap(metadata.valueHeadMap(value));
   }
 
   SortedMap<Id, Object> valueNullMapUnlocked() {
-    return new ImmutableSortedMap<Id, Object>(metadata.valueNullMap());
+    return Collections.unmodifiableSortedMap(metadata.valueNullMap());
   }
 
   int sizeUnlocked() {
