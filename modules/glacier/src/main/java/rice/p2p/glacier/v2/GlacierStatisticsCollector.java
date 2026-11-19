@@ -81,12 +81,12 @@ final class GlacierStatisticsCollector {
     statistics.countMessageSent(tag);
   }
 
-  void addListener(GlacierStatisticsListener gsl) {
-    listeners.add(gsl);
+  void addListener(GlacierStatisticsListener statisticsListener) {
+    listeners.add(statisticsListener);
   }
 
-  void removeListener(GlacierStatisticsListener gsl) {
-    listeners.remove(gsl);
+  void removeListener(GlacierStatisticsListener statisticsListener) {
+    listeners.remove(statisticsListener);
   }
 
   /**
@@ -105,8 +105,8 @@ final class GlacierStatisticsCollector {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.statisticsReportInterval();
       }
       @Override
-      public void receiveResult(Object o) {
-        logger.warn("STAT received object: {}", o);
+      public void receiveResult(Object result) {
+        logger.warn("STAT received object: {}", result);
       }
       @Override
       public void receiveException(Exception e) {
@@ -137,8 +137,8 @@ final class GlacierStatisticsCollector {
             statistics.dump(environment.getLogManager().getLogger(GlacierStatistics.class, instance));
 
           // listeners are added and removed by other threads; the copy-on-write list iterates over a snapshot
-          for (GlacierStatisticsListener gsl : listeners) {
-            gsl.receiveStatistics(statistics);
+          for (GlacierStatisticsListener statisticsListener : listeners) {
+            statisticsListener.receiveStatistics(statistics);
           }
         }
 

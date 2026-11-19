@@ -70,10 +70,10 @@ public class DebugContent implements ExpiringPastContent {
 
   @Override
   public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
-    if (!isMutable || !(existingContent instanceof DebugContent dc))
+    if (!isMutable || !(existingContent instanceof DebugContent debugContent))
       return this;
 
-    return (this.version > dc.version) ? this : dc;
+    return (this.version > debugContent.version) ? this : debugContent;
   }
 
   @Override

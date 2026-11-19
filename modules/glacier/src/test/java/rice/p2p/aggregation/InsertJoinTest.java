@@ -15,8 +15,8 @@ class InsertJoinTest {
   private final List<Object> reported = new ArrayList<>();
   private final InsertJoin testObj = new InsertJoin(new Continuation<Boolean[], Exception>() {
     @Override
-    public void receiveResult(Boolean[] o) {
-      reported.add(o);
+    public void receiveResult(Boolean[] results) {
+      reported.add(results);
     }
 
     @Override

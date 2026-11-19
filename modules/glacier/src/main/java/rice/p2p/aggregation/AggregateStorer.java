@@ -87,14 +87,14 @@ final class AggregateStorer {
   /**
    * @return the serialized size of the object, or 0 if it cannot be serialized
    */
-  static int getSize(PastContent obj, Logger logger) {
+  static int getSize(PastContent content, Logger logger) {
     try {
       SimpleOutputBuffer buf = new SimpleOutputBuffer();
-      buf.writeShort(obj.getType());
-      obj.serialize(buf);
+      buf.writeShort(content.getType());
+      content.serialize(buf);
       return buf.getWritten();
-    } catch (IOException ioe) {
-      logger.atWarn().log(() -> "Cannot serialize object, size unknown: "+ioe);
+    } catch (IOException ioException) {
+      logger.atWarn().log(() -> "Cannot serialize object, size unknown: "+ioException);
     }
 
     return 0;
@@ -107,12 +107,12 @@ final class AggregateStorer {
       return factory.buildId(aggr.getContentHash());
     }, new Continuation<Id, Exception>() {
       @Override
-      public void receiveResult(Id o) {
-        if (o != null) {
-          aggr.setId((Id) o);
+      public void receiveResult(Id result) {
+        if (result != null) {
+          aggr.setId((Id) result);
           insertAggregate(aggr, expiration, desc, pointers, command);
         } else {
-          logger.warn("storeAggregate() cannot determine content hash, received {}", o);
+          logger.warn("storeAggregate() cannot determine content hash, received {}", result);
           command.receiveException(new AggregationException("storeAggregate() cannot determine content hash"));
         }
       }
@@ -129,10 +129,10 @@ final class AggregateStorer {
     for (int j=0; j<desc.length; j++)
       logger.info("#{}: {}", j, desc[j]);
 
-    Continuation<Boolean[], Exception> c = new Continuation<Boolean[], Exception>() {
+    Continuation<Boolean[], Exception> continuation = new Continuation<Boolean[], Exception>() {
       @Override
-      public void receiveResult(Boolean[] o) {
-        commitAggregate(aggr, expiration, desc, pointers, o, command);
+      public void receiveResult(Boolean[] results) {
+        commitAggregate(aggr, expiration, desc, pointers, results, command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -141,28 +141,28 @@ final class AggregateStorer {
     };
 
     if (aggregateStore instanceof ExpiringPast gcPast)
-      gcPast.insert(aggr, expiration, c);
+      gcPast.insert(aggr, expiration, continuation);
     else
-      aggregateStore.insert(aggr, c);
+      aggregateStore.insert(aggr, continuation);
   }
 
-  private void commitAggregate(Aggregate aggr, long expiration, ObjectDescriptor[] desc, Id[] pointers, Boolean[] o, Continuation<? super Boolean, Exception> command) {
-    AggregateDescriptor adc = new AggregateDescriptor(
+  private void commitAggregate(Aggregate aggr, long expiration, ObjectDescriptor[] desc, Id[] pointers, Boolean[] results, Continuation<? super Boolean, Exception> command) {
+    AggregateDescriptor aggregate = new AggregateDescriptor(
       aggr.getId(),
       expiration,
       desc,
       pointers
     );
 
-    if (o != null) {
-      aggregateList.addAggregateDescriptor(adc);
+    if (results != null) {
+      aggregateList.addAggregateDescriptor(aggregate);
       aggregateList.setRoot(aggr.getId());
       aggregateList.writeToDisk();
       logger.debug("Aggregate inserted successfully");
       command.receiveResult(Boolean.valueOf(true));
     } else {
-      logger.warn("Unexpected result in aggregate insert (commit): {}", Arrays.toString(o));
-      command.receiveException(new AggregationException("Unexpected result (commit): "+Arrays.toString(o)));
+      logger.warn("Unexpected result in aggregate insert (commit): {}", Arrays.toString(results));
+      command.receiveException(new AggregationException("Unexpected result (commit): "+Arrays.toString(results)));
     }
   }
 }

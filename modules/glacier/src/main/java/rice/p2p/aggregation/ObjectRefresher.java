@@ -88,15 +88,15 @@ final class ObjectRefresher {
 
     refreshInObjectStore(ids, expirations, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object received) {
         Object[] result;
-        if (o instanceof Object[] array) {
+        if (received instanceof Object[] array) {
           result = array;
         } else {
-          logger.warn("refresh: ObjectStore result is of incorrect type; expected Object[], got {}", o);
+          logger.warn("refresh: ObjectStore result is of incorrect type; expected Object[], got {}", received);
           result = new Object[ids.length];
           for (int i=0; i<ids.length; i++)
-            result[i] = o;
+            result[i] = received;
         }
 
         refreshInAggregates(ids, expirations, result, command);
@@ -118,14 +118,14 @@ final class ObjectRefresher {
     for (int i=0; i<ids.length; i++) {
       logger.info("Refresh({}v{}, expiration={})", ids[i], versions[i], expirations[i]);
 
-      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(ids[i], versions[i]));
-      if (adc!=null) {
-        int objDescIndex = adc.lookupSpecific(ids[i], versions[i]);
+      AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(ids[i], versions[i]));
+      if (aggregate!=null) {
+        int objDescIndex = aggregate.lookupSpecific(ids[i], versions[i]);
         if (objDescIndex < 0) {
           result[i] = new AggregationException("Inconsistency detected in aggregate list -- try restarting the application");
         } else {
-          if (adc.getObjects()[objDescIndex].getRefreshedLifetime() < expirations[i])
-            aggregateList.setObjectRefreshedLifetime(adc, objDescIndex, expirations[i]);
+          if (aggregate.getObjects()[objDescIndex].getRefreshedLifetime() < expirations[i])
+            aggregateList.setObjectRefreshedLifetime(aggregate, objDescIndex, expirations[i]);
 
           result[i] = Boolean.valueOf(true);
         }
@@ -135,19 +135,19 @@ final class ObjectRefresher {
     if (objectStore instanceof VersioningPast versioningPast) {
       versioningPast.refresh(ids, versions, expirations, new Continuation<Object[], Exception>() {
         @Override
-        public void receiveResult(Object[] o) {
-          if (o != null) {
+        public void receiveResult(Object[] results) {
+          if (results != null) {
             for (int i=0; i<result.length; i++) {
               if (!(result[i] instanceof Boolean))
                 continue;
 
-              if (i >= o.length)
-                result[i] = new AggregationException("Object store returned "+o.length+" results for "+result.length+" ids");
-              else if (!(o[i] instanceof Boolean))
-                result[i] = o[i];
+              if (i >= results.length)
+                result[i] = new AggregationException("Object store returned "+results.length+" results for "+result.length+" ids");
+              else if (!(results[i] instanceof Boolean))
+                result[i] = results[i];
             }
           } else {
-            Exception e = new AggregationException("Object store returns unexpected result: "+Arrays.toString(o));
+            Exception e = new AggregationException("Object store returns unexpected result: "+Arrays.toString(results));
             for (int i=0; i<result.length; i++)
               result[i] = e;
           }
@@ -176,11 +176,11 @@ final class ObjectRefresher {
   }
 
   private void refreshInAggregates(Id[] ids, long[] expirations, Object[] result, final Continuation<? super Object[], Exception> command) {
-    Continuation<Object[], Exception> c = new Continuation<Object[], Exception>() {
+    Continuation<Object[], Exception> continuation = new Continuation<Object[], Exception>() {
       @Override
-      public void receiveResult(Object[] o) {
+      public void receiveResult(Object[] results) {
         aggregateList.writeToDisk();
-        command.receiveResult(o);
+        command.receiveResult(results);
       }
       @Override
       public void receiveException(Exception e) {
@@ -190,7 +190,7 @@ final class ObjectRefresher {
     };
 
     logger.info("refreshInternal: Accepted {} keys, starting with first key...", ids.length);
-    new RefreshRun(ids, expirations, result, c).receiveResult(null);
+    new RefreshRun(ids, expirations, result, continuation).receiveResult(null);
   }
 
   /**
@@ -214,8 +214,8 @@ final class ObjectRefresher {
     }
 
     @Override
-    public void receiveResult(Object o) {
-      Object lastResult = o;
+    public void receiveResult(Object received) {
+      Object lastResult = received;
       while (true) {
         if (currentIndex >= 0) {
           logger.debug("receiveResult({}) for index {}, length={}", lastResult, currentIndex, ids.length);
@@ -266,9 +266,9 @@ final class ObjectRefresher {
 
       /* In the common case, the aggregate is in the list, and we can simply update its lifetime there */
 
-      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
-      if (adc!=null)
-        return refreshInAggregateList(adc, id, expiration);
+      AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
+      if (aggregate!=null)
+        return refreshInAggregateList(aggregate, id, expiration);
 
       /* If the aggregate is not in the list, check whether it is still in the waiting list */
 
@@ -298,19 +298,19 @@ final class ObjectRefresher {
       return PENDING;
     }
 
-    private Object refreshInAggregateList(AggregateDescriptor adc, Id id, long expiration) {
-      int objDescIndex = adc.lookupNewest(id);
+    private Object refreshInAggregateList(AggregateDescriptor aggregate, Id id, long expiration) {
+      int objDescIndex = aggregate.lookupNewest(id);
       if (objDescIndex < 0) {
         logger.warn("NL: Aggregate found, but object not found in aggregate?!? -- aborted");
         command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
         return PENDING;
       }
 
-      if (adc.getObjects()[objDescIndex].getRefreshedLifetime() < expiration) {
-        logger.debug("Changing expiration date from {} to {}", adc.getObjects()[objDescIndex].getRefreshedLifetime(), expiration);
-        aggregateList.setObjectRefreshedLifetime(adc, objDescIndex, expiration);
+      if (aggregate.getObjects()[objDescIndex].getRefreshedLifetime() < expiration) {
+        logger.debug("Changing expiration date from {} to {}", aggregate.getObjects()[objDescIndex].getRefreshedLifetime(), expiration);
+        aggregateList.setObjectRefreshedLifetime(aggregate, objDescIndex, expiration);
       } else {
-        logger.debug("Expiration is {} already, no update needed", adc.getObjects()[objDescIndex].getRefreshedLifetime());
+        logger.debug("Expiration is {} already, no update needed", aggregate.getObjects()[objDescIndex].getRefreshedLifetime());
       }
 
       return Boolean.valueOf(true);
@@ -324,7 +324,7 @@ final class ObjectRefresher {
         logger.atWarn().log(() -> "Broken object in waiting list: " + vkey.toStringFull() + ", removing...");
         waitingList.unstore(vkey, new Continuation<Boolean, Exception>() {
           @Override
-          public void receiveResult(Boolean o) {
+          public void receiveResult(Boolean result) {
             logger.atInfo().log(() -> "Broken object "+vkey.toStringFull()+" removed successfully");
             RefreshRun.this.receiveResult(new AggregationException("Object in waiting list, but broken: "+vkey.toStringFull()));
           }
@@ -349,7 +349,7 @@ final class ObjectRefresher {
 
       waitingList.setMetadata(vkey, newDescriptor, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           logger.atDebug().log(() -> "Refreshed metadata written ok for "+vkey.toStringFull());
           RefreshRun.this.receiveResult(Boolean.valueOf(true));
         }
@@ -368,11 +368,11 @@ final class ObjectRefresher {
     private void reaggregate(final Id id, final long expiration) {
       objectStore.lookup(id, false, new Continuation<PastContent, Exception>() {
         @Override
-        public void receiveResult(PastContent o) {
-          if (o != null) {
-            addMissingObject(id, expiration, o);
+        public void receiveResult(PastContent result) {
+          if (result != null) {
+            addMissingObject(id, expiration, result);
           } else {
-            logger.atWarn().log(() -> "Refresh: Cannot find refreshed object "+id.toStringFull()+", lookup returns "+o);
+            logger.atWarn().log(() -> "Refresh: Cannot find refreshed object "+id.toStringFull()+", lookup returns "+result);
             RefreshRun.this.receiveException(new AggregationException("Object not found during reaggregation: "+id.toStringFull()));
           }
         }
@@ -384,20 +384,20 @@ final class ObjectRefresher {
       });
     }
 
-    private void addMissingObject(final Id id, long expiration, final PastContent obj) {
+    private void addMissingObject(final Id id, long expiration, final PastContent content) {
       logger.atWarn().log(() -> "Refresh: Found in PAST, but not in aggregate list: "+id.toStringFull());
 
       long theVersion;
-      if (obj instanceof ExpiringPastContent gcPastContent) {
+      if (content instanceof ExpiringPastContent gcPastContent) {
         theVersion = gcPastContent.getVersion();
       } else {
         theVersion = 0;
       }
 
-      final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
-      final int theSize = AggregateStorer.getSize(obj, logger);
+      final VersionKey vkey = new VersionKey(content.getId(), theVersion);
+      final int theSize = AggregateStorer.getSize(content, logger);
 
-      if (!policy.shouldBeAggregated(obj, theSize)) {
+      if (!policy.shouldBeAggregated(content, theSize)) {
         logger.atDebug().log(() -> "Refresh: Missing object should not be aggregated: "+id.toStringFull());
         receiveResult(Boolean.valueOf(true));
         return;
@@ -409,19 +409,19 @@ final class ObjectRefresher {
         return;
       }
 
-      logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", obj.getId());
+      logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", content.getId());
 
-      waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersion, expiration, expiration, theSize), obj, new Continuation<Boolean, Exception>() {
+      waitingList.store(vkey, new ObjectDescriptor(content.getId(), theVersion, expiration, expiration, theSize), content, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean received) {
           if (!(objectStore instanceof PastImpl pastImpl)) {
             /* Precaching only speeds up later lookups; other Past implementations simply skip it */
             RefreshRun.this.receiveResult(Boolean.valueOf(true));
             return;
           }
-          pastImpl.cache(obj, new Continuation<Boolean, Exception>() {
+          pastImpl.cache(content, new Continuation<Boolean, Exception>() {
             @Override
-            public void receiveResult(Boolean o) {
+            public void receiveResult(Boolean result) {
               logger.atDebug().log(() -> "Refresh: Missing object "+id.toStringFull()+" added ok");
               RefreshRun.this.receiveResult(Boolean.valueOf(true));
             }

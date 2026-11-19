@@ -61,13 +61,13 @@ public interface GlacierPolicy {
    */
   public boolean checkSignature(Manifest manifest, VersionKey key);
 
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment);
+  public Fragment[] encodeObject(PastContent content, boolean[] generateFragment);
 
   /**
    * Creates and signs the manifests of a new object, stored under {@code key}, which must be the
    * {@link #storageId(Id) storage id} of the object's own id.
    */
-  public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration);
+  public Manifest[] createManifests(VersionKey key, PastContent content, Fragment[] fragments, long expiration);
 
   /**
    * Signs a copy of the manifest with a new expiration. Only the owner can: a node that does not hold the
@@ -75,6 +75,6 @@ public interface GlacierPolicy {
    */
   public Manifest updateManifest(VersionKey key, Manifest manifest, long newExpiration);
 
-  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd);
+  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer deserializer);
 
 }

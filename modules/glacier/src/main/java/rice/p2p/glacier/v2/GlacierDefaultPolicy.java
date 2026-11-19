@@ -136,27 +136,27 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
    */
   static byte[] signedBytes(VersionKey key, Manifest manifest) {
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      writeBytes(sob, SIGNATURE_DOMAIN);
-      writeBytes(sob, key.id().toByteArray());
-      sob.writeLong(key.version());
-      writeBytes(sob, manifest.getObjectHash());
+      SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+      writeBytes(outputBuffer, SIGNATURE_DOMAIN);
+      writeBytes(outputBuffer, key.id().toByteArray());
+      outputBuffer.writeLong(key.version());
+      writeBytes(outputBuffer, manifest.getObjectHash());
       byte[][] fragmentHashes = manifest.getFragmentHashes();
-      sob.writeInt(fragmentHashes.length);
+      outputBuffer.writeInt(fragmentHashes.length);
       for (byte[] fragmentHash : fragmentHashes)
-        writeBytes(sob, fragmentHash);
-      sob.writeLong(manifest.getExpiration());
-      writeBytes(sob, manifest.getOwnerKey());
-      writeBytes(sob, manifest.getName());
-      return Arrays.copyOf(sob.getBytes(), sob.getWritten());
+        writeBytes(outputBuffer, fragmentHash);
+      outputBuffer.writeLong(manifest.getExpiration());
+      writeBytes(outputBuffer, manifest.getOwnerKey());
+      writeBytes(outputBuffer, manifest.getName());
+      return Arrays.copyOf(outputBuffer.getBytes(), outputBuffer.getWritten());
     } catch (IOException e) {
       throw new IllegalStateException("Writing to memory failed", e);
     }
   }
 
-  private static void writeBytes(SimpleOutputBuffer sob, byte[] bytes) throws IOException {
-    sob.writeInt(bytes.length);
-    sob.write(bytes, 0, bytes.length);
+  private static void writeBytes(SimpleOutputBuffer outputBuffer, byte[] bytes) throws IOException {
+    outputBuffer.writeInt(bytes.length);
+    outputBuffer.write(bytes, 0, bytes.length);
   }
 
   private Manifest sign(VersionKey key, Manifest unsigned) {
@@ -165,24 +165,24 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
   }
 
   @Override
-  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd) {
-    return codec.decode(fragments, endpoint, pcd);
+  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer deserializer) {
+    return codec.decode(fragments, endpoint, deserializer);
   }
 
   @Override
-  public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration) {
-    if (!storageId(obj.getId()).equals(key.id())) {
-      logger.warn("Cannot create manifests for {}: not the storage id of {}", key, obj.getId());
+  public Manifest[] createManifests(VersionKey key, PastContent content, Fragment[] fragments, long expiration) {
+    if (!storageId(content.getId()).equals(key.id())) {
+      logger.warn("Cannot create manifests for {}: not the storage id of {}", key, content.getId());
       return null;
     }
 
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      sob.writeShort(obj.getType());
-      obj.serialize(sob);
-      return createManifestsHelper(key, obj.getId().toByteArray(), sob.getBytes(), sob.getWritten(), fragments, expiration);
-    } catch (IOException ioe) {
-      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
+      SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+      outputBuffer.writeShort(content.getType());
+      content.serialize(outputBuffer);
+      return createManifestsHelper(key, content.getId().toByteArray(), outputBuffer.getBytes(), outputBuffer.getWritten(), fragments, expiration);
+    } catch (IOException ioException) {
+      logger.atWarn().log(() -> "Cannot serialize object: "+ioException);
       return null;
     }
   }
@@ -208,25 +208,25 @@ public class GlacierDefaultPolicy implements GlacierPolicy {
   }
 
   @Override
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
-    logger.trace("Serialize object: {}", obj);
+  public Fragment[] encodeObject(PastContent content, boolean[] generateFragment) {
+    logger.trace("Serialize object: {}", content);
 
     try {
-      SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      sob.writeShort(obj.getType());
-      obj.serialize(sob);
-      return encodeObjectHelper(obj, sob.getBytes(), sob.getWritten(), generateFragment);
-    } catch (IOException ioe) {
-      logger.atWarn().log(() -> "Cannot serialize object: "+ioe);
+      SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+      outputBuffer.writeShort(content.getType());
+      content.serialize(outputBuffer);
+      return encodeObjectHelper(content, outputBuffer.getBytes(), outputBuffer.getWritten(), generateFragment);
+    } catch (IOException ioException) {
+      logger.atWarn().log(() -> "Cannot serialize object: "+ioException);
       return null;
     }
   }
 
 
-  private Fragment[] encodeObjectHelper(PastContent obj, byte[] bytes, int length, boolean[] generateFragment) {
-    logger.trace("Create fragments: {}", obj);
+  private Fragment[] encodeObjectHelper(PastContent content, byte[] bytes, int length, boolean[] generateFragment) {
+    logger.trace("Create fragments: {}", content);
     Fragment[] fragments = codec.encode(bytes, length, generateFragment);
-    logger.trace("Completed: {}", obj);
+    logger.trace("Completed: {}", content);
 
     return fragments;
   }

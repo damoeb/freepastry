@@ -127,13 +127,13 @@ final class GlacierNeighborProtocol {
         }
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierNeighborResponseMessage gnrm) {
+      public void receiveResult(Object result) {
+        if (result instanceof GlacierNeighborResponseMessage gnrm) {
           logger.atDebug().log(() -> "NeighborResponse from "+gnrm.getSource()+" with "+gnrm.numNeighbors()+" neighbors");
           for (int i=0; i<gnrm.numNeighbors(); i++)
             neighborhood.neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
         } else {
-          logger.warn("Unknown response in neighbor continuation: {} -- discarded", o);
+          logger.warn("Unknown response in neighbor continuation: {} -- discarded", result);
         }
       }
       @Override
@@ -179,16 +179,16 @@ final class GlacierNeighborProtocol {
       int currentLookup = 0;
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         logger.debug("Continue: NeighborRequest from {} for range {}", gnrm.getSource().getId(), gnrm.getRequestedRange());
 
-        if (o == null) {
+        if (result == null) {
           logger.warn("Problem while retrieving neighbors -- canceled");
           return;
         }
 
-        if (o instanceof Long l) {
-          logger.debug("Retr: Neighbor {} was last seen at {}", neighbors[currentLookup], o);
+        if (result instanceof Long l) {
+          logger.debug("Retr: Neighbor {} was last seen at {}", neighbors[currentLookup], result);
           lastSeen[currentLookup] = l.longValue();
           currentLookup ++;
           if (currentLookup < numRequested) {

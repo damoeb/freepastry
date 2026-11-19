@@ -136,7 +136,7 @@ final class AggregateTree {
       disconnected,
       new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           logger.debug("Successfully inserted pointer array");
         }
         @Override
@@ -187,9 +187,9 @@ final class AggregateTree {
       logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
       aggregateStore.lookupHandles(fromKey, MAX_HANDLES, new Continuation<PastContentHandle[], Exception>() {
         @Override
-        public void receiveResult(PastContentHandle[] o) {
+        public void receiveResult(PastContentHandle[] results) {
           logger.debug("Got handles for {}", fromKey);
-          handlesReceived(fromKey, o);
+          handlesReceived(fromKey, results);
         }
         @Override
         public void receiveException(Exception e) {
@@ -198,14 +198,14 @@ final class AggregateTree {
       });
     }
 
-    private void handlesReceived(final Id fromKey, PastContentHandle[] o) {
-      if (o == null) {
-        failed(fromKey, new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+Arrays.toString(o)));
+    private void handlesReceived(final Id fromKey, PastContentHandle[] results) {
+      if (results == null) {
+        failed(fromKey, new AggregationException("LookupHandles for "+fromKey+" failed, returned o="+Arrays.toString(results)));
         return;
       }
 
       PastContentHandle bestHandle = null;
-      for (PastContentHandle pastContentHandle : o) {
+      for (PastContentHandle pastContentHandle : results) {
         if ((pastContentHandle == null) || ((pastContentHandle instanceof ExpiringPastContentHandle gcPastContentHandle) && (gcPastContentHandle.getVersion() != 0)))
           continue;
 
@@ -222,11 +222,11 @@ final class AggregateTree {
       logger.debug("Fetching {}", thisHandle);
       aggregateStore.fetch(thisHandle, new Continuation<PastContent, Exception>() {
         @Override
-        public void receiveResult(PastContent o) {
-          if (o instanceof Aggregate aggregate) {
+        public void receiveResult(PastContent result) {
+          if (result instanceof Aggregate aggregate) {
             aggregateFetched(fromKey, thisHandle, aggregate);
           } else {
-            failed(fromKey, new AggregationException("Fetch failed: "+fromKey+", returned "+o));
+            failed(fromKey, new AggregationException("Fetch failed: "+fromKey+", returned "+result));
           }
         }
         @Override
@@ -303,9 +303,9 @@ final class AggregateTree {
       logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
       objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
         @Override
-        public void receiveResult(PastContentHandle[] o) {
-          PastContentHandle[] result = (o != null) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
-          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+Arrays.toString(result)+" ("+result.length+", PCH="+(o != null)+")");
+        public void receiveResult(PastContentHandle[] rawHandles) {
+          PastContentHandle[] result = (rawHandles != null) ? ((PastContentHandle[])rawHandles) : new PastContentHandle[] {};
+          logger.atDebug().log(() -> "Handles for "+objData.getId()+"v"+objData.getVersion()+": "+Arrays.toString(result)+" ("+result.length+", PCH="+(rawHandles != null)+")");
           boolean gotOne = false;
           for (int i=0; i<result.length; i++) {
             if (result[i] != null) {
@@ -321,8 +321,8 @@ final class AggregateTree {
             logger.debug("Ain't got it... reinserting");
             objectStore.insert(objData, new Continuation<Boolean[], Exception>() {
               @Override
-              public void receiveResult(Boolean[] o) {
-                logger.debug("Reinsert {}v{} ok, result={}", objData.getId(), objData.getVersion(), o);
+              public void receiveResult(Boolean[] results) {
+                logger.debug("Reinsert {}v{} ok, result={}", objData.getId(), objData.getVersion(), results);
               }
               @Override
               public void receiveException(Exception e) {

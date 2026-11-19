@@ -104,8 +104,8 @@ final class AggregationDebugCommands {
   private static <R> Continuation<R, Exception> reportTo(final CompletableFuture<String> ret) {
     return new Continuation<R, Exception>() {
       @Override
-      public void receiveResult(R o) {
-        ret.complete("result("+o+")");
+      public void receiveResult(R result) {
+        ret.complete("result("+result+")");
       }
       @Override
       public void receiveException(Exception e) {
@@ -120,7 +120,7 @@ final class AggregationDebugCommands {
 
     String requestedInstance = command.substring(0, command.indexOf(" "));
     String myInstance = "aggr."+instance.substring(instance.lastIndexOf("-") + 1);
-    String cmd = command.substring(requestedInstance.length() + 1);
+    String instanceFreeCommand = command.substring(requestedInstance.length() + 1);
 
     if (!requestedInstance.equals(myInstance) && !requestedInstance.equals("a")) {
       String subResult = null;
@@ -133,17 +133,17 @@ final class AggregationDebugCommands {
       return subResult;
     }
 
-    logger.info("Debug command: {}", cmd);
+    logger.info("Debug command: {}", instanceFreeCommand);
 
-    if (cmd.startsWith("status")) {
+    if (instanceFreeCommand.startsWith("status")) {
       AggregationStatistics stats = aggregation.getStatistics();
       return stats.getNumObjectsTotal()+" objects total\n"+stats.getNumObjectsAlive()+" objects alive\n"+
              stats.getNumAggregatesTotal()+" aggregates total\n"+stats.getNumPointerArrays()+" pointer arrays\n"+
              stats.getCriticalAggregates()+" critical aggregates\n"+stats.getOrphanedAggregates()+" orphaned aggregates\n";
     }
 
-    if (cmd.startsWith("insert")) {
-      int numObjects = Integer.parseInt(cmd.substring(7));
+    if (instanceFreeCommand.startsWith("insert")) {
+      int numObjects = Integer.parseInt(instanceFreeCommand.substring(7));
       String result = "";
 
       for (int i=0; i<numObjects; i++) {
@@ -154,7 +154,7 @@ final class AggregationDebugCommands {
           environment.getTimeSource().currentTimeMillis() + 120*AggregationConfig.SECONDS,
           new Continuation<Boolean[], Exception>() {
             @Override
-            public void receiveResult(Boolean[] o) {
+            public void receiveResult(Boolean[] results) {
             }
             @Override
             public void receiveException(Exception e) {
@@ -166,43 +166,43 @@ final class AggregationDebugCommands {
       return result + numObjects + " object(s) created\n";
     }
 
-    if (cmd.startsWith("show config")) {
+    if (instanceFreeCommand.startsWith("show config")) {
       return config.describe();
     }
 
-    if (cmd.startsWith("ls")) {
-      return list(cmd);
+    if (instanceFreeCommand.startsWith("ls")) {
+      return list(instanceFreeCommand);
     }
 
-    if (cmd.startsWith("write list")) {
+    if (instanceFreeCommand.startsWith("write list")) {
       aggregateList.writeToDisk();
       return "Done, new root is "+((aggregateList.getRoot()==null) ? "null" : aggregateList.getRoot().toStringFull());
     }
 
-    if ((cmd.length() >= 5) && cmd.substring(0, 5).equals("reset")) {
+    if ((instanceFreeCommand.length() >= 5) && instanceFreeCommand.substring(0, 5).equals("reset")) {
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       aggregation.reset(AggregationDebugCommands.<Boolean>reportTo(ret));
       return awaitDebugResult(ret);
     }
 
-    if (cmd.startsWith("flush")) {
+    if (instanceFreeCommand.startsWith("flush")) {
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       aggregation.flush(AggregationDebugCommands.<Boolean>reportTo(ret));
       return awaitDebugResult(ret);
     }
 
-    if (cmd.startsWith("get root")) {
+    if (instanceFreeCommand.startsWith("get root")) {
       return "root="+((aggregateList.getRoot()==null) ? "null" : aggregateList.getRoot().toStringFull());
     }
 
-    if (cmd.startsWith("set root")) {
+    if (instanceFreeCommand.startsWith("set root")) {
       final CompletableFuture<String> ret = new CompletableFuture<String>();
-      aggregation.setHandle(factory.buildIdFromString(cmd.substring(9)), AggregationDebugCommands.<Boolean>reportTo(ret));
+      aggregation.setHandle(factory.buildIdFromString(instanceFreeCommand.substring(9)), AggregationDebugCommands.<Boolean>reportTo(ret));
       return awaitDebugResult(ret);
     }
 
-    if (cmd.startsWith("lookup")) {
-      Id id = factory.buildIdFromString(cmd.substring(7));
+    if (instanceFreeCommand.startsWith("lookup")) {
+      Id id = factory.buildIdFromString(instanceFreeCommand.substring(7));
 
       final CompletableFuture<String> ret = new CompletableFuture<String>();
       aggregation.lookup(id, false, AggregationDebugCommands.<PastContent>reportTo(ret));
@@ -210,16 +210,16 @@ final class AggregationDebugCommands {
       return "lookup("+id+")="+awaitDebugResult(ret);
     }
 
-    if (cmd.startsWith("handles")) {
-      return handles(cmd);
+    if (instanceFreeCommand.startsWith("handles")) {
+      return handles(instanceFreeCommand);
     }
 
-    if (cmd.startsWith("refresh all")) {
-      return refreshAll(cmd);
+    if (instanceFreeCommand.startsWith("refresh all")) {
+      return refreshAll(instanceFreeCommand);
     }
 
-    if (cmd.startsWith("refresh")) {
-      String args = cmd.substring(8);
+    if (instanceFreeCommand.startsWith("refresh")) {
+      String args = instanceFreeCommand.substring(8);
       String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
       String keyArg = args.substring(0, args.lastIndexOf(' '));
 
@@ -232,15 +232,15 @@ final class AggregationDebugCommands {
       return "refresh("+id+", "+expiration+")="+awaitDebugResult(ret);
     }
 
-    String monitorResult = monitor.handleDebugCommand(cmd);
+    String monitorResult = monitor.handleDebugCommand(instanceFreeCommand);
     if (monitorResult != null)
       return monitorResult;
 
-    if (cmd.startsWith("killall")) {
-      return killAll(cmd);
+    if (instanceFreeCommand.startsWith("killall")) {
+      return killAll(instanceFreeCommand);
     }
 
-    if (cmd.startsWith("waiting")) {
+    if (instanceFreeCommand.startsWith("waiting")) {
       Iterator<Id> iter = waitingList.scan().getIterator();
       String result = "";
 
@@ -254,9 +254,9 @@ final class AggregationDebugCommands {
       return result;
     }
 
-    if (cmd.startsWith("vlookup")) {
+    if (instanceFreeCommand.startsWith("vlookup")) {
       @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
-      String[] vkeyS = cmd.substring(8).split("v");
+      String[] vkeyS = instanceFreeCommand.substring(8).split("v");
       Id key = factory.buildIdFromString(vkeyS[0]);
       long version = Long.parseLong(vkeyS[1]);
 
@@ -269,13 +269,13 @@ final class AggregationDebugCommands {
     return null;
   }
 
-  private String list(String cmd) {
+  private String list(String command) {
     Enumeration<AggregateDescriptor> enumeration = aggregateList.elements();
     StringBuilder result = new StringBuilder();
     int numAggr = 0, numObj = 0;
 
     long now = environment.getTimeSource().currentTimeMillis();
-    if (cmd.indexOf("-r") < 0)
+    if (command.indexOf("-r") < 0)
       now = 0;
 
     aggregateList.recalculateReferenceCounts(null);
@@ -306,22 +306,22 @@ final class AggregationDebugCommands {
     return result.toString();
   }
 
-  private String handles(String cmd) {
-    String args = cmd.substring(8);
+  private String handles(String command) {
+    String args = command.substring(8);
     Id id = factory.buildIdFromString(args.substring(args.indexOf(' ') + 1));
     int max = Integer.parseInt(args.substring(0, args.indexOf(' ')));
 
     final CompletableFuture<String> ret = new CompletableFuture<String>();
     aggregation.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
       @Override
-      public void receiveResult(PastContentHandle[] o) {
-        if (o != null) {
-          PastContentHandle[] oA = (PastContentHandle[]) o;
+      public void receiveResult(PastContentHandle[] results) {
+        if (results != null) {
+          PastContentHandle[] handles = (PastContentHandle[]) results;
           String text = "";
-          for (int i=0; i<oA.length; i++)
-            text = text + "#"+i+" "+oA[i]+"\n";
-          ret.complete(text + oA.length + " handle(s) returned\n");
-        } else ret.complete("result("+Arrays.toString(o)+") -- no handles returned!");
+          for (int i=0; i<handles.length; i++)
+            text = text + "#"+i+" "+handles[i]+"\n";
+          ret.complete(text + handles.length + " handle(s) returned\n");
+        } else ret.complete("result("+Arrays.toString(results)+") -- no handles returned!");
       }
       @Override
       public void receiveException(Exception e) {
@@ -332,8 +332,8 @@ final class AggregationDebugCommands {
     return "Handles("+max+","+id+"):\n"+awaitDebugResult(ret);
   }
 
-  private String refreshAll(String cmd) {
-    long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(cmd.substring(12));
+  private String refreshAll(String command) {
+    long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(command.substring(12));
     TreeSet<Id> ids = new TreeSet<Id>();
     String result;
 
@@ -365,8 +365,8 @@ final class AggregationDebugCommands {
     return result;
   }
 
-  private String killAll(String cmd) {
-    String args = cmd.substring(8);
+  private String killAll(String command) {
+    String args = command.substring(8);
     String expirationArg = args.substring(args.lastIndexOf(' ') + 1);
     String keyArg = args.substring(0, args.lastIndexOf(' '));
 

@@ -81,13 +81,13 @@ final class GlacierContinuationRegistry {
     return continuations.size();
   }
 
-  void addContinuation(GlacierContinuation gc) {
+  void addContinuation(GlacierContinuation continuation) {
     int thisUID = getUID();
-    gc.setup(thisUID);
-    continuations.put(Integer.valueOf(thisUID), gc);
-    gc.init();
+    continuation.setup(thisUID);
+    continuations.put(Integer.valueOf(thisUID), continuation);
+    continuation.init();
 
-    long thisTimeout = gc.getTimeout();
+    long thisTimeout = continuation.getTimeout();
     long now = environment.getTimeSource().currentTimeMillis();
 
     if ((nextContinuationTimeout == -1) || (thisTimeout < nextContinuationTimeout)) {
@@ -143,22 +143,22 @@ final class GlacierContinuationRegistry {
 
       logger.debug("Timer run at {}", now);
 
-      for (GlacierContinuation gc : continuations.values()) {
-        long currentTimeout = gc.getTimeout();
+      for (GlacierContinuation continuation : continuations.values()) {
+        long currentTimeout = continuation.getTimeout();
 
-        if (!gc.hasTerminated() && currentTimeout < (now + 1*GlacierConfig.SECONDS)) {
-          logger.debug("Timer: Resuming [{}]", gc);
-          gc.syncTimeoutExpired();
-          if (!gc.hasTerminated() && (gc.getTimeout() <= currentTimeout))
-            panic("Continuation does not set new timeout: "+gc);
+        if (!continuation.hasTerminated() && currentTimeout < (now + 1*GlacierConfig.SECONDS)) {
+          logger.debug("Timer: Resuming [{}]", continuation);
+          continuation.syncTimeoutExpired();
+          if (!continuation.hasTerminated() && (continuation.getTimeout() <= currentTimeout))
+            panic("Continuation does not set new timeout: "+continuation);
         }
 
-        if (!gc.hasTerminated()) {
-          if ((earliestTimeout == -1) || (gc.getTimeout() < earliestTimeout))
-            earliestTimeout = gc.getTimeout();
+        if (!continuation.hasTerminated()) {
+          if ((earliestTimeout == -1) || (continuation.getTimeout() < earliestTimeout))
+            earliestTimeout = continuation.getTimeout();
         } else {
           if (numDelete < MAX_DELETES_PER_PASS)
-            deleteList[numDelete++] = gc.getMyUID();
+            deleteList[numDelete++] = continuation.getMyUID();
         }
       }
 

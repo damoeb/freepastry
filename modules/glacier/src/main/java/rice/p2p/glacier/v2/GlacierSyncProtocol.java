@@ -129,8 +129,8 @@ final class GlacierSyncProtocol {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.syncDelayAfterJoin();
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierRangeResponseMessage grrm) {
+      public void receiveResult(Object received) {
+        if (received instanceof GlacierRangeResponseMessage grrm) {
 
           Id ccwId = locator.getFragmentLocation(grrm.getCommonRange().getCounterClockwiseBound(), numFragments-offset, 0);
           Id cwId = locator.getFragmentLocation(grrm.getCommonRange().getClockwiseBound(), numFragments-offset, 0);
@@ -163,9 +163,9 @@ final class GlacierSyncProtocol {
             return bv;
           }, new Continuation<FragmentBloomFilter, Exception>() {
             @Override
-            public void receiveResult(FragmentBloomFilter o) {
-              if (o != null) {
-                FragmentBloomFilter bv = (FragmentBloomFilter) o;
+            public void receiveResult(FragmentBloomFilter result) {
+              if (result != null) {
+                FragmentBloomFilter bv = (FragmentBloomFilter) result;
                 logger.debug("Got {}", bv);
                 logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
 
@@ -175,7 +175,7 @@ final class GlacierSyncProtocol {
                   grrm.getSource()
                 );
               } else {
-                logger.warn("While processing range response: Result is of unknown type: {} -- discarding request", o);
+                logger.warn("While processing range response: Result is of unknown type: {} -- discarding request", result);
               }
             }
             @Override
@@ -184,7 +184,7 @@ final class GlacierSyncProtocol {
             }
           });
         } else {
-          logger.warn("Unknown result in sync continuation: {} -- discarded", o);
+          logger.warn("Unknown result in sync continuation: {} -- discarded", received);
         }
       }
       @Override
@@ -284,23 +284,23 @@ final class GlacierSyncProtocol {
       FragmentKey[] keys = new FragmentKey[Math.min(numLookups, config.manifestAggregationFactor())];
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         final FragmentKey thisKey = (FragmentKey) missing.get(currentLookup);
 
-        if (o == null) {
+        if (result == null) {
           logger.warn("SYN2: Fragment {} not found -- canceled SYN", thisKey);
           return;
         }
 
         logger.debug("Retrieved manifest {} (dest={}, offset={})", thisKey, gsm.getSource().getId(), offset);
 
-        FragmentAndManifest fam = (FragmentAndManifest) o;
+        FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
 
-        if (!policy.checkSignature(fam.getManifest(), thisKey.versionKey()))
+        if (!policy.checkSignature(fragmentAndManifest.getManifest(), thisKey.versionKey()))
           panic("Signature mismatch!!");
 
         fragments[manifestIndex] = null;
-        manifests[manifestIndex] = fam.getManifest();
+        manifests[manifestIndex] = fragmentAndManifest.getManifest();
         int hisFID = thisKey.fragmentId() - offset;
         if (hisFID < 0)
           hisFID += numFragments;

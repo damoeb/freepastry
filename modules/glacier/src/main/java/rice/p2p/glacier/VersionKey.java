@@ -151,7 +151,7 @@ public record VersionKey(Id id, long version) implements Id {
   }
 
   @Override
-  public boolean isBetween(Id ccw, Id cw) {
+  public boolean isBetween(Id counterClockwiseId, Id clockwiseId) {
     throw new RuntimeException("VersionKey.isBetween() is not supported!");
   }
 

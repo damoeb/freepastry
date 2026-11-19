@@ -85,24 +85,24 @@ final class GlacierRequestHandler {
    * Answers a query: for each key, whether this node has the fragment, until when, and whether it is
    * responsible for it. Inserts, refreshes and handoffs start with a query.
    */
-  void handleQuery(final GlacierQueryMessage gqm) {
-    FragmentKey[] keyA = new FragmentKey[gqm.numKeys()];
-    boolean[] haveItA = new boolean[gqm.numKeys()];
-    long[] expirationA = new long[gqm.numKeys()];
-    boolean[] authoritativeA = new boolean[gqm.numKeys()];
+  void handleQuery(final GlacierQueryMessage queryMessage) {
+    FragmentKey[] keyA = new FragmentKey[queryMessage.numKeys()];
+    boolean[] haveItA = new boolean[queryMessage.numKeys()];
+    long[] expirationA = new long[queryMessage.numKeys()];
+    boolean[] authoritativeA = new boolean[queryMessage.numKeys()];
 
-    for (int i=0; i<gqm.numKeys(); i++) {
-      Id fragmentLocation = locator.getFragmentLocation(gqm.getKey(i));
-      if (logger.isInfoEnabled()) logger.info("Queried for " + gqm.getKey(i) + " (at "+fragmentLocation+")");
+    for (int i=0; i<queryMessage.numKeys(); i++) {
+      Id fragmentLocation = locator.getFragmentLocation(queryMessage.getKey(i));
+      if (logger.isInfoEnabled()) logger.info("Queried for " + queryMessage.getKey(i) + " (at "+fragmentLocation+")");
 
-      keyA[i] = gqm.getKey(i);
-      haveItA[i] = fragmentStorage.exists(gqm.getKey(i));
+      keyA[i] = queryMessage.getKey(i);
+      haveItA[i] = fragmentStorage.exists(queryMessage.getKey(i));
       if (haveItA[i]) {
-        FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(gqm.getKey(i));
+        FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(queryMessage.getKey(i));
         if (metadata != null) {
           expirationA[i] = metadata.currentExpiration();
         } else {
-          if (logger.isWarnEnabled()) logger.warn("QUERY cannot read metadata in object "+gqm.getKey(i).toStringFull()+", storage returned null");
+          if (logger.isWarnEnabled()) logger.warn("QUERY cannot read metadata in object "+queryMessage.getKey(i).toStringFull()+", storage returned null");
           expirationA[i] = 0;
           haveItA[i] = false;
         }
@@ -117,48 +117,48 @@ final class GlacierRequestHandler {
 
     router.sendMessage(
       null,
-      new GlacierResponseMessage(gqm.getUID(), keyA, haveItA, expirationA, authoritativeA, router.getLocalNodeHandle(), gqm.getSource().getId(), true, gqm.getTag()),
-      gqm.getSource()
+      new GlacierResponseMessage(queryMessage.getUID(), keyA, haveItA, expirationA, authoritativeA, router.getLocalNodeHandle(), queryMessage.getSource().getId(), true, queryMessage.getTag()),
+      queryMessage.getSource()
     );
   }
 
   /**
    * Answers a fetch with the requested fragments and/or manifests from the local fragment storage.
    */
-  void handleFetch(final GlacierFetchMessage gfm) {
-    logger.atInfo().log(() -> "Fetch request for " + gfm.getKey(0) + ((gfm.getNumKeys()>1) ? (" and " + (gfm.getNumKeys() - 1) + " other keys") : "") + ", request="+gfm.getRequest());
+  void handleFetch(final GlacierFetchMessage fetchMessage) {
+    logger.atInfo().log(() -> "Fetch request for " + fetchMessage.getKey(0) + ((fetchMessage.getNumKeys()>1) ? (" and " + (fetchMessage.getNumKeys() - 1) + " other keys") : "") + ", request="+fetchMessage.getRequest());
 
     /* FetchMessages are sent during recovery to retrieve a fragment from
        another node. They are answered from the local fragment storage;
        keys that are not stored here get null entries in the response. */
 
-    fragmentStorage.getObject(gfm.getKey(0), new Continuation<Object, Exception>() {
+    fragmentStorage.getObject(fetchMessage.getKey(0), new Continuation<Object, Exception>() {
       int currentLookup = 0;
-      Fragment fragment[] = new Fragment[gfm.getNumKeys()];
-      Manifest manifest[] = new Manifest[gfm.getNumKeys()];
+      Fragment fragment[] = new Fragment[fetchMessage.getNumKeys()];
+      Manifest manifest[] = new Manifest[fetchMessage.getNumKeys()];
       int numFragments = 0, numManifests = 0;
 
       void returnResponse() {
-        logger.debug("Returning response with {} fragments, {} manifests ({} queries originally)", numFragments, numManifests, gfm.getNumKeys());
+        logger.debug("Returning response with {} fragments, {} manifests ({} queries originally)", numFragments, numManifests, fetchMessage.getNumKeys());
         router.sendMessage(
           null,
-          new GlacierDataMessage(gfm.getUID(), gfm.getAllKeys(), fragment, manifest, router.getLocalNodeHandle(), gfm.getSource().getId(), true, gfm.getTag()),
-          gfm.getSource()
+          new GlacierDataMessage(fetchMessage.getUID(), fetchMessage.getAllKeys(), fragment, manifest, router.getLocalNodeHandle(), fetchMessage.getSource().getId(), true, fetchMessage.getTag()),
+          fetchMessage.getSource()
         );
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o != null) {
-          logger.atInfo().log(() -> "Fragment "+gfm.getKey(currentLookup)+" found ("+o+")");
-          FragmentAndManifest fam = (FragmentAndManifest) o;
-          fragment[currentLookup] = ((gfm.getRequest() & GlacierFetchMessage.FETCH_FRAGMENT)!=0) ? fam.getFragment() : null;
+      public void receiveResult(Object result) {
+        if (result != null) {
+          logger.atInfo().log(() -> "Fragment "+fetchMessage.getKey(currentLookup)+" found ("+result+")");
+          FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
+          fragment[currentLookup] = ((fetchMessage.getRequest() & GlacierFetchMessage.FETCH_FRAGMENT)!=0) ? fragmentAndManifest.getFragment() : null;
           if (fragment[currentLookup] != null)
             numFragments ++;
-          manifest[currentLookup] = ((gfm.getRequest() & GlacierFetchMessage.FETCH_MANIFEST)!=0) ? fam.getManifest() : null;
+          manifest[currentLookup] = ((fetchMessage.getRequest() & GlacierFetchMessage.FETCH_MANIFEST)!=0) ? fragmentAndManifest.getManifest() : null;
           if (manifest[currentLookup] != null)
             numManifests ++;
         } else {
-          logger.atInfo().log(() -> "Fragment "+gfm.getKey(currentLookup)+" not found");
+          logger.atInfo().log(() -> "Fragment "+fetchMessage.getKey(currentLookup)+" not found");
           fragment[currentLookup] = null;
           manifest[currentLookup] = null;
         }
@@ -167,14 +167,14 @@ final class GlacierRequestHandler {
       }
       void nextLookup() {
         currentLookup ++;
-        if (currentLookup >= gfm.getNumKeys())
+        if (currentLookup >= fetchMessage.getNumKeys())
           returnResponse();
         else
-          fragmentStorage.getObject(gfm.getKey(currentLookup), this);
+          fragmentStorage.getObject(fetchMessage.getKey(currentLookup), this);
       }
       @Override
       public void receiveException(Exception e) {
-        logger.atWarn().setCause(e).log(() -> "Exception while retrieving fragment "+gfm.getKey(currentLookup)+" (lookup #"+currentLookup+"), e=");
+        logger.atWarn().setCause(e).log(() -> "Exception while retrieving fragment "+fetchMessage.getKey(currentLookup)+" (lookup #"+currentLookup+"), e=");
         fragment[currentLookup] = null;
         manifest[currentLookup] = null;
         nextLookup();
@@ -186,11 +186,11 @@ final class GlacierRequestHandler {
    * Accepts fragments and manifests sent to this node: stores new fragments, replaces manifests that
    * expire earlier, and fetches the fragments it should have when it only got their manifest.
    */
-  void handleData(final GlacierDataMessage gdm) {
-    for (int i=0; i<gdm.numKeys(); i++) {
-      final FragmentKey thisKey = gdm.getKey(i);
-      final Fragment thisFragment = gdm.getFragment(i);
-      final Manifest thisManifest = gdm.getManifest(i);
+  void handleData(final GlacierDataMessage dataMessage) {
+    for (int i=0; i<dataMessage.numKeys(); i++) {
+      final FragmentKey thisKey = dataMessage.getKey(i);
+      final Fragment thisFragment = dataMessage.getFragment(i);
+      final Manifest thisManifest = dataMessage.getManifest(i);
 
       if ((thisFragment != null) && (thisManifest != null)) {
         logger.info("Data: Fragment+Manifest for {}", thisKey);
@@ -213,18 +213,18 @@ final class GlacierRequestHandler {
         if (!fragmentStorage.exists(thisKey)) {
           logger.debug("Verified ok. Storing locally.");
 
-          FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
+          FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(thisFragment, thisManifest);
 
-          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
             new Continuation<Object, Exception>() {
               @Override
-              public void receiveResult(Object o) {
+              public void receiveResult(Object result) {
                 logger.info("Stored OK, sending receipt: {}", thisKey);
 
                 router.sendMessage(
                   null,
-                  new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
-                  gdm.getSource()
+                  new GlacierResponseMessage(dataMessage.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), dataMessage.getSource().getId(), true, dataMessage.getTag()),
+                  dataMessage.getSource()
                 );
               }
 
@@ -263,7 +263,7 @@ final class GlacierRequestHandler {
           if ((metadata == null) || (metadata.currentExpiration() < thisManifest.getExpiration())) {
             logger.atInfo().log(() -> "Replacing old manifest for "+thisKey+" (expires "+((metadata == null) ? "(broken)" : ""+metadata.currentExpiration())+") by new one (expires "+thisManifest.getExpiration()+")");
 
-            replaceManifest(gdm, thisKey, thisManifest, metadata);
+            replaceManifest(dataMessage, thisKey, thisManifest, metadata);
           } else {
             logger.atWarn().log(() -> "We already have exp="+((metadata == null) ? "(broken)" : ""+metadata.currentExpiration())+", discarding manifest for "+thisKey+" with exp="+thisManifest.getExpiration());
           }
@@ -286,37 +286,37 @@ final class GlacierRequestHandler {
    * Replaces the manifest of a local fragment by a newer one, if the new one matches the fragment, and
    * confirms the update to the sender.
    */
-  private void replaceManifest(final GlacierDataMessage gdm, final FragmentKey thisKey, final Manifest thisManifest, final FragmentMetadata metadata) {
+  private void replaceManifest(final GlacierDataMessage dataMessage, final FragmentKey thisKey, final Manifest thisManifest, final FragmentMetadata metadata) {
     fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof FragmentAndManifest fam) {
+      public void receiveResult(Object received) {
+        if (received instanceof FragmentAndManifest fragmentAndManifest) {
 
           logger.debug("Got FAM for {}, now replacing old manifest with new one...", thisKey);
 
           String fault = null;
 
-          if (!thisManifest.validatesFragment(fam.getFragment(), thisKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)))
+          if (!thisManifest.validatesFragment(fragmentAndManifest.getFragment(), thisKey.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)))
             fault = "Update: Manifest does not validate this fragment";
           if (!policy.checkSignature(thisManifest, thisKey.versionKey()))
             fault = "Update: Manifest is not signed properly";
-          if (!Arrays.equals(thisManifest.getObjectHash(), fam.getManifest().getObjectHash()))
+          if (!Arrays.equals(thisManifest.getObjectHash(), fragmentAndManifest.getManifest().getObjectHash()))
             fault = "Update: Object hashes not equal";
           for (int i=0; i<numFragments; i++)
-            if (!Arrays.equals(thisManifest.getFragmentHash(i), fam.getManifest().getFragmentHash(i)))
+            if (!Arrays.equals(thisManifest.getFragmentHash(i), fragmentAndManifest.getManifest().getFragmentHash(i)))
               fault = "Update: Fragment hash #"+i+" does not match";
 
           if (fault == null) {
-            fam.replaceManifest(thisManifest);
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fam,
+            fragmentAndManifest.replaceManifest(thisManifest);
+            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
               new Continuation<Object, Exception>() {
                 @Override
-                public void receiveResult(Object o) {
+                public void receiveResult(Object result) {
                   logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
                   router.sendMessage(
                     null,
-                    new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), gdm.getSource().getId(), true, gdm.getTag()),
-                    gdm.getSource()
+                    new GlacierResponseMessage(dataMessage.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), dataMessage.getSource().getId(), true, dataMessage.getTag()),
+                    dataMessage.getSource()
                   );
                 }
                 @Override
@@ -329,7 +329,7 @@ final class GlacierRequestHandler {
             logger.warn(fault);
           }
         } else {
-          logger.warn("Fragment store returns something other than a FAM: {}", o);
+          logger.warn("Fragment store returns something other than a FAM: {}", received);
         }
       }
       @Override
@@ -350,17 +350,17 @@ final class GlacierRequestHandler {
         return "Fetch synced fragment: "+thisKey;
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof Fragment fragment) {
+      public void receiveResult(Object received) {
+        if (received instanceof Fragment fragment) {
           if (!fragmentStorage.exists(thisKey)) {
             logger.info("Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
 
-            FragmentAndManifest fam = new FragmentAndManifest(fragment, thisManifest);
+            FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(fragment, thisManifest);
 
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
               new Continuation<Object, Exception>() {
                 @Override
-                public void receiveResult(Object o) {
+                public void receiveResult(Object result) {
                   logger.debug("Recovered fragment stored OK");
                 }
                 @Override
@@ -373,13 +373,13 @@ final class GlacierRequestHandler {
             logger.warn("Received fragment {}, but it already exists in the fragment store", thisKey);
           }
         } else {
-          logger.warn("FS received something other than a fragment: {}", o);
+          logger.warn("FS received something other than a fragment: {}", received);
         }
       }
       @Override
       public void receiveException(Exception e) {
-        if (e instanceof GlacierNotEnoughFragmentsException gnf) {
-          logger.atInfo().log(() -> "Not enough fragments to reconstruct "+thisKey+": "+gnf.getChecked()+"/"+numFragments+" checked, "+gnf.getFound()+" found, "+numSurvivors+" needed");
+        if (e instanceof GlacierNotEnoughFragmentsException notEnoughFragments) {
+          logger.atInfo().log(() -> "Not enough fragments to reconstruct "+thisKey+": "+notEnoughFragments.getChecked()+"/"+numFragments+" checked, "+notEnoughFragments.getFound()+" found, "+numSurvivors+" needed");
         } else {
           logger.warn("Exception while recovering synced fragment {}: ", thisKey, e);
         }

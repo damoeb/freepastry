@@ -39,8 +39,8 @@ class GlacierRetrieverTest {
     }
 
     @Override
-    void lookupFragment(FragmentKey key, Continuation<Object, Exception> c) {
-      c.receiveException(new GlacierException("trash unreadable"));
+    void lookupFragment(FragmentKey key, Continuation<Object, Exception> continuation) {
+      continuation.receiveException(new GlacierException("trash unreadable"));
     }
   }
 

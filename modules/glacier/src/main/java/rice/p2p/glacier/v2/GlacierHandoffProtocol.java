@@ -97,11 +97,11 @@ final class GlacierHandoffProtocol {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.handoffDelayAfterJoin();
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierResponseMessage glacierResponseMessage) {
+      public void receiveResult(Object result) {
+        if (result instanceof GlacierResponseMessage glacierResponseMessage) {
           handleResponse(glacierResponseMessage);
         } else {
-          logger.warn("Unexpected response in handoff continuation: {} -- ignored", o);
+          logger.warn("Unexpected response in handoff continuation: {} -- ignored", result);
         }
       }
       @Override
@@ -161,12 +161,12 @@ final class GlacierHandoffProtocol {
   /**
    * Hands off the fragments the new holder does not have yet, and deletes those it has.
    */
-  private void handleResponse(final GlacierResponseMessage grm) {
-    logger.atDebug().log(() -> "Received handoff response from "+grm.getSource().getId()+" with "+grm.numKeys()+" keys");
-    for (int i=0; i<grm.numKeys(); i++) {
-      final FragmentKey thisKey = grm.getKey(i);
-      if (grm.getAuthoritative(i)) {
-        if (grm.hasFragment(i)) {
+  private void handleResponse(final GlacierResponseMessage responseMessage) {
+    logger.atDebug().log(() -> "Received handoff response from "+responseMessage.getSource().getId()+" with "+responseMessage.numKeys()+" keys");
+    for (int i=0; i<responseMessage.numKeys(); i++) {
+      final FragmentKey thisKey = responseMessage.getKey(i);
+      if (responseMessage.getAuthoritative(i)) {
+        if (responseMessage.hasFragment(i)) {
           Id thisPos = locator.getFragmentLocation(thisKey);
           if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
             logger.debug("Deleting fragment {}", thisKey);
@@ -175,10 +175,10 @@ final class GlacierHandoffProtocol {
             logger.warn("Handoff response for {}, for which I am still responsible (attack?) -- ignored", thisKey);
           }
         } else {
-          sendFragment(grm, thisKey);
+          sendFragment(responseMessage, thisKey);
         }
       } else {
-        if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+grm.hasFragment(i)+", authoritative="+grm.getAuthoritative(i)+")");
+        if (logger.isDebugEnabled()) logger.debug("Ignoring fragment "+thisKey+" (haveIt="+responseMessage.hasFragment(i)+", authoritative="+responseMessage.getAuthoritative(i)+")");
       }
     }
   }
@@ -186,8 +186,8 @@ final class GlacierHandoffProtocol {
   private void deleteHandedOffFragment(final FragmentKey thisKey) {
     trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        logger.debug("Handed off fragment deleted: {} (o={})", thisKey, o);
+      public void receiveResult(Object result) {
+        logger.debug("Handed off fragment deleted: {} (o={})", thisKey, result);
       }
       @Override
       public void receiveException(Exception e) {
@@ -196,17 +196,17 @@ final class GlacierHandoffProtocol {
     });
   }
 
-  private void sendFragment(final GlacierResponseMessage grm, final FragmentKey thisKey) {
+  private void sendFragment(final GlacierResponseMessage responseMessage, final FragmentKey thisKey) {
     fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o != null) {
-          logger.info("Fragment {} found ({}), handing off...", thisKey, o);
-          FragmentAndManifest fam = (FragmentAndManifest) o;
+      public void receiveResult(Object result) {
+        if (result != null) {
+          logger.info("Fragment {} found ({}), handing off...", thisKey, result);
+          FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
           router.sendMessage(
             null,
-            new GlacierDataMessage(grm.getUID(), thisKey, fam.getFragment(), fam.getManifest(), router.getLocalNodeHandle(), grm.getSource().getId(), false, GlacierTags.HANDOFF),
-            grm.getSource()
+            new GlacierDataMessage(responseMessage.getUID(), thisKey, fragmentAndManifest.getFragment(), fragmentAndManifest.getManifest(), router.getLocalNodeHandle(), responseMessage.getSource().getId(), false, GlacierTags.HANDOFF),
+            responseMessage.getSource()
           );
         } else {
           logger.warn("Handoff failed; fragment {} not found in fragment store", thisKey);
@@ -223,11 +223,11 @@ final class GlacierHandoffProtocol {
    * Stores the fragments handed off to this node, and confirms each one to the sender. The data message is a
    * request, not a response: the sender's continuation UID means nothing in this node's scheduler.
    */
-  void acceptFragments(final GlacierDataMessage gdm) {
-    for (int i=0; i<gdm.numKeys(); i++) {
-      final FragmentKey thisKey = gdm.getKey(i);
-      final Fragment thisFragment = gdm.getFragment(i);
-      final Manifest thisManifest = gdm.getManifest(i);
+  void acceptFragments(final GlacierDataMessage dataMessage) {
+    for (int i=0; i<dataMessage.numKeys(); i++) {
+      final FragmentKey thisKey = dataMessage.getKey(i);
+      final Fragment thisFragment = dataMessage.getFragment(i);
+      final Manifest thisManifest = dataMessage.getManifest(i);
 
       if ((thisFragment != null) && (thisManifest != null)) {
         logger.info("Handoff: Received Fragment+Manifest for {}", thisKey);
@@ -250,13 +250,13 @@ final class GlacierHandoffProtocol {
         if (!fragmentStorage.exists(thisKey)) {
           logger.debug("Handoff: Verified ok. Storing locally.");
 
-          storeHandedOffFragment(gdm, thisKey, thisFragment, thisManifest);
+          storeHandedOffFragment(dataMessage, thisKey, thisFragment, thisManifest);
         } else {
           logger.warn("Handoff: We already have a fragment with this key! -- sending response");
           router.sendMessage(
             null,
-            new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-            gdm.getSource()
+            new GlacierResponseMessage(dataMessage.getUID(), thisKey, true, thisManifest.getExpiration(), true, router.getLocalNodeHandle(), dataMessage.getSource().getId(), true, GlacierTags.HANDOFF),
+            dataMessage.getSource()
           );
 
         }
@@ -267,19 +267,19 @@ final class GlacierHandoffProtocol {
     }
   }
 
-  private void storeHandedOffFragment(final GlacierDataMessage gdm, final FragmentKey thisKey, Fragment thisFragment, final Manifest thisManifest) {
-    FragmentAndManifest fam = new FragmentAndManifest(thisFragment, thisManifest);
+  private void storeHandedOffFragment(final GlacierDataMessage dataMessage, final FragmentKey thisKey, Fragment thisFragment, final Manifest thisManifest) {
+    FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(thisFragment, thisManifest);
 
-    fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+    fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
       new Continuation<Object, Exception>() {
         @Override
-        public void receiveResult(Object o) {
+        public void receiveResult(Object result) {
           logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
 
           router.sendMessage(
             null,
-            new GlacierResponseMessage(gdm.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), gdm.getSource().getId(), true, GlacierTags.HANDOFF),
-            gdm.getSource()
+            new GlacierResponseMessage(dataMessage.getUID(), thisKey, true, thisManifest.getExpiration(), neighborhood.getResponsibleRange().containsId(locator.getFragmentLocation(thisKey)), router.getLocalNodeHandle(), dataMessage.getSource().getId(), true, GlacierTags.HANDOFF),
+            dataMessage.getSource()
           );
         }
 

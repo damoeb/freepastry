@@ -129,13 +129,13 @@ final class GlacierTrafficShaper {
   /**
    * Takes the size of an incoming data message out of the token bucket.
    */
-  void charge(GlacierDataMessage gdm) {
+  void charge(GlacierDataMessage dataMessage) {
     long thisSize = DATA_MESSAGE_OVERHEAD_BYTES;
     updateTokenBucket();
-    for (int i=0; i<gdm.numKeys(); i++) {
-      if (gdm.getFragment(i) != null)
-        thisSize += gdm.getFragment(i).getPayload().length;
-      if (gdm.getManifest(i) != null)
+    for (int i=0; i<dataMessage.numKeys(); i++) {
+      if (dataMessage.getFragment(i) != null)
+        thisSize += dataMessage.getFragment(i).getPayload().length;
+      if (dataMessage.getManifest(i) != null)
         thisSize += (long) numFragments * MANIFEST_BYTES_PER_FRAGMENT;
     }
 
@@ -195,8 +195,8 @@ final class GlacierTrafficShaper {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.rateLimitedCheckInterval();
       }
       @Override
-      public void receiveResult(Object o) {
-        logger.warn("TS received object: {}", o);
+      public void receiveResult(Object result) {
+        logger.warn("TS received object: {}", result);
       }
       @Override
       public void receiveException(Exception e) {
@@ -230,8 +230,8 @@ final class GlacierTrafficShaper {
             if (!pendingTraffic.isEmpty()) {
               Id thisKey = pendingTraffic.keySet().iterator().next();
               logger.debug("Sending request {}", thisKey);
-              Continuation<Object, Exception> c = pendingTraffic.remove(thisKey);
-              c.receiveResult(Boolean.valueOf(true));
+              Continuation<Object, Exception> continuation = pendingTraffic.remove(thisKey);
+              continuation.receiveResult(Boolean.valueOf(true));
             }
           }
         }

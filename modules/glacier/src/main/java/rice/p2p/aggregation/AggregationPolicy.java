@@ -40,6 +40,6 @@ import rice.p2p.past.PastContent;
 
 public interface AggregationPolicy {
 
-  public boolean shouldBeAggregated(PastContent obj, int size);
+  public boolean shouldBeAggregated(PastContent content, int size);
 
 }

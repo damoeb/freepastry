@@ -119,12 +119,12 @@ final class GlacierMessageDispatcher {
       trafficShaper.charge(glacierDataMessage);
 
     if (msg.isResponse()) {
-      GlacierContinuation gc = scheduler.get(msg.getUID());
+      GlacierContinuation continuation = scheduler.get(msg.getUID());
 
-      if (gc != null) {
-        if (!gc.hasTerminated()) {
-          logger.debug("Resuming [{}]", gc);
-          gc.syncReceiveResult(msg);
+      if (continuation != null) {
+        if (!continuation.hasTerminated()) {
+          logger.debug("Resuming [{}]", continuation);
+          continuation.syncReceiveResult(msg);
           logger.debug("---");
         } else {
           logger.debug("Message UID#{} is response, but continuation has already terminated", msg.getUID());

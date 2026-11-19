@@ -25,9 +25,9 @@ class FragmentKeyRangeTest {
   void setUp() {
     env = Environment.directEnvironment(1);
     PastryIdFactory idFactory = new PastryIdFactory(env);
-    Id cw = idFactory.buildId("cw");
-    Id ccw = idFactory.buildId("ccw");
-    underlying = idFactory.buildIdRange(cw, ccw);
+    Id clockwiseId = idFactory.buildId("cw");
+    Id counterClockwiseId = idFactory.buildId("ccw");
+    underlying = idFactory.buildIdRange(clockwiseId, counterClockwiseId);
   }
 
   @AfterEach

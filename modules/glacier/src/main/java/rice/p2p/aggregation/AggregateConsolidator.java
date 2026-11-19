@@ -92,11 +92,11 @@ final class AggregateConsolidator {
     int bytesSoFar = 0;
 
     while (!candidateList.isEmpty()) {
-      AggregateDescriptor adc = candidateList.remove(randomSource.nextInt(candidateList.size()));
-      componentList.add(adc);
-      logger.atDebug().log(() -> "Picked candidate "+adc.getKey().toStringFull()+" ("+adc.objectsAliveAt(now)+"/"+adc.getObjects().length+" objects, "+adc.bytesAliveAt(now)+" bytes alive)");
-      objectsSoFar += adc.objectsAliveAt(now);
-      bytesSoFar += adc.bytesAliveAt(now);
+      AggregateDescriptor aggregate = candidateList.remove(randomSource.nextInt(candidateList.size()));
+      componentList.add(aggregate);
+      logger.atDebug().log(() -> "Picked candidate "+aggregate.getKey().toStringFull()+" ("+aggregate.objectsAliveAt(now)+"/"+aggregate.getObjects().length+" objects, "+aggregate.bytesAliveAt(now)+" bytes alive)");
+      objectsSoFar += aggregate.objectsAliveAt(now);
+      bytesSoFar += aggregate.bytesAliveAt(now);
 
       int p = 0;
       while (p < candidateList.size()) {
@@ -160,42 +160,42 @@ final class AggregateConsolidator {
    * as a new aggregate.
    */
   private final class Consolidation implements Continuation<PastContent, Exception> {
-    private final AggregateDescriptor[] adc;
+    private final AggregateDescriptor[] aggregates;
     private final Aggregate[] aggr;
     private final int objectsTotal;
     private final long now;
     private int currentLookup = 0;
 
-    Consolidation(AggregateDescriptor[] adc, int objectsTotal, long now) {
-      this.adc = adc;
-      this.aggr = new Aggregate[adc.length];
+    Consolidation(AggregateDescriptor[] aggregates, int objectsTotal, long now) {
+      this.aggregates = aggregates;
+      this.aggr = new Aggregate[aggregates.length];
       this.objectsTotal = objectsTotal;
       this.now = now;
     }
 
     void start() {
-      final Id firstKey = adc[0].getKey();
+      final Id firstKey = aggregates[0].getKey();
       logger.atDebug().log(() -> "Consolidation: Fetching aggregate #0: "+firstKey.toStringFull());
       aggregateStore.lookup(firstKey, this);
     }
 
     @Override
-    public void receiveResult(PastContent o) {
-      if (o instanceof Aggregate aggregate) {
+    public void receiveResult(PastContent result) {
+      if (result instanceof Aggregate aggregate) {
         aggr[currentLookup] = aggregate;
         currentLookup ++;
-        if (currentLookup >= adc.length) {
+        if (currentLookup >= aggregates.length) {
           storeConsolidated();
         } else {
-          logger.atDebug().log(() -> "Consolidation: Fetching aggregate #"+currentLookup+": "+adc[currentLookup].getKey().toStringFull());
-          aggregateStore.lookup(adc[currentLookup].getKey(), this);
+          logger.atDebug().log(() -> "Consolidation: Fetching aggregate #"+currentLookup+": "+aggregates[currentLookup].getKey().toStringFull());
+          aggregateStore.lookup(aggregates[currentLookup].getKey(), this);
         }
       }
     }
 
     @Override
     public void receiveException(Exception e) {
-      logger.atWarn().setCause(e).log(() -> "Exception during consolidation lookup "+adc[currentLookup].getKey().toStringFull()+": "+e+" -- aborting");
+      logger.atWarn().setCause(e).log(() -> "Exception during consolidation lookup "+aggregates[currentLookup].getKey().toStringFull()+": "+e+" -- aborting");
     }
 
     private void storeConsolidated() {
@@ -205,34 +205,34 @@ final class AggregateConsolidator {
 
       logger.info("Consolidation: All aggregates fetched OK, forming new aggregate...");
 
-      for (int i=0; i<adc.length; i++) {
-        for (int j=0; j<adc[i].getObjects().length; j++) {
-          if (adc[i].getObjects()[j].isAliveAt(now)) {
+      for (int i=0; i<aggregates.length; i++) {
+        for (int j=0; j<aggregates[i].getObjects().length; j++) {
+          if (aggregates[i].getObjects()[j].isAliveAt(now)) {
 
             ExpiringPastContent temp = aggr[i].getComponent(j);
 
             components[componentIndex] = temp;
-            desc[componentIndex] = adc[i].getObjects()[j];
-            if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+adc[i].getObjects()[j].getKey().toStringFull());
+            desc[componentIndex] = aggregates[i].getObjects()[j];
+            if (logger.isDebugEnabled()) logger.debug("  #"+componentIndex+": "+aggregates[i].getObjects()[j].getKey().toStringFull());
             componentIndex ++;
           } else {
-            if (logger.isDebugEnabled()) logger.debug("Skipped (dead): "+adc[i].getObjects()[j].getKey().toStringFull());
+            if (logger.isDebugEnabled()) logger.debug("Skipped (dead): "+aggregates[i].getObjects()[j].getKey().toStringFull());
           }
         }
       }
 
-      Id[] obsoleteAggregates = new Id[adc.length];
-      for (int i=0; i<adc.length; i++)
-        obsoleteAggregates[i] = adc[i].getKey();
+      Id[] obsoleteAggregates = new Id[aggregates.length];
+      for (int i=0; i<aggregates.length; i++)
+        obsoleteAggregates[i] = aggregates[i].getKey();
 
       Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), obsoleteAggregates);
       final long aggrExpirationF = AggregateStorer.chooseAggregateLifetime(desc);
 
       storer.storeAggregate(aggregateFactory.buildAggregate(components, pointers), aggrExpirationF, desc, pointers, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           logger.info("Consolidated Aggregate stored OK, removing old descriptors...");
-          for (AggregateDescriptor aggregateDescriptor : adc) {
+          for (AggregateDescriptor aggregateDescriptor : aggregates) {
             if (logger.isDebugEnabled()) logger.debug("Removing "+aggregateDescriptor.getKey().toStringFull()+" ...");
             aggregateList.removeAggregateDescriptor(aggregateDescriptor);
           }

@@ -36,23 +36,23 @@ final class InsecureGlacierPolicy implements GlacierPolicy {
   }
 
   @Override
-  public Fragment[] encodeObject(PastContent obj, boolean[] generateFragment) {
+  public Fragment[] encodeObject(PastContent content, boolean[] generateFragment) {
     try {
-      SimpleOutputBuffer sob = serialize(obj);
-      return codec.encode(sob.getBytes(), sob.getWritten(), generateFragment);
+      SimpleOutputBuffer outputBuffer = serialize(content);
+      return codec.encode(outputBuffer.getBytes(), outputBuffer.getWritten(), generateFragment);
     } catch (IOException e) {
       return null;
     }
   }
 
   @Override
-  public Manifest[] createManifests(VersionKey key, PastContent obj, Fragment[] fragments, long expiration) {
+  public Manifest[] createManifests(VersionKey key, PastContent content, Fragment[] fragments, long expiration) {
     try {
-      SimpleOutputBuffer sob = serialize(obj);
+      SimpleOutputBuffer outputBuffer = serialize(content);
       byte[][] fragmentHash = new byte[fragments.length][];
       for (int i = 0; i < fragments.length; i++)
         fragmentHash[i] = HashUtils.hash(fragments[i].getPayload());
-      Manifest manifest = new Manifest(HashUtils.hash(sob.getBytes(), 0, sob.getWritten()), fragmentHash, expiration, new byte[0], new byte[0]);
+      Manifest manifest = new Manifest(HashUtils.hash(outputBuffer.getBytes(), 0, outputBuffer.getWritten()), fragmentHash, expiration, new byte[0], new byte[0]);
       manifest.setSignature(key.toByteArray());
       Manifest[] manifests = new Manifest[fragments.length];
       Arrays.fill(manifests, manifest);
@@ -70,14 +70,14 @@ final class InsecureGlacierPolicy implements GlacierPolicy {
   }
 
   @Override
-  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer pcd) {
-    return codec.decode(fragments, endpoint, pcd);
+  public PastContent decodeObject(Fragment[] fragments, Endpoint endpoint, PastContentDeserializer deserializer) {
+    return codec.decode(fragments, endpoint, deserializer);
   }
 
-  private static SimpleOutputBuffer serialize(PastContent obj) throws IOException {
-    SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    sob.writeShort(obj.getType());
-    obj.serialize(sob);
-    return sob;
+  private static SimpleOutputBuffer serialize(PastContent content) throws IOException {
+    SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+    outputBuffer.writeShort(content.getType());
+    content.serialize(outputBuffer);
+    return outputBuffer;
   }
 }

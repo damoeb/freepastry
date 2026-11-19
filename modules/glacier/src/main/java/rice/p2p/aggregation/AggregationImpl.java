@@ -221,9 +221,9 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
   }
 
   private void panic(String s) throws Error {
-    Error err = new Error("Panic "+s);
-    logger.error("PANIC: {}", s, err);
-    throw err;
+    Error error = new Error("Panic "+s);
+    logger.error("PANIC: {}", s, error);
+    throw error;
   }
 
   @Override
@@ -241,8 +241,8 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
 
         flusher.formAggregates(new Continuation<Boolean, Exception>() {
           @Override
-          public void receiveResult(Boolean o) {
-            logger.debug("Scheduled flush: Success (o={})", o);
+          public void receiveResult(Boolean result) {
+            logger.debug("Scheduled flush: Success (o={})", result);
           }
           @Override
           public void receiveException(Exception e) {
@@ -317,55 +317,55 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
   }
 
   @Override
-  public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
-    insert(obj, INFINITY_EXPIRATION, command);
+  public void insert(final PastContent content, final Continuation<? super Boolean[], Exception> command) {
+    insert(content, INFINITY_EXPIRATION, command);
   }
 
   @Override
-  public void insert(final PastContent obj, final long lifetime, final Continuation<? super Boolean[], Exception> command) {
+  public void insert(final PastContent content, final long lifetime, final Continuation<? super Boolean[], Exception> command) {
 
     long theVersion;
-    if (obj instanceof ExpiringPastContent gcPastContent) {
+    if (content instanceof ExpiringPastContent gcPastContent) {
       theVersion = gcPastContent.getVersion();
     } else {
       theVersion = 0;
     }
 
-    final VersionKey vkey = new VersionKey(obj.getId(), theVersion);
+    final VersionKey vkey = new VersionKey(content.getId(), theVersion);
     final long theVersionF = theVersion;
-    final int theSize = AggregateStorer.getSize(obj, logger);
+    final int theSize = AggregateStorer.getSize(content, logger);
 
-    if (policy.shouldBeAggregated(obj, theSize)) {
-      logger.info("AGGREGATE INSERT: {} version={} size={} class={}", obj.getId(), theVersion, theSize, obj.getClass().getName());
+    if (policy.shouldBeAggregated(content, theSize)) {
+      logger.info("AGGREGATE INSERT: {} version={} size={} class={}", content.getId(), theVersion, theSize, content.getClass().getName());
 
       if (objectStore instanceof ExpiringPast gcPast)
-        gcPast.insert(obj, lifetime, command);
+        gcPast.insert(content, lifetime, command);
       else
-        objectStore.insert(obj, command);
+        objectStore.insert(content, command);
 
-      waitingList.store(vkey, new ObjectDescriptor(obj.getId(), theVersionF, lifetime, lifetime, theSize), obj, new Continuation<Boolean, Exception>() {
+      waitingList.store(vkey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
         }
         @Override
         public void receiveException(Exception e) {
-          logger.warn("Exception while storing aggregate: {} (e={})", obj.getId(), e, e);
+          logger.warn("Exception while storing aggregate: {} (e={})", content.getId(), e, e);
         }
       });
     } else {
-      logger.info("INSERT WITHOUT AGGREGATION: {} version={} size={} class={}", obj.getId(), theVersionF, theSize, obj.getClass().getName());
+      logger.info("INSERT WITHOUT AGGREGATION: {} version={} size={} class={}", content.getId(), theVersionF, theSize, content.getClass().getName());
 
-      Continuation<Boolean[], Exception> c = new InsertJoin(command);
+      Continuation<Boolean[], Exception> continuation = new InsertJoin(command);
 
       if (objectStore instanceof ExpiringPast gcPast)
-        gcPast.insert(obj, lifetime, c);
+        gcPast.insert(content, lifetime, continuation);
       else
-        objectStore.insert(obj, c);
+        objectStore.insert(content, continuation);
 
       if (aggregateStore instanceof ExpiringPast gcPast)
-        gcPast.insert(new NonAggregate(obj), lifetime, c);
+        gcPast.insert(new NonAggregate(content), lifetime, continuation);
       else
-        aggregateStore.insert(new NonAggregate(obj), c);
+        aggregateStore.insert(new NonAggregate(content), continuation);
     }
   }
 
@@ -422,7 +422,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       VersionKey thisKey = (VersionKey) iter.next();
       waitingList.unstore(thisKey, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {}
+        public void receiveResult(Boolean result) {}
         @Override
         public void receiveException(Exception e) {}
       });

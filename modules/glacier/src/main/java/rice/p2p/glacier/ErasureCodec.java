@@ -183,7 +183,7 @@ public class ErasureCodec {
   }
 
   @SuppressWarnings("UnnecessaryParentheses") // keeps the byte-packing columns aligned
-  public PastContent decode(Fragment frag[], Endpoint endpoint, PastContentDeserializer pcd) {
+  public PastContent decode(Fragment frag[], Endpoint endpoint, PastContentDeserializer deserializer) {
 
     if (frag.length != numFragments)
       return null;
@@ -289,22 +289,22 @@ public class ErasureCodec {
     }
 
     try {
-      return deserialize(bytes, endpoint, pcd);
-    } catch (IOException ioe) {
-      logger.warn("", ioe);
+      return deserialize(bytes, endpoint, deserializer);
+    } catch (IOException ioException) {
+      logger.warn("", ioException);
     } catch (ClassNotFoundException cnfe) {
       logger.warn("", cnfe);
-    } catch (IllegalStateException ise) {
-      logger.warn("", ise);
+    } catch (IllegalStateException illegalStateException) {
+      logger.warn("", illegalStateException);
     }
 
     return null;
   }
 
-  protected PastContent deserialize(byte[] bytes, Endpoint endpoint, PastContentDeserializer pcd) throws IOException, ClassNotFoundException {
-    SimpleInputBuffer sib = new SimpleInputBuffer(bytes);
-    short type = sib.readShort();
-    return pcd.deserializePastContent(sib, endpoint, type);
+  protected PastContent deserialize(byte[] bytes, Endpoint endpoint, PastContentDeserializer deserializer) throws IOException, ClassNotFoundException {
+    SimpleInputBuffer inputBuffer = new SimpleInputBuffer(bytes);
+    short type = inputBuffer.readShort();
+    return deserializer.deserializePastContent(inputBuffer, endpoint, type);
   }
 
   private static int[] buildExpToFieldElt() {

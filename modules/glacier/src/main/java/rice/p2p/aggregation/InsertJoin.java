@@ -18,7 +18,7 @@ final class InsertJoin implements Continuation<Boolean[], Exception> {
   }
 
   @Override
-  public void receiveResult(Boolean[] o) {
+  public void receiveResult(Boolean[] results) {
     boolean complete;
     synchronized (this) {
       succeeded++;

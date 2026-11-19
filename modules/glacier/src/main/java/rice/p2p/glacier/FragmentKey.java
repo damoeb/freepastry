@@ -55,13 +55,13 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
   /**
    * Not supported.
    *
-   * @param ccw the counterclockwise end
-   * @param cw the clockwise end
+   * @param counterClockwiseId the counterclockwise end
+   * @param clockwiseId the clockwise end
    * @return never returns
    * @throws RuntimeException always
    */
   @Override
-  public boolean isBetween(Id ccw, Id cw) {
+  public boolean isBetween(Id counterClockwiseId, Id clockwiseId) {
     throw new RuntimeException("FragmentKey.isBetween() is not supported!");
   }
 

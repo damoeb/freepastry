@@ -79,9 +79,9 @@ final class AggregateFlusher {
       final Continuation<? super Boolean, Exception> parent = flushWait;
       flushWait = new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           logger.info("Daisy-chain receiveResult(), restarting {}", command);
-          parent.receiveResult(o);
+          parent.receiveResult(result);
           formAggregates(command);
         }
         @Override
@@ -116,9 +116,9 @@ final class AggregateFlusher {
 
     deleteDamagedObjects(deletionVector);
 
-    Continuation.MultiContinuation<Object[]> c = new Continuation.MultiContinuation<Object[]>(new Continuation<Object[], Exception>() {
+    Continuation.MultiContinuation<Object[]> multiContinuation = new Continuation.MultiContinuation<Object[]>(new Continuation<Object[], Exception>() {
       @Override
-      public void receiveResult(Object[] o) {
+      public void receiveResult(Object[] results) {
         flushComplete(Boolean.valueOf(true));
       }
       @Override
@@ -128,17 +128,17 @@ final class AggregateFlusher {
     }, aggregates.size());
 
     for (int i=0; i<aggregates.size(); i++)
-      new AggregateBuilder(i, aggregates.get(i), c.getSubContinuation(i)).start();
+      new AggregateBuilder(i, aggregates.get(i), multiContinuation.getSubContinuation(i)).start();
   }
 
-  private void flushComplete(Object o) {
+  private void flushComplete(Object result) {
     if (flushWait != null) {
-      Continuation<? super Boolean, Exception> c = flushWait;
+      Continuation<? super Boolean, Exception> continuation = flushWait;
       flushWait = null;
-      if (o instanceof Exception exception)
-        c.receiveException(exception);
+      if (result instanceof Exception exception)
+        continuation.receiveException(exception);
       else
-        c.receiveResult((Boolean) o);
+        continuation.receiveResult((Boolean) result);
     }
   }
 
@@ -217,7 +217,7 @@ final class AggregateFlusher {
       logger.atInfo().log(() -> "Deleting object "+thisId.toStringFull()+" from waiting list (broken metadata)");
       waitingList.unstore(thisId, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           logger.debug("Successfully deleted: {}", thisId);
         }
         @Override
@@ -235,7 +235,7 @@ final class AggregateFlusher {
   private final class AggregateBuilder implements Continuation<Object, Exception> {
     private final int index;
     private final ObjectDescriptor[] desc;
-    private final ExpiringPastContent[] obj;
+    private final ExpiringPastContent[] contents;
     private final long aggrExpiration;
     private final Continuation<Object, Exception> command;
     private int currentQuery = 0;
@@ -243,7 +243,7 @@ final class AggregateFlusher {
     AggregateBuilder(int index, ObjectDescriptor[] desc, Continuation<Object, Exception> command) {
       this.index = index;
       this.desc = desc;
-      this.obj = new ExpiringPastContent[desc.length];
+      this.contents = new ExpiringPastContent[desc.length];
       this.aggrExpiration = AggregateStorer.chooseAggregateLifetime(desc);
       this.command = command;
     }
@@ -254,9 +254,9 @@ final class AggregateFlusher {
     }
 
     @Override
-    public void receiveResult(Object o) {
-      if ((o!=null) && (o instanceof ExpiringPastContent gcPastContent)) {
-        obj[currentQuery++] = gcPastContent;
+    public void receiveResult(Object result) {
+      if ((result!=null) && (result instanceof ExpiringPastContent gcPastContent)) {
+        contents[currentQuery++] = gcPastContent;
         if (currentQuery < desc.length) {
           logger.debug("Retrieving #{}.{}: {}", index, currentQuery, desc[currentQuery].getKey());
           waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
@@ -264,7 +264,7 @@ final class AggregateFlusher {
           storeAggregate();
         }
       } else {
-        logger.warn("Aggregation cannot retrieve {} (found o={})", desc[currentQuery].getKey(), o);
+        logger.warn("Aggregation cannot retrieve {} (found o={})", desc[currentQuery].getKey(), result);
         command.receiveException(new AggregationException("Cannot retrieve object from waiting list: "+desc[currentQuery].getKey()));
       }
     }
@@ -277,9 +277,9 @@ final class AggregateFlusher {
 
     private void storeAggregate() {
       Id[] pointers = aggregateList.getSomePointers(config.getNominalReferenceCount(), config.getMaxPointersPerAggregate(), null);
-      storer.storeAggregate(aggregateFactory.buildAggregate(obj, pointers), aggrExpiration, desc, pointers, new Continuation<Boolean, Exception>() {
+      storer.storeAggregate(aggregateFactory.buildAggregate(contents, pointers), aggrExpiration, desc, pointers, new Continuation<Boolean, Exception>() {
         @Override
-        public void receiveResult(Boolean o) {
+        public void receiveResult(Boolean result) {
           unstoreComponents();
         }
         @Override
@@ -296,8 +296,8 @@ final class AggregateFlusher {
         final Continuation<Object, Exception> c2s = c2.getSubContinuation(i);
         waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion()), new Continuation<Boolean, Exception>() {
           @Override
-          public void receiveResult(Boolean o) {
-            c2s.receiveResult(o);
+          public void receiveResult(Boolean result) {
+            c2s.receiveResult(result);
           }
           @Override
           public void receiveException(Exception e) {

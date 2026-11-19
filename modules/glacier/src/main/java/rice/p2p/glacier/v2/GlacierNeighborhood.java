@@ -153,10 +153,10 @@ final class GlacierNeighborhood {
     neighborStorage.getObject(nodeId,
       new Continuation<Object, Exception>() {
         @Override
-        public void receiveResult(Object o) {
+        public void receiveResult(Object result) {
           logger.debug("Continue: neighborSeen ({}, {}) after getObject", fNodeId, fWhen);
 
-          final long previousWhen = (o!=null) ? ((Long)o).longValue() : 0;
+          final long previousWhen = (result!=null) ? ((Long)result).longValue() : 0;
           logger.debug("Neighbor: {} previously seen at {}", fNodeId, previousWhen);
           if (previousWhen >= fWhen) {
             logger.debug("Neighbor: No update needed (new TS={})", fWhen);
@@ -264,7 +264,7 @@ final class GlacierNeighborhood {
     neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
       new Continuation<Object, Exception>() {
         @Override
-        public void receiveResult(Object o) {
+        public void receiveResult(Object result) {
           logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
           logger.debug("Neighbor: Updated {} from {} to {}", fNodeId, previousWhen, fWhen);
           determineResponsibleRange();
@@ -283,19 +283,19 @@ final class GlacierNeighborhood {
   private void expireIfStale(final Id thisNeighbor, final long earliestAcceptableDate) {
     neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o==null) {
+      public void receiveResult(Object received) {
+        if (received==null) {
           logger.warn("CNE: Cannot retrieve neighbor {}", thisNeighbor);
           return;
         }
 
-        long lastSeen = ((Long)o).longValue();
+        long lastSeen = ((Long)received).longValue();
         if (lastSeen < earliestAcceptableDate) {
           logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
           neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
             @Override
-            public void receiveResult(Object o) {
-              logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, o);
+            public void receiveResult(Object result) {
+              logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, result);
               determineResponsibleRange();
             }
             @Override

@@ -43,7 +43,7 @@ class GlacierTrafficShaperTest {
   private Continuation<Object, Exception> job(final Id key) {
     return new Continuation.SimpleContinuation() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         released.add(key);
       }
     };

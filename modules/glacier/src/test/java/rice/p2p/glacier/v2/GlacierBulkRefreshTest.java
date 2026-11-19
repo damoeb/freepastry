@@ -53,8 +53,8 @@ class GlacierBulkRefreshTest {
       case "getMetadata" -> new FragmentMetadata(env.getTimeSource().currentTimeMillis() + 1000, 0, 0);
       case "getObject" -> {
         @SuppressWarnings("unchecked")
-        Continuation<Object, Exception> c = (Continuation<Object, Exception>) args[1];
-        c.receiveResult(null);
+        Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
+        continuation.receiveResult(null);
         yield null;
       }
       default -> null;

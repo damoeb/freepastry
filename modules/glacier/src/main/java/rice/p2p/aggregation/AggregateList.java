@@ -153,65 +153,65 @@ public class AggregateList {
           } else if (parts[3].equals("setAL")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc == null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
-            adc.setCurrentLifetime(lifetime);
+            aggregate.setCurrentLifetime(lifetime);
             logger.atTrace().log(() -> "  - lifetime="+lifetime+" in ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("setOCL")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
             int index = Integer.parseInt(parts[5]);
             long lifetime = Long.parseLong(parts[6]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc == null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
-            if (adc.getObjects().length <= index)
-              throw new AggregationException("Object index mismatch ("+index+"/"+adc.getObjects().length+"): "+line);
-            adc.getObjects()[index].setCurrentLifetime(lifetime);
+            if (aggregate.getObjects().length <= index)
+              throw new AggregationException("Object index mismatch ("+index+"/"+aggregate.getObjects().length+"): "+line);
+            aggregate.getObjects()[index].setCurrentLifetime(lifetime);
             logger.atTrace().log(() -> "  - currentLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
 
           } else if (parts[3].equals("setORL")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
             int index = Integer.parseInt(parts[5]);
             long lifetime = Long.parseLong(parts[6]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc == null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
-            if (adc.getObjects().length <= index)
-              throw new AggregationException("Object index mismatch ("+index+"/"+adc.getObjects().length+"): "+line);
-            adc.getObjects()[index].setRefreshedLifetime(lifetime);
+            if (aggregate.getObjects().length <= index)
+              throw new AggregationException("Object index mismatch ("+index+"/"+aggregate.getObjects().length+"): "+line);
+            aggregate.getObjects()[index].setRefreshedLifetime(lifetime);
             logger.atTrace().log(() -> "  - refreshedLifetime="+lifetime+" in ADC "+adcKey.toStringFull()+" index "+index);
 
           } else if (parts[3].equals("refresh")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
             long lifetime = Long.parseLong(parts[5]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc == null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
 
-            adc.setCurrentLifetime(lifetime);
-            for (int i=0; i<adc.getObjects().length; i++)
-              adc.getObjects()[i].setCurrentLifetime(adc.getObjects()[i].getRefreshedLifetime());
+            aggregate.setCurrentLifetime(lifetime);
+            for (int i=0; i<aggregate.getObjects().length; i++)
+              aggregate.getObjects()[i].setCurrentLifetime(aggregate.getObjects()[i].getRefreshedLifetime());
             logger.atTrace().log(() -> " - refresh="+lifetime+" in ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("removeAggregate")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc == null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate == null)
               throw new AggregationException("Cannot find aggregate ("+adcKey.toStringFull()+": "+line);
 
-            removeAggregateDescriptor(adc, false);
+            removeAggregateDescriptor(aggregate, false);
             logger.atTrace().log(() -> " - remove ADC "+adcKey.toStringFull());
 
           } else if (parts[3].equals("addAggregate")) {
             Id adcKey = factory.buildIdFromString(parts[4]);
-            AggregateDescriptor adc = (AggregateDescriptor) aggregateList.get(adcKey);
-            if (adc != null)
+            AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(adcKey);
+            if (aggregate != null)
               throw new AggregationException("Aggregate already present ("+adcKey.toStringFull()+": "+line);
 
-            adc = readAggregate(logFile, adcKey);
-            addAggregateDescriptor(adc, false);
+            aggregate = readAggregate(logFile, adcKey);
+            addAggregateDescriptor(aggregate, false);
             logger.atTrace().log(() -> " - add ADC "+adcKey.toStringFull());
           } else {
             throw new AggregationException("Unknown command ("+parts[3]+"): "+line);
@@ -274,19 +274,19 @@ public class AggregateList {
     return (AggregateDescriptor) aggregateList.get(id);
   }
 
-  public void setAggregateLifetime(AggregateDescriptor adc, long lifetime) {
-    logEntry("setAL|"+adc.getKey().toStringFull()+"|"+lifetime);
-    adc.setCurrentLifetime(lifetime);
+  public void setAggregateLifetime(AggregateDescriptor aggregate, long lifetime) {
+    logEntry("setAL|"+aggregate.getKey().toStringFull()+"|"+lifetime);
+    aggregate.setCurrentLifetime(lifetime);
   }
 
-  public void setObjectCurrentLifetime(AggregateDescriptor adc, int index, long lifetime) {
-    logEntry("setOCL|"+adc.getKey().toStringFull()+"|"+index+"|"+lifetime);
-    adc.getObjects()[index].setCurrentLifetime(lifetime);
+  public void setObjectCurrentLifetime(AggregateDescriptor aggregate, int index, long lifetime) {
+    logEntry("setOCL|"+aggregate.getKey().toStringFull()+"|"+index+"|"+lifetime);
+    aggregate.getObjects()[index].setCurrentLifetime(lifetime);
   }
 
-  public void setObjectRefreshedLifetime(AggregateDescriptor adc, int index, long lifetime) {
-    logEntry("setORL|"+adc.getKey().toStringFull()+"|"+index+"|"+lifetime);
-    adc.getObjects()[index].setRefreshedLifetime(lifetime);
+  public void setObjectRefreshedLifetime(AggregateDescriptor aggregate, int index, long lifetime) {
+    logEntry("setORL|"+aggregate.getKey().toStringFull()+"|"+index+"|"+lifetime);
+    aggregate.getObjects()[index].setRefreshedLifetime(lifetime);
   }
 
   public void resetMarkers() {
@@ -294,11 +294,11 @@ public class AggregateList {
       aggr.setMarker(false);
   }
 
-  public void refreshAggregate(AggregateDescriptor adc, long lifetime) {
-    logEntry("refresh|"+adc.getKey().toStringFull()+"|"+lifetime);
-    adc.setCurrentLifetime(lifetime);
-    for (int i=0; i<adc.getObjects().length; i++)
-      adc.getObjects()[i].setCurrentLifetime(adc.getObjects()[i].getRefreshedLifetime());
+  public void refreshAggregate(AggregateDescriptor aggregate, long lifetime) {
+    logEntry("refresh|"+aggregate.getKey().toStringFull()+"|"+lifetime);
+    aggregate.setCurrentLifetime(lifetime);
+    for (int i=0; i<aggregate.getObjects().length; i++)
+      aggregate.getObjects()[i].setCurrentLifetime(aggregate.getObjects()[i].getRefreshedLifetime());
   }
 
   public void addAggregateDescriptor(AggregateDescriptor aggr) {
@@ -324,9 +324,9 @@ public class AggregateList {
     }
 
     for (int i=0; i<aggr.getPointers().length; i++) {
-      AggregateDescriptor ref = (AggregateDescriptor) aggregateList.get(aggr.getPointers()[i]);
-      if (ref != null)
-        ref.addReference();
+      AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(aggr.getPointers()[i]);
+      if (aggregate != null)
+        aggregate.addReference();
     }
   }
 
@@ -371,17 +371,17 @@ public class AggregateList {
       if (!aggr.isMarker()) {
         aggr.setMarker(true);
         for (int i=0; i<aggr.getPointers().length; i++) {
-          AggregateDescriptor ref = (AggregateDescriptor) aggregateList.get(aggr.getPointers()[i]);
-          if (ref != null)
-            ref.addReference();
+          AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.get(aggr.getPointers()[i]);
+          if (aggregate != null)
+            aggregate.addReference();
         }
       }
     }
   }
 
-  private String readLineSkipComments(BufferedReader br) throws IOException {
+  private String readLineSkipComments(BufferedReader reader) throws IOException {
     while (true) {
-      String line = br.readLine();
+      String line = reader.readLine();
       if ((line != null) && ((line.length() == 0) || (line.charAt(0) == '#')))
         continue;
       return line;
@@ -466,9 +466,9 @@ public class AggregateList {
 
         String[] aggrKeyS = aggrKeyLine.split("\\[|\\]");
         Id aggrKey = factory.buildIdFromString(aggrKeyS[1]);
-        AggregateDescriptor adc = readAggregate(configFile, aggrKey);
+        AggregateDescriptor aggregate = readAggregate(configFile, aggrKey);
 
-        addAggregateDescriptor(adc, false);
+        addAggregateDescriptor(aggregate, false);
       }
     } catch (Exception e) {
       logger.warn("Cannot read configuration file: {} (e={})", configFileName, e, e);
@@ -490,20 +490,20 @@ public class AggregateList {
     return readSuccessful;
   }
 
-  private void writeAggregate(PrintStream stream, AggregateDescriptor adc) {
-    stream.println("expires=" + adc.getCurrentLifetime());
-    stream.println("objects=" + adc.getObjects().length);
-    for (int i=0; i<adc.getObjects().length; i++)
+  private void writeAggregate(PrintStream stream, AggregateDescriptor aggregate) {
+    stream.println("expires=" + aggregate.getCurrentLifetime());
+    stream.println("objects=" + aggregate.getObjects().length);
+    for (int i=0; i<aggregate.getObjects().length; i++)
       stream.println("obj"+i+"="+
-        adc.getObjects()[i].getKey().toStringFull()+"v"+
-        adc.getObjects()[i].getVersion()+";"+
-        adc.getObjects()[i].getCurrentLifetime()+";"+
-        adc.getObjects()[i].getRefreshedLifetime()+";"+
-        adc.getObjects()[i].getSize()
+        aggregate.getObjects()[i].getKey().toStringFull()+"v"+
+        aggregate.getObjects()[i].getVersion()+";"+
+        aggregate.getObjects()[i].getCurrentLifetime()+";"+
+        aggregate.getObjects()[i].getRefreshedLifetime()+";"+
+        aggregate.getObjects()[i].getSize()
       );
-    stream.println("pointers=" + adc.getPointers().length);
-    for (int i=0; i<adc.getPointers().length; i++)
-      stream.println("ptr"+i+"="+adc.getPointers()[i].toStringFull());
+    stream.println("pointers=" + aggregate.getPointers().length);
+    for (int i=0; i<aggregate.getPointers().length; i++)
+      stream.println("ptr"+i+"="+aggregate.getPointers()[i].toStringFull());
   }
 
   public void writeToDisk() {
@@ -537,8 +537,8 @@ public class AggregateList {
       try {
         Files.move(Path.of(configFileName + ".new"), Path.of(configFileName), REPLACE_EXISTING);
       } catch (IOException ignored) { /* readFromDisk falls back to the .new file */ }
-    } catch (IOException ioe) {
-      logger.warn("AggregationImpl cannot write to its aggregate list: {} ({})", configFileName, ioe, ioe);
+    } catch (IOException ioException) {
+      logger.warn("AggregationImpl cannot write to its aggregate list: {} ({})", configFileName, ioException, ioException);
     }
   }
 

@@ -143,13 +143,13 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
   }
 
   @Override
-  public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
-    insert(obj, ExpiringPast.INFINITY_EXPIRATION, command);
+  public void insert(final PastContent content, final Continuation<? super Boolean[], Exception> command) {
+    insert(content, ExpiringPast.INFINITY_EXPIRATION, command);
   }
 
   @Override
-  public void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    inserter.insert(obj, expiration, command);
+  public void insert(final PastContent content, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    inserter.insert(content, expiration, command);
   }
 
   @Override
@@ -204,13 +204,13 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     retriever.retrieveManifest(new VersionKey(policy.storageId(id), version), GlacierTags.LOOKUP_HANDLES, new Continuation<Object, Exception>() {
       boolean haveAnswered = false;
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         if (haveAnswered) {
-          logger.debug("lookupHandles({}): received manifest {} but has already answered. Discarding...", id, o);
+          logger.debug("lookupHandles({}): received manifest {} but has already answered. Discarding...", id, result);
           return;
         }
-        if (o instanceof Manifest manifest) {
-          logger.debug("lookupHandles({}): received manifest {}, returning handle...", id, o);
+        if (result instanceof Manifest manifest) {
+          logger.debug("lookupHandles({}): received manifest {}, returning handle...", id, result);
           haveAnswered = true;
           command.receiveResult(new PastContentHandle[] {
             new GlacierContentHandle(id, version, getLocalNodeHandle(), manifest)
@@ -251,14 +251,14 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
     logger.info("fetch({})", handle.getId());
 
-    if (!(handle instanceof GlacierContentHandle gch)) {
+    if (!(handle instanceof GlacierContentHandle contentHandle)) {
       command.receiveException(new GlacierException("Unknown handle type"));
       return;
     }
 
-    logger.debug("exact: fetch({}v{})", gch.getId(), gch.getVersion());
+    logger.debug("exact: fetch({}v{})", contentHandle.getId(), contentHandle.getVersion());
 
-    retriever.retrieveObject(new VersionKey(policy.storageId(gch.getId()), gch.getVersion()), gch.manifest(), true, GlacierTags.FETCH, command);
+    retriever.retrieveObject(new VersionKey(policy.storageId(contentHandle.getId()), contentHandle.getVersion()), contentHandle.manifest(), true, GlacierTags.FETCH, command);
   }
 
   @Override
@@ -283,12 +283,12 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     return trash.getTrashSize();
   }
 
-  public void addStatisticsListener(GlacierStatisticsListener gsl) {
-    statisticsCollector.addListener(gsl);
+  public void addStatisticsListener(GlacierStatisticsListener statisticsListener) {
+    statisticsCollector.addListener(statisticsListener);
   }
 
-  public void removeStatisticsListener(GlacierStatisticsListener gsl) {
-    statisticsCollector.removeListener(gsl);
+  public void removeStatisticsListener(GlacierStatisticsListener statisticsListener) {
+    statisticsCollector.removeListener(statisticsListener);
   }
 
   public String getInstance() {

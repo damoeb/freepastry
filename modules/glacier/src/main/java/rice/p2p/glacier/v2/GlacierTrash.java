@@ -66,10 +66,10 @@ class GlacierTrash {
       logger.atInfo().log(() -> "Moving fragment "+fkey.toStringFull()+" to trash");
       fragmentStorage.getObject(fkey, new Continuation<Object, Exception>() {
         @Override
-        public void receiveResult(Object o) {
+        public void receiveResult(Object result) {
           logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
-          if (o != null) {
-            moveToTrash(fkey, o, command);
+          if (result != null) {
+            moveToTrash(fkey, result, command);
           } else {
             receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
           }
@@ -92,7 +92,7 @@ class GlacierTrash {
   private void moveToTrash(final Id fkey, Object fam, final Continuation<? super Boolean, Exception> command) {
     trashStorage.store(fkey, null, fam, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
         fragmentStorage.unstore(fkey, command);
       }
@@ -108,29 +108,29 @@ class GlacierTrash {
    * Looks for a deleted fragment in the trash. Delivers the stored object, or null if there is no trash,
    * the fragment is not in it, or the trash cannot be read.
    */
-  void lookupFragment(final FragmentKey key, final Continuation<Object, Exception> c) {
+  void lookupFragment(final FragmentKey key, final Continuation<Object, Exception> continuation) {
     if (trashStorage!=null) {
       trashStorage.getObject(key, new Continuation<Object, Exception>() {
         @Override
-        public void receiveResult(Object o) {
-          if (o != null) {
+        public void receiveResult(Object result) {
+          if (result != null) {
             logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" found in trash, retrieving...");
           } else {
             logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" not found in trash");
           }
 
-          c.receiveResult(o);
+          continuation.receiveResult(result);
         }
 
         @Override
         public void receiveException(Exception e) {
           logger.atWarn().log(() -> "Exception while getting object " + key + " from trash " + e);
-          c.receiveResult(null);
+          continuation.receiveResult(null);
         }
       });
     } else {
       logger.atDebug().log(() -> "retrieveFragment: Key "+key.toStringFull()+" not found in trash");
-      c.receiveResult(null);
+      continuation.receiveResult(null);
     }
   }
 

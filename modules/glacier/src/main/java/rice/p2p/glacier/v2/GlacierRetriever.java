@@ -142,19 +142,19 @@ final class GlacierRetriever {
         );
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierDataMessage gdm) {
+      public void receiveResult(Object result) {
+        if (result instanceof GlacierDataMessage dataMessage) {
 
-          if ((gdm.numKeys() > 0) && (gdm.getManifest(0) != null)) {
+          if ((dataMessage.numKeys() > 0) && (dataMessage.getManifest(0) != null)) {
             logger.debug("retrieveManifest({}) received manifest", key);
-            if (policy.checkSignature(gdm.getManifest(0), key)) {
-              command.receiveResult(gdm.getManifest(0));
+            if (policy.checkSignature(dataMessage.getManifest(0), key)) {
+              command.receiveResult(dataMessage.getManifest(0));
               terminate();
             } else {
-              logger.atWarn().log(() -> "retrieveManifest("+key+"): invalid signature in "+gdm.getKey(0));
+              logger.atWarn().log(() -> "retrieveManifest("+key+"): invalid signature in "+dataMessage.getKey(0));
             }
           } else logger.warn("retrieveManifest({}) retrieved GDM without a manifest?!?", key);
-        } else if (o instanceof GlacierResponseMessage glacierResponseMessage) {
+        } else if (result instanceof GlacierResponseMessage glacierResponseMessage) {
           logger.atDebug().log(() -> "retrieveManifest("+key+"): Fragment not available:" + glacierResponseMessage.getKey(0));
           if (numCheckedFragments() < numFragments) {
             sendRandomRequest();
@@ -164,7 +164,7 @@ final class GlacierRetriever {
             terminate();
           }
         } else {
-          logger.warn("retrieveManifest({}) received unexpected object: {}", key, o);
+          logger.warn("retrieveManifest({}) received unexpected object: {}", key, result);
         }
       }
       @Override
@@ -192,7 +192,7 @@ final class GlacierRetriever {
     });
   }
 
-  void retrieveObject(final VersionKey key, final Manifest manifest, final boolean beStrict, final char tag, final Continuation<? super PastContent, Exception> c) {
+  void retrieveObject(final VersionKey key, final Manifest manifest, final boolean beStrict, final char tag, final Continuation<? super PastContent, Exception> continuation) {
     scheduler.addContinuation(new GlacierContinuation() {
       private boolean checkedFragment[];
       private Fragment haveFragment[];
@@ -237,18 +237,18 @@ final class GlacierRetriever {
         terminate();
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierDataMessage gdm) {
-          int fragmentID = gdm.getKey(0).fragmentId();
+      public void receiveResult(Object result) {
+        if (result instanceof GlacierDataMessage dataMessage) {
+          int fragmentID = dataMessage.getKey(0).fragmentId();
 
-          if (!gdm.getKey(0).versionKey().equals(key) || (fragmentID<0) || (fragmentID>=numFragments)) {
-            logger.atWarn().log(() -> "retrieveObject: Bad data message (contains "+gdm.getKey(0)+", expected "+key);
+          if (!dataMessage.getKey(0).versionKey().equals(key) || (fragmentID<0) || (fragmentID>=numFragments)) {
+            logger.atWarn().log(() -> "retrieveObject: Bad data message (contains "+dataMessage.getKey(0)+", expected "+key);
             return;
           }
 
-          Fragment thisFragment = gdm.getFragment(0);
+          Fragment thisFragment = dataMessage.getFragment(0);
           if (thisFragment == null) {
-            logger.atDebug().log(() -> "Fragment "+gdm.getKey(0)+" not available (GDM returned null), sending another request");
+            logger.atDebug().log(() -> "Fragment "+dataMessage.getKey(0)+" not available (GDM returned null), sending another request");
             if (numCheckedFragments() < numFragments)
               sendRandomRequest();
             return;
@@ -269,7 +269,7 @@ final class GlacierRetriever {
             return;
           }
 
-          logger.atDebug().log(() -> "retrieveObject: Received fragment #"+fragmentID+" for "+gdm.getKey(0));
+          logger.atDebug().log(() -> "retrieveObject: Received fragment #"+fragmentID+" for "+dataMessage.getKey(0));
           haveFragment[fragmentID] = thisFragment;
 
           currentFragmentRequestTimeout -= config.fragmentRequestTimeoutDecrement();
@@ -299,26 +299,26 @@ final class GlacierRetriever {
 
             if (theObject == null) {
               logger.warn("retrieveObject: Decoder delivered {}, unexpected -- failed", theObject);
-              c.receiveException(new GlacierException("Decoder delivered "+theObject+", unexpected -- failed"));
+              continuation.receiveException(new GlacierException("Decoder delivered "+theObject+", unexpected -- failed"));
             } else {
-              c.receiveResult(theObject);
+              continuation.receiveResult(theObject);
             }
 
             localTerminate();
           }
-        } else if (o instanceof GlacierResponseMessage glacierResponseMessage) {
+        } else if (result instanceof GlacierResponseMessage glacierResponseMessage) {
           logger.atDebug().log(() -> "Fragment "+glacierResponseMessage.getKey(0)+" not available");
           if (numCheckedFragments() < numFragments)
             sendRandomRequest();
         } else {
-          logger.warn("retrieveObject: Unexpected result: {}", o);
+          logger.warn("retrieveObject: Unexpected result: {}", result);
         }
 
       }
       @Override
       public void receiveException(Exception e) {
         logger.warn("retrieveObject: Exception ", e);
-        c.receiveException(e);
+        continuation.receiveException(e);
         localTerminate();
       }
       void sendRandomRequest() {
@@ -363,7 +363,7 @@ final class GlacierRetriever {
           }
         } else {
           logger.atInfo().log(() -> "retrieveObject: Giving up on "+key+" ("+config.restoreMaxBoosts()+" attempts, "+numCheckedFragments()+" checked, "+numHaveFragments()+" gotten)");
-          c.receiveException(new GlacierNotEnoughFragmentsException("Maximum number of attempts ("+config.restoreMaxBoosts()+") reached for key "+key, numCheckedFragments(), numHaveFragments()));
+          continuation.receiveException(new GlacierNotEnoughFragmentsException("Maximum number of attempts ("+config.restoreMaxBoosts()+") reached for key "+key, numCheckedFragments(), numHaveFragments()));
           localTerminate();
         }
       }
@@ -378,38 +378,38 @@ final class GlacierRetriever {
    * Retrieves one fragment: from the trash if it is there, else from its primary holder, else by
    * restoring the whole object and re-encoding the fragment.
    */
-  void retrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
+  void retrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation continuation) {
     trash.lookupFragment(key, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (!deliverFromTrash(key, manifest, o, c))
-          scheduler.addContinuation(new PrimaryFragmentFetch(key, manifest, tag, c));
+      public void receiveResult(Object result) {
+        if (!deliverFromTrash(key, manifest, result, continuation))
+          scheduler.addContinuation(new PrimaryFragmentFetch(key, manifest, tag, continuation));
       }
       @Override
       public void receiveException(Exception e) {
         logger.atWarn().log(() -> "Exception while checking for "+key.toStringFull()+" in trash storage -- fetching normally");
-        scheduler.addContinuation(new PrimaryFragmentFetch(key, manifest, tag, c));
+        scheduler.addContinuation(new PrimaryFragmentFetch(key, manifest, tag, continuation));
       }
     });
   }
 
   /**
-   * @param o what the trash holds under the key, or null
+   * @param result what the trash holds under the key, or null
    * @return true if o is a fragment that matches the manifest, and it was delivered to c
    */
-  private boolean deliverFromTrash(final FragmentKey key, Manifest manifest, final Object o, GlacierContinuation c) {
-    if (o != null) {
-      if (o instanceof FragmentAndManifest fragmentAndManifest) {
+  private boolean deliverFromTrash(final FragmentKey key, Manifest manifest, final Object result, GlacierContinuation continuation) {
+    if (result != null) {
+      if (result instanceof FragmentAndManifest fragmentAndManifest) {
         Fragment thisFragment = fragmentAndManifest.getFragment();
         if (manifest.validatesFragment(thisFragment, key.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.atDebug().log(() -> "retrieveFragment: Found in trash: "+key.toStringFull());
-          c.receiveResult(thisFragment);
+          continuation.receiveResult(thisFragment);
           return true;
         }
 
         logger.warn("Fragment found in trash, but does not match manifest?!? -- fetching normally");
       } else {
-        logger.atWarn().log(() -> "Fragment "+key.toStringFull()+" found in trash, but object is not a FAM ("+o+")?!? -- ignoring");
+        logger.atWarn().log(() -> "Fragment "+key.toStringFull()+" found in trash, but object is not a FAM ("+result+")?!? -- ignoring");
       }
     }
 
@@ -424,16 +424,16 @@ final class GlacierRetriever {
     private final FragmentKey key;
     private final Manifest manifest;
     private final char tag;
-    private final GlacierContinuation c;
+    private final GlacierContinuation continuation;
     private int attemptsLeft;
     private boolean inPhaseTwo;
     private long timeout;
 
-    PrimaryFragmentFetch(FragmentKey key, Manifest manifest, char tag, GlacierContinuation c) {
+    PrimaryFragmentFetch(FragmentKey key, Manifest manifest, char tag, GlacierContinuation continuation) {
       this.key = key;
       this.manifest = manifest;
       this.tag = tag;
-      this.c = c;
+      this.continuation = continuation;
     }
 
     @Override
@@ -448,51 +448,51 @@ final class GlacierRetriever {
       timeoutExpired();
     }
     @Override
-    public void receiveResult(Object o) {
-      if (o instanceof GlacierResponseMessage grm) {
-        if (!grm.getKey(0).equals(key)) {
+    public void receiveResult(Object result) {
+      if (result instanceof GlacierResponseMessage responseMessage) {
+        if (!responseMessage.getKey(0).equals(key)) {
           logger.warn("retrieveFragment: Response does not match key {} -- discarded", key);
           return;
         }
 
-        if ((attemptsLeft > 0) && !grm.hasFragment(0)) {
+        if ((attemptsLeft > 0) && !responseMessage.hasFragment(0)) {
           attemptsLeft = 0;
           timeoutExpired();
         } else {
-          logger.warn("retrieveFragment: Unexpected GlacierResponseMessage: {} (key={})", grm, key);
+          logger.warn("retrieveFragment: Unexpected GlacierResponseMessage: {} (key={})", responseMessage, key);
         }
 
         return;
       }
 
-      if (o instanceof GlacierDataMessage gdm) {
-        if (!gdm.getKey(0).equals(key)) {
+      if (result instanceof GlacierDataMessage dataMessage) {
+        if (!dataMessage.getKey(0).equals(key)) {
           logger.warn("retrieveFragment: Data does not match key {} -- discarded", key);
           return;
         }
 
-        Fragment thisFragment = gdm.getFragment(0);
+        Fragment thisFragment = dataMessage.getFragment(0);
         if (thisFragment == null) {
           logger.warn("retrieveFragment: DataMessage does not contain any fragments -- discarded");
           return;
         }
 
-        if (!manifest.validatesFragment(thisFragment, gdm.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
-          logger.atWarn().log(() -> "Invalid fragment "+gdm.getKey(0)+" returned by primary -- ignored");
+        if (!manifest.validatesFragment(thisFragment, dataMessage.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
+          logger.atWarn().log(() -> "Invalid fragment "+dataMessage.getKey(0)+" returned by primary -- ignored");
           return;
         }
 
-        c.receiveResult(thisFragment);
+        continuation.receiveResult(thisFragment);
         terminate();
         return;
       }
 
-      logger.warn("retrieveFragment: Unknown result {} (key={})", o, key);
+      logger.warn("retrieveFragment: Unknown result {} (key={})", result, key);
     }
     @Override
     public void receiveException(Exception e) {
       logger.warn("retrieveFragment: Exception ", e);
-      c.receiveException(e);
+      continuation.receiveException(e);
       terminate();
     }
     @Override
@@ -513,7 +513,7 @@ final class GlacierRetriever {
         }
         inPhaseTwo = true;
 
-        restoreFragmentFromObject(key, manifest, tag, c);
+        restoreFragmentFromObject(key, manifest, tag, continuation);
         terminate();
       }
     }
@@ -526,21 +526,21 @@ final class GlacierRetriever {
   /**
    * Restores the whole object, and re-encodes the one fragment from it.
    */
-  private void restoreFragmentFromObject(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
+  private void restoreFragmentFromObject(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation continuation) {
     retrieveObject(key.versionKey(), manifest, false, tag, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o == null) {
+      public void receiveResult(Object result) {
+        if (result == null) {
           logger.warn("retrieveFragment: retrieveObject({}) failed, returns null", key.versionKey());
-          c.receiveException(new GlacierException("Cannot restore either the object or the fragment -- try again later!"));
+          continuation.receiveException(new GlacierException("Cannot restore either the object or the fragment -- try again later!"));
           return;
         }
 
-        reencodeFragment(key, manifest, (PastContent) o, c);
+        reencodeFragment(key, manifest, (PastContent) result, continuation);
       }
       @Override
       public void receiveException(Exception e) {
-        c.receiveException(e);
+        continuation.receiveException(e);
       }
     });
   }
@@ -549,7 +549,7 @@ final class GlacierRetriever {
    * Encodes the one fragment of a restored object on the processing thread, and checks it against the
    * manifest.
    */
-  private void reencodeFragment(final FragmentKey key, final Manifest manifest, final PastContent retrievedObject, final GlacierContinuation c) {
+  private void reencodeFragment(final FragmentKey key, final Manifest manifest, final PastContent retrievedObject, final GlacierContinuation continuation) {
     endpoint.process(() -> {
       logger.debug("Reencode object: {}", key.versionKey());
       boolean generateFragment[] = new boolean[numFragments];
@@ -563,21 +563,21 @@ final class GlacierRetriever {
       public void receiveResult(Fragment[] frag) {
         if (!manifest.validatesFragment(frag[key.fragmentId()], key.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
           logger.warn("Reconstructed fragment #{} does not match manifest ??!?", key.fragmentId());
-          c.receiveException(new GlacierException("Recovered object, but cannot re-encode it (strange!) -- try again later!"));
+          continuation.receiveException(new GlacierException("Recovered object, but cannot re-encode it (strange!) -- try again later!"));
           return;
         }
 
-        c.receiveResult(frag[key.fragmentId()]);
+        continuation.receiveResult(frag[key.fragmentId()]);
       }
       @Override
       public void receiveException(Exception e) {
         logger.error("Recovered object, but re-encode failed: ", e);
-        c.receiveException(new GlacierException("Recovered object, but re-encode failed: "+e));
+        continuation.receiveException(new GlacierException("Recovered object, but re-encode failed: "+e));
       }
     });
   }
 
-  void rateLimitedRetrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation c) {
+  void rateLimitedRetrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation continuation) {
     logger.debug("rateLimitedRetrieveFragment({})", key);
     if (trafficShaper.isPending(key)) {
       logger.debug("Fragment is already being retrieved -- discarding request");
@@ -587,13 +587,13 @@ final class GlacierRetriever {
     logger.debug("Added pending job: retrieveFragment({})", key);
     Continuation<Object, Exception> prev = trafficShaper.enqueue(key, new Continuation.SimpleContinuation() {
       @Override
-      public void receiveResult(Object o) {
-        retrieveFragment(key, manifest, tag, c);
+      public void receiveResult(Object result) {
+        retrieveFragment(key, manifest, tag, continuation);
       }
       @Override
       public void receiveException(Exception e) {
         /* Displaced by a newer job for the same key: fail this request instead of running it unshaped */
-        c.receiveException(e);
+        continuation.receiveException(e);
       }
     });
 

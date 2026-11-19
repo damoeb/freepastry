@@ -140,7 +140,7 @@ public class Aggregate implements ExpiringPastContent {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     try {
       serializeHelper(buf);
-    } catch (IOException ioe) {
+    } catch (IOException ioException) {
       return null;
     }
 

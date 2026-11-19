@@ -91,8 +91,8 @@ final class GlacierMaintenance {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.garbageCollectionInterval();
       }
       @Override
-      public void receiveResult(Object o) {
-        logger.warn("GC received object: {}", o);
+      public void receiveResult(Object result) {
+        logger.warn("GC received object: {}", result);
       }
       @Override
       public void receiveException(Exception e) {
@@ -122,7 +122,7 @@ final class GlacierMaintenance {
                 doneSoFar ++;
                 trash.deleteFragment(thisKey, new Continuation<Object, Exception>() {
                   @Override
-                  public void receiveResult(Object o) {
+                  public void receiveResult(Object result) {
                     logger.atInfo().log(() -> "GC collected "+thisKey.toStringFull()+", expired "+(now-metadata.currentExpiration())+" msec ago");
                   }
                   @Override
@@ -160,8 +160,8 @@ final class GlacierMaintenance {
         nextTimeout = environment.getTimeSource().currentTimeMillis() + config.localScanInterval();
       }
       @Override
-      public void receiveResult(Object o) {
-        logger.warn("Local scan received object: {}", o);
+      public void receiveResult(Object result) {
+        logger.warn("Local scan received object: {}", result);
       }
       @Override
       public void receiveException(Exception e) {
@@ -250,8 +250,8 @@ final class GlacierMaintenance {
   private void fetchMissingFragments(final VersionKey thisVKey, int localFragmentID, final IdSet fragments) {
     fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID), new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof FragmentAndManifest fragmentAndManifest) {
+      public void receiveResult(Object result) {
+        if (result instanceof FragmentAndManifest fragmentAndManifest) {
           final Manifest thisManifest = fragmentAndManifest.getManifest();
 
           for (int i=0; i<numFragments; i++) {
@@ -264,7 +264,7 @@ final class GlacierMaintenance {
             }
           }
         } else {
-          logger.warn("Local scan: Cannot retrieve {} from local store, received o={}", thisVKey, o);
+          logger.warn("Local scan: Cannot retrieve {} from local store, received o={}", thisVKey, result);
         }
       }
       @Override
@@ -284,16 +284,16 @@ final class GlacierMaintenance {
         return "Local scan: Fetch fragment: "+thisKey;
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof Fragment fragment) {
+      public void receiveResult(Object received) {
+        if (received instanceof Fragment fragment) {
           logger.info("Local scan: Received fragment {} (from primary) matches existing manifest, storing...", thisKey);
 
-          FragmentAndManifest fam = new FragmentAndManifest(fragment, thisManifest);
+          FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(fragment, thisManifest);
 
-          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fam,
+          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
             new Continuation<Object, Exception>() {
               @Override
-              public void receiveResult(Object o) {
+              public void receiveResult(Object result) {
                 logger.debug("Local scan: Recovered fragment stored OK");
               }
               @Override
@@ -303,7 +303,7 @@ final class GlacierMaintenance {
             }
           );
         } else {
-          logger.warn("Local scan: FS received something other than a fragment: {}", o);
+          logger.warn("Local scan: FS received something other than a fragment: {}", received);
         }
       }
       @Override

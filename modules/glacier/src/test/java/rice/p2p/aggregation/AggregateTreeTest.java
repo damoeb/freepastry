@@ -48,13 +48,13 @@ class AggregateTreeTest {
           Id id = (Id) args[0];
           PastContentHandle handle = (PastContentHandle) Proxy.newProxyInstance(Past.class.getClassLoader(), new Class<?>[] {PastContentHandle.class}, (p, m, a) -> m.getName().equals("getId") ? id : null);
           @SuppressWarnings("unchecked")
-          Continuation<PastContentHandle[], Exception> c = (Continuation<PastContentHandle[], Exception>) args[2];
-          c.receiveResult(new PastContentHandle[] {handle});
+          Continuation<PastContentHandle[], Exception> continuation = (Continuation<PastContentHandle[], Exception>) args[2];
+          continuation.receiveResult(new PastContentHandle[] {handle});
         }
         case "fetch" -> {
           @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> c = (Continuation<Object, Exception>) args[1];
-          c.receiveResult(aggregates.get(((PastContentHandle) args[0]).getId()));
+          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
+          continuation.receiveResult(aggregates.get(((PastContentHandle) args[0]).getId()));
         }
         default -> { }
       }

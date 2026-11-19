@@ -54,9 +54,9 @@ public class GlacierStorageSerializer implements StorageSerializer {
 
   @Override
   public void writeObject(Object obj, OutputBuffer buf) throws IOException {
-    if (obj instanceof FragmentAndManifest fam) {
+    if (obj instanceof FragmentAndManifest fragmentAndManifest) {
       buf.writeByte(FRAGMENT_AND_MANIFEST);
-      fam.serialize(buf);
+      fragmentAndManifest.serialize(buf);
     } else if (obj instanceof Long timestamp) {
       buf.writeByte(TIMESTAMP);
       buf.writeLong(timestamp);

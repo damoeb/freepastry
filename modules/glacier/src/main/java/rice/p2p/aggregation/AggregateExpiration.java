@@ -78,19 +78,19 @@ final class AggregateExpiration {
        may be returned multiple times - but we must delete it only once! */
 
     while (enumeration.hasMoreElements()) {
-      AggregateDescriptor adc = (AggregateDescriptor) enumeration.nextElement();
-      if (adc.getCurrentLifetime() < (now - config.getAggregateGracePeriod())) {
-        if (!toRemove.contains(adc))
-          toRemove.add(adc);
-        logger.atWarn().log(() -> "Scheduling dead aggregate for removal: "+adc.getKey().toStringFull()+"(expired "+adc.getCurrentLifetime()+")");
+      AggregateDescriptor aggregate = (AggregateDescriptor) enumeration.nextElement();
+      if (aggregate.getCurrentLifetime() < (now - config.getAggregateGracePeriod())) {
+        if (!toRemove.contains(aggregate))
+          toRemove.add(aggregate);
+        logger.atWarn().log(() -> "Scheduling dead aggregate for removal: "+aggregate.getKey().toStringFull()+"(expired "+aggregate.getCurrentLifetime()+")");
       }
     }
 
     if (toRemove.size() > 0) {
       logger.info("Removing {} dead aggregates...", toRemove.size());
 
-      for (AggregateDescriptor adc : toRemove)
-        aggregateList.removeAggregateDescriptor(adc);
+      for (AggregateDescriptor aggregate : toRemove)
+        aggregateList.removeAggregateDescriptor(aggregate);
     }
   }
 
@@ -168,8 +168,8 @@ final class AggregateExpiration {
 
     store.refresh(ids, lifetimes, new Continuation<Object[], Exception>() {
       @Override
-      public void receiveResult(Object[] o) {
-        Object[] results = (Object[]) o;
+      public void receiveResult(Object[] rawResults) {
+        Object[] results = (Object[]) rawResults;
         logger.debug("Received refresh results for {} aggregates", results.length);
         int numOk = 0;
 

@@ -164,8 +164,8 @@ final class GlacierBulkRefresh {
         timeoutExpired();
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierRefreshResponseMessage grrm) {
+      public void receiveResult(Object received) {
+        if (received instanceof GlacierRefreshResponseMessage grrm) {
           IdRange thisRange = grrm.getRange();
           NodeHandle holder = grrm.isOnline() ? grrm.getSource() : null;
 
@@ -183,15 +183,15 @@ final class GlacierBulkRefresh {
 
           if (!holders.contains(holder))
             holders.add(holder);
-        } else if (o instanceof GlacierDataMessage gdm) {
+        } else if (received instanceof GlacierDataMessage dataMessage) {
 
-          logger.atDebug().log(() -> "AR Received data message with "+gdm.numKeys()+" keys");
-          for (int i=0; i<gdm.numKeys(); i++) {
-            if ((gdm.getManifest(i) != null) && (gdm.getKey(i) != null)) {
-              Manifest thisManifest = gdm.getManifest(i);
-              FragmentKey thisKey = gdm.getKey(i);
+          logger.atDebug().log(() -> "AR Received data message with "+dataMessage.numKeys()+" keys");
+          for (int i=0; i<dataMessage.numKeys(); i++) {
+            if ((dataMessage.getManifest(i) != null) && (dataMessage.getKey(i) != null)) {
+              Manifest thisManifest = dataMessage.getManifest(i);
+              FragmentKey thisKey = dataMessage.getKey(i);
 
-              if (logger.isDebugEnabled()) logger.debug("AR Received manifest for "+gdm.getKey(i)+", checking signature...");
+              if (logger.isDebugEnabled()) logger.debug("AR Received manifest for "+dataMessage.getKey(i)+", checking signature...");
               if (policy.checkSignature(thisManifest, thisKey.versionKey())) {
                 logger.debug("AR Signature OK");
                 for (int j=0; j<ids.length; j++) {
@@ -205,7 +205,7 @@ final class GlacierBulkRefresh {
               }
             }
           }
-        } else if (o instanceof GlacierRefreshCompleteMessage grcm) {
+        } else if (received instanceof GlacierRefreshCompleteMessage grcm) {
           logger.debug("AR Refresh completion reported by {}", grcm.getSource());
 
           for (int i=0; i<grcm.numKeys(); i++) {
@@ -255,7 +255,7 @@ final class GlacierBulkRefresh {
             }
           }
         } else {
-          logger.warn("Unexpected result in AR continuation: {} -- discarded", o);
+          logger.warn("Unexpected result in AR continuation: {} -- discarded", received);
         }
       }
       @Override
@@ -265,10 +265,10 @@ final class GlacierBulkRefresh {
 
         if (!answered) {
           Object[] result = new Object[ids.length];
-          Exception ee = new GlacierException("Exception during refresh: "+e);
+          Exception exception = new GlacierException("Exception during refresh: "+e);
 
           for (int i=0; i<ids.length; i++)
-            result[i] = ee;
+            result[i] = exception;
 
           answered = true;
           command.receiveResult(result);
@@ -517,7 +517,7 @@ final class GlacierBulkRefresh {
    */
   void handlePatch(final GlacierRefreshPatchMessage grpm) {
     logger.atInfo().log(() -> "AR Refresh patches received for "+grpm.numKeys()+" keys. Processing...");
-    Continuation<Object, Exception> c = new Continuation<Object, Exception>() {
+    Continuation<Object, Exception> continuation = new Continuation<Object, Exception>() {
       static final int phaseFetch = 1;
       static final int phaseStore = 2;
       static final int phaseAdvance = 3;
@@ -528,19 +528,19 @@ final class GlacierBulkRefresh {
       int currentFID = -1;
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         if (currentPhase == phaseFetch) {
           logger.debug("AR Patch: Got FAM for {}", currentKey);
 
-          FragmentAndManifest fam = (FragmentAndManifest) o;
+          FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
           Manifest patched = null;
-          if (fam == null) {
+          if (fragmentAndManifest == null) {
             // the fragment vanished between exists() and getObject(): treat it as missing and go on
             logger.warn("AR Patch: Fragment {} vanished before it could be fetched, skipping", currentKey);
             currentPhase = phaseAdvance;
           } else {
             // a copy: the stored manifest must stay as it is unless the owner signed the new expiration
-            patched = fam.getManifest().withExpiration(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
+            patched = fragmentAndManifest.getManifest().withExpiration(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
           }
 
           if (patched != null && policy.checkSignature(patched, currentKey.versionKey())) {
@@ -553,8 +553,8 @@ final class GlacierBulkRefresh {
                 } else {
                   FragmentMetadata newMetadata = new FragmentMetadata(grpm.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
                   logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.previousExpiration(), newMetadata.currentExpiration());
-                  fam.replaceManifest(patched);
-                  fragmentStorage.store(currentKey, newMetadata, fam, this);
+                  fragmentAndManifest.replaceManifest(patched);
+                  fragmentStorage.store(currentKey, newMetadata, fragmentAndManifest, this);
                   return;
                 }
               } else {
@@ -565,7 +565,7 @@ final class GlacierBulkRefresh {
               logger.warn("Cannot fetch metadata for key {}, got 'null'", currentKey);
               currentPhase = phaseAdvance;
             }
-          } else if (fam != null) {
+          } else if (fragmentAndManifest != null) {
             logger.warn("RefreshPatch with invalid signature: {}", currentKey);
             currentPhase = phaseAdvance;
           }
@@ -619,6 +619,6 @@ final class GlacierBulkRefresh {
       }
     };
 
-    c.receiveResult(null);
+    continuation.receiveResult(null);
   }
 }

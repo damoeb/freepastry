@@ -67,17 +67,17 @@ public class VersionKeyFactory extends GlacierKeyFactory {
   /**
    * Builds a random protocol-specific Id.
    *
-   * @param rng A random number generator
+   * @param random A random number generator
    * @return The built Id.
    */
   @Override
-  public Id buildRandomId(Random rng) {
-    return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
+  public Id buildRandomId(Random random) {
+    return new VersionKey(factory.buildRandomId(random), random.nextLong());
   }
 
   @Override
-  public Id buildRandomId(RandomSource rng) {
-    return new VersionKey(factory.buildRandomId(rng), rng.nextLong());
+  public Id buildRandomId(RandomSource random) {
+    return new VersionKey(factory.buildRandomId(random), random.nextLong());
   }
 
   /**

@@ -66,17 +66,17 @@ public class FragmentKeyFactory extends GlacierKeyFactory {
   /**
    * Builds a random protocol-specific Id.
    *
-   * @param rng A random number generator
+   * @param random A random number generator
    * @return The built Id.
    */
   @Override
-  public Id buildRandomId(Random rng) {
-    return new FragmentKey(new VersionKey(factory.buildRandomId(rng), rng.nextLong()), rng.nextInt());
+  public Id buildRandomId(Random random) {
+    return new FragmentKey(new VersionKey(factory.buildRandomId(random), random.nextLong()), random.nextInt());
   }
 
   @Override
-  public Id buildRandomId(RandomSource rng) {
-    return new FragmentKey(new VersionKey(factory.buildRandomId(rng), rng.nextLong()), rng.nextInt());
+  public Id buildRandomId(RandomSource random) {
+    return new FragmentKey(new VersionKey(factory.buildRandomId(random), random.nextLong()), random.nextInt());
   }
 
   /**

@@ -86,8 +86,8 @@ final class AggregationMonitor {
     logger.info("Monitor: Refreshing {} objects", ids.length);
     aggregation.refresh(ids, environment.getTimeSource().currentTimeMillis() + 3 * config.getMonitorRefreshInterval(), new Continuation<Object[], Exception>() {
       @Override
-      public void receiveResult(Object[] o) {
-        logger.debug("Monitor: Refresh completed, result={}", o);
+      public void receiveResult(Object[] results) {
+        logger.debug("Monitor: Refresh completed, result={}", results);
       }
       @Override
       public void receiveException(Exception e) {
@@ -101,9 +101,9 @@ final class AggregationMonitor {
    *         disabled)
    */
   @SuppressWarnings("StringSplitter") // splits debug command arguments; dropping trailing empty ones is intended
-  String handleDebugCommand(String cmd) {
-    if (cmd.startsWith("monitor remove") && config.isMonitorEnabled()) {
-      String[] args = cmd.substring(15).split(" ");
+  String handleDebugCommand(String command) {
+    if (command.startsWith("monitor remove") && config.isMonitorEnabled()) {
+      String[] args = command.substring(15).split(" ");
       if (args.length == 1) {
         int howMany = Integer.parseInt(args[0]);
 
@@ -117,11 +117,11 @@ final class AggregationMonitor {
       } else return "Syntax: monitor remove <howMany>";
     }
 
-    if (cmd.startsWith("monitor status") && config.isMonitorEnabled()) {
+    if (command.startsWith("monitor status") && config.isMonitorEnabled()) {
       return "Monitor is "+(config.isMonitorEnabled() ? ("enabled, monitoring "+monitorIDs.size()+" objects") : "disabled");
     }
 
-    if (cmd.startsWith("monitor ls") && config.isMonitorEnabled()) {
+    if (command.startsWith("monitor ls") && config.isMonitorEnabled()) {
       StringBuilder result = new StringBuilder();
       for (Id id : monitorIDs)
         result.append(id.toStringFull() + "\n");
@@ -130,12 +130,12 @@ final class AggregationMonitor {
       return result.toString();
     }
 
-    if (cmd.startsWith("monitor check") && config.isMonitorEnabled()) {
+    if (command.startsWith("monitor check") && config.isMonitorEnabled()) {
       return check();
     }
 
-    if (cmd.startsWith("monitor add") && config.isMonitorEnabled()) {
-      String[] args = cmd.substring(12).split(" ");
+    if (command.startsWith("monitor add") && config.isMonitorEnabled()) {
+      String[] args = command.substring(12).split(" ");
       if (args.length == 6) {
         final int numFiles = Integer.parseInt(args[0]);
         final int avgBurstSize = Integer.parseInt(args[1]);
@@ -168,15 +168,15 @@ final class AggregationMonitor {
 
     final long now = environment.getTimeSource().currentTimeMillis();
 
-    Continuation<PastContentHandle[], Exception> c = new Continuation<PastContentHandle[], Exception>() {
+    Continuation<PastContentHandle[], Exception> continuation = new Continuation<PastContentHandle[], Exception>() {
       int currentLookup = 0;
       boolean lookupInAggrStore = false;
 
       @Override
-      public void receiveResult(PastContentHandle[] o) {
-        logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, o);
+      public void receiveResult(PastContentHandle[] results) {
+        logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, results);
         Id currentId = (Id) monitorIDs.get(currentLookup);
-        PastContentHandle[] handles = (PastContentHandle[]) o;
+        PastContentHandle[] handles = (PastContentHandle[]) results;
         ExpiringPastContentHandle handle = null;
         boolean skipToNext = true;
 
@@ -188,17 +188,17 @@ final class AggregationMonitor {
           result.append(currentId.toStringFull() + " - OS ");
           result.append((handle==null) ? "--" : ""+(handle.getExpiration()-now));
 
-          AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(currentId);
-          if (adc != null) {
-            result.append(" AD " + (adc.getCurrentLifetime() - now));
+          AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(currentId);
+          if (aggregate != null) {
+            result.append(" AD " + (aggregate.getCurrentLifetime() - now));
 
-            int objDescIndex = adc.lookupNewest(currentId);
+            int objDescIndex = aggregate.lookupNewest(currentId);
             if (objDescIndex >= 0) {
-              ObjectDescriptor odc = adc.getObjects()[objDescIndex];
-              result.append(" OD " + (odc.getCurrentLifetime() - now));
+              ObjectDescriptor objectDescriptor = aggregate.getObjects()[objDescIndex];
+              result.append(" OD " + (objectDescriptor.getCurrentLifetime() - now));
               lookupInAggrStore = true;
               skipToNext = false;
-              aggregateStore.lookupHandles(adc.getKey(), 1, this);
+              aggregateStore.lookupHandles(aggregate.getKey(), 1, this);
             } else {
               result.append(" OD ??\n");
             }
@@ -228,7 +228,7 @@ final class AggregationMonitor {
       }
     };
 
-    objectStore.lookupHandles((Id) monitorIDs.get(0), 1, c);
+    objectStore.lookupHandles((Id) monitorIDs.get(0), 1, continuation);
     String outcome = AggregationDebugCommands.await(ret, environment);
     // the StringBuffer is synchronized, and complete() happens-after the last append
     return outcome.equals("done") ? result.toString() : result.toString() + outcome;
@@ -257,7 +257,7 @@ final class AggregationMonitor {
     }
 
     @Override
-    public void receiveResult(Object o) {
+    public void receiveResult(Object result) {
       if (remainingTotal > 0) {
         final int burstSize = Math.min((int)((avgBurstSize*0.3) + environment.getRandomSource().nextInt((int)(1.4*avgBurstSize))), remainingTotal);
         remainingTotal -= burstSize;
@@ -285,7 +285,7 @@ final class AggregationMonitor {
       }
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         if (remainingHere > 0) {
           logger.debug("Continuing burst insert, {} remaining", remainingHere);
           int thisAvgSize = ((0.001*environment.getRandomSource().nextInt(1000)) < sizeSkew) ? smallSize : largeSize;

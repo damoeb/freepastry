@@ -78,10 +78,10 @@ final class ObjectRetriever {
 
     objectStore.lookup(id, cache, new Continuation<PastContent, Exception>() {
       @Override
-      public void receiveResult(PastContent o) {
-        if (o != null) {
+      public void receiveResult(PastContent result) {
+        if (result != null) {
           logger.debug("NL: Found in PAST: {}", id);
-          command.receiveResult(o);
+          command.receiveResult(result);
         } else {
           lookupInAggregate(id, command);
         }
@@ -94,18 +94,18 @@ final class ObjectRetriever {
   }
 
   private void lookupInAggregate(Id id, Continuation<? super PastContent, Exception> command) {
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
-    if (adc!=null) {
+    AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
+    if (aggregate!=null) {
       logger.debug("NL: Must retrieve from aggregate");
 
-      int objDescIndex = adc.lookupNewest(id);
+      int objDescIndex = aggregate.lookupNewest(id);
       if (objDescIndex < 0) {
         logger.warn("NL: Aggregate found, but object not found in aggregate?!? -- aborted");
         command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
         return;
       }
 
-      retrieveObjectFromAggregate(adc, objDescIndex, command);
+      retrieveObjectFromAggregate(aggregate, objDescIndex, command);
 
     } else {
       logger.warn("NL: LOOKUP FAILED, OBJECT NOT FOUND: {}", id);
@@ -116,18 +116,18 @@ final class ObjectRetriever {
   void lookup(final Id id, final long version, final Continuation<? super PastContent, Exception> command) {
     logger.info("lookup({}, version={})", id, version);
 
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(id, version));
-    if (adc!=null) {
+    AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(id, version));
+    if (aggregate!=null) {
       logger.debug("VL: Retrieving from aggregate");
 
-      int objDescIndex = adc.lookupSpecific(id, version);
+      int objDescIndex = aggregate.lookupSpecific(id, version);
       if (objDescIndex < 0) {
         logger.warn("VL: Aggregate found, but object not found in aggregate?!? -- aborted");
         command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
         return;
       }
 
-      retrieveObjectFromAggregate(adc, objDescIndex, command);
+      retrieveObjectFromAggregate(aggregate, objDescIndex, command);
       return;
     }
 
@@ -140,10 +140,10 @@ final class ObjectRetriever {
 
     versioningPast.lookup(id, version, new Continuation<PastContent, Exception>() {
       @Override
-      public void receiveResult(PastContent o) {
-        if (o != null) {
+      public void receiveResult(PastContent result) {
+        if (result != null) {
           logger.debug("VL: Found in Aggregate.VersioningPAST: {}v{}", id, version);
-          command.receiveResult(o);
+          command.receiveResult(result);
         } else {
           logger.debug("VL: Not found in Aggregate.VersioningPAST: {}v{}", id, version);
           lookupVersionInObjectStore(id, version, command, true);
@@ -175,10 +175,10 @@ final class ObjectRetriever {
 
     versioningPast.lookup(id, version, new Continuation<PastContent, Exception>() {
       @Override
-      public void receiveResult(PastContent o) {
-        if (o != null) {
+      public void receiveResult(PastContent result) {
+        if (result != null) {
           logger.debug("VL: Found in Object.VersioningPAST: {}v{}", id, version);
-          command.receiveResult(o);
+          command.receiveResult(result);
         } else {
           logger.warn("VL: LOOKUP FAILED, OBJECT NOT FOUND: {}v{}", id, version);
           command.receiveResult(null);
@@ -195,8 +195,8 @@ final class ObjectRetriever {
     logger.info("lookupHandles({},{})", id, max);
     objectStore.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
       @Override
-      public void receiveResult(PastContentHandle[] o) {
-        PastContentHandle[] result = (o != null) ? ((PastContentHandle[])o) : new PastContentHandle[] {};
+      public void receiveResult(PastContentHandle[] results) {
+        PastContentHandle[] result = (results != null) ? ((PastContentHandle[])results) : new PastContentHandle[] {};
         boolean foundHandle = false;
 
         for (int i=0; i<result.length; i++)
@@ -204,10 +204,10 @@ final class ObjectRetriever {
             foundHandle = true;
 
         if (foundHandle) {
-          logger.debug("lookupHandles({},{}) handled by PAST; ret={}", id, max, o);
-          command.receiveResult(o);
+          logger.debug("lookupHandles({},{}) handled by PAST; ret={}", id, max, results);
+          command.receiveResult(results);
         } else {
-          logger.info("lookupHandles({},{}) failed, ret={}", id, max, o);
+          logger.info("lookupHandles({},{}) failed, ret={}", id, max, results);
           lookupHandlesInAggregate(id, max, command);
         }
       }
@@ -224,8 +224,8 @@ final class ObjectRetriever {
    * handles in the object store again.
    */
   private void lookupHandlesInAggregate(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
-    if (adc==null) {
+    AggregateDescriptor aggregate = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
+    if (aggregate==null) {
       logger.info("lookupHandles: {} is neither in object store nor in aggregate list", id);
       /* Note that we have to give up here... even if the object has not been
          aggregated, there is no efficient way to find out its version number.
@@ -236,23 +236,23 @@ final class ObjectRetriever {
 
     logger.debug("lookupHandles: Retrieving from aggregate");
 
-    int objDescIndex = adc.lookupNewest(id);
+    int objDescIndex = aggregate.lookupNewest(id);
     if (objDescIndex < 0) {
       logger.warn("lookupHandles: Aggregate found, but object not found in aggregate?!? -- aborted");
       command.receiveException(new AggregationException("Inconsistency detected in aggregate list -- try restarting the application"));
       return;
     }
 
-    if (adc.getObjects()[objDescIndex].getRefreshedLifetime() < timeSource.currentTimeMillis()) {
+    if (aggregate.getObjects()[objDescIndex].getRefreshedLifetime() < timeSource.currentTimeMillis()) {
       logger.debug("Object {} exists, but has expired -- ignoring", id);
       command.receiveResult(new PastContentHandle[] { null });
       return;
     }
 
-    retrieveObjectFromAggregate(adc, objDescIndex, new Continuation<ExpiringPastContent, Exception>() {
+    retrieveObjectFromAggregate(aggregate, objDescIndex, new Continuation<ExpiringPastContent, Exception>() {
       @Override
-      public void receiveResult(ExpiringPastContent o) {
-        logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, o);
+      public void receiveResult(ExpiringPastContent result) {
+        logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, result);
         /* re-inserted implicitly by retrieveObjectFromAggregate */
         objectStore.lookupHandles(id, max, command);
       }
@@ -268,14 +268,14 @@ final class ObjectRetriever {
    * Fetches the aggregate, validates its content hash (on the processing thread), reinserts the object into
    * the object store and returns it.
    */
-  private void retrieveObjectFromAggregate(final AggregateDescriptor adc, final int objDescIndex, final Continuation<? super ExpiringPastContent, Exception> command) {
-    aggregateStore.lookup(adc.getKey(), new Continuation<PastContent, Exception>() {
+  private void retrieveObjectFromAggregate(final AggregateDescriptor aggregateDescriptor, final int objDescIndex, final Continuation<? super ExpiringPastContent, Exception> command) {
+    aggregateStore.lookup(aggregateDescriptor.getKey(), new Continuation<PastContent, Exception>() {
       @Override
-      public void receiveResult(PastContent o) {
-        if (o instanceof Aggregate aggregate) {
-          validateAndExtract(adc, objDescIndex, aggregate, command);
+      public void receiveResult(PastContent result) {
+        if (result instanceof Aggregate aggregate) {
+          validateAndExtract(aggregateDescriptor, objDescIndex, aggregate, command);
         } else {
-          logger.warn("retrieveObjectFromAggregate failed; receiveResult({})", o);
+          logger.warn("retrieveObjectFromAggregate failed; receiveResult({})", result);
           command.receiveResult(null);
         }
       }
@@ -287,31 +287,31 @@ final class ObjectRetriever {
     });
   }
 
-  private void validateAndExtract(final AggregateDescriptor adc, final int objDescIndex, final Aggregate aggr, final Continuation<? super ExpiringPastContent, Exception> command) {
+  private void validateAndExtract(final AggregateDescriptor aggregate, final int objDescIndex, final Aggregate aggr, final Continuation<? super ExpiringPastContent, Exception> command) {
     endpoint.process(() -> factory.buildId(aggr.getContentHash()), new Continuation<Id, Exception>() {
       @Override
-      public void receiveResult(Id o) {
-        if (o != null) {
-          Id aggrNominalKey = (Id) o;
+      public void receiveResult(Id result) {
+        if (result != null) {
+          Id aggrNominalKey = (Id) result;
 
-          if (!aggrNominalKey.equals(adc.getKey())) {
-            logger.warn("Cannot validate aggregate {}, hash={}", adc.getKey(), aggrNominalKey);
+          if (!aggrNominalKey.equals(aggregate.getKey())) {
+            logger.warn("Cannot validate aggregate {}, hash={}", aggregate.getKey(), aggrNominalKey);
             command.receiveException(new AggregationException("Cannot validate aggregate -- retry?"));
             return;
           }
 
-          logger.debug("Object {} (#{}) successfully retrieved from {}", adc.getObjects()[objDescIndex].getKey(), objDescIndex, adc.getKey());
+          logger.debug("Object {} (#{}) successfully retrieved from {}", aggregate.getObjects()[objDescIndex].getKey(), objDescIndex, aggregate.getKey());
 
           objectStore.insert(aggr.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
             @Override
-            public void receiveResult(Boolean[] o) {}
+            public void receiveResult(Boolean[] results) {}
             @Override
             public void receiveException(Exception e) {}
           });
 
           command.receiveResult(aggr.getComponent(objDescIndex));
         } else {
-          logger.warn("retrieveObjectFromAggregate cannot determine content hash, received {}", o);
+          logger.warn("retrieveObjectFromAggregate cannot determine content hash, received {}", result);
           command.receiveException(new AggregationException("retrieveObjectFromAggregate cannot determine content hash"));
         }
       }

@@ -89,16 +89,16 @@ final class GlacierInserter {
     this.logger = logger;
   }
 
-  void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    long theVersion = (obj instanceof ExpiringPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
-    final VersionKey vkey = new VersionKey(policy.storageId(obj.getId()), theVersion);
+  void insert(final PastContent content, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    long theVersion = (content instanceof ExpiringPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
+    final VersionKey vkey = new VersionKey(policy.storageId(content.getId()), theVersion);
 
-    logger.atInfo().log(() -> "insert(" + obj + " (id=" + vkey.toStringFull() + ", mutable=" + obj.isMutable() + ")");
+    logger.atInfo().log(() -> "insert(" + content + " (id=" + vkey.toStringFull() + ", mutable=" + content.isMutable() + ")");
 
     endpoint.process(() -> {
       boolean[] generateFragment = new boolean[numFragments];
       Arrays.fill(generateFragment, true);
-      return policy.encodeObject(obj, generateFragment);
+      return policy.encodeObject(content, generateFragment);
     }, new Continuation<Fragment[], Exception>() {
       @Override
       public void receiveResult(Fragment[] fragments) {
@@ -108,7 +108,7 @@ final class GlacierInserter {
         }
 
         logger.atDebug().log(() -> "insert(" + vkey.toStringFull() + ") encoded fragments OK, creating manifests...");
-        createManifestsAndDistribute(vkey, obj, fragments, expiration, command);
+        createManifestsAndDistribute(vkey, content, fragments, expiration, command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -122,12 +122,12 @@ final class GlacierInserter {
    * Second step of an insertion: creates the manifests of the encoded fragments on the processing
    * thread, then sends fragments and manifests to their holders.
    */
-  private void createManifestsAndDistribute(final VersionKey vkey, final PastContent obj, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    endpoint.process(() -> policy.createManifests(vkey, obj, fragments, expiration), new Continuation<Manifest[], Exception>() {
+  private void createManifestsAndDistribute(final VersionKey vkey, final PastContent content, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    endpoint.process(() -> policy.createManifests(vkey, content, fragments, expiration), new Continuation<Manifest[], Exception>() {
       @Override
-      public void receiveResult(Manifest[] o) {
-        if (o != null) {
-          final Manifest[] manifests = (Manifest[]) o;
+      public void receiveResult(Manifest[] results) {
+        if (results != null) {
+          final Manifest[] manifests = (Manifest[]) results;
           if (manifests == null) {
             command.receiveException(new GlacierException("Cannot create manifests"));
             return;
@@ -136,12 +136,12 @@ final class GlacierInserter {
           /* distribute() reports a Boolean[] for insertions */
           distribute(vkey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
             @Override
-            public void receiveResult(Object o) {
-              parent.receiveResult((Boolean[]) o);
+            public void receiveResult(Object result) {
+              parent.receiveResult((Boolean[]) result);
             }
           });
         } else {
-          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+Arrays.toString(o));
+          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+Arrays.toString(results));
           command.receiveException(new GlacierException("Cannot create manifests in insert()"));
         }
       }
@@ -158,9 +158,9 @@ final class GlacierInserter {
     if (!config.enableBulkRefresh()) {
       /* Ordinary refresh method (safe in 'hostile' environments) */
 
-      final Continuation.MultiContinuation<Object[]> mc = new Continuation.MultiContinuation<Object[]>(command, ids.length);
+      final Continuation.MultiContinuation<Object[]> multiContinuation = new Continuation.MultiContinuation<Object[]>(command, ids.length);
       for (int i=0; i<ids.length; i++) {
-        final Continuation<Object, Exception> thisContinuation = mc.getSubContinuation(i);
+        final Continuation<Object, Exception> thisContinuation = multiContinuation.getSubContinuation(i);
         final Id thisId = ids[i];
         final long thisVersion = versions[i];
         final long thisExpiration = expirations[i];
@@ -170,7 +170,7 @@ final class GlacierInserter {
         final VersionKey thisVersionKey = new VersionKey(thisId, thisVersion);
         Continuation<Object, Exception> prev = trafficShaper.enqueue(thisVersionKey, new Continuation.SimpleContinuation() {
           @Override
-          public void receiveResult(Object o) {
+          public void receiveResult(Object result) {
             refreshOne(thisVersionKey, thisExpiration, thisContinuation);
           }
           @Override
@@ -199,8 +199,8 @@ final class GlacierInserter {
     final long thisVersion = thisVersionKey.version();
     retriever.retrieveManifest(thisVersionKey, GlacierTags.REFRESH, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof Manifest manifest) {
+      public void receiveResult(Object result) {
+        if (result instanceof Manifest manifest) {
 
           logger.atDebug().log(() -> "refresh("+thisId.toStringFull()+"v"+thisVersion+"): Got manifest");
           manifest = policy.updateManifest(new VersionKey(thisId, thisVersion), manifest, thisExpiration);
@@ -281,34 +281,34 @@ final class GlacierInserter {
         }
       }
       @Override
-      public void receiveResult(Object o) {
-        if (o instanceof GlacierResponseMessage grm) {
-          if (!grm.getKey(0).versionKey().equals(key)) {
+      public void receiveResult(Object result) {
+        if (result instanceof GlacierResponseMessage responseMessage) {
+          if (!responseMessage.getKey(0).versionKey().equals(key)) {
             logger.atWarn().log(() -> whoAmI()+" response got routed to the wrong key: "+key);
             return;
           }
 
           /* Sanity checks */
 
-          int fragmentID = grm.getKey(0).fragmentId();
+          int fragmentID = responseMessage.getKey(0).fragmentId();
           if (fragmentID < numFragments) {
-            if (grm.getAuthoritative(0)) {
+            if (responseMessage.getAuthoritative(0)) {
 
               /* OK, so the message makes sense. Let's see... */
 
-              if (doInsert && !grm.hasFragment(0)) {
+              if (doInsert && !responseMessage.hasFragment(0)) {
 
                 /* If this is an insertion, and the holder is telling us that he does not
                    have the fragment, we send it to him */
 
                 if (holder[fragmentID] == null) {
-                  holder[fragmentID] = grm.getSource();
+                  holder[fragmentID] = responseMessage.getSource();
                   if (!inhibitInsertions) {
-                    logger.atDebug().log(() -> "Got insert response, sending fragment "+grm.getKey(0));
+                    logger.atDebug().log(() -> "Got insert response, sending fragment "+responseMessage.getKey(0));
                     router.sendMessage(
                       null,
-                      new GlacierDataMessage(getMyUID(), grm.getKey(0), fragments[fragmentID], manifests[fragmentID], router.getLocalNodeHandle(), grm.getSource().getId(), false, tag),
-                      grm.getSource()
+                      new GlacierDataMessage(getMyUID(), responseMessage.getKey(0), fragments[fragmentID], manifests[fragmentID], router.getLocalNodeHandle(), responseMessage.getSource().getId(), false, tag),
+                      responseMessage.getSource()
                     );
                   } else {
                     if (numHoldersKnown() >= minAcceptable) {
@@ -334,17 +334,17 @@ final class GlacierInserter {
                   logger.warn("Received two insert responses for the same fragment -- discarded");
                 }
 
-              } else if (grm.hasFragment(0) && (grm.getExpiration(0) < expiration)) {
+              } else if (responseMessage.hasFragment(0) && (responseMessage.getExpiration(0) < expiration)) {
 
                 /* If the holder has an old version of the fragment, we send the manifest only. */
 
                 if (holder[fragmentID] == null) {
-                  holder[fragmentID] = grm.getSource();
-                  logger.atDebug().log(() -> "Got refresh response (exp="+grm.getExpiration(0)+"<"+expiration+"), sending manifest "+grm.getKey(0));
+                  holder[fragmentID] = responseMessage.getSource();
+                  logger.atDebug().log(() -> "Got refresh response (exp="+responseMessage.getExpiration(0)+"<"+expiration+"), sending manifest "+responseMessage.getKey(0));
                   router.sendMessage(
                     null,
-                    new GlacierDataMessage(getMyUID(), grm.getKey(0), null, manifests[fragmentID], router.getLocalNodeHandle(), grm.getSource().getId(), false, tag),
-                    grm.getSource()
+                    new GlacierDataMessage(getMyUID(), responseMessage.getKey(0), null, manifests[fragmentID], router.getLocalNodeHandle(), responseMessage.getSource().getId(), false, tag),
+                    responseMessage.getSource()
                   );
 
                   /* Refreshes are not acknowledged */
@@ -359,11 +359,11 @@ final class GlacierInserter {
                 } else {
                   logger.warn("Received two refresh responses for the same fragment -- discarded");
                 }
-              } else if (grm.hasFragment(0) && (grm.getExpiration(0) >= expiration)) {
+              } else if (responseMessage.hasFragment(0) && (responseMessage.getExpiration(0) >= expiration)) {
 
                 /* If the holder has a current version of the fragment, we are happy */
 
-                logger.atDebug().log(() -> "Receipt received after "+whoAmI()+": "+grm.getKey(0));
+                logger.atDebug().log(() -> "Receipt received after "+whoAmI()+": "+responseMessage.getKey(0));
                 receiptReceived[fragmentID] = true;
                 if ((numReceiptsReceived() >= minAcceptable) && !answered) {
                   answered = true;
@@ -379,7 +379,7 @@ final class GlacierInserter {
 
           return;
         } else {
-          logger.atWarn().log(() -> "Unknown response to "+whoAmI()+" continuation: "+o+" -- discarded");
+          logger.atWarn().log(() -> "Unknown response to "+whoAmI()+" continuation: "+result+" -- discarded");
         }
       }
       @Override

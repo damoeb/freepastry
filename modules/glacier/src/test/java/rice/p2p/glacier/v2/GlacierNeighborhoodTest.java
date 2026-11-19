@@ -54,16 +54,16 @@ class GlacierNeighborhoodTest {
         }
         case "getObject": {
           @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> c = (Continuation<Object, Exception>) args[1];
-          c.receiveResult(storedNeighbors.get((Id) args[0]));
+          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
+          continuation.receiveResult(storedNeighbors.get((Id) args[0]));
           return null;
         }
         case "unstore": {
           @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> c = (Continuation<Object, Exception>) args[1];
+          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
           pendingUnstores.add(() -> {
             storedNeighbors.remove((Id) args[0]);
-            c.receiveResult(true);
+            continuation.receiveResult(true);
           });
           return null;
         }
