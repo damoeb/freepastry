@@ -169,6 +169,24 @@ class LivenessTablesTest {
     assertEquals(List.of(LIVENESS_ALIVE), notified);
   }
 
+  @Test
+  @DisplayName("a pong with an outstanding ping's time stamp but a guessed nonce does not mark the route alive")
+  void pongWithGuessedNonceDoesNotMarkAlive() throws Exception {
+    onSelector(() -> target.ping(PEER, null));
+    long pingTime = sentTimeOf(sent.getLast());
+
+    onSelector(() -> target.messageReceived(PEER, pongWithNonce(pingTime, 0L), null));
+
+    assertEquals(LIVENESS_SUSPECTED, target.getLiveness(PEER, null));
+    assertTrue(notified.isEmpty(), "notified: " + notified);
+  }
+
+  private static ByteBuffer pongWithNonce(long sentTime, long nonce) {
+    ByteBuffer pong = ByteBuffer.allocate(1 + 2 * Long.BYTES);
+    pong.put(LivenessTransportLayer.HDR_PONG).putLong(sentTime).putLong(nonce).flip();
+    return pong;
+  }
+
   private static long sentTimeOf(ByteBuffer ping) {
     ByteBuffer buffer = ping.duplicate();
     assertEquals(LivenessTransportLayer.HDR_PING, buffer.get());
