@@ -58,9 +58,9 @@ public class BlockingIOThread extends Thread {
   public void run() {
     running = true;
     while (running) {
-      WorkRequest<?> wr = workQ.dequeue();
-      if (wr != null)
-        wr.run();
+      WorkRequest<?> workRequest = workQ.dequeue();
+      if (workRequest != null)
+        workRequest.run();
     }
   }
 

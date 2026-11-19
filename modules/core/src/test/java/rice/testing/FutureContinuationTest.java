@@ -74,137 +74,137 @@ public class FutureContinuationTest {
 
   @Test
   public void resultCompletesFuture() throws Exception {
-    FutureContinuation<String, IOException> c = new FutureContinuation<String, IOException>();
-    assertFalse(c.future().isDone());
-    c.receiveResult("hello");
-    assertEquals("hello", c.future().get(1, TimeUnit.SECONDS));
+    FutureContinuation<String, IOException> futureContinuation = new FutureContinuation<String, IOException>();
+    assertFalse(futureContinuation.future().isDone());
+    futureContinuation.receiveResult("hello");
+    assertEquals("hello", futureContinuation.future().get(1, TimeUnit.SECONDS));
   }
 
   @Test
   public void exceptionCompletesFutureExceptionally() {
-    FutureContinuation<String, IOException> c = new FutureContinuation<String, IOException>();
+    FutureContinuation<String, IOException> futureContinuation = new FutureContinuation<String, IOException>();
     IOException ioe = new IOException("boom");
-    c.receiveException(ioe);
-    ExecutionException ee = assertThrows(ExecutionException.class, () -> c.future().get());
-    assertSame(ioe, ee.getCause());
+    futureContinuation.receiveException(ioe);
+    ExecutionException executionException = assertThrows(ExecutionException.class, () -> futureContinuation.future().get());
+    assertSame(ioe, executionException.getCause());
   }
 
   @Test
   public void firstOutcomeWins() {
-    FutureContinuation<String, Exception> c = new FutureContinuation<String, Exception>();
-    c.receiveResult("first");
-    c.receiveException(new Exception("late"));
-    c.receiveResult("second");
-    assertEquals("first", c.future().join());
+    FutureContinuation<String, Exception> futureContinuation = new FutureContinuation<String, Exception>();
+    futureContinuation.receiveResult("first");
+    futureContinuation.receiveException(new Exception("late"));
+    futureContinuation.receiveResult("second");
+    assertEquals("first", futureContinuation.future().join());
   }
 
   @Test
   public void nullExceptionStillCompletes() {
-    FutureContinuation<String, Exception> c = new FutureContinuation<String, Exception>();
-    c.receiveException(null);
-    assertTrue(c.future().isCompletedExceptionally());
+    FutureContinuation<String, Exception> futureContinuation = new FutureContinuation<String, Exception>();
+    futureContinuation.receiveException(null);
+    assertTrue(futureContinuation.future().isCompletedExceptionally());
   }
 
   @Test
   public void wrapsGivenFuture() {
-    CompletableFuture<Integer> f = new CompletableFuture<Integer>();
-    new FutureContinuation<Integer, Exception>(f).receiveResult(42);
-    assertEquals(42, f.join());
+    CompletableFuture<Integer> completableFuture = new CompletableFuture<Integer>();
+    new FutureContinuation<Integer, Exception>(completableFuture).receiveResult(42);
+    assertEquals(42, completableFuture.join());
   }
 
   @Test
   public void callCompletesWhenCallbackFires() throws Exception {
     final List<Continuation<String, Exception>> pending = new ArrayList<Continuation<String, Exception>>();
-    CompletableFuture<String> f = FutureContinuation.call(c -> pending.add(c));
-    assertFalse(f.isDone());
+    CompletableFuture<String> completableFuture = FutureContinuation.call(c -> pending.add(c));
+    assertFalse(completableFuture.isDone());
     pending.get(0).receiveResult("later");
-    assertEquals("later", f.get(1, TimeUnit.SECONDS));
+    assertEquals("later", completableFuture.get(1, TimeUnit.SECONDS));
   }
 
   @Test
   public void callCapturesThrowingOperation() {
     IllegalStateException ise = new IllegalStateException("can't start");
-    CompletableFuture<String> f = FutureContinuation.call(c -> { throw ise; });
-    CompletionException ce = assertThrows(CompletionException.class, f::join);
-    assertSame(ise, ce.getCause());
+    CompletableFuture<String> completableFuture = FutureContinuation.call(c -> { throw ise; });
+    CompletionException completionException = assertThrows(CompletionException.class, completableFuture::join);
+    assertSame(ise, completionException.getCause());
   }
 
   @Test
   public void forwardResult() {
-    Recorder<String> r = new Recorder<String>();
-    CompletableFuture<String> f = new CompletableFuture<String>();
-    FutureContinuation.forward(f, r);
-    assertTrue(r.received.isEmpty());
-    f.complete("x");
-    assertEquals(List.of("result:x"), r.received);
+    Recorder<String> recorder = new Recorder<String>();
+    CompletableFuture<String> completableFuture = new CompletableFuture<String>();
+    FutureContinuation.forward(completableFuture, recorder);
+    assertTrue(recorder.received.isEmpty());
+    completableFuture.complete("x");
+    assertEquals(List.of("result:x"), recorder.received);
   }
 
   @Test
   public void forwardAlreadyCompletedRunsImmediately() {
-    Recorder<String> r = new Recorder<String>();
-    FutureContinuation.forward(CompletableFuture.completedFuture("done"), r);
-    assertEquals(List.of("result:done"), r.received);
+    Recorder<String> recorder = new Recorder<String>();
+    FutureContinuation.forward(CompletableFuture.completedFuture("done"), recorder);
+    assertEquals(List.of("result:done"), recorder.received);
   }
 
   @Test
   public void forwardUnwrapsCompletionException() {
-    Recorder<Integer> r = new Recorder<Integer>();
+    Recorder<Integer> recorder = new Recorder<Integer>();
     IOException ioe = new IOException("io");
     CompletableFuture<Integer> source = new CompletableFuture<Integer>();
     // a dependent stage wraps the failure in a CompletionException
-    FutureContinuation.forward(source.thenApply(i -> i + 1), r);
+    FutureContinuation.forward(source.thenApply(i -> i + 1), recorder);
     source.completeExceptionally(ioe);
-    assertEquals(1, r.received.size());
-    assertSame(ioe, r.received.get(0));
+    assertEquals(1, recorder.received.size());
+    assertSame(ioe, recorder.received.get(0));
   }
 
   @Test
   public void forwardWrapsErrors() {
-    Recorder<Integer> r = new Recorder<Integer>();
+    Recorder<Integer> recorder = new Recorder<Integer>();
     AssertionError err = new AssertionError("fatal");
-    CompletableFuture<Integer> f = new CompletableFuture<Integer>();
-    f.completeExceptionally(err);
-    FutureContinuation.forward(f, r);
-    ExecutionException ee = assertInstanceOf(ExecutionException.class, r.received.get(0));
-    assertSame(err, ee.getCause());
+    CompletableFuture<Integer> completableFuture = new CompletableFuture<Integer>();
+    completableFuture.completeExceptionally(err);
+    FutureContinuation.forward(completableFuture, recorder);
+    ExecutionException executionException = assertInstanceOf(ExecutionException.class, recorder.received.get(0));
+    assertSame(err, executionException.getCause());
   }
 
   @Test
   public void forwardReportsContinuationFailure() {
-    CompletableFuture<String> f = CompletableFuture.completedFuture("x");
+    CompletableFuture<String> completableFuture = CompletableFuture.completedFuture("x");
     RuntimeException bug = new RuntimeException("bug in continuation");
-    CompletableFuture<Void> done = FutureContinuation.forward(f, new Continuation<String, Exception>() {
+    CompletableFuture<Void> done = FutureContinuation.forward(completableFuture, new Continuation<String, Exception>() {
       @Override
       public void receiveResult(String result) { throw bug; }
       @Override
       public void receiveException(Exception exception) { fail("unexpected"); }
     }).toCompletableFuture();
-    CompletionException ce = assertThrows(CompletionException.class, done::join);
-    assertSame(bug, ce.getCause());
+    CompletionException completionException = assertThrows(CompletionException.class, done::join);
+    assertSame(bug, completionException.getCause());
   }
 
   @Test
   public void forwardViaExecutor() throws Exception {
     final List<Runnable> queued = new ArrayList<Runnable>();
     Executor executor = queued::add; // stands in for selectorManager::invoke
-    Recorder<String> r = new Recorder<String>();
-    CompletableFuture<String> f = new CompletableFuture<String>();
-    FutureContinuation.forward(f, r, executor);
-    f.complete("queued");
-    assertTrue(r.received.isEmpty(), "must not run before the executor runs it");
+    Recorder<String> recorder = new Recorder<String>();
+    CompletableFuture<String> completableFuture = new CompletableFuture<String>();
+    FutureContinuation.forward(completableFuture, recorder, executor);
+    completableFuture.complete("queued");
+    assertTrue(recorder.received.isEmpty(), "must not run before the executor runs it");
     assertEquals(1, queued.size());
     queued.get(0).run();
-    assertEquals(List.of("result:queued"), r.received);
+    assertEquals(List.of("result:queued"), recorder.received);
   }
 
   @Test
   public void roundTrip() throws Exception {
     // Continuation -> future -> Continuation
-    Recorder<String> r = new Recorder<String>();
-    FutureContinuation<String, Exception> c = new FutureContinuation<String, Exception>();
-    FutureContinuation.forward(c.future().thenApply(String::toUpperCase), r);
-    c.receiveResult("abc");
-    assertEquals(List.of("result:ABC"), r.received);
+    Recorder<String> recorder = new Recorder<String>();
+    FutureContinuation<String, Exception> futureContinuation = new FutureContinuation<String, Exception>();
+    FutureContinuation.forward(futureContinuation.future().thenApply(String::toUpperCase), recorder);
+    futureContinuation.receiveResult("abc");
+    assertEquals(List.of("result:ABC"), recorder.received);
   }
 
   @Test

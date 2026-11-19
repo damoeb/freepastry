@@ -35,9 +35,9 @@ public final class FuzzSupport {
 
   /** Runs the deserializer on the input; an {@link IOException} is the accepted way to reject it. */
   public static void deserialize(MessageDeserializer target, FuzzedDataProvider data, NodeHandle sender) {
-    Message in = Message.of(data);
+    Message message = Message.of(data);
     try {
-      target.deserialize(in.body(), in.type(), in.priority(), sender);
+      target.deserialize(message.body(), message.type(), message.priority(), sender);
     } catch (IOException expected) {
       // the accepted way to reject malformed input
     }

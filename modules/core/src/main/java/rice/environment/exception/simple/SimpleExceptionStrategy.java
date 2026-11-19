@@ -51,10 +51,10 @@ public class SimpleExceptionStrategy implements ExceptionStrategy {
   }
 
   @Override
-  public void handleException(Object source, Throwable t) {
-    logger.warn("handleException({})", source, t);
-    if (source instanceof SelectorLoop sm) {
-      sm.getEnvironment().destroy();
+  public void handleException(Object source, Throwable throwable) {
+    logger.warn("handleException({})", source, throwable);
+    if (source instanceof SelectorLoop selectorLoop) {
+      selectorLoop.getEnvironment().destroy();
     }
   }
 

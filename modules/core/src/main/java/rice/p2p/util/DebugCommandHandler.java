@@ -65,13 +65,13 @@ public interface DebugCommandHandler {
     }
     try {
       return result.get(timeoutMillis, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException te) {
+    } catch (TimeoutException timeoutException) {
       return "timeout: no result after "+timeoutMillis+" ms";
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
       return "interrupted while waiting for the result";
-    } catch (ExecutionException ee) {
-      return "exception("+ee.getCause()+")";
+    } catch (ExecutionException executionException) {
+      return "exception("+executionException.getCause()+")";
     }
   }
 }

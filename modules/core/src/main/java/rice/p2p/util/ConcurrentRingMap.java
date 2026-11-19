@@ -127,8 +127,8 @@ public class ConcurrentRingMap<K, V> extends AbstractMap<K, V> implements Sorted
 
   @SuppressWarnings("unchecked")
   private int compare(Object k1, Object k2) {
-    Comparator<? super K> c = backing.comparator();
-    return c == null ? ((Comparable<Object>) k1).compareTo(k2) : c.compare((K) k1, (K) k2);
+    Comparator<? super K> comparator = backing.comparator();
+    return comparator == null ? ((Comparable<Object>) k1).compareTo(k2) : comparator.compare((K) k1, (K) k2);
   }
 
   private boolean isRing() {

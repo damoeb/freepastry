@@ -109,9 +109,9 @@ public class EncryptedStreamTest {
   }
 
   static byte[] read(byte[] stream, KeyPair keys, int length) throws IOException {
-    DataInputStream in = new DataInputStream(new EncryptedInputStream(keys.getPrivate(), new ByteArrayInputStream(stream)));
+    DataInputStream dataInputStream = new DataInputStream(new EncryptedInputStream(keys.getPrivate(), new ByteArrayInputStream(stream)));
     byte[] result = new byte[length];
-    in.readFully(result);
+    dataInputStream.readFully(result);
     return result;
   }
 
@@ -167,19 +167,19 @@ public class EncryptedStreamTest {
 
   @Test
   public void readingToTheEndReturnsMinusOne() throws IOException {
-    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(twoChunks()));
-    assertArrayEquals(FIRST, in.readNBytes(FIRST.length));
-    assertArrayEquals(SECOND, in.readNBytes(SECOND.length));
-    assertEquals(-1, in.read());
-    assertEquals(-1, in.read(new byte[4], 0, 4));
+    EncryptedInputStream encryptedInputStream = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(twoChunks()));
+    assertArrayEquals(FIRST, encryptedInputStream.readNBytes(FIRST.length));
+    assertArrayEquals(SECOND, encryptedInputStream.readNBytes(SECOND.length));
+    assertEquals(-1, encryptedInputStream.read());
+    assertEquals(-1, encryptedInputStream.read(new byte[4], 0, 4));
   }
 
   @Test
   public void anEmptyStreamReadsAsEmpty() throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     new EncryptedOutputStream(pair.getPublic(), out, 1024).close();
-    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(out.toByteArray()));
-    assertEquals(-1, in.read());
+    EncryptedInputStream encryptedInputStream = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(out.toByteArray()));
+    assertEquals(-1, encryptedInputStream.read());
   }
 
   @Test
@@ -187,9 +187,9 @@ public class EncryptedStreamTest {
     List<byte[]> records = records(twoChunks());
     records.remove(2); // the final chunk
     byte[] stream = join(records);
-    EncryptedInputStream in = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(stream));
-    assertArrayEquals(FIRST, in.readNBytes(FIRST.length));
-    assertThrows(SecurityException.class, in::read);
+    EncryptedInputStream encryptedInputStream = new EncryptedInputStream(pair.getPrivate(), new ByteArrayInputStream(stream));
+    assertArrayEquals(FIRST, encryptedInputStream.readNBytes(FIRST.length));
+    assertThrows(SecurityException.class, encryptedInputStream::read);
   }
 
   @Test

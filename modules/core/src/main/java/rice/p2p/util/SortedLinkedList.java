@@ -68,7 +68,7 @@ public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
 
   @Override
   public ListIterator<E> listIterator(int index) {
-    final ListIterator<E> it = super.listIterator(index);
+    final ListIterator<E> listIterator = super.listIterator(index);
 
     return new ListIterator<E>(){
 
@@ -79,37 +79,37 @@ public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
 
       @Override
       public boolean hasNext() {
-        return it.hasNext();
+        return listIterator.hasNext();
       }
 
       @Override
       public boolean hasPrevious() {
-        return it.hasPrevious();
+        return listIterator.hasPrevious();
       }
 
       @Override
       public E next() {
-        return it.next();
+        return listIterator.next();
       }
 
       @Override
       public int nextIndex() {
-        return it.nextIndex();
+        return listIterator.nextIndex();
       }
 
       @Override
       public E previous() {
-        return it.previous();
+        return listIterator.previous();
       }
 
       @Override
       public int previousIndex() {
-        return it.previousIndex();
+        return listIterator.previousIndex();
       }
 
       @Override
       public void remove() {
-        it.remove();
+        listIterator.remove();
       }
 
       @Override
@@ -142,15 +142,15 @@ public class SortedLinkedList<E extends Comparable<E>> extends LinkedList<E> {
       return true;
     }
 
-    ListIterator<E> i = super.listIterator(0);
+    ListIterator<E> listIterator = super.listIterator(0);
     E elt;
-    while(i.hasNext()) {
-      elt = i.next();
+    while(listIterator.hasNext()) {
+      elt = listIterator.next();
       int diff = elt.compareTo(o);
       if (diff >= 0) break;
     }
-    i.previous();
-    i.add(o);
+    listIterator.previous();
+    listIterator.add(o);
     return true;
   }
 

@@ -51,15 +51,15 @@ import rice.selector.SelectorLoop;
  * @author Jeff Hoye
  */
 public abstract class WorkRequest<R> implements Runnable, Cancellable {
-  private Continuation<? super R, Exception> c;
+  private Continuation<? super R, Exception> continuation;
   private SelectorLoop selectorManager;
 
   protected volatile boolean cancelled = false;
   private volatile boolean running = false;
 
-  public WorkRequest(Continuation<? super R, Exception> c, SelectorLoop sm){
-    this.c = c;
-    this.selectorManager = sm;
+  public WorkRequest(Continuation<? super R, Exception> continuation, SelectorLoop selectorLoop){
+    this.continuation = continuation;
+    this.selectorManager = selectorLoop;
   }
 
   @SuppressWarnings("NullAway.Init") // only for requests that never run, such as WorkQueue's STOP sentinel
@@ -67,12 +67,12 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     /* do nothing */
   }
 
-  public void returnResult(R o) {
-    c.receiveResult(o);
+  public void returnResult(R r) {
+    continuation.receiveResult(r);
   }
 
   public void returnError(Exception e) {
-    c.receiveException(e);
+    continuation.receiveException(e);
   }
 
   @Override
@@ -90,7 +90,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
 
         @Override
         public String toString() {
-          return "invc result of " + c;
+          return "invc result of " + continuation;
         }
       });
     } catch (final Exception e) {
@@ -102,7 +102,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
 
         @Override
         public String toString() {
-          return "invc error of " + c;
+          return "invc error of " + continuation;
         }
       });
     }

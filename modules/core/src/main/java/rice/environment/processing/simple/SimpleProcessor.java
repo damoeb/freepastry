@@ -89,17 +89,17 @@ public class SimpleProcessor implements Processor {
    */
   @Override
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
-      SelectorLoop selector, TimeSource ts, LogManager log) {
-    return process(task, command, 0, selector, ts, log);
+      SelectorLoop selector, TimeSource timeSource, LogManager log) {
+    return process(task, command, 0, selector, timeSource, log);
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
-      SelectorLoop selector, TimeSource ts, LogManager log) {
+      SelectorLoop selector, TimeSource timeSource, LogManager log) {
     long nextSeq;
     synchronized(SimpleProcessor.this) {
       nextSeq = seq++;
     }
-    ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, priority, nextSeq, log, ts, selector);
+    ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, priority, nextSeq, log, timeSource, selector);
     QUEUE.offer(ret);
     return ret;
   }
@@ -124,9 +124,9 @@ public class SimpleProcessor implements Processor {
   @SuppressWarnings("NullAway") // the demo tasks have no result
   public static void main(String[] args) throws Exception {
     Environment env = new Environment();
-    Processor p = env.getProcessor();
+    Processor processor = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
-    p.process(() -> {
+    processor.process(() -> {
       try { Thread.sleep(1000); } catch (InterruptedException ignored) { /* only delays the demo */ }
       return null;
     }, new Continuation<Object, Exception>() {
@@ -145,7 +145,7 @@ public class SimpleProcessor implements Processor {
 
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
-      p.process(() -> {
+      processor.process(() -> {
         System.out.println("Executed Seq: "+mySeq);
         return null;
       }, new Continuation<Object, Exception>() {

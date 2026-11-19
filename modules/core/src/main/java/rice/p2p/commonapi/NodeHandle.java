@@ -131,10 +131,10 @@ public abstract class NodeHandle {
    */
   public void addNodeHandleListener(NodeHandleListener listener, int priority) {
     synchronized (listeners) {
-      for (ListenerEntry e : listeners) {
-        if (e.listener.equals(listener) && e.priority != priority) {
-          int oldPriority = e.priority;
-          e.priority = priority;
+      for (ListenerEntry listenerEntry : listeners) {
+        if (listenerEntry.listener.equals(listener) && listenerEntry.priority != priority) {
+          int oldPriority = listenerEntry.priority;
+          listenerEntry.priority = priority;
           listeners.sort(BY_PRIORITY);
           nodeHandleListenerPriorityChanged(listener, oldPriority, priority);
           return;
@@ -181,8 +181,8 @@ public abstract class NodeHandle {
     synchronized (listeners) {
       l = new ArrayList<ListenerEntry>(listeners);
     }
-    for (ListenerEntry e : l) {
-      e.listener.nodeHandleUpdate(this, event);
+    for (ListenerEntry listenerEntry : l) {
+      listenerEntry.listener.nodeHandleUpdate(this, event);
     }
   }
 

@@ -101,10 +101,10 @@ public class NodeHandleListenerTest {
   void readdingWithOtherPriorityOnlyChangesPriority() {
     TestHandle handle = new TestHandle();
     List<String> log = new ArrayList<String>();
-    Recorder a = new Recorder("a", log);
-    handle.addNodeHandleListener(a);
+    Recorder recorder = new Recorder("a", log);
+    handle.addNodeHandleListener(recorder);
     handle.addNodeHandleListener(new Recorder("b", log));
-    handle.addNodeHandleListener(a, 10);
+    handle.addNodeHandleListener(recorder, 10);
 
     handle.fire(NodeHandle.DECLARED_LIVE);
 
@@ -118,9 +118,9 @@ public class NodeHandleListenerTest {
     List<String> log = new ArrayList<String>();
     handle.addNodeHandleListener(new NodeHandleListener() {
       @Override
-      public void nodeHandleUpdate(NodeHandle h, Object event) {
+      public void nodeHandleUpdate(NodeHandle nodeHandle, Object event) {
         log.add("once:" + event);
-        assertTrue(h.removeNodeHandleListener(this));
+        assertTrue(nodeHandle.removeNodeHandleListener(this));
       }
     });
     handle.addNodeHandleListener(new Recorder("always", log));

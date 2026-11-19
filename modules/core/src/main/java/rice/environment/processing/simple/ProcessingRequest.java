@@ -66,10 +66,10 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
   int priority = 0;
   long seq;
 
-  public ProcessingRequest(Executable<R, E> r, Continuation<R, E> c, int priority, long seq,
+  public ProcessingRequest(Executable<R, E> executable, Continuation<R, E> continuation, int priority, long seq,
       LogManager logging, TimeSource timeSource, SelectorLoop selectorManager) {
-    this.r = r;
-    this.c = c;
+    this.r = executable;
+    this.c = continuation;
 
     logger = logging.getLogger(getClass(), null);
     this.timeSource = timeSource;
@@ -78,8 +78,8 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
     this.seq = seq;
   }
 
-  public void returnResult(R o) {
-    c.receiveResult(o);
+  public void returnResult(R r) {
+    c.receiveResult(r);
   }
 
   public void returnError(Exception e) {

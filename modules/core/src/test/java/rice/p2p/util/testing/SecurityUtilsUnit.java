@@ -149,12 +149,12 @@ public class SecurityUtilsUnit {
 
     System.out.print("    Testing asymmetic public writing\t\t\t");
 
-    PublicKey k = SecurityUtils.decodePublicKey(SecurityUtils.encodePublicKey(pair.getPublic()));
+    PublicKey publicKey = SecurityUtils.decodePublicKey(SecurityUtils.encodePublicKey(pair.getPublic()));
 
-    if (! Arrays.equals(k.getEncoded(), pair.getPublic().getEncoded())) {
+    if (! Arrays.equals(publicKey.getEncoded(), pair.getPublic().getEncoded())) {
       System.out.println("[ FAILED ]");
-      System.out.println("  Output 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, k)));
-      System.out.println("     Res 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, k), pair.getPrivate())));
+      System.out.println("  Output 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, publicKey)));
+      System.out.println("     Res 1: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, publicKey), pair.getPrivate())));
       System.out.println("  Output 2: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic())));
       System.out.println("     Res 2: \t" + java.util.HexFormat.of().formatHex(SecurityUtils.decryptAsymmetric(SecurityUtils.encryptAsymmetric(keySym, pair.getPublic()), pair.getPrivate())));
     } else {
@@ -163,7 +163,7 @@ public class SecurityUtilsUnit {
 
     System.out.print("    Testing asymmetic serialized writing\t\t");
 
-    testStringEncrypted = SecurityUtils.encryptAsymmetric(testStringByte, k);
+    testStringEncrypted = SecurityUtils.encryptAsymmetric(testStringByte, publicKey);
     testStringDecrypted = SecurityUtils.decryptAsymmetric(testStringEncrypted, pair.getPrivate());
 
     if (Arrays.equals(testStringByte, testStringDecrypted)) {

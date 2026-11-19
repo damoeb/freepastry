@@ -109,13 +109,13 @@ public class FutureContinuation<R, E extends Exception> implements Continuation<
    * @return a future completed by that Continuation
    */
   public static <R> CompletableFuture<R> call(Consumer<? super Continuation<R, Exception>> operation) {
-    FutureContinuation<R, Exception> c = new FutureContinuation<R, Exception>();
+    FutureContinuation<R, Exception> futureContinuation = new FutureContinuation<R, Exception>();
     try {
-      operation.accept(c);
-    } catch (RuntimeException re) {
-      c.future.completeExceptionally(re);
+      operation.accept(futureContinuation);
+    } catch (RuntimeException runtimeException) {
+      futureContinuation.future.completeExceptionally(runtimeException);
     }
-    return c.future;
+    return futureContinuation.future;
   }
 
   /**
@@ -149,11 +149,11 @@ public class FutureContinuation<R, E extends Exception> implements Continuation<
     }, executor);
   }
 
-  private static <R> void deliver(R result, Throwable t, Continuation<? super R, Exception> continuation) {
-    if (t == null) {
+  private static <R> void deliver(R result, Throwable throwable, Continuation<? super R, Exception> continuation) {
+    if (throwable == null) {
       continuation.receiveResult(result);
     } else {
-      continuation.receiveException(toException(t));
+      continuation.receiveException(toException(throwable));
     }
   }
 
@@ -162,11 +162,11 @@ public class FutureContinuation<R, E extends Exception> implements Continuation<
    * {@link CompletionException}/{@link ExecutionException} wrappers that dependent stages and {@code get()} add,
    * and wraps a non-Exception Throwable (an Error) in an ExecutionException.
    */
-  public static Exception toException(Throwable t) {
-    while ((t instanceof CompletionException || t instanceof ExecutionException) && t.getCause() != null) {
-      t = t.getCause();
+  public static Exception toException(Throwable throwable) {
+    while ((throwable instanceof CompletionException || throwable instanceof ExecutionException) && throwable.getCause() != null) {
+      throwable = throwable.getCause();
     }
-    if (t instanceof Exception) return (Exception)t;
-    return new ExecutionException(t);
+    if (throwable instanceof Exception) return (Exception)throwable;
+    return new ExecutionException(throwable);
   }
 }

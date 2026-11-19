@@ -66,7 +66,7 @@ public class WorkQueue {
     }
   };
 
-  private final BlockingQueue<WorkRequest<?>> q = new LinkedBlockingQueue<WorkRequest<?>>();
+  private final BlockingQueue<WorkRequest<?>> blockingQueue = new LinkedBlockingQueue<WorkRequest<?>>();
   /* A negative capacity, is equivalent to infinite capacity */
   private final int capacity;
 
@@ -85,8 +85,8 @@ public class WorkQueue {
   public void enqueue(WorkRequest<?> request) {
     // only enqueue() adds work, so the size can't grow between the check and the add
     synchronized (enqueueLock) {
-      if (capacity < 0 || q.size() < capacity) {
-        q.add(request);
+      if (capacity < 0 || blockingQueue.size() < capacity) {
+        blockingQueue.add(request);
         return;
       }
     }
@@ -104,10 +104,10 @@ public class WorkQueue {
     try {
       while (running) {
         try {
-          WorkRequest<?> request = q.take();
+          WorkRequest<?> request = blockingQueue.take();
           if (request == STOP) {
             // put it back for the other waiting threads
-            q.add(STOP);
+            blockingQueue.add(STOP);
             return null;
           }
           if (!running) return null;
@@ -128,7 +128,7 @@ public class WorkQueue {
 
   public void destroy() {
     running = false;
-    q.add(STOP);
+    blockingQueue.add(STOP);
   }
 
 }

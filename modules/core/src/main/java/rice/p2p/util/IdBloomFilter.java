@@ -94,10 +94,10 @@ public class IdBloomFilter {
   public IdBloomFilter(IdSet set) {
     int size = (set.numElements() < 64 ? 64 : set.numElements());
     this.filter = new BloomFilter(NUM_HASH_FUNCTIONS, NUM_BITS_PER_KEY * size);
-    Iterator<Id> i = set.getIterator();
+    Iterator<Id> iterator = set.getIterator();
 
-    while (i.hasNext())
-      addId((Id) i.next());
+    while (iterator.hasNext())
+      addId((Id) iterator.next());
   }
 
   /**
@@ -109,12 +109,12 @@ public class IdBloomFilter {
    * @param id An id to build the array from
    */
   protected byte[] checkArray(Id id) {
-    byte[] a = array;
-    if (a == null)
-      array = a = id.toByteArray();
+    byte[] bytes = array;
+    if (bytes == null)
+      array = bytes = id.toByteArray();
     else
-      id.toByteArray(a, 0);
-    return a;
+      id.toByteArray(bytes, 0);
+    return bytes;
   }
 
   /**
@@ -146,11 +146,11 @@ public class IdBloomFilter {
    * @param max The maximum number of keys to return
    */
   public void check(IdSet set, IdSet result, int max) {
-    Iterator<Id> it = set.getIterator();
+    Iterator<Id> iterator = set.getIterator();
     int count = 0;
 
-    while (it.hasNext() && (count < max)) {
-      Id next = (Id) it.next();
+    while (iterator.hasNext() && (count < max)) {
+      Id next = (Id) iterator.next();
 
       if (! check(next)) {
         result.addId(next);

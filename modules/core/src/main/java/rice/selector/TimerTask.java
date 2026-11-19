@@ -65,10 +65,10 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   /**
    * Runs the task and computes its next execution time if it is periodic.
    *
-   * @param ts the time source used for fixed-delay rescheduling
+   * @param timeSource the time source used for fixed-delay rescheduling
    * @return true if the task should be re-inserted into the queue
    */
-  public boolean execute(TimeSource ts) {
+  public boolean execute(TimeSource timeSource) {
     if (cancelled) return false;
     run();
     // often cancelled in the execution
@@ -78,7 +78,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
         nextExecutionTime+=period;
         return true;
       } else {
-        nextExecutionTime = ts.currentTimeMillis()+period;
+        nextExecutionTime = timeSource.currentTimeMillis()+period;
         return true;
       }
     } else {
@@ -105,16 +105,16 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
 
   @Override
   public int compareTo(TimerTask arg0) {
-    TimerTask tt = (TimerTask)arg0;
-    if (tt == this) return 0;
-    int diff = Long.compare(nextExecutionTime, tt.nextExecutionTime);
+    TimerTask timerTask = (TimerTask)arg0;
+    if (timerTask == this) return 0;
+    int diff = Long.compare(nextExecutionTime, timerTask.nextExecutionTime);
     if (diff == 0) {
       // compare the sequence numbers
-      diff = seq-tt.seq;
+      diff = seq-timerTask.seq;
 
       // if still same, try the hashcode
       if (diff == 0) {
-        return System.identityHashCode(this) < System.identityHashCode(tt) ? 1 : -1;
+        return System.identityHashCode(this) < System.identityHashCode(timerTask) ? 1 : -1;
       }
     }
     return diff;

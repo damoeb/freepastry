@@ -106,11 +106,11 @@ public class MathUtils {
    *
    * @return A hash of b
    */
-  public static int simpleHash(byte[] b) {
+  public static int simpleHash(byte[] bytes) {
     int hash = 0;
 
-    for (int i = 0; i < b.length; i++) {
-      hash += b[i];
+    for (int i = 0; i < bytes.length; i++) {
+      hash += bytes[i];
       hash += (hash << 10);
       hash ^= (hash >> 6);
     }

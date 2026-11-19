@@ -75,24 +75,24 @@ public class AttachableCancellable implements Cancellable {
       subCancellable = null;
     }
     boolean ret = true;
-    for (Cancellable c : delme) {
-      if (!c.cancel()) ret = false;
+    for (Cancellable cancellable : delme) {
+      if (!cancellable.cancel()) ret = false;
     }
     return ret;
   }
 
-  public void attach(@Nullable Cancellable c) {
-    if (c == null) return;
+  public void attach(@Nullable Cancellable cancellable) {
+    if (cancellable == null) return;
     boolean cancel = false;
     synchronized(lock) {
       if (subCancellable == null) {
         cancel = true;
       } else {
-        subCancellable.add(c);
+        subCancellable.add(cancellable);
       }
     }
     if (cancel) {
-      c.cancel();
+      cancellable.cancel();
     }
   }
 }

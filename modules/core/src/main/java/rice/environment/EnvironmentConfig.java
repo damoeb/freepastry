@@ -52,11 +52,11 @@ import rice.environment.params.Parameters;
  */
 public record EnvironmentConfig(boolean useSimProcessor, OptionalLong randomSeed, long directSimulatorStartTime) {
 
-  public static EnvironmentConfig fromParameters(Parameters p) {
+  public static EnvironmentConfig fromParameters(Parameters parameters) {
     return new EnvironmentConfig(
-      p.contains("environment_use_sim_processor") && p.getBoolean("environment_use_sim_processor"),
-      seed(p, "random_seed"),
-      p.getLong("direct_simulator_start_time"));
+      parameters.contains("environment_use_sim_processor") && parameters.getBoolean("environment_use_sim_processor"),
+      seed(parameters, "random_seed"),
+      parameters.getLong("direct_simulator_start_time"));
   }
 
   /**
@@ -64,11 +64,11 @@ public record EnvironmentConfig(boolean useSimProcessor, OptionalLong randomSeed
    *
    * @return the seed, or empty if the key is absent or {@code clock} (in any case)
    */
-  public static OptionalLong seed(Parameters p, String key) {
-    String value = p.contains(key) ? p.getString(key) : null;
+  public static OptionalLong seed(Parameters parameters, String key) {
+    String value = parameters.contains(key) ? parameters.getString(key) : null;
     if (value == null || value.equalsIgnoreCase("clock")) {
       return OptionalLong.empty();
     }
-    return OptionalLong.of(p.getLong(key));
+    return OptionalLong.of(parameters.getLong(key));
   }
 }

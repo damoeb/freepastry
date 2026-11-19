@@ -11,10 +11,10 @@ class SimpleInputBufferTest {
 
   @Test
   void readsAWrappedBufferFromItsPosition() throws IOException {
-    ByteBuffer bb = ByteBuffer.wrap(new byte[] {1, 2, 3, 4});
-    bb.position(1);
+    ByteBuffer buffer = ByteBuffer.wrap(new byte[] {1, 2, 3, 4});
+    buffer.position(1);
 
-    SimpleInputBuffer buf = new SimpleInputBuffer(bb);
+    SimpleInputBuffer buf = new SimpleInputBuffer(buffer);
 
     assertEquals(2, buf.readByte());
     assertEquals(2, buf.bytesRemaining());

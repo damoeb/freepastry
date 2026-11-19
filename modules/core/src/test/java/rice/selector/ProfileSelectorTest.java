@@ -90,7 +90,7 @@ public class ProfileSelectorTest {
     pipe.source().configureBlocking(false);
     SelectionKey key = pipe.source().register(selector.getSelector(), 0, new SelectionKeyHandler() {
       @Override
-      public void modifyKey(SelectionKey k) {
+      public void modifyKey(SelectionKey selectionKey) {
         modified[0]++;
       }
     });

@@ -64,32 +64,32 @@ public class DirectTimeSourceTest {
 
   @Test
   public void setTimeWorksWithoutALogManager() {
-    DirectTimeSource ts = new DirectTimeSource(START);
+    DirectTimeSource directTimeSource = new DirectTimeSource(START);
 
-    ts.setTime(START + JOIN_MILLIS);
-    ts.setTime(START);
+    directTimeSource.setTime(START + JOIN_MILLIS);
+    directTimeSource.setTime(START);
 
-    assertEquals(START + JOIN_MILLIS, ts.currentTimeMillis(), "the clock must not go back");
+    assertEquals(START + JOIN_MILLIS, directTimeSource.currentTimeMillis(), "the clock must not go back");
   }
 
   @Test
   public void negativeStartTimeMeansNow() {
     long before = System.currentTimeMillis();
-    DirectTimeSource ts = new DirectTimeSource(-1);
-    assertTrue(ts.currentTimeMillis() >= before, "a negative start time should start the clock at the wall-clock time");
+    DirectTimeSource directTimeSource = new DirectTimeSource(-1);
+    assertTrue(directTimeSource.currentTimeMillis() >= before, "a negative start time should start the clock at the wall-clock time");
   }
 
   @Test
   public void destroyWakesUpSleepers() throws InterruptedException {
     Environment env = Environment.directEnvironment();
     try {
-      final DirectTimeSource ts = (DirectTimeSource)env.getTimeSource();
+      final DirectTimeSource directTimeSource = (DirectTimeSource)env.getTimeSource();
       final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
       Thread sleeper = new Thread(() -> {
         try {
-          ts.sleep(1000000); // simulated time doesn't advance in this test
-        } catch (Throwable t) {
-          thrown.set(t);
+          directTimeSource.sleep(1000000); // simulated time doesn't advance in this test
+        } catch (Throwable throwable) {
+          thrown.set(throwable);
         }
       }, "DirectTimeSourceTest sleeper");
       sleeper.setDaemon(true);
@@ -100,7 +100,7 @@ public class DirectTimeSourceTest {
       }
       assertEquals(Thread.State.WAITING, sleeper.getState());
 
-      ts.destroy();
+      directTimeSource.destroy();
 
       sleeper.join(JOIN_MILLIS);
       assertFalse(sleeper.isAlive(), "destroy() must wake up the sleeping thread");
@@ -114,13 +114,13 @@ public class DirectTimeSourceTest {
   public void sleepOnTheSelectorThreadFailsInsteadOfHanging() throws InterruptedException {
     Environment env = Environment.directEnvironment();
     try {
-      final DirectTimeSource ts = (DirectTimeSource)env.getTimeSource();
+      final DirectTimeSource directTimeSource = (DirectTimeSource)env.getTimeSource();
       final AtomicReference<Throwable> thrown = new AtomicReference<Throwable>();
       env.getSelectorManager().invoke(() -> {
         try {
-          ts.sleep(1000);
-        } catch (Throwable t) {
-          thrown.set(t);
+          directTimeSource.sleep(1000);
+        } catch (Throwable throwable) {
+          thrown.set(throwable);
         }
       });
       long deadline = System.currentTimeMillis() + JOIN_MILLIS;

@@ -90,22 +90,22 @@ public class Environment implements Destructible {
    * in a default choice.  If you want different defaults, consider extending Environment
    * and providing your own chooseDefaults() method.
    *
-   * @param sm the SelectorLoop.  Default: rice.selector.SelectorLoop
+   * @param selectorLoop the SelectorLoop.  Default: rice.selector.SelectorLoop
    * @param proc the Processor.  Default: rice.environment.processing.simple.SimpleProcessor,
    *   or rice.environment.processing.sim.SimProcessor if environment_use_sim_processor is set
-   * @param rs the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
+   * @param randomSource the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
    * @param time the TimeSource.  Default: rice.environment.time.simple.SimpleTimeSource
-   * @param lm the LogManager.  Default: rice.environment.logging.Slf4jLogManager
+   * @param logManager the LogManager.  Default: rice.environment.logging.Slf4jLogManager
    * @param params the Parameters.  Required.
    * @param strategy the ExceptionStrategy.  Default: rice.environment.exception.simple.SimpleExceptionStrategy
    * @throws IllegalArgumentException if params is null
    */
   @SuppressWarnings("NullAway") // chooseDefaults() replaces every null argument before the fields are used
-  public Environment(@Nullable SelectorLoop sm, @Nullable Processor proc, @Nullable RandomSource rs, @Nullable TimeSource time, @Nullable LogManager lm, Parameters params, @Nullable ExceptionStrategy strategy) {
-    this.selectorManager = sm;
-    this.randomSource = rs;
+  public Environment(@Nullable SelectorLoop selectorLoop, @Nullable Processor proc, @Nullable RandomSource randomSource, @Nullable TimeSource time, @Nullable LogManager logManager, Parameters params, @Nullable ExceptionStrategy strategy) {
+    this.selectorManager = selectorLoop;
+    this.randomSource = randomSource;
     this.time = time;
-    this.logManager = lm;
+    this.logManager = logManager;
     this.params = params;
     this.processor = proc;
     this.exceptionStrategy = strategy;
@@ -145,16 +145,16 @@ public class Environment implements Destructible {
     return directEnvironment(null);
   }
 
-  public static Environment directEnvironment(@Nullable RandomSource rs) {
+  public static Environment directEnvironment(@Nullable RandomSource randomSource) {
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(params);
-    LogManager lm = generateDefaultLogManager();
-    dts.setLogManager(lm);
-    SelectorLoop selector = generateDefaultSelectorManager(dts,lm,rs);
+    LogManager logManager = generateDefaultLogManager();
+    dts.setLogManager(logManager);
+    SelectorLoop selector = generateDefaultSelectorManager(dts,logManager,randomSource);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
-    Environment ret = new Environment(selector,proc,rs,dts,lm,
-        params, generateDefaultExceptionStrategy(lm));
+    Environment ret = new Environment(selector,proc,randomSource,dts,logManager,
+        params, generateDefaultExceptionStrategy(logManager));
     return ret;
   }
 
@@ -268,8 +268,8 @@ public class Environment implements Destructible {
   }
 
   private void callDestroyOnDestructables() {
-    for (Destructible d : new ArrayList<Destructible>(destructables)) {
-      d.destroy();
+    for (Destructible destructible : new ArrayList<Destructible>(destructables)) {
+      destructible.destroy();
     }
     selectorManager.destroy();
     processor.destroy();
@@ -309,13 +309,13 @@ public class Environment implements Destructible {
     // new logManager
     LogManager lman = cloneLogManager(prefix);
 
-    TimeSource ts = cloneTimeSource(lman);
+    TimeSource timeSource = cloneTimeSource(lman);
 
     // new random source
     RandomSource rand = cloneRandomSource(lman);
 
     // new selector
-    SelectorLoop sman = cloneSelectorManager(prefix, ts, rand, lman, cloneSelector);
+    SelectorLoop sman = cloneSelectorManager(prefix, timeSource, rand, lman, cloneSelector);
 
     // new processor
     Processor proc = cloneProcessor(prefix, lman, cloneProcessor);
@@ -342,11 +342,11 @@ public class Environment implements Destructible {
     return lman;
   }
 
-  protected SelectorLoop cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
+  protected SelectorLoop cloneSelectorManager(String prefix, TimeSource timeSource, RandomSource randomSource, LogManager lman, boolean cloneSelector) {
     SelectorLoop sman = getSelectorManager();
     if (cloneSelector) {
       sman = new SelectorLoop(prefix + " Selector",
-          ts, lman, rs);
+          timeSource, lman, randomSource);
     }
     return sman;
   }

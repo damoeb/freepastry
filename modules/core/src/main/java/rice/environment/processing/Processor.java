@@ -64,11 +64,11 @@ public interface Processor extends Destructible {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    * @param selector the selector whose thread the result is delivered on
-   * @param ts the time source used to time the task
+   * @param timeSource the time source used to time the task
    * @param log the log manager the request logs to
    * @return a handle to cancel the task before it starts
    */
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorLoop selector, TimeSource ts, LogManager log);
+  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorLoop selector, TimeSource timeSource, LogManager log);
 
   /**
    * Schedules a different type of task.  This thread is for doing Disk IO that is required to be blocking.

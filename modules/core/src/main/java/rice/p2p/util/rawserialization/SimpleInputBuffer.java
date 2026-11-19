@@ -51,8 +51,8 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 public class SimpleInputBuffer extends DataInputStream implements InputBuffer {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleInputBuffer.class);
 
-  public SimpleInputBuffer(ByteBuffer bb) {
-    this(bb.array(),bb.arrayOffset()+bb.position(),bb.remaining());
+  public SimpleInputBuffer(ByteBuffer buffer) {
+    this(buffer.array(),buffer.arrayOffset()+buffer.position(),buffer.remaining());
   }
   public SimpleInputBuffer(byte[] bytes) {
     this(bytes,0,bytes.length);

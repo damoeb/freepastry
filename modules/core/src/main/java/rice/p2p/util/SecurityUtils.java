@@ -240,17 +240,17 @@ public class SecurityUtils {
    * @throws SecurityException If the encryption does not happen properly
    */
   public static byte[] encryptSymmetric(byte[] data, byte[] key, int offset, int length, byte @Nullable [] associatedData) throws SecurityException {
-    byte[] iv = generateIVSymmetric();
+    byte[] bytes = generateIVSymmetric();
     try {
       Cipher cipher = Cipher.getInstance(SYMMETRIC_TRANSFORMATION);
-      cipher.init(Cipher.ENCRYPT_MODE, symmetricKey(key), new GCMParameterSpec(SYMMETRIC_TAG_LENGTH, iv));
+      cipher.init(Cipher.ENCRYPT_MODE, symmetricKey(key), new GCMParameterSpec(SYMMETRIC_TAG_LENGTH, bytes));
       if (associatedData != null) {
         cipher.updateAAD(associatedData);
       }
 
-      byte[] result = new byte[iv.length + cipher.getOutputSize(length)];
-      System.arraycopy(iv, 0, result, 0, iv.length);
-      cipher.doFinal(data, offset, length, result, iv.length);
+      byte[] result = new byte[bytes.length + cipher.getOutputSize(length)];
+      System.arraycopy(bytes, 0, result, 0, bytes.length);
+      cipher.doFinal(data, offset, length, result, bytes.length);
       return result;
     } catch (GeneralSecurityException e) {
       throw new SecurityException("Could not encrypt " + length + " bytes: " + e, e);

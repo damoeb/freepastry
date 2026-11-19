@@ -79,8 +79,8 @@ public class DirectTimeSource implements TimeSource {
     this.instance = instance;
   }
 
-  public DirectTimeSource(Parameters p) {
-    this(EnvironmentConfig.fromParameters(p).directSimulatorStartTime());
+  public DirectTimeSource(Parameters parameters) {
+    this(EnvironmentConfig.fromParameters(parameters).directSimulatorStartTime());
   }
 
   public void setLogManager(LogManager manager) {
@@ -91,8 +91,8 @@ public class DirectTimeSource implements TimeSource {
     return Objects.requireNonNull(selectorManager, "call setSelectorManager() first");
   }
 
-  public void setSelectorManager(SelectorLoop sm) {
-    selectorManager = sm;
+  public void setSelectorManager(SelectorLoop selectorLoop) {
+    selectorManager = selectorLoop;
 
   }
 
@@ -126,10 +126,10 @@ public class DirectTimeSource implements TimeSource {
 
     @Override
     public void run() {
-      SelectorLoop sm = selectorManager();
-      synchronized(sm) {
+      SelectorLoop selectorLoop = selectorManager();
+      synchronized(selectorLoop) {
         done = true;
-        sm.notifyAll();
+        selectorLoop.notifyAll();
         // no Thread.yield() needed: the selector already yields enough
       }
     }
@@ -142,20 +142,20 @@ public class DirectTimeSource implements TimeSource {
 
   @Override
   public void sleep(long delay) throws InterruptedException {
-    SelectorLoop sm = selectorManager();
-    if (sm.isSelectorThread()) {
+    SelectorLoop selectorLoop = selectorManager();
+    if (selectorLoop.isSelectorThread()) {
       throw new IllegalStateException("sleep() on the selector thread would block the timers it waits for");
     }
-    synchronized(sm) { // to prevent an out of order acquisition
+    synchronized(selectorLoop) { // to prevent an out of order acquisition
       // we only lock on the selector
       BlockingTimerTask btt = new BlockingTimerTask();
       pendingTimers.add(btt);
       logger.debug("DirectTimeSource.sleep({})", delay);
 
-      sm.getTimer().schedule(btt,delay);
+      selectorLoop.getTimer().schedule(btt,delay);
 
       while(!btt.done) {
-        sm.wait();
+        selectorLoop.wait();
         if (btt.interrupted) throw new InterruptedException("TimeSource destroyed.");
       }
       pendingTimers.remove(btt);

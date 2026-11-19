@@ -116,11 +116,11 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
    * Returns a view of the members from from (inclusive) to to (exclusive), wrapping around the ring if from is above to.
    *
    * @param from the counterclockwise end of the range (inclusive)
-   * @param to the clockwise end of the range (exclusive)
+   * @param id the clockwise end of the range (exclusive)
    * @return the subset
    */
-  public S subSet(Id from, Id to) {
-    return newSet(members.subMap(from, to));
+  public S subSet(Id from, Id id) {
+    return newSet(members.subMap(from, id));
   }
 
   /**
@@ -137,11 +137,11 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
       return build();
     }
     Id ccw = range.getCounterClockwiseBound();
-    Id cw = range.getClockwiseBound();
-    if (ccw.equals(cw)) {
+    Id id = range.getClockwiseBound();
+    if (ccw.equals(id)) {
       return (S) this;
     }
-    return subSet(ccw, cw);
+    return subSet(ccw, id);
   }
 
   /**
@@ -171,9 +171,9 @@ public abstract class SortedMapIdSet<S extends SortedMapIdSet<S>> implements IdS
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder("[ IdSet: ");
-    Iterator<Id> it = getIterator();
-    while (it.hasNext()) {
-      result.append(it.next()).append(',');
+    Iterator<Id> iterator = getIterator();
+    while (iterator.hasNext()) {
+      result.append(iterator.next()).append(',');
     }
     return result.append(" ]").toString();
   }

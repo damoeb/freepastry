@@ -134,10 +134,10 @@ public interface IdFactory {
    * Creates an IdRange given the CCW and CW ids.
    *
    * @param ccw The counterclockwise Id, the inclusive start of the range
-   * @param cw The clockwise Id, the exclusive end of the range
+   * @param id The clockwise Id, the exclusive end of the range
    * @return An IdRange with the appropriate delimiters.
    */
-  public IdRange buildIdRange(Id ccw, Id cw);
+  public IdRange buildIdRange(Id ccw, Id id);
 
   /**
    * Creates an empty IdSet.

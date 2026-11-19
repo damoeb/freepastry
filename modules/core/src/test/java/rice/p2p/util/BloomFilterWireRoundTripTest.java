@@ -27,9 +27,9 @@ class BloomFilterWireRoundTripTest {
   }
 
   private static BloomFilter read(byte[] bytes) throws IOException {
-    SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-    BloomFilter filter = new BloomFilter(in);
-    assertEquals(0, in.bytesRemaining(), "bytes left after reading the filter");
+    SimpleInputBuffer input = new SimpleInputBuffer(bytes);
+    BloomFilter filter = new BloomFilter(input);
+    assertEquals(0, input.bytesRemaining(), "bytes left after reading the filter");
     return filter;
   }
 

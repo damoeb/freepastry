@@ -53,10 +53,10 @@ public interface Id extends Comparable<Id> {
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
    *
    * @param ccw the counterclockwise id
-   * @param cw the clockwise id
+   * @param id the clockwise id
    * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
    */
-  public boolean isBetween(Id ccw, Id cw);
+  public boolean isBetween(Id ccw, Id id);
 
   /**
    * Checks to see if the Id nid is clockwise or counterclockwise from this, on the ring. An Id is

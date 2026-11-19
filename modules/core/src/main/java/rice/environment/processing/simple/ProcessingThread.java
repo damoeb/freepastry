@@ -61,9 +61,9 @@ public class ProcessingThread extends Thread {
     running = true;
     while (running) {
       try {
-        ProcessingRequest<?, ?> e = queue.take();
-        if (e != null)
-          e.run();
+        ProcessingRequest<?, ?> processingRequest = queue.take();
+        if (processingRequest != null)
+          processingRequest.run();
       } catch (java.lang.InterruptedException ignored) {
         // do nothing: shutdown() interrupts the thread to stop it
       }

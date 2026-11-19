@@ -93,21 +93,21 @@ public class MathUtilsUnit {
 
     System.out.print("    Testing int->byte[]->int conversion\t\t\t");
 
-    RandomSource r = new SimpleRandomSource(null);
+    RandomSource randomSource = new SimpleRandomSource(null);
     boolean passed = true;
 
       for (int n=0; n<100000; n++) {
-        int l = r.nextInt();
-        byte[] ar = MathUtils.intToByteArray(l);
-        int res = MathUtils.byteArrayToInt(ar);
+        int l = randomSource.nextInt();
+        byte[] bytes = MathUtils.intToByteArray(l);
+        int res = MathUtils.byteArrayToInt(bytes);
 
         if (res != l) {
           passed = false;
           System.out.println("[ FAILED ]");
           System.out.println("input:  "+l);
           System.out.print  ("byte[]: ");
-          for (int i=0; i<ar.length; i++) {
-            System.out.print(ar[i]+" ");
+          for (int i=0; i<bytes.length; i++) {
+            System.out.print(bytes[i]+" ");
           }
           System.out.println();
           System.out.println("output: "+result);
@@ -122,7 +122,7 @@ public class MathUtilsUnit {
     passed = true;
 
       for (int n=0; n<100000; n++) {
-        long l = r.nextLong();
+        long l = randomSource.nextLong();
         byte[] ar = MathUtils.longToByteArray(l);
         long res = MathUtils.byteArrayToLong(ar);
 

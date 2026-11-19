@@ -47,9 +47,9 @@ public class TestSortedLinkedList {
   public static void main(String[] args) {
     SortedLinkedList<Integer> foo = new SortedLinkedList<Integer>();
 
-    Random r = new Random();
+    Random random = new Random();
     for (int ctr = 0; ctr < 10; ctr++) {
-      int i = r.nextInt(100);
+      int i = random.nextInt(100);
       System.out.println("Adding "+i);
       foo.add(i);
     }

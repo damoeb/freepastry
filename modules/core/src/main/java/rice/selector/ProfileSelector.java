@@ -128,10 +128,10 @@ public class ProfileSelector extends SelectorLoop {
 
   int maxInvokes = 0;
   @Override
-  public synchronized void invoke(Runnable d) {
+  public synchronized void invoke(Runnable task) {
     synchronized(this) {
       numInvocationsScheduled++;
-      super.invoke(d);
+      super.invoke(task);
     }
     int numInvokes = getNumInvocations(); // null-safe after destroy()
     if (numInvokes > maxInvokes) {
@@ -246,16 +246,16 @@ public class ProfileSelector extends SelectorLoop {
    */
   @Override
   protected void doInvocations() {
-    Iterator<Runnable> i;
+    Iterator<Runnable> iterator;
     synchronized(this) {
       List<Runnable> current = pendingInvocations();
-      i = new ArrayList<Runnable>(current).iterator();
+      iterator = new ArrayList<Runnable>(current).iterator();
       current.clear();
     }
     Runnable run;
-    while (i.hasNext()) {
+    while (iterator.hasNext()) {
       numInvocationsExecuted++;
-      run = (Runnable)i.next();
+      run = (Runnable)iterator.next();
       try {
         lastTaskType = "Invocation";
         lastTaskClass = run.getClass().getName();

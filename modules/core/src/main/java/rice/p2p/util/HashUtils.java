@@ -87,11 +87,11 @@ public final class HashUtils {
    * @return The 32-byte SHA-256 digest
    */
   public static byte[] hash(byte[]... parts) {
-    MessageDigest md = newDigest();
+    MessageDigest messageDigest = newDigest();
     for (byte[] part : parts) {
-      md.update(part);
+      messageDigest.update(part);
     }
-    return md.digest();
+    return messageDigest.digest();
   }
 
   /**
@@ -103,9 +103,9 @@ public final class HashUtils {
    * @return The 32-byte SHA-256 digest
    */
   public static byte[] hash(byte[] data, int offset, int length) {
-    MessageDigest md = newDigest();
-    md.update(data, offset, length);
-    return md.digest();
+    MessageDigest messageDigest = newDigest();
+    messageDigest.update(data, offset, length);
+    return messageDigest.digest();
   }
 
   /**

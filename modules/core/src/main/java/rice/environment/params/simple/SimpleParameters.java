@@ -105,8 +105,8 @@ public class SimpleParameters implements Parameters {
       this.configFileName = mutableConfigFileName + FILENAME_EXTENSION;
     } else {
       try {
-        Path f = Path.of(defaultParamsFile);
-        if (Files.exists(f)) {
+        Path path = Path.of(defaultParamsFile);
+        if (Files.exists(path)) {
           this.configFileName = defaultParamsFile;
         }
       } catch (SecurityException e) {
@@ -123,9 +123,9 @@ public class SimpleParameters implements Parameters {
         // some VMs report the bootstrap classloader via null-return
         if (loader == null)
           loader = ClassLoader.getSystemClassLoader();
-        try (InputStream in = loader.getResource(
+        try (InputStream inputStream = loader.getResource(
             orderedDefault + FILENAME_EXTENSION).openStream()) {
-          this.defaults.load(in);
+          this.defaults.load(inputStream);
         }
       } catch (Exception ioe) {
         String errorString = "Warning, couldn't load param file:"
@@ -412,27 +412,27 @@ public class SimpleParameters implements Parameters {
     }
   }
 
-  private static void moveIgnoringFailure(Path from, Path to) {
+  private static void moveIgnoringFailure(Path from, Path path) {
     try {
-      Files.move(from, to, REPLACE_EXISTING);
+      Files.move(from, path, REPLACE_EXISTING);
     } catch (IOException ignored) {
       // as with renameTo, a failed move is ignored
     }
   }
 
   @Override
-  public void addChangeListener(ParameterChangeListener p) {
-    changeListeners.add(p);
+  public void addChangeListener(ParameterChangeListener parameterChangeListener) {
+    changeListeners.add(parameterChangeListener);
   }
 
   @Override
-  public void removeChangeListener(ParameterChangeListener p) {
-    changeListeners.remove(p);
+  public void removeChangeListener(ParameterChangeListener parameterChangeListener) {
+    changeListeners.remove(parameterChangeListener);
   }
 
   private void fireChangeEvent(String name, @Nullable String val) {
-    for (ParameterChangeListener p : changeListeners) {
-      p.parameterChange(name, val);
+    for (ParameterChangeListener parameterChangeListener : changeListeners) {
+      parameterChangeListener.parameterChange(name, val);
     }
   }
 

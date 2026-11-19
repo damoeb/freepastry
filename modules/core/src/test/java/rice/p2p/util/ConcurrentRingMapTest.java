@@ -153,16 +153,16 @@ public class ConcurrentRingMapTest {
   @Test
   public void iteratorsSurviveConcurrentChanges() {
     ConcurrentRingMap<Integer, String> map = map();
-    Iterator<Integer> i = map.keySet().iterator();
+    Iterator<Integer> iterator = map.keySet().iterator();
     List<Integer> seen = new ArrayList<Integer>();
-    while (i.hasNext()) {
-      int k = i.next();
+    while (iterator.hasNext()) {
+      int k = iterator.next();
       seen.add(k);
       if (k == 30) {
         map.remove(40);
         map.put(45, "v45");
       }
-      if (k == 60) i.remove();
+      if (k == 60) iterator.remove();
     }
     // weakly consistent: no ConcurrentModificationException, and every key that was not changed is seen once, in order
     seen.remove(Integer.valueOf(40));

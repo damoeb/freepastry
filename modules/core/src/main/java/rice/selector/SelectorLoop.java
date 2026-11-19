@@ -214,16 +214,16 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
    * should be done using this method, as they must be done in the selector
    * thread.
    *
-   * @param d The runnable task to invoke
+   * @param task The runnable task to invoke
    */
-  public synchronized void invoke(Runnable d) {
-    if (d == null)
+  public synchronized void invoke(Runnable task) {
+    if (task == null)
       throw new NullPointerException();
     if (invocations == null) {
-      logger.debug("Dropping invocation {}, the selector was destroyed.", d);
+      logger.debug("Dropping invocation {}, the selector was destroyed.", task);
       return;
     }
-    invocations.add(d);
+    invocations.add(task);
     wakeup();
   }
 
@@ -301,9 +301,9 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
             selector.selectNow();
           }
         } // if select
-      } catch (Throwable t) {
-        logger.error("ERROR (SelectorLoop.run): ", t);
-        getEnvironment().getExceptionStrategy().handleException(this, t);
+      } catch (Throwable throwable) {
+        logger.error("ERROR (SelectorLoop.run): ", throwable);
+        getEnvironment().getExceptionStrategy().handleException(this, throwable);
       }
     } // while(running)
     shutdown();
@@ -328,17 +328,17 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
         pending = new ArrayList<Runnable>(current);
         current.clear();
       }
-      for (Runnable r : pending) {
-        if (!ran.add(r)) {
+      for (Runnable task : pending) {
+        if (!ran.add(task)) {
           // it rescheduled itself (e.g. the simulator's event loop), don't keep it going
           skipped++;
           continue;
         }
         try {
-          r.run();
-        } catch (Throwable t) {
+          task.run();
+        } catch (Throwable throwable) {
           // keep going: the rest must still run, and there is no loop left to report to
-          logger.warn("Error running {} while destroying the selector", r, t);
+          logger.warn("Error running {} while destroying the selector", task, throwable);
         }
       }
     }
@@ -432,9 +432,9 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
     long diff = now - lastTime;
     // notify observers
     synchronized (loopObservers) {
-      for (LoopObserver lo : loopObservers) {
-        if (lo.delayInterest() <= diff) {
-          lo.loopTime((int) diff);
+      for (LoopObserver loopObserver : loopObservers) {
+        if (loopObserver.delayInterest() <= diff) {
+          loopObserver.loopTime((int) diff);
         }
       }
     }
@@ -443,15 +443,15 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
 
   final ArrayList<LoopObserver> loopObservers = new ArrayList<LoopObserver>();
 
-  public void addLoopObserver(LoopObserver lo) {
+  public void addLoopObserver(LoopObserver loopObserver) {
     synchronized (loopObservers) {
-      loopObservers.add(lo);
+      loopObservers.add(loopObserver);
     }
   }
 
-  public void removeLoopObserver(LoopObserver lo) {
+  public void removeLoopObserver(LoopObserver loopObserver) {
     synchronized (loopObservers) {
-      loopObservers.remove(lo);
+      loopObservers.remove(loopObserver);
     }
   }
 
@@ -517,23 +517,23 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
    */
   protected void doInvocations() {
     logger.trace("SM.doInvocations()");
-    Iterator<Runnable> i;
+    Iterator<Runnable> iterator;
     synchronized (this) {
       List<Runnable> current = pendingInvocations();
-      i = new ArrayList<Runnable>(current).iterator();
+      iterator = new ArrayList<Runnable>(current).iterator();
       current.clear();
     }
 
-    while (i.hasNext()) {
-      Runnable run = (Runnable) i.next();
+    while (iterator.hasNext()) {
+      Runnable run = (Runnable) iterator.next();
       try {
         run.run();
       } catch (RuntimeException e) {
         // place the rest of the items back into invocations
         synchronized(this) {
           int ctr = 0;
-          while(i.hasNext()) {
-            pendingInvocations().add(ctr,i.next());
+          while(iterator.hasNext()) {
+            pendingInvocations().add(ctr,iterator.next());
             ctr++;
           }
         }
@@ -765,9 +765,9 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
     // step 2, execute them all
     // items to be added back into the queue
     ArrayList<TimerTask> addBack = new ArrayList<TimerTask>();
-    Iterator<TimerTask> i = executeNow.iterator();
-    while (i.hasNext()) {
-      TimerTask next = i.next();
+    Iterator<TimerTask> iterator = executeNow.iterator();
+    while (iterator.hasNext()) {
+      TimerTask next = iterator.next();
       try {
         logger.trace("executing task {}", next);
 
@@ -776,14 +776,14 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
         }
       } catch (RuntimeException e) {
         // add back the un-executed tasks before continuing
-        while(i.hasNext()) {
-          addBack.add(i.next());
+        while(iterator.hasNext()) {
+          addBack.add(iterator.next());
         }
         synchronized (this) {
-          i = addBack.iterator();
-          while (i.hasNext()) {
-            TimerTask tt = (TimerTask) i.next();
-            timerQueue.add(tt);
+          iterator = addBack.iterator();
+          while (iterator.hasNext()) {
+            TimerTask timerTask = (TimerTask) iterator.next();
+            timerQueue.add(timerTask);
           }
         }
 
@@ -793,9 +793,9 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
 
     // step 3, add them back if necessary
     synchronized (this) {
-      i = addBack.iterator();
-      while (i.hasNext()) {
-        TimerTask tt = (TimerTask) i.next();
+      iterator = addBack.iterator();
+      while (iterator.hasNext()) {
+        TimerTask tt = (TimerTask) iterator.next();
         timerQueue.add(tt);
       }
     }

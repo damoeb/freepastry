@@ -264,9 +264,9 @@ public interface Endpoint extends NodeHandleReader {
    * Sets the deserializer that reads this endpoint's raw messages back; every message an application
    * routes is a {@link RawMessage}, so it has to set one before it can receive any.
    *
-   * @param md the deserializer for this endpoint's raw messages
+   * @param messageDeserializer the deserializer for this endpoint's raw messages
    */
-  public void setDeserializer(MessageDeserializer md);
+  public void setDeserializer(MessageDeserializer messageDeserializer);
 
   /**
    * Returns the deserializer, {@link MessageDeserializer#NONE} until one is set.
@@ -339,18 +339,18 @@ public interface Endpoint extends NodeHandleReader {
    * Returns the last known proximity of the node; the handle does not have to be "coalesced".
    * Smaller values imply greater proximity.
    *
-   * @param nh the node
+   * @param nodeHandle the node
    * @return the proximity metric value
    */
-  public int proximity(NodeHandle nh);
+  public int proximity(NodeHandle nodeHandle);
 
   /**
    * Returns the last known liveness of the node.
    *
-   * @param nh the node
+   * @param nodeHandle the node
    * @return whether the node is believed to be alive
    */
-  public boolean isAlive(NodeHandle nh);
+  public boolean isAlive(NodeHandle nodeHandle);
 
   /**
    * Uses these options as defaults.

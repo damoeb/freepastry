@@ -153,9 +153,9 @@ public class SecurityUtilsTest {
 
   @Test
   public void generatesIVsOfTheGcmNonceSize() {
-    byte[] iv = SecurityUtils.generateIVSymmetric();
-    assertEquals(IV_BYTES, iv.length);
-    assertFalse(Arrays.equals(iv, SecurityUtils.generateIVSymmetric()));
+    byte[] bytes = SecurityUtils.generateIVSymmetric();
+    assertEquals(IV_BYTES, bytes.length);
+    assertFalse(Arrays.equals(bytes, SecurityUtils.generateIVSymmetric()));
   }
 
   // ----- password-based: PBKDF2-HMAC-SHA256 + AES-256-GCM -----

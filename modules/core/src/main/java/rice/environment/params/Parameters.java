@@ -106,6 +106,6 @@ public interface Parameters {
   public void setInetSocketAddress(String paramName, InetSocketAddress val);
   public void setInetSocketAddressArray(String paramName, InetSocketAddress[] val);
 
-  public void addChangeListener(ParameterChangeListener p);
-  public void removeChangeListener(ParameterChangeListener p);
+  public void addChangeListener(ParameterChangeListener parameterChangeListener);
+  public void removeChangeListener(ParameterChangeListener parameterChangeListener);
 }

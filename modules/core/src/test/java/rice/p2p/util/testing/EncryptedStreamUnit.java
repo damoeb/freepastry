@@ -67,7 +67,7 @@ public class EncryptedStreamUnit {
     System.out.println("[ DONE ]");
 
     System.out.print("    Generating random number generator\t\t\t");
-    RandomSource r = new SimpleRandomSource(null);
+    RandomSource randomSource = new SimpleRandomSource(null);
     System.out.println("[ DONE ]");
 
     System.out
@@ -133,7 +133,7 @@ public class EncryptedStreamUnit {
     eos = new EncryptedOutputStream(pair.getPublic(), baos, BUFFER_SIZE);
 
     bytes = new byte[128000];
-    r.nextBytes(bytes);
+    randomSource.nextBytes(bytes);
 
     eos.write(bytes);
     eos.close();
@@ -158,7 +158,7 @@ public class EncryptedStreamUnit {
     eos = new EncryptedOutputStream(pair.getPublic(), baos, BUFFER_SIZE);
 
     bytes = new byte[128000];
-    r.nextBytes(bytes);
+    randomSource.nextBytes(bytes);
 
     eos.write(bytes);
     eos.close();
@@ -184,7 +184,7 @@ public class EncryptedStreamUnit {
     eos = new EncryptedOutputStream(pair.getPublic(), baos, BUFFER_SIZE);
 
     bytes = new byte[128000];
-    r.nextBytes(bytes);
+    randomSource.nextBytes(bytes);
 
     eos.write(bytes);
     eos.close();
@@ -223,8 +223,8 @@ public class EncryptedStreamUnit {
     byte[][] data = new byte[1000][];
 
     for (int i = 0; i < data.length; i++) {
-      data[i] = new byte[r.nextInt(594)];
-      r.nextBytes(data[i]);
+      data[i] = new byte[randomSource.nextInt(594)];
+      randomSource.nextBytes(data[i]);
       eos.write(data[i]);
     }
 

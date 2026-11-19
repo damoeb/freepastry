@@ -69,7 +69,7 @@ public interface RouteMessage {
    */
   public NodeHandle getNextHopHandle();
 
-  public Message getMessage(MessageDeserializer md) throws IOException;
+  public Message getMessage(MessageDeserializer messageDeserializer) throws IOException;
 
   /**
    * Sets the destination Id for this message

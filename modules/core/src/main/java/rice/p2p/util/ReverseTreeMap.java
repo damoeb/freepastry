@@ -134,10 +134,10 @@ public class ReverseTreeMap<K,V> {
     V value = normal.remove(key);
 
     if (value != null) {
-      ConcurrentRingMap<K,V> o = Objects.requireNonNull(reverse.get(value), "every value has a reverse mapping");
-      o.remove(key);
+      ConcurrentRingMap<K,V> concurrentRingMap = Objects.requireNonNull(reverse.get(value), "every value has a reverse mapping");
+      concurrentRingMap.remove(key);
 
-      if (o.size() == 0) {
+      if (concurrentRingMap.size() == 0) {
         reverse.remove(value);
       }
     } else {
@@ -158,10 +158,10 @@ public class ReverseTreeMap<K,V> {
 
     // remove any old reverse mapping
     if (old != null) {
-      ConcurrentRingMap<K,V> o = Objects.requireNonNull(reverse.get(old), "every value has a reverse mapping");
-      o.remove(key);
+      ConcurrentRingMap<K,V> concurrentRingMap = Objects.requireNonNull(reverse.get(old), "every value has a reverse mapping");
+      concurrentRingMap.remove(key);
 
-      if (o.size() == 0) {
+      if (concurrentRingMap.size() == 0) {
         reverse.remove(old);
       }
     } else {
