@@ -12,8 +12,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,20 +88,41 @@ class SourceRouteRelayTest {
     return java.util.Arrays.copyOf(out.getBytes(), out.getWritten());
   }
 
-  /** Sends a source-routed datagram through the hop and returns what reached the UDP target, or null. */
+  /**
+   * Sends a source-routed datagram through the hop and returns what reached the UDP target and carries the payload, or
+   * null. The target listens on a loopback port that anyone on the machine may send to (for example a node of another
+   * test that still pings the port's previous owner), so a datagram without the payload is not a relay and is skipped
+   * until the wait is over.
+   */
   private byte @Nullable [] relayDatagram() throws IOException {
     byte[] header = route((InetSocketAddress) udpTarget.getLocalSocketAddress());
     byte[] datagram = new byte[header.length + PAYLOAD.length];
     System.arraycopy(header, 0, datagram, 0, header.length);
     System.arraycopy(PAYLOAD, 0, datagram, header.length, PAYLOAD.length);
     attacker.send(new DatagramPacket(datagram, datagram.length, hop));
+    long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(WAIT_MILLIS);
     DatagramPacket received = new DatagramPacket(new byte[1024], 1024);
-    try {
-      udpTarget.receive(received);
-    } catch (SocketTimeoutException refused) {
-      return null;
+    while (true) {
+      long remainingMillis = TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime());
+      if (remainingMillis <= 0) {
+        return null;
+      }
+      udpTarget.setSoTimeout((int) remainingMillis);
+      received.setLength(received.getData().length);
+      try {
+        udpTarget.receive(received);
+      } catch (SocketTimeoutException refused) {
+        return null;
+      }
+      byte[] data = java.util.Arrays.copyOf(received.getData(), received.getLength());
+      if (carriesPayload(data)) {
+        return data;
+      }
     }
-    return java.util.Arrays.copyOf(received.getData(), received.getLength());
+  }
+
+  private static boolean carriesPayload(byte[] data) {
+    return new String(data, StandardCharsets.ISO_8859_1).contains(new String(PAYLOAD, StandardCharsets.ISO_8859_1));
   }
 
   /** Opens a source-routed socket through the hop and returns the connection that reached the TCP target, or null. */
