@@ -114,7 +114,7 @@ public final class AckMessage<Identifier extends RawSerializable> implements Pee
     return recvEntrySeq;
   }
 
-  public byte[] getHashTopMinusOne() {
+  public byte[] getPreviousTopHash() {
     return hashTopMinusOne;
   }
 

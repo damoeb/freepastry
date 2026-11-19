@@ -96,7 +96,7 @@ public class EvtAck<Identifier extends RawSerializable> extends HistoryEvent {
     return ackedSeq;
   }
 
-  public long getHisSeq() {
+  public long getPeerSeq() {
     return hisSeq;
   }
 

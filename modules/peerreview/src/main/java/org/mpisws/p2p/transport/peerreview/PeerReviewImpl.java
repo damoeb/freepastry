@@ -395,7 +395,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
      assert transport.hasCertificate(subject);
 
      try {
-       byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
+       byte[] signedHash = transport.hash(auth.getSignablePart());
        int sigResult = transport.verify(subject, signedHash, auth.getSignature());
        assert((sigResult == SIGNATURE_OK) || sigResult == SIGNATURE_BAD);
        if (sigResult != SIGNATURE_OK) return false;
@@ -810,7 +810,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   @Override
   public boolean verify(Identifier id, Authenticator auth) {
-    byte[] signedHash = transport.hash(auth.getPartToHashThenSign());
+    byte[] signedHash = transport.hash(auth.getSignablePart());
     int result = transport.verify(id, signedHash, auth.getSignature());
     return result == SIGNATURE_OK;
   }

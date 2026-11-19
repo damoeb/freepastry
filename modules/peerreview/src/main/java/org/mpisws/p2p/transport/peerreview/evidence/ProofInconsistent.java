@@ -116,11 +116,11 @@ public class ProofInconsistent implements Evidence {
   }
 
 
-  public Authenticator getAuth1() {
+  public Authenticator getFirstAuthenticator() {
     return auth1;
   }
 
-  public Authenticator getAuth2() {
+  public Authenticator getSecondAuthenticator() {
     return auth2;
   }
 

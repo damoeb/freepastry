@@ -411,7 +411,7 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
       Identifier receiverID = responseAck.getNodeId();
       long ackSenderSeq = responseAck.getSendEntrySeq();
       long ackReceiverSeq = responseAck.getRecvEntrySeq();
-      byte[] receiverHtopMinusOne = responseAck.getHashTopMinusOne();
+      byte[] receiverHtopMinusOne = responseAck.getPreviousTopHash();
       byte[] receiverSignature = responseAck.getSignature();
 
       boolean okay = true;

@@ -223,7 +223,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
         /* Construct the SIGN entry and append it to the log */
 
-        history.appendEntry(EVT_SIGN, true, new EvtSign(udm.getHTopMinusOne(),udm.getSignature()).serialize());
+        history.appendEntry(EVT_SIGN, true, new EvtSign(udm.getPreviousTopHash(),udm.getSignature()).serialize());
         loggedPreviously = false;
       } else {
         loggedPreviously = true;
@@ -375,7 +375,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
           peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()),
           udm.getTopSeq(),
           EVT_SEND,
-          innerHash, udm.getHTopMinusOne(), udm.getSignature());
+          innerHash, udm.getPreviousTopHash(), udm.getSignature());
       if (authenticator != null) {
 
         /* At this point, we are convinced that:
@@ -392,7 +392,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
         if (!ret.second()) {
           logger.atDebug().log(() -> "Delivering message from "+udm.getSenderHandle()+" via "+info.handle+" ("+
-              udm.getPayloadLen()+" bytes; "+udm.getRelevantLen()+"/"+udm.getPayloadLen()+" relevant)");
+              udm.getPayloadLength()+" bytes; "+udm.getRelevantLength()+"/"+udm.getPayloadLength()+" relevant)");
           try {
             peerreview.getApp().messageReceived(udm.getSenderHandle(), udm.getPayload(), t.second());
           } catch (IOException ioe) {
@@ -556,14 +556,14 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
         Authenticator authenticator = peerreview.extractAuthenticator(
             ackMessage.getNodeId(), ackMessage.getRecvEntrySeq(), EVT_RECV, innerHash,
-            ackMessage.getHashTopMinusOne(), ackMessage.getSignature());
+            ackMessage.getPreviousTopHash(), ackMessage.getSignature());
         if (authenticator != null) {
 
           /* Signature is okay... append an ACK entry to the log */
 
           logger.debug("ACK is okay; logging {}", ackMessage);
 
-          EvtAck<Identifier> evtAck = new EvtAck<Identifier>(ackMessage.getNodeId(), ackMessage.getSendEntrySeq(), ackMessage.getRecvEntrySeq(), ackMessage.getHashTopMinusOne(), ackMessage.getSignature());
+          EvtAck<Identifier> evtAck = new EvtAck<Identifier>(ackMessage.getNodeId(), ackMessage.getSendEntrySeq(), ackMessage.getRecvEntrySeq(), ackMessage.getPreviousTopHash(), ackMessage.getSignature());
           history.appendEntry(EVT_ACK, true, evtAck.serialize());
           udm.sendComplete();
 

@@ -59,7 +59,7 @@ public class Authenticator implements Comparable<Authenticator> {
     hashCode = (int)(seq ^ (seq >>> 32))^Arrays.hashCode(hash)^Arrays.hashCode(signature);
   }
 
-  public ByteBuffer getPartToHashThenSign() {
+  public ByteBuffer getSignablePart() {
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     try {
       sob.writeLong(seq);

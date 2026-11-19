@@ -169,7 +169,7 @@ class PeerReviewWireRoundTripTest {
     assertEquals(a.getNodeId(), read.getNodeId());
     assertEquals(5, read.getSendEntrySeq());
     assertEquals(Long.MAX_VALUE, read.getRecvEntrySeq());
-    assertArrayEquals(a.getHashTopMinusOne(), read.getHashTopMinusOne());
+    assertArrayEquals(a.getPreviousTopHash(), read.getPreviousTopHash());
     assertArrayEquals(a.getSignature(), read.getSignature());
   }
 
@@ -273,7 +273,7 @@ class PeerReviewWireRoundTripTest {
     UserDataMessage<TestId> read = roundTrip(m, buf -> UserDataMessage.build(buf, IDS, HASH, SIG));
 
     assertSameUserData(m, read);
-    assertEquals(relevant, read.getRelevantLen());
+    assertEquals(relevant, read.getRelevantLength());
   }
 
   @Test
@@ -291,9 +291,9 @@ class PeerReviewWireRoundTripTest {
   private static void assertSameUserData(UserDataMessage<TestId> expected, UserDataMessage<TestId> actual) {
     assertEquals(expected.getTopSeq(), actual.getTopSeq());
     assertEquals(expected.getSenderHandle(), actual.getSenderHandle());
-    assertArrayEquals(expected.getHTopMinusOne(), actual.getHTopMinusOne());
+    assertArrayEquals(expected.getPreviousTopHash(), actual.getPreviousTopHash());
     assertArrayEquals(expected.getSignature(), actual.getSignature());
-    assertEquals(expected.getRelevantLen(), actual.getRelevantLen());
+    assertEquals(expected.getRelevantLength(), actual.getRelevantLength());
     assertEquals(expected.getPayload(), actual.getPayload());
   }
 
@@ -406,8 +406,8 @@ class PeerReviewWireRoundTripTest {
 
       ProofInconsistent read = roundTrip(p, Evidence::serialize, buf -> new ProofInconsistent(buf, AUTHENTICATORS, HASH));
 
-      assertEquals(p.getAuth1(), read.getAuth1());
-      assertEquals(p.getAuth2(), read.getAuth2());
+      assertEquals(p.getFirstAuthenticator(), read.getFirstAuthenticator());
+      assertEquals(p.getSecondAuthenticator(), read.getSecondAuthenticator());
       if (withSnippet) {
         assertEquals(p.getSnippet(), read.getSnippet());
       } else {
@@ -526,7 +526,7 @@ class PeerReviewWireRoundTripTest {
 
     assertEquals(e.getRemoteId(), read.getRemoteId());
     assertEquals(4, read.getAckedSeq());
-    assertEquals(Long.MAX_VALUE, read.getHisSeq());
+    assertEquals(Long.MAX_VALUE, read.getPeerSeq());
     assertArrayEquals(e.getHTopMinusOne(), read.getHTopMinusOne());
     assertArrayEquals(e.getSignature(), read.getSignature());
   }

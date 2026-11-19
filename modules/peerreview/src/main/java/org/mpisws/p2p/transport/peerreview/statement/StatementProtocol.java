@@ -255,7 +255,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
          // NOTE: This call puts the authenticator in our authInStore. This is intentional! Otherwise the bad guys
          // could fork their logs and send forked messages only as CHAL_SENDs.
-         Authenticator authenticator = peerreview.extractAuthenticator(peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()), udm.getTopSeq(), EVT_SEND, innerHash, udm.getHTopMinusOne(), udm.getSignature());
+         Authenticator authenticator = peerreview.extractAuthenticator(peerreview.getIdentifierExtractor().extractIdentifier(udm.getSenderHandle()), udm.getTopSeq(), EVT_SEND, innerHash, udm.getPreviousTopHash(), udm.getSignature());
          if (authenticator == null) {
            logger.warn("Message in SEND challenge is not properly signed; discarding");
            idx.finish();
@@ -266,22 +266,22 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
        case PROOF_INCONSISTENT: {
          ProofInconsistent pi = (ProofInconsistent)payload;
 
-         if (!peerreview.verify(subject, pi.getAuth1())) {
+         if (!peerreview.verify(subject, pi.getFirstAuthenticator())) {
            logger.warn("INCONSISTENT proof's first authenticator has an invalid signature");
            idx.finish();
            return;
          }
 
-         if (!peerreview.verify(subject, pi.getAuth2())) {
+         if (!peerreview.verify(subject, pi.getSecondAuthenticator())) {
            logger.warn("INCONSISTENT proof's second authenticator has an invalid signature");
            idx.finish();
            return;
          }
 
-         long seq1 = pi.getAuth1().getSeq();
-         long seq2 = pi.getAuth2().getSeq();
-         byte[] hash1 = pi.getAuth1().getHash();
-         byte[] hash2 = pi.getAuth2().getHash();
+         long seq1 = pi.getFirstAuthenticator().getSeq();
+         long seq2 = pi.getSecondAuthenticator().getSeq();
+         byte[] hash1 = pi.getFirstAuthenticator().getHash();
+         byte[] hash2 = pi.getSecondAuthenticator().getHash();
 
          if(pi.getSnippet() == null) {
            if (seq1 != seq2) {

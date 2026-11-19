@@ -148,7 +148,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     return senderHandle;
   }
 
-  public byte[] getHTopMinusOne() {
+  public byte[] getPreviousTopHash() {
     return hTopMinusOne;
   }
 
@@ -156,7 +156,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     return signature;
   }
 
-  public int getRelevantLen() {
+  public int getRelevantLength() {
     return relevantLen;
   }
 
@@ -165,8 +165,8 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
   }
 
   public EvtRecv<Handle> getReceiveEvent(HashProvider hasher) {
-    if (getRelevantLen() < getPayload().remaining()) {
-      return new EvtRecv<Handle>(getSenderHandle(), getTopSeq(), getPayload(), getRelevantLen(), hasher);
+    if (getRelevantLength() < getPayload().remaining()) {
+      return new EvtRecv<Handle>(getSenderHandle(), getTopSeq(), getPayload(), getRelevantLength(), hasher);
     } else {
       return new EvtRecv<Handle>(getSenderHandle(), getTopSeq(), getPayload());
     }
@@ -176,7 +176,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       myId.serialize(sob);
-      sob.writeBoolean(getRelevantLen() < getPayloadLen());
+      sob.writeBoolean(getRelevantLength() < getPayloadLength());
       return getInnerHash(sob.getByteBuffer(), hasher);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
@@ -188,7 +188,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
       senderHandle.serialize(sob);
       sob.writeLong(topSeq);
-      sob.writeBoolean(relevantLen < getPayloadLen());
+      sob.writeBoolean(relevantLen < getPayloadLength());
       return getInnerHash(sob.getByteBuffer(),hasher);
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
@@ -208,7 +208,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
 
   }
 
-  public int getPayloadLen() {
+  public int getPayloadLength() {
     return payload.length;
   }
 
