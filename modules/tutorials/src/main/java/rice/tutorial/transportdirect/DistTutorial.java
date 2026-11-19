@@ -93,12 +93,12 @@ public class DistTutorial {
        * Swap in Direct instead of wire.
        */
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(final InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
-        DirectTransportLayer<InetSocketAddress, ByteBuffer> tl = new DirectTransportLayer<InetSocketAddress, ByteBuffer>(
-            innermostAddress, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment());
-        simulator.registerNode(innermostAddress, tl, simulator.generateNodeRecord());
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(final InetSocketAddress innermostAddress, PastryNode pastryNode) throws IOException {
+        DirectTransportLayer<InetSocketAddress, ByteBuffer> directTransportLayer = new DirectTransportLayer<InetSocketAddress, ByteBuffer>(
+            innermostAddress, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pastryNode.getEnvironment());
+        simulator.registerNode(innermostAddress, directTransportLayer, simulator.generateNodeRecord());
 
-        return tl;
+        return directTransportLayer;
       }
     };
 
@@ -168,10 +168,10 @@ public class DistTutorial {
       for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
         if (i != 0) { // don't send to self
           // select the item
-          NodeHandle nh = leafSet.get(i);
+          NodeHandle nodeHandle = leafSet.get(i);
 
           // send the message directly to the node
-          app.routeMyMsgDirect(nh);
+          app.routeMyMsgDirect(nodeHandle);
 
           // wait a bit
           env.getTimeSource().sleep(100);

@@ -99,11 +99,11 @@ public class DistTutorial {
       // boot the node
       node.boot(bootaddress);
 
-      PriorityTransportLayer<MultiInetSocketAddress> ptl = (PriorityTransportLayer<MultiInetSocketAddress>)node.getAttributes().get(SocketPastryNodeFactory.PRIORITY_TL);
-      ptl.addPriorityTransportLayerListener(new PriorityTransportLayerListener<MultiInetSocketAddress>() {
+      PriorityTransportLayer<MultiInetSocketAddress> priorityTransportLayer = (PriorityTransportLayer<MultiInetSocketAddress>)node.getAttributes().get(SocketPastryNodeFactory.PRIORITY_TL);
+      priorityTransportLayer.addPriorityTransportLayerListener(new PriorityTransportLayerListener<MultiInetSocketAddress>() {
 
         @Override
-        public void wrote(int bytes, MultiInetSocketAddress i,
+        public void wrote(int bytes, MultiInetSocketAddress remoteAddress,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
           Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
@@ -117,36 +117,18 @@ public class DistTutorial {
           if (typeS != null) {
             type = typeS.shortValue();
           }
-          System.out.println(node+" wrote a "+messageClass+" of size "+bytes+" to "+i+" addr:"+address+" type:"+type+" "+toString);
+          System.out.println(node+" wrote a "+messageClass+" of size "+bytes+" to "+remoteAddress+" addr:"+address+" type:"+type+" "+toString);
         }
 
         @Override
-        public void read(int bytes, MultiInetSocketAddress i,
+        public void read(int bytes, MultiInetSocketAddress remoteAddress,
             Map<String, Object> options, boolean passthrough, boolean socket) {
-          System.out.println(node+" read a message of size "+bytes+" from "+i);
+          System.out.println(node+" read a message of size "+bytes+" from "+remoteAddress);
 
         }
 
         @Override
-        public void enqueued(int bytes, MultiInetSocketAddress i,
-            Map<String, Object> options, boolean passthrough, boolean socket) {
-          int address = 0;
-          Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
-          if (addressI != null) {
-            address = addressI.intValue();
-          }
-          String messageClass = (String)options.get(CommonAPITransportLayer.MSG_CLASS);
-          String toString = (String)options.get(CommonAPITransportLayer.MSG_STRING);
-          short type = 0;
-          Short typeS = (Short)options.get(CommonAPITransportLayer.MSG_TYPE);
-          if (typeS != null) {
-            type = typeS.shortValue();
-          }
-          System.out.println(node+" enqueued a "+messageClass+" of size "+bytes+" to "+i+" addr:"+address+" type:"+type+" "+toString);
-        }
-
-        @Override
-        public void dropped(int bytes, MultiInetSocketAddress i,
+        public void enqueued(int bytes, MultiInetSocketAddress remoteAddress,
             Map<String, Object> options, boolean passthrough, boolean socket) {
           int address = 0;
           Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
@@ -160,7 +142,25 @@ public class DistTutorial {
           if (typeS != null) {
             type = typeS.shortValue();
           }
-          System.out.println(node+" dropped a "+messageClass+" of size "+bytes+" to "+i+" addr:"+address+" type:"+type+" "+toString);
+          System.out.println(node+" enqueued a "+messageClass+" of size "+bytes+" to "+remoteAddress+" addr:"+address+" type:"+type+" "+toString);
+        }
+
+        @Override
+        public void dropped(int bytes, MultiInetSocketAddress remoteAddress,
+            Map<String, Object> options, boolean passthrough, boolean socket) {
+          int address = 0;
+          Integer addressI = (Integer)options.get(CommonAPITransportLayer.MSG_ADDR);
+          if (addressI != null) {
+            address = addressI.intValue();
+          }
+          String messageClass = (String)options.get(CommonAPITransportLayer.MSG_CLASS);
+          String toString = (String)options.get(CommonAPITransportLayer.MSG_STRING);
+          short type = 0;
+          Short typeS = (Short)options.get(CommonAPITransportLayer.MSG_TYPE);
+          if (typeS != null) {
+            type = typeS.shortValue();
+          }
+          System.out.println(node+" dropped a "+messageClass+" of size "+bytes+" to "+remoteAddress+" addr:"+address+" type:"+type+" "+toString);
         }
       });
 
@@ -213,10 +213,10 @@ public class DistTutorial {
       for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
         if (i != 0) { // don't send to self
           // select the item
-          NodeHandle nh = leafSet.get(i);
+          NodeHandle nodeHandle = leafSet.get(i);
 
           // send the message directly to the node
-          app.routeMyMsgDirect(nh);
+          app.routeMyMsgDirect(nodeHandle);
 
           // wait a bit
           env.getTimeSource().sleep(100);

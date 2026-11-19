@@ -121,41 +121,41 @@ public class BandwidthMeasuringTLTest implements Application {
 
       @Override
       protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(
-          InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
-        TransportLayer<InetSocketAddress, ByteBuffer> wtl = super.buildWireTransportLayer(innermostAddress, pn);
+          InetSocketAddress innermostAddress, PastryNode pastryNode) throws IOException {
+        TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer = super.buildWireTransportLayer(innermostAddress, pastryNode);
 
-        final BandwidthLimitingTransportLayer<InetSocketAddress> ret = new BandwidthLimitingTransportLayer<InetSocketAddress>(wtl,40000,1000,pn.getEnvironment());
+        final BandwidthLimitingTransportLayer<InetSocketAddress> limitingLayer = new BandwidthLimitingTransportLayer<InetSocketAddress>(wireTransportLayer,40000,1000,pastryNode.getEnvironment());
 
-        final BandwidthMeasuringTransportLayer<InetSocketAddress> ret2 = new BandwidthMeasuringTransportLayer<InetSocketAddress>(5000,ret,pn.getEnvironment());
+        final BandwidthMeasuringTransportLayer<InetSocketAddress> measuringLayer = new BandwidthMeasuringTransportLayer<InetSocketAddress>(5000,limitingLayer,pastryNode.getEnvironment());
 
-        pn.getEnvironment().getSelectorManager().schedule(new TimerTask() {
+        pastryNode.getEnvironment().getSelectorManager().schedule(new TimerTask() {
 
           @Override
           public void run() {
-            Map<InetSocketAddress, BandwidthUsed> map = ret2.getBandwidthUsed();
-            for (InetSocketAddress addr : map.keySet()) {
-              BandwidthUsed t = map.get(addr);
-              System.out.println("Bandwidth for "+addr+" d:"+t.down()+" u:"+t.up()+" saturated:"+t.saturated());
+            Map<InetSocketAddress, BandwidthUsed> bandwidthUsedByAddress = measuringLayer.getBandwidthUsed();
+            for (InetSocketAddress address : bandwidthUsedByAddress.keySet()) {
+              BandwidthUsed bandwidthUsed = bandwidthUsedByAddress.get(address);
+              System.out.println("Bandwidth for "+address+" d:"+bandwidthUsed.down()+" u:"+bandwidthUsed.up()+" saturated:"+bandwidthUsed.saturated());
             }
           }
         }, 3000, 3000);
 
 
-        return ret2;
+        return measuringLayer;
       }
     };
 
-    PastryNode node1 = factory.newNode();
-    BandwidthMeasuringTLTest app1 = new BandwidthMeasuringTLTest();
-    PastryEndpoint ep1 = (PastryEndpoint)node1.buildEndpoint(app1, null);
-    registerWithDeserializer(ep1);
-    node1.boot((Object)null);
+    PastryNode senderNode = factory.newNode();
+    BandwidthMeasuringTLTest senderApp = new BandwidthMeasuringTLTest();
+    PastryEndpoint senderEndpoint = (PastryEndpoint)senderNode.buildEndpoint(senderApp, null);
+    registerWithDeserializer(senderEndpoint);
+    senderNode.boot((Object)null);
 
-    PastryNode node2 = factory.newNode();
-    BandwidthMeasuringTLTest app2 = new BandwidthMeasuringTLTest();
-    PastryEndpoint ep2 = (PastryEndpoint)node2.buildEndpoint(app2, null);
-    registerWithDeserializer(ep2);
-    node2.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
+    PastryNode receiverNode = factory.newNode();
+    BandwidthMeasuringTLTest receiverApp = new BandwidthMeasuringTLTest();
+    PastryEndpoint receiverEndpoint = (PastryEndpoint)receiverNode.buildEndpoint(receiverApp, null);
+    registerWithDeserializer(receiverEndpoint);
+    receiverNode.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
 
     Thread.sleep(5000);
     System.out.println("Spamming messages.");
@@ -163,7 +163,7 @@ public class BandwidthMeasuringTLTest implements Application {
     long startTime = System.currentTimeMillis();
     while(System.currentTimeMillis() < startTime+5000) {
       for (int ctr = 0; ctr < 100; ctr++) {
-        ep1.route(node2.getNodeId(), new MyMsg(), null);
+        senderEndpoint.route(receiverNode.getNodeId(), new MyMsg(), null);
       }
       Thread.sleep(10);
     }

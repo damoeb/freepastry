@@ -77,7 +77,7 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   /**
    * The lower level transport layer.
    */
-  private final TransportLayer<Identifier, ByteBuffer> tl;
+  private final TransportLayer<Identifier, ByteBuffer> transportLayer;
 
   /**
    * The environment
@@ -108,19 +108,19 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
    * 10240,1000
    *
    * @param bucketSize bytes to send
-   * @param bucketTimelimit in millis
+   * @param bucketTimeLimitMillis how often the bucket is refilled, in millis
    */
   public BandwidthLimitingTransportLayer(
-      TransportLayer<Identifier, ByteBuffer> tl,
-      int bucketSize, int bucketTimelimit,
+      TransportLayer<Identifier, ByteBuffer> transportLayer,
+      int bucketSize, int bucketTimeLimitMillis,
       Environment env) {
     this.environment = env;
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     BUCKET_SIZE = bucketSize;
-    BUCKET_TIME_LIMIT = bucketTimelimit;
+    BUCKET_TIME_LIMIT = bucketTimeLimitMillis;
     logger = env.getLogManager().getLogger(BandwidthLimitingTransportLayer.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
 
     environment.getSelectorManager().getTimer().schedule(new TimerTask(){
       @Override
@@ -137,27 +137,27 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   }
 
   @Override
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m,
+  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier, ByteBuffer message,
       final MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
 
     final MessageRequestHandleImpl<Identifier, ByteBuffer> returnMe =
-      new MessageRequestHandleImpl<Identifier, ByteBuffer>(i, m, options);
+      new MessageRequestHandleImpl<Identifier, ByteBuffer>(identifier, message, options);
 
     boolean success = true;
     synchronized(this) {
-      if (m.remaining() > bucket) {
+      if (message.remaining() > bucket) {
         success = false;
       } else {
-        bucket-=m.remaining();
+        bucket-=message.remaining();
       }
     }
     if (!success) {
-      logger.debug("Dropping message {} because not enough bandwidth:{}", m, bucket);
-      if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, new NotEnoughBandwidthException(bucket, m.remaining()));
+      logger.debug("Dropping message {} because not enough bandwidth:{}", message, bucket);
+      if (deliverAckToMe != null) deliverAckToMe.sendFailed(returnMe, new NotEnoughBandwidthException(bucket, message.remaining()));
       return returnMe;
     }
 
-    returnMe.setSubCancellable(tl.sendMessage(i,m,new MessageCallback<Identifier, ByteBuffer>() {
+    returnMe.setSubCancellable(transportLayer.sendMessage(identifier,message,new MessageCallback<Identifier, ByteBuffer>() {
       @Override
       public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
         if (deliverAckToMe != null) deliverAckToMe.ack(returnMe);
@@ -172,17 +172,17 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   }
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(Identifier i, final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
-    final SocketRequestHandleImpl<Identifier> returnMe = new SocketRequestHandleImpl<Identifier>(i,options, logger);
-    returnMe.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, Map<String, Object> options) {
+    final SocketRequestHandleImpl<Identifier> returnMe = new SocketRequestHandleImpl<Identifier>(identifier,options, logger);
+    returnMe.setSubCancellable(transportLayer.openSocket(identifier, new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        deliverSocketToMe.receiveResult(returnMe, new BandwidthLimitingSocket(sock));
+      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket) {
+        deliverSocketToMe.receiveResult(returnMe, new BandwidthLimitingSocket(socket));
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
-        deliverSocketToMe.receiveException(returnMe, ex);
+      public void receiveException(SocketRequestHandle<Identifier> cancellable, Exception exception) {
+        deliverSocketToMe.receiveException(returnMe, exception);
       }
     }, options));
     return returnMe;
@@ -195,8 +195,8 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
-    callback.incomingSocket(new BandwidthLimitingSocket(s));
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+    callback.incomingSocket(new BandwidthLimitingSocket(socket));
   }
 
   /**
@@ -216,45 +216,45 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
     }
 
     @Override
-    public long write(ByteBuffer srcs) throws IOException {
-      if (srcs.remaining() <= bucket) {
-        long ret = super.write(srcs);
-        if (ret >= 0) {
+    public long write(ByteBuffer source) throws IOException {
+      if (source.remaining() <= bucket) {
+        long bytesWritten = super.write(source);
+        if (bytesWritten >= 0) {
           // EOF is usually -1
           synchronized(this) {
-            bucket -= (int) ret;
+            bucket -= (int) bytesWritten;
           }
         }
-        return ret;
+        return bytesWritten;
       }
 
       logger.debug("Limiting {} to {} bytes.", socket, bucket);
 
       // The user is trying to write more than is allowed.  To handle this we
       // will copy the allowed amount into a temporary ByteBuffer and pass that
-      // to the next layer.  It is critical set the proper position of scrs
+      // to the next layer.  It is critical set the proper position of source
       // before returning.  First, let's record the original position.
-      int originalPosition = srcs.position();
+      int originalPosition = source.position();
 
-      // now we create temp, who's size is "bucket"
-      ByteBuffer temp = ByteBuffer.wrap(srcs.array(), srcs.arrayOffset() + originalPosition, bucket);
+      // now we create allowedBuffer, whose size is "bucket"
+      ByteBuffer allowedBuffer = ByteBuffer.wrap(source.array(), source.arrayOffset() + originalPosition, bucket);
 
-      // try to write our temp buffer
-      long ret = super.write(temp);
+      // try to write our allowedBuffer
+      long bytesWritten = super.write(allowedBuffer);
 
-      if (ret < 0) {
+      if (bytesWritten < 0) {
         // there was a problem
-        return ret;
+        return bytesWritten;
       }
 
       // allocate the bandwidth
       synchronized(this) {
-        bucket -= (int) ret;
+        bucket -= (int) bytesWritten;
       }
 
       // we need to properly set the position
-      srcs.position(originalPosition+(int)ret);
-      return ret;
+      source.position(originalPosition+(int)bytesWritten);
+      return bytesWritten;
     }
 
     /**
@@ -284,9 +284,9 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
      */
     public void notifyBandwidthRefilled() {
       if (storedWriter != null) {
-        P2PSocketReceiver<Identifier> temp = storedWriter;
+        P2PSocketReceiver<Identifier> writerToResume = storedWriter;
         storedWriter = null;
-        super.register(false, true, temp);
+        super.register(false, true, writerToResume);
       }
     }
 
@@ -308,39 +308,39 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean shouldAccept) {
+    transportLayer.acceptMessages(shouldAccept);
   }
 
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean shouldAccept) {
+    transportLayer.acceptSockets(shouldAccept);
   }
 
   @Override
   public Identifier getLocalIdentifier() {
-    return tl.getLocalIdentifier();
+    return transportLayer.getLocalIdentifier();
   }
 
   @Override
   public void setErrorHandler(ErrorHandler<Identifier> handler) {
     this.errorHandler = handler;
-    tl.setErrorHandler(handler);
+    transportLayer.setErrorHandler(handler);
   }
 
   @Override
   public void destroy() {
-    tl.destroy();
+    transportLayer.destroy();
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier identifier, ByteBuffer message, Map<String, Object> options) throws IOException {
     // notify listeners
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, message, options);
   }
 
   public static PastryNodeFactory exampleA(int bindport, Environment env,
-      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {
+      NodeIdFactory nidFactory, final int bucketSize, final int bucketTimeLimitMillis) throws IOException {
 
     // anonymously extend SPNF
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
@@ -351,54 +351,54 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
        */
       @Override
       protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(
-          InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+          InetSocketAddress innermostAddress, PastryNode pastryNode) throws IOException {
         // get the default layer
-        TransportLayer<InetSocketAddress, ByteBuffer> wtl =
-          super.buildWireTransportLayer(innermostAddress, pn);
+        TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer =
+          super.buildWireTransportLayer(innermostAddress, pastryNode);
 
         // wrap it with our layer
         return new BandwidthLimitingTransportLayer<InetSocketAddress>(
-            wtl, amt, time, pn.getEnvironment());
+            wireTransportLayer, bucketSize, bucketTimeLimitMillis, pastryNode.getEnvironment());
       }
     };
     return factory;
   }
 
   public static PastryNodeFactory exampleB(int bindport, Environment env,
-      NodeIdFactory nidFactory, final int amt, final int time) throws IOException {
+      NodeIdFactory nidFactory, final int bucketSize, final int bucketTimeLimitMillis) throws IOException {
     PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env) {
 
       @Override
       protected TransLivenessProximity<MultiInetSocketAddress, ByteBuffer> getSourceRouteManagerLayer(
-          TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> ltl,
+          TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> sourceRouteTransportLayer,
           LivenessProvider<SourceRoute<MultiInetSocketAddress>> livenessProvider,
           Pinger<SourceRoute<MultiInetSocketAddress>> pinger,
-          PastryNode pn,
+          PastryNode pastryNode,
           MultiInetSocketAddress proxyAddress,
-          MultiAddressSourceRouteFactory esrFactory) throws IOException {
+          MultiAddressSourceRouteFactory sourceRouteFactory) throws IOException {
 
         // get the default layer
-        final TransLivenessProximity<MultiInetSocketAddress, ByteBuffer> srm =
+        final TransLivenessProximity<MultiInetSocketAddress, ByteBuffer> sourceRouteManagerLayer =
           super.getSourceRouteManagerLayer(
-            ltl, livenessProvider, pinger, pn, proxyAddress, esrFactory);
+            sourceRouteTransportLayer, livenessProvider, pinger, pastryNode, proxyAddress, sourceRouteFactory);
 
         // wrap the default layer with our layer
-        final BandwidthLimitingTransportLayer<MultiInetSocketAddress> bll =
+        final BandwidthLimitingTransportLayer<MultiInetSocketAddress> bandwidthLimitingLayer =
           new BandwidthLimitingTransportLayer<MultiInetSocketAddress>(
-            srm.getTransportLayer(), amt, time, pn.getEnvironment());
+            sourceRouteManagerLayer.getTransportLayer(), bucketSize, bucketTimeLimitMillis, pastryNode.getEnvironment());
 
         return new TransLivenessProximity<MultiInetSocketAddress, ByteBuffer>(){
           @Override
           public TransportLayer<MultiInetSocketAddress, ByteBuffer> getTransportLayer() {
-            return bll;
+            return bandwidthLimitingLayer;
           }
           @Override
           public LivenessProvider<MultiInetSocketAddress> getLivenessProvider() {
-            return srm.getLivenessProvider();
+            return sourceRouteManagerLayer.getLivenessProvider();
           }
           @Override
           public ProximityProvider<MultiInetSocketAddress> getProximityProvider() {
-            return srm.getProximityProvider();
+            return sourceRouteManagerLayer.getProximityProvider();
           }
         };
       }
