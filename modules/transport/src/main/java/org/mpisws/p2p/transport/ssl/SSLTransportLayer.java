@@ -126,7 +126,7 @@ public class SSLTransportLayer<Identifier, MessageType>
     this.clientAuth = clientAuth;
 
     try {
-      this.context = SSLContext.getInstance("TLS");
+      this.context = SSLContext.getInstance("TLSv1.3");
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
     kmf.init(keyStore, keyPassword);
 

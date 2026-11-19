@@ -74,7 +74,11 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
 
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509v1CertificateBuilder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -97,6 +101,8 @@ import rice.pastry.standard.RandomNodeIdFactory;
 public class CertificateAuthorityTool {
 
   static final SecureRandom random = new SecureRandom();
+  /** size of the random serial numbers of node certificates */
+  private static final int SERIAL_BITS = 128;
   /** Was SHA1withRSA, which JDK 25 rejects for certificate paths in TLS. */
   public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256withRSA";
   /** RSA modulus size for generated CA and node keys (was 768, which JDK 25 rejects in TLS). */
@@ -220,7 +226,7 @@ public class CertificateAuthorityTool {
 
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(1).toInstant();
-    return sign(CN,key,exp,System.currentTimeMillis());
+    return sign(CN,key,Instant.now(),exp,randomSerial(),cert,keyPair.getPrivate());
   }
 
   /**
@@ -237,7 +243,7 @@ public class CertificateAuthorityTool {
    * @param notAfter end of the validity period
    */
   public X509Certificate signNodeId(Id id, PublicKey key, Instant notBefore, Instant notAfter) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    return sign(id.toStringFull(), key, notBefore, notAfter, System.currentTimeMillis(), cert, keyPair.getPrivate());
+    return sign(id.toStringFull(), key, notBefore, notAfter, randomSerial(), cert, keyPair.getPrivate());
   }
 
   public static X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
@@ -245,10 +251,28 @@ public class CertificateAuthorityTool {
   }
 
   public static X509Certificate sign(String CN, PublicKey publicKey, Instant startDate, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+    return sign(CN, publicKey, startDate, expiryDate, BigInteger.valueOf(serialNumber), caCert, privateKey);
+  }
+
+  /** @return a random positive serial number of 128 bits, as CAs use so that serials cannot be predicted */
+  static BigInteger randomSerial() {
+    BigInteger serial;
+    do {
+      serial = new BigInteger(SERIAL_BITS, random);
+    } while (serial.signum() == 0);
+    return serial;
+  }
+
+  /**
+   * Issues a TLS end-entity certificate: it is no CA (basicConstraints CA:false, critical), may be used to
+   * sign and to encipher keys (keyUsage digitalSignature, keyEncipherment), and as a TLS server and client
+   * (extendedKeyUsage serverAuth, clientAuth).
+   */
+  public static X509Certificate sign(String CN, PublicKey publicKey, Instant startDate, Instant expiryDate, BigInteger serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     X500Principal subjectName = new X500Principal("CN="+CN);
 
     X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
-        caCert.getSubjectX500Principal(), BigInteger.valueOf(serialNumber), Date.from(startDate), Date.from(expiryDate),
+        caCert.getSubjectX500Principal(), serialNumber, Date.from(startDate), Date.from(expiryDate),
         subjectName, publicKey);
 
     try {
@@ -257,6 +281,10 @@ public class CertificateAuthorityTool {
                               extUtils.createAuthorityKeyIdentifier(caCert));
       certGen.addExtension(Extension.subjectKeyIdentifier, false,
                               extUtils.createSubjectKeyIdentifier(publicKey));
+      certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+      certGen.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
+      certGen.addExtension(Extension.extendedKeyUsage, false,
+                              new ExtendedKeyUsage(new KeyPurposeId[] {KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth}));
     } catch (CertIOException cioe) {
       throw new CertificateEncodingException(cioe);
     }

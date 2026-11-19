@@ -52,6 +52,8 @@ import rice.pastry.standard.NodeIdCertificate;
 public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   private final KeyStore store;
+  /** the CA certificate only: no node certificate is a trust anchor */
+  private final KeyStore trustStore;
   private final char[] keyPassword;
   /** verification connections under way at most, to all addresses together */
   public static final int MAX_PROBES_IN_FLIGHT = 32;
@@ -77,13 +79,14 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   /**
    * @param store a PKCS12 key store as written by {@code CertificateAuthorityTool -store}: the node's key and certificate, and the
-   *     CA certificate as the trust anchor; it is both the key store and the trust store of the TLS layer
+   *     CA certificate as the trust anchor; it is the key store of the TLS layer, and the trust store is derived from it (the CA certificate only, see {@link #trustStoreOf})
    * @param keyPassword the password of the node's key (also handed to the TLS layer)
    * @throws GeneralSecurityException if the certificate is not valid for the CA now, or does not belong to the node's key
    */
   public CertifiedSocketPastryNodeFactory(KeyStore store, char[] keyPassword, int startPort, Environment env) throws IOException, GeneralSecurityException {
     super(CertifiedNodeIdFactory.fromKeyStore(store, keyPassword, env), startPort, env);
     this.store = store;
+    this.trustStore = trustStoreOf(store);
     this.keyPassword = keyPassword.clone();
   }
 
@@ -91,8 +94,11 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * @return the trust store of the TLS layer for a node store: it holds the CA certificate only, so that no node
    *     certificate (not even this node's own) is a trust anchor
    */
-  public static KeyStore trustStoreOf(KeyStore store) {
-    return store;
+  public static KeyStore trustStoreOf(KeyStore store) throws GeneralSecurityException, IOException {
+    KeyStore trust = KeyStore.getInstance(store.getType());
+    trust.load(null, null);
+    trust.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, store.getCertificate(NodeIdCertificate.CA_CERT_ALIAS));
+    return trust;
   }
 
   /** @return the bind strategy, which tells which ids are authenticated */
@@ -105,7 +111,7 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
       TransportLayer<MultiInetSocketAddress, ByteBuffer> etl, PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
     try {
       return new SSLTransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(
-          super.getSourceRouteTransportLayer(etl, pn, esrFactory), store, keyPassword, store,
+          super.getSourceRouteTransportLayer(etl, pn, esrFactory), store, keyPassword, trustStore,
           SSLTransportLayer.CLIENT_AUTH_REQUIRED, getSubjectValidator(), pn.getEnvironment());
     } catch (IOException e) {
       throw new IllegalStateException(e);

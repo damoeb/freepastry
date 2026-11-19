@@ -72,6 +72,11 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   private final P2PSocket<Identifier> socket;
 
+  /** the only protocol version spoken: TLS 1.3 (no peer of this code base needs TLS 1.2) */
+  private static final String[] ENABLED_PROTOCOLS = {"TLSv1.3"};
+  /** the TLS 1.3 cipher suites of RFC 8446 that this code base uses, all AEAD */
+  private static final String[] ENABLED_CIPHER_SUITES = {"TLS_AES_256_GCM_SHA384", "TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"};
+
   private final SSLEngine engine;
   private final SSLTransportLayer<Identifier, ?> sslTL;
 
@@ -118,6 +123,9 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     this.logger = sslTL.getLogger();
 
     engine = sslTL.getContext().createSSLEngine(s.getIdentifier().toString(), 0);
+    // pinned, not the JDK defaults (which a security property or a newer JDK may widen): TLS 1.3 with AEAD cipher suites only
+    engine.setEnabledProtocols(ENABLED_PROTOCOLS.clone());
+    engine.setEnabledCipherSuites(ENABLED_CIPHER_SUITES.clone());
     engine.setUseClientMode(!server);
     if (server && useClientAuth) engine.setNeedClientAuth(true);
 
