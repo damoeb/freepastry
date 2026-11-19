@@ -23,6 +23,10 @@ class BigMessageReaderTest {
   private final TransportListeners<String> listeners = new TransportListeners<>();
 
   private BigMessageReader<String> reader() {
+    return reader(MAX);
+  }
+
+  private BigMessageReader<String> reader(int max) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
       public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {
@@ -33,7 +37,7 @@ class BigMessageReaderTest {
       public void incomingSocket(P2PSocket<String> s) {}
     };
     EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
-        LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, MAX, List.of(), listeners,
+        LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, max, List.of(), listeners,
         () -> null, () -> callback, () -> false, id -> null);
     return new BigMessageReader<>(ctx);
   }
@@ -108,5 +112,22 @@ class BigMessageReaderTest {
     target.receiveSelectResult(new FakeSocket(wire.array()), true, false);
 
     assertEquals(List.of(3), reads);
+  }
+
+  @Test
+  @DisplayName("idle sockets that only announce a maximum size do not pin the announced memory")
+  void announcingASizeDoesNotAllocateIt() throws Exception {
+    int max = 4 * 1024 * 1024;
+    int sockets = 300;
+    long pinned = 0;
+    for (int n = 0; n < sockets; n++) {
+      BigMessageReader<String> target = reader(max);
+      target.receiveSelectResult(new FakeSocket(size(max)), true, false);
+      if (target.msgBuf != null) {
+        pinned += target.msgBuf.capacity();
+      }
+    }
+
+    assertTrue(pinned < 4L * 1024 * 1024, "pinned " + pinned + " bytes for " + sockets + " idle sockets");
   }
 }
