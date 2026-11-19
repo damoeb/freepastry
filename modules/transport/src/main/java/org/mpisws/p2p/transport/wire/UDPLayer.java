@@ -43,9 +43,9 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
-import rice.Destructable;
+import rice.Destructible;
 
-public interface UDPLayer extends Destructable {
+public interface UDPLayer extends Destructible {
 
   void acceptMessages(boolean b);
 

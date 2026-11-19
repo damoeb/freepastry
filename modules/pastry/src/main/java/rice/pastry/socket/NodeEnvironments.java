@@ -45,7 +45,7 @@ import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.pastry.Id;
 import rice.pastry.transport.PastryFactoryConfig;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Derives the environment of each node a {@link SocketPastryNodeFactory} builds from the factory's root environment.
@@ -81,7 +81,7 @@ final class NodeEnvironments {
       LogManager lman = cloneLogManager(rootEnvironment, nodeId);
 
       // new selector
-      SelectorManager sman = cloneSelectorManager(rootEnvironment, nodeId, lman);
+      SelectorLoop sman = cloneSelectorManager(rootEnvironment, nodeId, lman);
 
       // new processor
       Processor proc = cloneProcessor(rootEnvironment, nodeId);
@@ -125,10 +125,10 @@ final class NodeEnvironments {
     return lman;
   }
 
-  private SelectorManager cloneSelectorManager(Environment rootEnvironment, Id nodeId, LogManager lman) {
-    SelectorManager sman = rootEnvironment.getSelectorManager();
+  private SelectorLoop cloneSelectorManager(Environment rootEnvironment, Id nodeId, LogManager lman) {
+    SelectorLoop sman = rootEnvironment.getSelectorManager();
     if (config.selectorPerNode()) {
-      sman = new SelectorManager(nodeId.toString() + " Selector",
+      sman = new SelectorLoop(nodeId.toString() + " Selector",
           rootEnvironment.getTimeSource(), lman, rootEnvironment.getRandomSource());
     }
     return sman;

@@ -46,7 +46,7 @@ import java.util.OptionalLong;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
-import rice.Destructable;
+import rice.Destructible;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.exception.simple.SimpleExceptionStrategy;
 import rice.environment.logging.LogManager;
@@ -61,7 +61,7 @@ import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 
 /**
@@ -70,11 +70,11 @@ import rice.selector.SelectorManager;
  *
  * @author Jeff Hoye
  */
-public class Environment implements Destructable {
+public class Environment implements Destructible {
   @SuppressWarnings("MutablePublicArray") // public API, passed to the Environment constructors
   public static final String[] defaultParamFileArray = {"freepastry"};
 
-  private SelectorManager selectorManager;
+  private SelectorLoop selectorManager;
   private Processor processor;
   private RandomSource randomSource;
   private TimeSource time;
@@ -83,14 +83,14 @@ public class Environment implements Destructable {
   private Logger logger;
   private ExceptionStrategy exceptionStrategy;
 
-  private HashSet<Destructable> destructables = new HashSet<Destructable>();
+  private HashSet<Destructible> destructables = new HashSet<Destructible>();
 
   /**
    * Constructor.  You can provide null values for all parameters except params, which will result
    * in a default choice.  If you want different defaults, consider extending Environment
    * and providing your own chooseDefaults() method.
    *
-   * @param sm the SelectorManager.  Default: rice.selector.SelectorManager
+   * @param sm the SelectorLoop.  Default: rice.selector.SelectorLoop
    * @param proc the Processor.  Default: rice.environment.processing.simple.SimpleProcessor,
    *   or rice.environment.processing.sim.SimProcessor if environment_use_sim_processor is set
    * @param rs the RandomSource.  Default: rice.environment.random.simple.SimpleRandomSource
@@ -101,7 +101,7 @@ public class Environment implements Destructable {
    * @throws IllegalArgumentException if params is null
    */
   @SuppressWarnings("NullAway") // chooseDefaults() replaces every null argument before the fields are used
-  public Environment(@Nullable SelectorManager sm, @Nullable Processor proc, @Nullable RandomSource rs, @Nullable TimeSource time, @Nullable LogManager lm, Parameters params, @Nullable ExceptionStrategy strategy) {
+  public Environment(@Nullable SelectorLoop sm, @Nullable Processor proc, @Nullable RandomSource rs, @Nullable TimeSource time, @Nullable LogManager lm, Parameters params, @Nullable ExceptionStrategy strategy) {
     this.selectorManager = sm;
     this.randomSource = rs;
     this.time = time;
@@ -150,7 +150,7 @@ public class Environment implements Destructable {
     DirectTimeSource dts = new DirectTimeSource(params);
     LogManager lm = generateDefaultLogManager();
     dts.setLogManager(lm);
-    SelectorManager selector = generateDefaultSelectorManager(dts,lm,rs);
+    SelectorLoop selector = generateDefaultSelectorManager(dts,lm,rs);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
     Environment ret = new Environment(selector,proc,rs,dts,lm,
@@ -222,8 +222,8 @@ public class Environment implements Destructable {
     return new Slf4jLogManager();
   }
 
-  public static SelectorManager generateDefaultSelectorManager(TimeSource time, LogManager logging, @Nullable RandomSource randomSource) {
-    return new SelectorManager("Default", time, logging, randomSource);
+  public static SelectorLoop generateDefaultSelectorManager(TimeSource time, LogManager logging, @Nullable RandomSource randomSource) {
+    return new SelectorLoop("Default", time, logging, randomSource);
   }
 
   public static Processor generateDefaultProcessor() {
@@ -231,7 +231,7 @@ public class Environment implements Destructable {
   }
 
   // Accessors
-  public SelectorManager getSelectorManager() {
+  public SelectorLoop getSelectorManager() {
     return selectorManager;
   }
   public Processor getProcessor() {
@@ -268,14 +268,14 @@ public class Environment implements Destructable {
   }
 
   private void callDestroyOnDestructables() {
-    for (Destructable d : new ArrayList<Destructable>(destructables)) {
+    for (Destructible d : new ArrayList<Destructible>(destructables)) {
       d.destroy();
     }
     selectorManager.destroy();
     processor.destroy();
   }
 
-  public void addDestructable(Destructable destructable) {
+  public void addDestructable(Destructible destructable) {
     if (destructable == null) {
       logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
@@ -284,7 +284,7 @@ public class Environment implements Destructable {
 
   }
 
-  public void removeDestructable(Destructable destructable) {
+  public void removeDestructable(Destructible destructable) {
     if (destructable == null) {
       logger.warn("addDestructable(null)", new Exception("Stack Trace"));
       return;
@@ -315,7 +315,7 @@ public class Environment implements Destructable {
     RandomSource rand = cloneRandomSource(lman);
 
     // new selector
-    SelectorManager sman = cloneSelectorManager(prefix, ts, rand, lman, cloneSelector);
+    SelectorLoop sman = cloneSelectorManager(prefix, ts, rand, lman, cloneSelector);
 
     // new processor
     Processor proc = cloneProcessor(prefix, lman, cloneProcessor);
@@ -342,10 +342,10 @@ public class Environment implements Destructable {
     return lman;
   }
 
-  protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
-    SelectorManager sman = getSelectorManager();
+  protected SelectorLoop cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
+    SelectorLoop sman = getSelectorManager();
     if (cloneSelector) {
-      sman = new SelectorManager(prefix + " Selector",
+      sman = new SelectorLoop(prefix + " Selector",
           ts, lman, rs);
     }
     return sman;

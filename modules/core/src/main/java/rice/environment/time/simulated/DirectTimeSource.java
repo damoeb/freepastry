@@ -49,7 +49,7 @@ import rice.environment.EnvironmentConfig;
 import rice.environment.logging.LogManager;
 import rice.environment.params.Parameters;
 import rice.environment.time.TimeSource;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 @SuppressWarnings("SynchronizeOnNonFinalField") // selectorManager is set once by setSelectorManager, before anyone sleeps
@@ -59,7 +59,7 @@ public class DirectTimeSource implements TimeSource {
   // replaced by setLogManager(); the default lets the clock be used on its own
   private Logger logger = LoggerFactory.getLogger(DirectTimeSource.class);
   private final @Nullable String instance;
-  private @Nullable SelectorManager selectorManager;
+  private @Nullable SelectorLoop selectorManager;
 
   /**
    * When destroy is called, throw an interrupted exception on all of these.
@@ -87,11 +87,11 @@ public class DirectTimeSource implements TimeSource {
     logger = manager.getLogger(DirectTimeSource.class, instance);
   }
 
-  private SelectorManager selectorManager() {
+  private SelectorLoop selectorManager() {
     return Objects.requireNonNull(selectorManager, "call setSelectorManager() first");
   }
 
-  public void setSelectorManager(SelectorManager sm) {
+  public void setSelectorManager(SelectorLoop sm) {
     selectorManager = sm;
 
   }
@@ -126,7 +126,7 @@ public class DirectTimeSource implements TimeSource {
 
     @Override
     public void run() {
-      SelectorManager sm = selectorManager();
+      SelectorLoop sm = selectorManager();
       synchronized(sm) {
         done = true;
         sm.notifyAll();
@@ -142,7 +142,7 @@ public class DirectTimeSource implements TimeSource {
 
   @Override
   public void sleep(long delay) throws InterruptedException {
-    SelectorManager sm = selectorManager();
+    SelectorLoop sm = selectorManager();
     if (sm.isSelectorThread()) {
       throw new IllegalStateException("sleep() on the selector thread would block the timers it waits for");
     }

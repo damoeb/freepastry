@@ -40,7 +40,7 @@ package rice.p2p.replication;
 
 import java.io.IOException;
 import org.slf4j.Logger;
-import rice.Destructable;
+import rice.Destructible;
 import rice.Executable;
 import rice.Continuation.ListenerContinuation;
 import rice.Continuation.MultiContinuation;
@@ -74,7 +74,7 @@ import rice.p2p.util.IdBloomFilter;
  * @author Alan Mislove
  */
 @SuppressWarnings("unchecked")
-public class ReplicationImpl implements Replication, Application, Destructable {
+public class ReplicationImpl implements Replication, Application, Destructible {
   /**
    * The amount of time to wait between replications
    */

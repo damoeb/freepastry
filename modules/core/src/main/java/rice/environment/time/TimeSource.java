@@ -41,7 +41,7 @@ package rice.environment.time;
 
 import java.time.Instant;
 
-import rice.Destructable;
+import rice.Destructible;
 
 /**
  * Virtualized clock for FreePastry.
@@ -54,7 +54,7 @@ import rice.Destructable;
  *
  * @author Jeff Hoye
  */
-public interface TimeSource extends Destructable {
+public interface TimeSource extends Destructible {
   /**
    * @return the current time in millis
    */

@@ -42,7 +42,7 @@ import java.util.Collection;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportCallback;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-import rice.Destructable;
+import rice.Destructible;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -52,7 +52,7 @@ import rice.p2p.commonapi.rawserialization.RawSerializable;
  * During normal operation, PeerReview uses this interface to checkpoint the
  * application, and to inquire about the witness set of another node.
  */
-public interface PeerReviewCallback<Handle extends RawSerializable, Identifier extends RawSerializable> extends Destructable, IdentityTransportCallback<Handle, Identifier>,
+public interface PeerReviewCallback<Handle extends RawSerializable, Identifier extends RawSerializable> extends Destructible, IdentityTransportCallback<Handle, Identifier>,
       StatusChangeListener<Identifier> {
   public void init();
   void storeCheckpoint(OutputBuffer buffer) throws IOException;

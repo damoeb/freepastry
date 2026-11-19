@@ -42,11 +42,11 @@ import java.util.function.LongSupplier;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 /**
- * The SelectorManager of a node whose log PeerReview replays: the {@link org.mpisws.p2p.transport.peerreview.replay.record.RecordSM}
+ * The SelectorLoop of a node whose log PeerReview replays: the {@link org.mpisws.p2p.transport.peerreview.replay.record.RecordSM}
  * while the node runs, and the {@link org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM} while an auditor
  * replays its log. Both run the timers and the invocations in the order of
  * {@link #advanceTo(LongSupplier, BooleanSupplier)}, before each input event (a message, a socket event, a
@@ -54,7 +54,7 @@ import rice.selector.TimerTask;
  *
  * @see #advanceTo(LongSupplier, BooleanSupplier)
  */
-public abstract class DeterministicSM extends SelectorManager {
+public abstract class DeterministicSM extends SelectorLoop {
   /** The time of a log without a next event. */
   public static final long NO_EVENT = -1;
 

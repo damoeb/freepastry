@@ -40,7 +40,7 @@ package rice.pastry.messaging;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
-import rice.Destructable;
+import rice.Destructible;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.transport.Deserializer;
@@ -63,7 +63,7 @@ import rice.pastry.transport.Deserializer;
  * @author Andrew Ladd
  */
 
-public class MessageDispatch implements Destructable {
+public class MessageDispatch implements Destructible {
 
   // have modified from HashMap to HashMap to use the internal representation
   // of a LocalAddress.  Otherwise remote node cannot get its message delivered

@@ -41,7 +41,7 @@ package rice.environment.processing;
 
 import rice.Continuation;
 import rice.p2p.commonapi.Cancellable;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Extend this class and implement doWork() if you need to do blocking disk IO.
@@ -52,12 +52,12 @@ import rice.selector.SelectorManager;
  */
 public abstract class WorkRequest<R> implements Runnable, Cancellable {
   private Continuation<? super R, Exception> c;
-  private SelectorManager selectorManager;
+  private SelectorLoop selectorManager;
 
   protected volatile boolean cancelled = false;
   private volatile boolean running = false;
 
-  public WorkRequest(Continuation<? super R, Exception> c, SelectorManager sm){
+  public WorkRequest(Continuation<? super R, Exception> c, SelectorLoop sm){
     this.c = c;
     this.selectorManager = sm;
   }

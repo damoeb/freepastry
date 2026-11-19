@@ -25,7 +25,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +38,7 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 /**
- * Records a node with the {@link RecordSM} while a message arrives by {@link SelectorManager#invoke(Runnable)} from
+ * Records a node with the {@link RecordSM} while a message arrives by {@link SelectorLoop#invoke(Runnable)} from
  * another thread as one of the node's timers is due, then replays the log with the production {@link Verifier}
  * and {@link ReplaySM}. The replay runs every timer due at or before a logged event before that event, so the
  * recording must order them the same way, or the auditor exposes a correct node.
@@ -84,11 +84,11 @@ public class RecordReplayOrderTest {
    * received so far, so a replay that delivers them in another order sends other messages.
    */
   static class StateMachine {
-    final SelectorManager timer;
+    final SelectorLoop timer;
     final Outbox outbox;
     int received;
 
-    StateMachine(SelectorManager timer, Outbox outbox) {
+    StateMachine(SelectorLoop timer, Outbox outbox) {
       this.timer = timer;
       this.outbox = outbox;
     }

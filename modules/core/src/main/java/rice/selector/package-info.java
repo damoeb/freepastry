@@ -35,14 +35,14 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * The selector thread. {@link rice.selector.SelectorManager} is a {@code Thread} that owns a
+ * The selector thread. {@link rice.selector.SelectorLoop} is a {@code Thread} that owns a
  * {@code java.nio.channels.Selector} and, in a loop, runs due {@link rice.selector.TimerTask}s, the
  * {@code Runnable}s queued with {@code invoke()}, and the IO callbacks of the registered
  * {@link rice.selector.SelectionKeyHandler}s. It also implements {@link rice.selector.Timer}.
  * <p>
  * Threading: almost all FreePastry state (transport layers, routing table, leaf set, applications) is
  * owned by this thread. Code on other threads must hand work to it with
- * {@code SelectorManager.invoke()}; {@code isSelectorThread()} tells whether that is necessary.
+ * {@code SelectorLoop.invoke()}; {@code isSelectorThread()} tells whether that is necessary.
  */
 @NullMarked
 package rice.selector;

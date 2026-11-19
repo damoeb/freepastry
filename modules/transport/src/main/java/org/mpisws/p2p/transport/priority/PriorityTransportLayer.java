@@ -61,7 +61,7 @@ import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.slf4j.Logger;
 import rice.environment.Environment;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 
 /**
@@ -131,7 +131,7 @@ public class PriorityTransportLayer<Identifier>
 
   private ErrorHandler<Identifier> errorHandler;
 
-  private final SelectorManager selectorManager;
+  private final SelectorLoop selectorManager;
   private final Environment environment;
 
   private final ArrayList<PrimarySocketListener<Identifier>> primarySocketListeners = new ArrayList<PrimarySocketListener<Identifier>>();

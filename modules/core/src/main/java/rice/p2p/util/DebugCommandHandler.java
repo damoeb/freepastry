@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 public interface DebugCommandHandler {
 
@@ -59,7 +59,7 @@ public interface DebugCommandHandler {
    * @param timeoutMillis how long to wait, in milliseconds of wall-clock time
    * @return the command's output, or a description of why there is none
    */
-  public static String await(CompletableFuture<String> result, SelectorManager selector, long timeoutMillis) {
+  public static String await(CompletableFuture<String> result, SelectorLoop selector, long timeoutMillis) {
     if (!result.isDone() && selector != null && selector.isSelectorThread()) {
       return "error: result not available, and can't wait for it on the selector thread";
     }

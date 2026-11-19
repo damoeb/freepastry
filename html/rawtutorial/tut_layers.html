@@ -97,7 +97,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <h3>The TransportLayer interface:</h3>
 <pre>
-public interface TransportLayer&lt;Identifier, MessageType&gt; extends Destructable {}
+public interface TransportLayer&lt;Identifier, MessageType&gt; extends Destructible {}
 </pre>
 
 <p/>Each transport layer operates on an <i>Identifier</i> (<b>InetSocketAddress</b>, <b>SourceRoute</b>, <b>NodeHandle</b> etc.), and a <i>MessageType</i> (<b>ByteBuffer</b>, <b>RawMessage</b> etc.)

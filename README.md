@@ -98,7 +98,7 @@ Every module has the group id `org.mpisws.p2p`, the version `2.1.0` and the arti
 
 | Module | Directory | Packages | Depends on |
 |---|---|---|---|
-| `freepastry-core` | `modules/core` | `rice` (Continuation, FutureContinuation, Destructable, Executable), `rice.environment`, `rice.selector`, `rice.p2p.commonapi`, `rice.p2p.util`, and `freepastry.params` | Bouncy Castle (bcprov), SLF4J API |
+| `freepastry-core` | `modules/core` | `rice` (Continuation, FutureContinuation, Destructible, Executable), `rice.environment`, `rice.selector`, `rice.p2p.commonapi`, `rice.p2p.util`, and `freepastry.params` | Bouncy Castle (bcprov), SLF4J API |
 | `freepastry-transport` | `modules/transport` | `org.mpisws.p2p.transport`, except `peerreview` | core |
 | `freepastry-filetransfer` | `modules/filetransfer` | `org.mpisws.p2p.filetransfer` | core, transport |
 | `freepastry-pastry` | `modules/pastry` | `rice.pastry` | core, transport |

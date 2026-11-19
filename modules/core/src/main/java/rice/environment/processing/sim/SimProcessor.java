@@ -47,23 +47,23 @@ import rice.environment.processing.WorkRequest;
 import rice.environment.processing.simple.ProcessingRequest;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 public class SimProcessor implements Processor {
-  SelectorManager selector;
+  SelectorLoop selector;
 
-  public SimProcessor(SelectorManager selector) {
+  public SimProcessor(SelectorLoop selector) {
     this.selector = selector;
   }
 
   @Override
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
-      SelectorManager selector, TimeSource ts, LogManager log) {
+      SelectorLoop selector, TimeSource ts, LogManager log) {
     return process(task, command, 0, selector, ts, log);
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
-      SelectorManager selector, TimeSource ts, LogManager log) {
+      SelectorLoop selector, TimeSource ts, LogManager log) {
     ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, 0, 0, log, ts, selector);
     selector.invoke(ret);
     return ret;

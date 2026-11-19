@@ -230,7 +230,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
      * Handle any pending timers. Note that we have to be sure to call them in the exact same
      * order as in the main code; otherwise there can be subtle bugs and side-effects.
      */
-    // This code is the job of the SelectorManager, it's done in the super class of ReplaySM
+    // This code is the job of the SelectorLoop, it's done in the super class of ReplaySM
 
     if (next == null)
       return false;

@@ -44,7 +44,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import rice.Continuation;
-import rice.Destructable;
+import rice.Destructible;
 import rice.p2p.commonapi.Cancellable;
 
 /**
@@ -54,7 +54,7 @@ import rice.p2p.commonapi.Cancellable;
  *
  * @author Jeff Hoye
  */
-public interface InetSocketAddressLookup extends Destructable {
+public interface InetSocketAddressLookup extends Destructible {
 
   /**
    * find nodes outside of our firewall so I can boot

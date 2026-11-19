@@ -71,7 +71,7 @@ import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Destructable;
+import rice.Destructible;
 import rice.Executable;
 import rice.environment.Environment;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
@@ -110,7 +110,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
  */
 
 public class PastryNode implements
-    rice.p2p.commonapi.Node, Destructable, NodeHandleFactory<NodeHandle>,
+    rice.p2p.commonapi.Node, Destructible, NodeHandleFactory<NodeHandle>,
     LivenessProvider<NodeHandle>, ProximityProvider<NodeHandle>,
     ProximityListener<NodeHandle>,
     TransportLayerCallback<NodeHandle, RawMessage>,
@@ -336,7 +336,7 @@ public class PastryNode implements
     addDestructable(myMessageDispatch);
   }
 
-  public Destructable addDestructable(Destructable d) {
+  public Destructible addDestructable(Destructible d) {
     destructables.add(d);
     return d;
   }
@@ -641,7 +641,7 @@ public class PastryNode implements
   }
 
 
-  HashSet<Destructable> destructables = new HashSet<Destructable>();
+  HashSet<Destructible> destructables = new HashSet<Destructible>();
 
   /**
    * Method which kills a PastryNode.  Note, this doesn't implicitly kill the environment.
@@ -653,7 +653,7 @@ public class PastryNode implements
     if (isDestroyed) return;
     logger.info("Destroying {}", this);
     isDestroyed = true;
-    for (Destructable d : destructables) {
+    for (Destructible d : destructables) {
       logger.info("Destroying {}", d);
       d.destroy();
     }

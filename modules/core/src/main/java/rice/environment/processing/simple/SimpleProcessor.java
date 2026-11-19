@@ -49,7 +49,7 @@ import rice.environment.processing.Processor;
 import rice.environment.processing.WorkRequest;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * @author Jeff Hoye
@@ -89,12 +89,12 @@ public class SimpleProcessor implements Processor {
    */
   @Override
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
-      SelectorManager selector, TimeSource ts, LogManager log) {
+      SelectorLoop selector, TimeSource ts, LogManager log) {
     return process(task, command, 0, selector, ts, log);
   }
 
   public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
-      SelectorManager selector, TimeSource ts, LogManager log) {
+      SelectorLoop selector, TimeSource ts, LogManager log) {
     long nextSeq;
     synchronized(SimpleProcessor.this) {
       nextSeq = seq++;

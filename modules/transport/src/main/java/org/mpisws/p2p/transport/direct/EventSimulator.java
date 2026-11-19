@@ -41,7 +41,7 @@ import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 public class EventSimulator {
 
@@ -49,7 +49,7 @@ public class EventSimulator {
 
   protected RandomSource random;
 
-  protected final SelectorManager manager;
+  protected final SelectorLoop manager;
 
   // true if we are responsible for incrementing the time
   private boolean isDirectTimeSource = false;

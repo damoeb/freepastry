@@ -46,7 +46,7 @@ import java.util.Map;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import rice.Continuation;
-import rice.Destructable;
+import rice.Destructible;
 import rice.Executable;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -723,7 +723,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   @Override
   public void destroy() {
     if (application != null) {
-      if (application instanceof Destructable destructable) {
+      if (application instanceof Destructible destructable) {
         destructable.destroy();
       }
     }

@@ -69,7 +69,7 @@ import rice.environment.time.simple.SimpleTimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_RECV;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SEND;
@@ -311,7 +311,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     DirectTimeSource dts = new DirectTimeSource(System.currentTimeMillis());
     LogManager lm = Environment.generateDefaultLogManager();
     dts.setLogManager(lm);
-    SelectorManager selector = new RecordSM("Default", new SimpleTimeSource(), dts,lm,rs);
+    SelectorLoop selector = new RecordSM("Default", new SimpleTimeSource(), dts,lm,rs);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
     Environment ret = new Environment(selector,proc,rs,dts,lm,
@@ -331,7 +331,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
         RandomSource rand = cloneRandomSource(lman);
 
         // new selector
-        SelectorManager sman = cloneSelectorManager(prefix, dts, rand, lman, cloneSelector);
+        SelectorLoop sman = cloneSelectorManager(prefix, dts, rand, lman, cloneSelector);
 
         // new processor
         Processor proc = cloneProcessor(prefix, lman, cloneProcessor);
@@ -355,8 +355,8 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
       }
 
       @Override
-      protected SelectorManager cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
-        SelectorManager sman = getSelectorManager();
+      protected SelectorLoop cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
+        SelectorLoop sman = getSelectorManager();
         if (cloneSelector) {
           sman = new RecordSM(prefix + " Selector", new SimpleTimeSource(), (DirectTimeSource)ts,lman,rs);
         }

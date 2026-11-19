@@ -40,12 +40,12 @@ advised of the possibility of such damage.
 package rice.environment.processing;
 
 import rice.Continuation;
-import rice.Destructable;
+import rice.Destructible;
 import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Provides a mechanism to do time consuming tasks off of FreePastry's selector thread.
@@ -54,7 +54,7 @@ import rice.selector.SelectorManager;
  *
  * @author Jeff Hoye
  */
-public interface Processor extends Destructable {
+public interface Processor extends Destructible {
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
@@ -68,7 +68,7 @@ public interface Processor extends Destructable {
    * @param log the log manager the request logs to
    * @return a handle to cancel the task before it starts
    */
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorManager selector, TimeSource ts, LogManager log);
+  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorLoop selector, TimeSource ts, LogManager log);
 
   /**
    * Schedules a different type of task.  This thread is for doing Disk IO that is required to be blocking.

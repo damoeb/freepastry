@@ -42,7 +42,7 @@ advised of the possibility of such damage.
  * {@code rice.persistence.PersistentStorage}) on a blocking-IO thread.
  * <p>
  * Threading: in both cases the result is handed back to the caller's {@link rice.Continuation} on the
- * selector thread, via {@code SelectorManager.invoke()}. The simulator's {@code SimProcessor} runs
+ * selector thread, via {@code SelectorLoop.invoke()}. The simulator's {@code SimProcessor} runs
  * both kinds of work on the selector thread itself.
  */
 @NullMarked

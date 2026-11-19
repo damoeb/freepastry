@@ -39,7 +39,7 @@ advised of the possibility of such damage.
  * {@link rice.Continuation} receives the result or exception of an asynchronous call and has helpers
  * such as {@code StandardContinuation} and {@code MultiContinuation}. {@link rice.Executable} is a
  * task with a result that is run off the selector thread by the
- * {@link rice.environment.processing.Processor}, and {@link rice.Destructable} is implemented by
+ * {@link rice.environment.processing.Processor}, and {@link rice.Destructible} is implemented by
  * everything that must be released when a node or environment is destroyed.
  * <p>
  * Threading: continuations passed to FreePastry are normally called back on the selector thread;

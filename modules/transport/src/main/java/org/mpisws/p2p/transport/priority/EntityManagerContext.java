@@ -48,7 +48,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.slf4j.Logger;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * What an {@link EntityManager} needs from its {@link PriorityTransportLayer}: the layer below, the
@@ -60,7 +60,7 @@ final class EntityManagerContext<Identifier> {
   final TransportLayer<Identifier, ByteBuffer> tl;
   final LivenessProvider<Identifier> livenessProvider;
   final ProximityProvider<Identifier> proximityProvider;
-  final SelectorManager selectorManager;
+  final SelectorLoop selectorManager;
   final Logger logger;
   final int maxMsgSize;
   final int maxQueueSize;
@@ -81,7 +81,7 @@ final class EntityManagerContext<Identifier> {
   EntityManagerContext(TransportLayer<Identifier, ByteBuffer> tl,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
-      SelectorManager selectorManager,
+      SelectorLoop selectorManager,
       Logger logger,
       int maxMsgSize,
       int maxQueueSize,
@@ -100,7 +100,7 @@ final class EntityManagerContext<Identifier> {
   EntityManagerContext(TransportLayer<Identifier, ByteBuffer> tl,
       LivenessProvider<Identifier> livenessProvider,
       ProximityProvider<Identifier> proximityProvider,
-      SelectorManager selectorManager,
+      SelectorLoop selectorManager,
       Logger logger,
       int maxMsgSize,
       int maxQueueSize,

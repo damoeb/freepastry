@@ -37,7 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.splitstream;
 
-import rice.Destructable;
+import rice.Destructible;
 import rice.environment.Environment;
 
 /**
@@ -48,7 +48,7 @@ import rice.environment.Environment;
  * @author Ansley Post
  * @author Alan Mislove
  */
-public interface SplitStream extends Destructable {
+public interface SplitStream extends Destructible {
 
   /**
    * A SplitStream application calls this method to join a channel.

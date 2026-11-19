@@ -39,7 +39,7 @@ package rice.p2p.scribe;
 
 import java.util.Collection;
 
-import rice.Destructable;
+import rice.Destructible;
 import rice.environment.Environment;
 import rice.p2p.commonapi.NodeHandle;
 
@@ -50,7 +50,7 @@ import rice.p2p.commonapi.NodeHandle;
  * @author Jeff Hoye
  *
  */
-public interface BaseScribe extends Destructable {
+public interface BaseScribe extends Destructible {
 
   /**
    * Adds a child to the given topic

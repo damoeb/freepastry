@@ -50,7 +50,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
   private long nextExecutionTime;
   protected boolean cancelled = false;
   protected int seq;
-  private @Nullable SelectorManager selector;
+  private @Nullable SelectorLoop selector;
 
   /**
    * If period is positive, task will be rescheduled.
@@ -125,7 +125,7 @@ public abstract class TimerTask implements Comparable<TimerTask>, CancellableTas
    *
    * @param selector the selector manager whose queue the task is enqueued on
    */
-  public void setSelectorManager(SelectorManager selector) {
+  public void setSelectorManager(SelectorLoop selector) {
     this.selector = selector;
   }
 

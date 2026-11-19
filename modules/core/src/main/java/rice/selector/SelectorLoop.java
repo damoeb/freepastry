@@ -57,7 +57,7 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
-import rice.Destructable;
+import rice.Destructible;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
@@ -69,10 +69,10 @@ import rice.environment.time.TimeSource;
  * When activity occurs, it figures out who is interested in what has happened,
  * and hands off to that object.
  *
- * @version $Id: SelectorManager.java 4675 2009-03-11 15:54:34Z jeffh $
+ * @version $Id: SelectorLoop.java 4675 2009-03-11 15:54:34Z jeffh $
  * @author Alan Mislove
  */
-public class SelectorManager extends Thread implements Timer, Destructable {
+public class SelectorLoop extends Thread implements Timer, Destructible {
 
   // the maximal time to sleep on a select operation
   public static final int TIMEOUT = 500;
@@ -123,7 +123,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   /**
    * Constructor.
    */
-  public SelectorManager(@Nullable String instance,
+  public SelectorLoop(@Nullable String instance,
       TimeSource timeSource, LogManager log, @Nullable RandomSource random) {
     super(instance == null ? "FreePastry Selector" : "FreePastry Selector -- "
         + instance);
@@ -143,7 +143,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
     lastTime = timeSource.currentTimeMillis();
   }
 
-  public SelectorManager(@Nullable String instance,
+  public SelectorLoop(@Nullable String instance,
       TimeSource timeSource, LogManager log) {
     this(instance,timeSource,log,new SimpleRandomSource(log));
   }
@@ -264,7 +264,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   @Override
   @SuppressWarnings("ThreadPriorityCheck") // the yield only lets other threads take the selector lock
   public void run() {
-    logger.info("SelectorManager -- {} starting...", instance);
+    logger.info("SelectorLoop -- {} starting...", instance);
 
     lastTime = timeSource.currentTimeMillis();
     // loop while waiting for activity
@@ -281,7 +281,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
         doInvocations();
         if (select) {
           processSelectedKeys();
-          int selectTime = SelectorManager.TIMEOUT;
+          int selectTime = SelectorLoop.TIMEOUT;
           if (timerQueue.size() > 0) {
             TimerTask first = (TimerTask) timerQueue.peek();
             selectTime = (int) (first.scheduledExecutionTime() - timeSource
@@ -302,7 +302,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
           }
         } // if select
       } catch (Throwable t) {
-        logger.error("ERROR (SelectorManager.run): ", t);
+        logger.error("ERROR (SelectorLoop.run): ", t);
         getEnvironment().getExceptionStrategy().handleException(this, t);
       }
     } // while(running)
@@ -394,8 +394,8 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   @Override
   public void destroy() {
     if (logger.isDebugEnabled()) {
-      logger.debug("destroying SelectorManager", new Exception("Stack Trace"));
-    } else logger.info("destroying SelectorManager");
+      logger.debug("destroying SelectorLoop", new Exception("Stack Trace"));
+    } else logger.info("destroying SelectorLoop");
     running = false;
     if (getState() == Thread.State.NEW) {
       // the loop never ran, so shutdown() won't either: release the selector here
@@ -806,7 +806,7 @@ public class SelectorManager extends Thread implements Timer, Destructable {
   }
 
   /**
-   * Returns the timer associated with this SelectorManager (in this case, it is
+   * Returns the timer associated with this SelectorLoop (in this case, it is
    * this).
    *
    * @return The associated timer

@@ -45,7 +45,7 @@ package rice.selector.testing;
 import java.io.IOException;
 
 import rice.environment.Environment;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.Timer;
 import rice.selector.TimerTask;
 
@@ -64,7 +64,7 @@ public class SelectorTest {
     environment = new Environment();
 
     System.out.println("hello world <selector test>");
-    SelectorManager sman = environment.getSelectorManager();
+    SelectorLoop sman = environment.getSelectorManager();
     Timer timer = sman.getTimer();
     scheduleRepeated(timer,sman);
     for(int i = 0; i < 10; i++) {
@@ -78,7 +78,7 @@ public class SelectorTest {
     }
   }
 
-  public static void scheduleRepeated(Timer timer, SelectorManager sman) {
+  public static void scheduleRepeated(Timer timer, SelectorLoop sman) {
     final long t1Start = environment.getTimeSource().currentTimeMillis();
     final int t1Delay = 3000;
     timer.schedule(new TimerTask() {
@@ -94,7 +94,7 @@ public class SelectorTest {
     },t1Delay, t1Delay);
   }
 
-  public static void scheduleStuff(Timer timer, SelectorManager sman) {
+  public static void scheduleStuff(Timer timer, SelectorLoop sman) {
     final long t1Start = environment.getTimeSource().currentTimeMillis();
     final int t1Delay = 5000;
     timer.schedule(new TimerTask() {

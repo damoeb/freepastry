@@ -70,7 +70,7 @@ import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * The trick here is that this layer is at some level, say InetSocketAddress, but must pass around very High-Level
@@ -160,7 +160,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   final HighIdentifier localNodeHandle;
   final Logger logger;
   final ContactDeserializer<Identifier, HighIdentifier> serializer;
-  final SelectorManager selectorManager;
+  final SelectorLoop selectorManager;
   private final RandomSource random;
   private final EphemeralDB<Identifier, HighIdentifier> ephemeralDB;
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;

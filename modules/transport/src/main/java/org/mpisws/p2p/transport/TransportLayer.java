@@ -39,7 +39,7 @@ package org.mpisws.p2p.transport;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
-import rice.Destructable;
+import rice.Destructible;
 
 /**
  * The transport layer does provides the minimum functionality to provide communication
@@ -80,7 +80,7 @@ import rice.Destructable;
  * @param <Identifier> The type of node this layer operates on.
  * @param <MessageType> The type of message this layer sends.
  */
-public interface TransportLayer<Identifier, MessageType> extends Destructable {
+public interface TransportLayer<Identifier, MessageType> extends Destructible {
   /**
    * Open a socket to the Identifier
    *

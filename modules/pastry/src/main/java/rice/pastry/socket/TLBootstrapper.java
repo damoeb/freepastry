@@ -61,7 +61,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.boot.Bootstrapper;
 import rice.pastry.standard.ProximityNeighborSelector;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 /**
@@ -79,7 +79,7 @@ public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
   /** {@code socket_seed}: the node may start a new ring even when it was given boot addresses */
   private final boolean seed;
   /** the selector of the factory's environment, which runs the boot timeout */
-  private final SelectorManager factorySelector;
+  private final SelectorLoop factorySelector;
   protected Logger logger;
 
   // we need to store this in a mutable final object
@@ -92,7 +92,7 @@ public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
   public TLBootstrapper(PastryNode pn,
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl,
       SocketNodeHandleFactory handleFactory,
-      ProximityNeighborSelector pns, boolean seed, SelectorManager factorySelector) {
+      ProximityNeighborSelector pns, boolean seed, SelectorLoop factorySelector) {
     this.logger = pn.getEnvironment().getLogManager().getLogger(TLBootstrapper.class, null);
     this.pn = pn;
     this.tl = tl;
@@ -143,7 +143,7 @@ public class TLBootstrapper implements Bootstrapper<InetSocketAddress> {
    */
   @Override
   public void boot(Collection<InetSocketAddress> bootaddresses) {
-    SelectorManager selector = pn.getEnvironment().getSelectorManager();
+    SelectorLoop selector = pn.getEnvironment().getSelectorManager();
     if (selector.isSelectorThread()) {
       bootOnSelector(bootaddresses);
     } else {

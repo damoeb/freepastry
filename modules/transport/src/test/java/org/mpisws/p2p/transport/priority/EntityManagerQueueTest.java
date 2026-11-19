@@ -21,7 +21,7 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.slf4j.LoggerFactory;
 import rice.environment.logging.Slf4jLogManager;
 import rice.environment.time.simple.SimpleTimeSource;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /** The bounded write queue of an EntityManager: priority order, drop on overflow, cancel, purge. */
 class EntityManagerQueueTest {
@@ -49,7 +49,7 @@ class EntityManagerQueueTest {
     LivenessProvider<String> alive = (LivenessProvider<String>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {LivenessProvider.class}, (proxy, method, args) -> 0);
     // never started: not the selector thread for anybody, and what is invoked on it is never run
-    SelectorManager selector = new SelectorManager("test", new SimpleTimeSource(), new Slf4jLogManager());
+    SelectorLoop selector = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager());
     EntityManagerContext<String> ctx = new EntityManagerContext<>(tl, alive, null, selector,
         LoggerFactory.getLogger(EntityManagerQueueTest.class), 100, MAX_QUEUE_SIZE, 1000, List.of(),
         new TransportListeners<>(), () -> null, () -> null, () -> false, id -> null);

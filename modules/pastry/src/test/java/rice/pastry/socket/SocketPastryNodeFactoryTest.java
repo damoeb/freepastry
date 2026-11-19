@@ -17,7 +17,7 @@ import rice.pastry.Id;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeListener;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -101,7 +101,7 @@ class SocketPastryNodeFactoryTest {
       assertThrows(RuntimeException.class, factory::newNode);
     }
 
-    SelectorManager clonedSelector = cloned.get().getSelectorManager();
+    SelectorLoop clonedSelector = cloned.get().getSelectorManager();
     assertNotSame(env.getSelectorManager(), clonedSelector);
     clonedSelector.join(TimeUnit.SECONDS.toMillis(READY_TIMEOUT_SECONDS));
     assertFalse(clonedSelector.isAlive());

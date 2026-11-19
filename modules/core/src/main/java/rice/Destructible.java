@@ -39,6 +39,6 @@ advised of the possibility of such damage.
  */
 package rice;
 
-public interface Destructable {
+public interface Destructible {
   public void destroy();
 }

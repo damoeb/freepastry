@@ -73,7 +73,7 @@ import rice.pastry.direct.SphereNetwork;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Provides regression testing setup for applications written on top of the
@@ -631,7 +631,7 @@ public abstract class CommonAPITest {
     }
 
     TimeSource timeSource;
-    SelectorManager selector = null;
+    SelectorLoop selector = null;
     Processor proc = null;
     LogManager logManager = null;
     RandomSource rand = null;

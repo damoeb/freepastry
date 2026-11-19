@@ -65,7 +65,7 @@ import rice.environment.time.TimeSource;
  * To change the template for this generated type comment go to
  * Window>Preferences>Java>Code Generation>Code and Comments
  */
-public class ProfileSelector extends SelectorManager {
+public class ProfileSelector extends SelectorLoop {
   int HEART_BEAT_INTERVAL = 60000;
   long lastHeartBeat = 0;
 

@@ -37,14 +37,14 @@ advised of the possibility of such damage.
 /**
  * The per-JVM (or per-node) services every FreePastry component obtains from an
  * {@link rice.environment.Environment}: {@code Parameters}, {@code TimeSource}, {@code RandomSource},
- * {@code LogManager}, the {@link rice.selector.SelectorManager}, the
+ * {@code LogManager}, the {@link rice.selector.SelectorLoop}, the
  * {@link rice.environment.processing.Processor} and an {@code ExceptionStrategy}.
  * <p>
  * {@code new Environment()} loads {@code freepastry.params} from the classpath and starts a real
  * selector thread and processing threads; {@code Environment.directEnvironment()} builds a simulated
  * environment (simulated clock, {@code SimProcessor}) for the direct network simulator.
  * {@code Environment.destroy()} stores the parameters and destroys every registered
- * {@code Destructable} on the selector thread.
+ * {@code Destructible} on the selector thread.
  */
 @NullMarked
 package rice.environment;

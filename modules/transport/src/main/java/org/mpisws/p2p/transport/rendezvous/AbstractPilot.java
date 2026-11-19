@@ -47,7 +47,7 @@ import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.slf4j.Logger;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 /**
@@ -103,7 +103,7 @@ import rice.selector.TimerTask;
 abstract class AbstractPilot<Identifier, HighIdentifier extends RendezvousContact> extends TimerTask implements P2PSocketReceiver<Identifier> {
   protected final RendezvousTransportLayerImpl<Identifier, HighIdentifier> layer;
   protected final Logger logger;
-  protected final SelectorManager selectorManager;
+  protected final SelectorLoop selectorManager;
   protected final ContactDeserializer<Identifier, HighIdentifier> serializer;
   protected final HighIdentifier localNodeHandle;
   protected final Map<HighIdentifier, OutgoingPilot<Identifier, HighIdentifier>> outgoingPilots;

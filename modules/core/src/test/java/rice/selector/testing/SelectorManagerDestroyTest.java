@@ -54,7 +54,7 @@ import rice.environment.Environment;
 import rice.environment.logging.Slf4jLogManager;
 import rice.environment.time.simple.SimpleTimeSource;
 import rice.selector.SelectionKeyHandler;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests that {@link SelectorManager#destroy()} runs the pending invocations and releases the registered channels,
+ * Tests that {@link SelectorLoop#destroy()} runs the pending invocations and releases the registered channels,
  * instead of dropping them (which is how transport layers leaked bound ports when an Environment was destroyed).
  */
 public class SelectorManagerDestroyTest {
@@ -71,7 +71,7 @@ public class SelectorManagerDestroyTest {
   static final long JOIN_MILLIS = 10000;
 
   Environment env;
-  SelectorManager sm;
+  SelectorLoop sm;
 
   @BeforeEach
   public void setUp() {
@@ -239,7 +239,7 @@ public class SelectorManagerDestroyTest {
 
   @Test
   public void destroyClosesTheSelectorOfAnUnstartedManager() {
-    SelectorManager unstarted = new SelectorManager("unstarted", new SimpleTimeSource(), new Slf4jLogManager());
+    SelectorLoop unstarted = new SelectorLoop("unstarted", new SimpleTimeSource(), new Slf4jLogManager());
     assertTrue(unstarted.getSelector().isOpen());
     unstarted.destroy();
     assertFalse(unstarted.getSelector().isOpen(), "the selector of a manager that never ran must be closed");

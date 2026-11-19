@@ -34,7 +34,7 @@ class SelectorManagerSelectTest {
 
   @Test
   void selectRethrowsAnIOExceptionWithoutMessage() throws IOException {
-    SelectorManager manager = new SelectorManager("test", new SimpleTimeSource(), new Slf4jLogManager(), new SimpleRandomSource(1, null));
+    SelectorLoop manager = new SelectorLoop("test", new SimpleTimeSource(), new Slf4jLogManager(), new SimpleRandomSource(1, null));
     manager.selector.close();
     IOException failure = new IOException();
     manager.selector = new FailingSelector(failure);

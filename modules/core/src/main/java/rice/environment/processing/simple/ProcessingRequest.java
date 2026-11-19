@@ -45,7 +45,7 @@ import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Scheduling with a lower priority number will be executed first (is higher Priority)
@@ -61,13 +61,13 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
   private boolean running = false;
 
   TimeSource timeSource;
-  SelectorManager selectorManager;
+  SelectorLoop selectorManager;
   Logger logger;
   int priority = 0;
   long seq;
 
   public ProcessingRequest(Executable<R, E> r, Continuation<R, E> c, int priority, long seq,
-      LogManager logging, TimeSource timeSource, SelectorManager selectorManager) {
+      LogManager logging, TimeSource timeSource, SelectorLoop selectorManager) {
     this.r = r;
     this.c = c;
 

@@ -65,7 +65,7 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
 import rice.pastry.transport.PMessageNotification;
 import rice.pastry.transport.PMessageReceipt;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 
 /**
@@ -73,7 +73,7 @@ import rice.selector.SelectorManager;
  *
  */
 public class RendezvousApp extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
-  private final SelectorManager selectorManager;
+  private final SelectorLoop selectorManager;
   private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
 
   private static RendezvousSocketNodeHandle readRendezvousHandle(PastryNode pn, InputBuffer buf) throws IOException {

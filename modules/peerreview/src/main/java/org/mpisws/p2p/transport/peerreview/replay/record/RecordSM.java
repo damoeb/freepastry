@@ -48,7 +48,7 @@ import rice.environment.time.TimeSource;
 import rice.environment.time.simulated.DirectTimeSource;
 
 /**
- * This is the SelectorManager for PeerReview.  The invariant here is that we use a simTime that isn't updated near as
+ * This is the SelectorLoop for PeerReview.  The invariant here is that we use a simTime that isn't updated near as
  * frequently as the real clock.  This makes the events more discrete for replay.
  * <p>
  * An invocation from another thread (e.g. a message delivered by an in-memory transport, or a processor's result)

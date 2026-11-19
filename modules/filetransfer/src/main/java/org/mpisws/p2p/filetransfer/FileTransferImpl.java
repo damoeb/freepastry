@@ -60,7 +60,7 @@ import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.util.MathUtils;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * @author Jeff Hoye
@@ -124,7 +124,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   private final int maxChunkSize;
   private final long maxMessageBytesInFlight;
 
-  private final SelectorManager selectorManager;
+  private final SelectorLoop selectorManager;
   private final Logger logger;
 
   private Processor processor;

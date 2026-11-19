@@ -64,7 +64,7 @@ import org.mpisws.p2p.transport.util.BoundedPriorityWriteQueue;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.p2p.util.tuples.Tuple;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
@@ -94,7 +94,7 @@ final class EntityManager<Identifier> implements P2PSocketReceiver<Identifier> {
   private static final int MAX_LIVENESS_CHECK_DELAY_MILLIS = 40000;
 
   private final EntityManagerContext<Identifier> ctx;
-  private final SelectorManager selectorManager;
+  private final SelectorLoop selectorManager;
   private final Logger logger;
   private final TransportLayer<Identifier, ByteBuffer> tl;
   private final LivenessProvider<Identifier> livenessProvider;

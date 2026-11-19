@@ -56,9 +56,9 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.slf4j.Logger;
-import rice.Destructable;
+import rice.Destructible;
 import rice.environment.Environment;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,7 +75,7 @@ public abstract class TLTest<Identifier> {
   /**
    * Additional transport layers built by a subclass (besides alice and bob), destroyed in tearDownAfterClass().
    */
-  static List<Destructable> otherTLs = new ArrayList<Destructable>();
+  static List<Destructible> otherTLs = new ArrayList<Destructible>();
 
   /**
    * Creates the shared Environment. Not a {@code @BeforeAll} itself: every subclass's setup calls it explicitly.
@@ -97,16 +97,16 @@ public abstract class TLTest<Identifier> {
   public static void tearDownAfterClass() throws Exception {
     // Destroy the transport layers so that their ports are released: Environment.destroy() alone only stops the
     // selector (dropping pending invocations), leaving the server sockets bound for the next test class in this JVM.
-    final List<Destructable> tls = new ArrayList<Destructable>();
+    final List<Destructible> tls = new ArrayList<Destructible>();
     if (alice != null) tls.add(alice);
     if (bob != null) tls.add(bob);
     tls.addAll(otherTLs);
     otherTLs.clear();
     alice = null;
     bob = null;
-    SelectorManager selector = env.getSelectorManager();
+    SelectorLoop selector = env.getSelectorManager();
     Runnable destroyTLs = () -> {
-      for (Destructable d : tls) {
+      for (Destructible d : tls) {
         try {
           d.destroy();
         } catch (RuntimeException re) {

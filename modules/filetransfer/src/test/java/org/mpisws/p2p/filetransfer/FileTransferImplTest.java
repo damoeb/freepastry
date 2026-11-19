@@ -25,7 +25,7 @@ import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ class FileTransferImplTest {
     final List<WorkRequest<?>> blockingIO = new ArrayList<WorkRequest<?>>();
 
     @Override
-    public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorManager selector, TimeSource ts, LogManager log) {
+    public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorLoop selector, TimeSource ts, LogManager log) {
       throw new UnsupportedOperationException();
     }
 

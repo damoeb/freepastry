@@ -45,7 +45,7 @@ A test lives in the module whose code it tests. If it needs a higher module, it 
 | `getTimeSource()` | `rice.environment.time.TimeSource` | `SimpleTimeSource` (wall clock) | The simulator uses `DirectTimeSource`, a simulated clock. |
 | `getRandomSource()` | `rice.environment.random.RandomSource` | `SimpleRandomSource` | Seeded from the `random_seed` parameter (`CLOCK` means seed from the time). |
 | `getLogManager()` | `rice.environment.logging.LogManager` | `Slf4jLogManager` | Hands out an SLF4J `org.slf4j.Logger` per class and instance. |
-| `getSelectorManager()` | `rice.selector.SelectorManager` | a new selector thread named "Default" | See the threading section below. |
+| `getSelectorManager()` | `rice.selector.SelectorLoop` | a new selector thread named "Default" | See the threading section below. |
 | `getProcessor()` | `rice.environment.processing.Processor` | `SimpleProcessor("Default")` | `SimProcessor` if `environment_use_sim_processor`. |
 | `getExceptionStrategy()` | `rice.environment.exception.ExceptionStrategy` | `SimpleExceptionStrategy` | Called when the selector loop catches a `Throwable`. |
 
@@ -59,21 +59,21 @@ Parameters are read when components are constructed, so most of them must be set
 
 Logging goes through SLF4J 2. Components get their logger from `environment.getLogManager().getLogger(getClass(), instance)`. The default `Slf4jLogManager` names it `<class>[.<instance>][.<prefix>]`, where the prefix is set by `Slf4jLogManager.clone(prefix)` (node factories use the node id), and creates it with `LoggerFactory.getLogger(name)`. Classes without an environment use `LoggerFactory.getLogger(X.class)` directly. Levels, format and destinations are the job of the SLF4J backend the application provides (the tests use slf4j-simple, configured by each module's `src/test/resources/simplelogger.properties`); there are no logging parameters in `freepastry.params`. Log calls use placeholders, `logger.debug("routing {} to {}", msg, hop)`, or the lazy fluent form, `logger.atDebug().log(() -> expensive())`, so messages are only built when the level is enabled. Explicit `if (logger.isDebugEnabled())` guards remain only around multi-statement blocks or expensive arguments. Log lines carry the backend's wall-clock timestamp, not the simulator's virtual time.
 
-`Environment.destroy()` stores the parameters. It then destroys every registered `rice.Destructable`, then the selector and then the processor, all on the selector thread (if called from another thread it uses `invoke()`). Components register themselves with `addDestructable()`. For example, `PastryNode`'s constructor calls `e.addDestructable(this)`. `cloneEnvironment()` derives a child environment that shares the parent's fate (the parent destroys it). Node factories use this to give each node its own logger name suffix, and optionally its own selector or processor.
+`Environment.destroy()` stores the parameters. It then destroys every registered `rice.Destructible`, then the selector and then the processor, all on the selector thread (if called from another thread it uses `invoke()`). Components register themselves with `addDestructable()`. For example, `PastryNode`'s constructor calls `e.addDestructable(this)`. `cloneEnvironment()` derives a child environment that shares the parent's fate (the parent destroys it). Node factories use this to give each node its own logger name suffix, and optionally its own selector or processor.
 
 ## Threads, and what runs where
 
 This is the most important thing to understand. FreePastry is almost entirely **single-threaded on the selector thread**. Two kinds of worker thread run CPU-heavy or blocking work, and every result comes back to the selector thread.
 
-### The selector thread (`rice.selector.SelectorManager`)
+### The selector thread (`rice.selector.SelectorLoop`)
 
-`SelectorManager` extends `Thread`. `Environment` starts it, through `SelectorManager.setEnvironment()`, which calls `start()`. Each pass through the loop in `SelectorManager.run()` does the following:
+`SelectorLoop` extends `Thread`. `Environment` starts it, through `SelectorLoop.setEnvironment()`, which calls `start()`. Each pass through the loop in `SelectorLoop.run()` does the following:
 
 1. Notifies `LoopObserver`s if the loop was delayed. `ConsistentJoinProtocol` uses this to detect that the process was suspended, for example a hibernating laptop.
-2. `executeDueTasks()` runs every `rice.selector.TimerTask` whose time has come. `SelectorManager` *is* the `rice.selector.Timer` (`getTimer()` returns `this`), so `schedule()`, `scheduleAtFixedRate()`, `Endpoint.scheduleMessage()` and `PastryNode.scheduleMsg()` (which wraps the message in a `ScheduledMessage`) all fire on this thread.
+2. `executeDueTasks()` runs every `rice.selector.TimerTask` whose time has come. `SelectorLoop` *is* the `rice.selector.Timer` (`getTimer()` returns `this`), so `schedule()`, `scheduleAtFixedRate()`, `Endpoint.scheduleMessage()` and `PastryNode.scheduleMsg()` (which wraps the message in a `ScheduledMessage`) all fire on this thread.
 3. `doInvocations()` runs every `Runnable` queued with `invoke(Runnable)`, then applies pending `modifyKey()` requests.
 4. `doSelections()` dispatches NIO readiness to the `SelectionKeyHandler` attached to each key (`accept`, `connect`, `read`, `write`). The keys are shuffled first, using the environment's random source.
-5. `select(timeout)` waits until the next timer, for at most `SelectorManager.TIMEOUT` (500 ms). It returns at once if invocations are pending.
+5. `select(timeout)` waits until the next timer, for at most `SelectorLoop.TIMEOUT` (500 ms). It returns at once if invocations are pending.
 
 An exception thrown by a task or invocation goes to `environment.getExceptionStrategy().handleException()`. The tasks that have not run yet are put back in the queue.
 
@@ -100,7 +100,7 @@ An exception thrown by a task or invocation goes to `environment.getExceptionStr
 
 - There is no general guarantee that the rest of the API is thread-safe. Most getters (`getLeafSet()`, `getRoutingTable()`, `Endpoint.replicaSet()`, `localLookup()`) read selector-owned state without locking.
 - `TLBootstrapper.boot()` is commonly called from `main` (as in `rice.tutorial.lesson3.DistTutorial`), and its code comment says it "can be called on any thread". It does not move itself onto the selector thread, though: it relies on the layers it calls (`checkLiveness`, `schedule`, `invoke`).
-- If you need a consistent view of node state from another thread, run the code on the selector with `SelectorManager.invoke()`, and use a `FutureContinuation` to wait for an asynchronous result.
+- If you need a consistent view of node state from another thread, run the code on the selector with `SelectorLoop.invoke()`, and use a `FutureContinuation` to wait for an asynchronous result.
 
 One more caveat: `PastryNode.send()` to the **local** handle calls `receiveMessage()` synchronously on the caller's thread. Only sends to remote nodes are moved onto the selector thread. `receiveMessage()` is `synchronized` on the node.
 
@@ -157,7 +157,7 @@ In the simulator there is only one thread. `Environment.directEnvironment()` use
 
 ```mermaid
 flowchart LR
-  subgraph Sel["Selector thread (SelectorManager.run)"]
+  subgraph Sel["Selector thread (SelectorLoop.run)"]
     T[TimerTasks / ScheduledMessage] --> L
     I["invoke() queue"] --> L
     IO[NIO keys: TCPLayer, UDPLayerImpl] --> L

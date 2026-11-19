@@ -51,8 +51,8 @@ import rice.environment.processing.sim.SimProcessor;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.environment.time.simulated.DirectTimeSource;
-import rice.selector.SelectorManager;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
+import rice.selector.SelectorLoop;
 
 public class VerifierFactory<Handle extends RawSerializable, Identifier extends RawSerializable> {
 
@@ -83,7 +83,7 @@ public class VerifierFactory<Handle extends RawSerializable, Identifier extends 
     }
     RandomSource rs = new SimpleRandomSource(randSeed, lm);
     dts.setLogManager(lm);
-    SelectorManager selector = new ReplaySM("Replay "+name, dts, lm);
+    SelectorLoop selector = new ReplaySM("Replay "+name, dts, lm);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
     return new Environment(selector,proc,rs,dts,lm,

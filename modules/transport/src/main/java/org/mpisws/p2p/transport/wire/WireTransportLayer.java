@@ -106,7 +106,7 @@ public class WireTransportLayer
   /**
    *
    * @param bindAddress the address to bind to, if it fails, it will throw an exception
-   * @param env will acquire the SelectorManager from the env
+   * @param env will acquire the SelectorLoop from the env
    */
   public WireTransportLayer(
       InetSocketAddress bindAddress,

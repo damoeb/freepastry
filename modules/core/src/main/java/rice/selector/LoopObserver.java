@@ -40,8 +40,8 @@ advised of the possibility of such damage.
 package rice.selector;
 
 /**
- * Notified by the SelectorManager after each loop of the selector thread that took at least
- * delayInterest() millis; register with SelectorManager.addLoopObserver().  Useful to detect
+ * Notified by the SelectorLoop after each loop of the selector thread that took at least
+ * delayInterest() millis; register with SelectorLoop.addLoopObserver().  Useful to detect
  * that the process was not scheduled for a while (an overloaded machine, a hibernated laptop).
  *
  * @author Jeff Hoye

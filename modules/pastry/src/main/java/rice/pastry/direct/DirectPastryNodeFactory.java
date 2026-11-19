@@ -72,7 +72,7 @@ import rice.pastry.standard.StandardLeafSetProtocol;
 import rice.pastry.transport.NodeHandleAdapter;
 import rice.pastry.transport.TLDeserializer;
 import rice.pastry.transport.TransportPastryNodeFactory;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 /**
  * Pastry node factory for direct connections between nodes (local instances).
@@ -287,7 +287,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
         public void receiveException(Exception exception) {
         }
       });
-      SelectorManager selector = pn.getEnvironment().getSelectorManager();
+      SelectorLoop selector = pn.getEnvironment().getSelectorManager();
       if (selector.isSelectorThread()) {
         boot.run();
       } else {

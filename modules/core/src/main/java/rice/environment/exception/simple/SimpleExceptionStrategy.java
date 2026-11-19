@@ -42,7 +42,7 @@ package rice.environment.exception.simple;
 import org.slf4j.Logger;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.logging.LogManager;
-import rice.selector.SelectorManager;
+import rice.selector.SelectorLoop;
 
 public class SimpleExceptionStrategy implements ExceptionStrategy {
   Logger logger;
@@ -53,7 +53,7 @@ public class SimpleExceptionStrategy implements ExceptionStrategy {
   @Override
   public void handleException(Object source, Throwable t) {
     logger.warn("handleException({})", source, t);
-    if (source instanceof SelectorManager sm) {
+    if (source instanceof SelectorLoop sm) {
       sm.getEnvironment().destroy();
     }
   }
