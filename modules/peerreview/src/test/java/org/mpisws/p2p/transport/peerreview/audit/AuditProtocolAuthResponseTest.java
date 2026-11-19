@@ -149,13 +149,13 @@ public class AuditProtocolAuthResponseTest {
     Id subject = new Id(7);
     audit.investigate(subject, 0);
     Authenticator from = auth(10);
-    Authenticator to = auth(20);
+    Authenticator authenticator = auth(20);
 
-    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, from, to));
+    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, from, authenticator));
 
     PendingInvestigation<Id> investigation = audit.activeInvestigation.get(subject);
     assertSame(from, investigation.getAuthFrom());
-    assertSame(to, investigation.getAuthTo());
+    assertSame(authenticator, investigation.getAuthTo());
 
     // a later response only widens the range
     audit.handleIncomingDatagram(new Id(9), new AuthResponse<Id>(subject, auth(15), auth(30)));

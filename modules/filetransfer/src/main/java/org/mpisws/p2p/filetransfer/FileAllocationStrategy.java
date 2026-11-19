@@ -58,10 +58,10 @@ public interface FileAllocationStrategy {
    * Notification of a cancelled transfer.
    *
    * @param metadata application specific, often the file name
-   * @param f the file that was given by this strategy before
+   * @param path the file that was given by this strategy before
    * @param offset the beginning point in the file of this file transfer
    * @param downloadedLength the actual "valid" downloaded length
    * @param requestedLength the length of the original file transfer request
    */
-  public void fileCancelled(ByteBuffer metadata, Path f, long offset, long downloadedLength, long requestedLength, Exception reason);
+  public void fileCancelled(ByteBuffer metadata, Path path, long offset, long downloadedLength, long requestedLength, Exception reason);
 }

@@ -91,16 +91,16 @@ public class AuthenticatorStoreTest {
   public void addAndFlushAuthenticators() throws Exception {
     Environment env = new Environment();
     try {
-    PeerReview<MyInetSocketAddress, MyInetSocketAddress> pr = new TestPeerReview(env, new AuthenticatorSerializer(HASH_LEN, SIGN_LEN));
-    TestAuthenticatorStore store = new TestAuthenticatorStore(pr,false);
+    PeerReview<MyInetSocketAddress, MyInetSocketAddress> peerReview = new TestPeerReview(env, new AuthenticatorSerializer(HASH_LEN, SIGN_LEN));
+    TestAuthenticatorStore store = new TestAuthenticatorStore(peerReview,false);
 
     MyInetSocketAddress id = new MyInetSocketAddress(InetAddress.getLocalHost(), 6789);
 
-    byte[] h1 = new byte[HASH_LEN];
-    h1[2] = 5;
+    byte[] bytes = new byte[HASH_LEN];
+    bytes[2] = 5;
     byte[] s1 = new byte[SIGN_LEN];
     s1[2] = 17;
-    Authenticator a1 = new Authenticator(42,h1,s1);
+    Authenticator authenticator = new Authenticator(42,bytes,s1);
 
     // same
     byte[] h2 = new byte[HASH_LEN];
@@ -116,15 +116,15 @@ public class AuthenticatorStoreTest {
     s3[2] = 17;
     Authenticator a3 = new Authenticator(42,h3,s3);
 
-    store.addAuthenticatorToMemory(id, new Authenticator(4,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(7,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(8,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(9,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(41,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(43,h1,s1));
-    store.addAuthenticatorToMemory(id, new Authenticator(53,h1,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(4,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(7,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(8,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(9,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(41,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(43,bytes,s1));
+    store.addAuthenticatorToMemory(id, new Authenticator(53,bytes,s1));
 
-    store.addAuthenticatorToMemory(id, a1);
+    store.addAuthenticatorToMemory(id, authenticator);
     store.addAuthenticatorToMemory(id, a2); // should not crash here
 
     // a different authenticator with the same sequence number is rejected
@@ -195,7 +195,7 @@ public class AuthenticatorStoreTest {
     }
 
     @Override
-    public void challengeSuspectedNode(MyInetSocketAddress h) {
+    public void challengeSuspectedNode(MyInetSocketAddress myInetSocketAddress) {
 
     }
 
@@ -216,13 +216,13 @@ public class AuthenticatorStoreTest {
     }
 
     @Override
-    public void incomingSocket(P2PSocket<MyInetSocketAddress> s)
+    public void incomingSocket(P2PSocket<MyInetSocketAddress> socket)
         throws IOException {
 
     }
 
     @Override
-    public void messageReceived(MyInetSocketAddress i, ByteBuffer m,
+    public void messageReceived(MyInetSocketAddress myInetSocketAddress, ByteBuffer msg,
         Map<String, Object> options) throws IOException {
 
     }
@@ -235,7 +235,7 @@ public class AuthenticatorStoreTest {
     @Override
     public Cancellable requestCertificate(MyInetSocketAddress source,
         MyInetSocketAddress certHolder,
-        Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
+        Continuation<X509Certificate, Exception> continuation, Map<String, Object> options) {
       return null;
     }
 
@@ -273,7 +273,7 @@ public class AuthenticatorStoreTest {
 
     @Override
     public SocketRequestHandle<MyInetSocketAddress> openSocket(
-        MyInetSocketAddress i,
+        MyInetSocketAddress myInetSocketAddress,
         SocketCallback<MyInetSocketAddress> deliverSocketToMe,
         Map<String, Object> options) {
       return null;
@@ -281,7 +281,7 @@ public class AuthenticatorStoreTest {
 
     @Override
     public MessageRequestHandle<MyInetSocketAddress, ByteBuffer> sendMessage(
-        MyInetSocketAddress i, ByteBuffer m,
+        MyInetSocketAddress myInetSocketAddress, ByteBuffer msg,
         MessageCallback<MyInetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
       return null;

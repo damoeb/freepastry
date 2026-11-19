@@ -76,9 +76,9 @@ public class X509Serializer implements Serializer<X509Certificate> {
       byte[] encoded = WireLengths.readBytes(buf);
       ByteArrayInputStream bytearrayinputstream = new ByteArrayInputStream(encoded);
       return (X509Certificate)certificatefactory.generateCertificate(bytearrayinputstream);
-    } catch (CertificateException ce) {
-      IOException ioe = new IOException(ce.getLocalizedMessage());
-      ioe.initCause(ce);
+    } catch (CertificateException certificateException) {
+      IOException ioe = new IOException(certificateException.getLocalizedMessage());
+      ioe.initCause(certificateException);
       throw ioe;
     }
   }

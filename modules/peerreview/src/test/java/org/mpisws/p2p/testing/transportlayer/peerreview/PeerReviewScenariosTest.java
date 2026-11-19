@@ -47,9 +47,9 @@ public class PeerReviewScenariosTest {
 
     // the signatures are sized after the nodes' (2048-bit) keys, not the former fixed 96 bytes
     assertEquals(3, scenario.getIdentityTransports().size());
-    for (IdentityTransportLayerImpl<PRRegressionTest.HandleImpl, PRRegressionTest.IdImpl> tl : scenario.getIdentityTransports()) {
-      assertEquals(IdentityTransportLayerImpl.DEFAULT_SIGNATURE_SIZE, tl.getSignatureSizeBytes());
-      assertEquals(SIGNATURE_SIZE, tl.getSignatureSizeBytes());
+    for (IdentityTransportLayerImpl<PRRegressionTest.HandleImpl, PRRegressionTest.IdImpl> identityTransportLayerImpl : scenario.getIdentityTransports()) {
+      assertEquals(IdentityTransportLayerImpl.DEFAULT_SIGNATURE_SIZE, identityTransportLayerImpl.getSignatureSizeBytes());
+      assertEquals(SIGNATURE_SIZE, identityTransportLayerImpl.getSignatureSizeBytes());
     }
     for (PRRegressionTest.Player player : scenario.playerTable.values())
       assertEquals(CertificateAuthorityTool.DEFAULT_KEY_SIZE, ((RSAPublicKey) player.cert.getPublicKey()).getModulus().bitLength());

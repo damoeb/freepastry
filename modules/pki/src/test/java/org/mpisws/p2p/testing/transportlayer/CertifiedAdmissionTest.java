@@ -78,16 +78,16 @@ class CertifiedAdmissionTest {
   @Test
   @DisplayName("nodes of a certified ring authenticate each other by TLS and then admit each other into the leaf set")
   void certifiedNodesAdmitEachOtherAfterVerification() throws Exception {
-    CertificateAuthorityTool ca = ca();
+    CertificateAuthorityTool certificateAuthorityTool = ca();
     int port = freePort();
-    CertifiedSocketPastryNodeFactory factory1 = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
+    CertifiedSocketPastryNodeFactory factory1 = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, ALICE), NO_PASSWORD, port, environment());
     PastryNode first = factory1.newNode();
     nodes.add(first);
     InetSocketAddress firstAddress = new InetSocketAddress(factory1.getBindAddress(), port);
     first.boot(firstAddress);
     awaitReady(first);
 
-    CertifiedSocketPastryNodeFactory factory2 = new CertifiedSocketPastryNodeFactory(store(ca, BOB), NO_PASSWORD, freePort(), environment());
+    CertifiedSocketPastryNodeFactory factory2 = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, BOB), NO_PASSWORD, freePort(), environment());
     PastryNode second = factory2.newNode();
     nodes.add(second);
     second.boot(firstAddress);
@@ -115,18 +115,18 @@ class CertifiedAdmissionTest {
   }
 
   /** the node's PKCS12 store as written by {@code CertificateAuthorityTool -store}: key and certificate for the id, and the CA certificate */
-  static KeyStore store(CertificateAuthorityTool ca, Id id) throws Exception {
+  static KeyStore store(CertificateAuthorityTool certificateAuthorityTool, Id id) throws Exception {
     KeyPair keys = CertificateAuthorityTool.generateKeyPair();
     KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
     store.load(null, null);
-    store.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS, keys.getPrivate(), NO_PASSWORD, new Certificate[] {ca.signNodeId(id, keys.getPublic())});
-    store.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, ca.getCertificate());
+    store.setKeyEntry(NodeIdCertificate.NODE_KEY_ALIAS, keys.getPrivate(), NO_PASSWORD, new Certificate[] {certificateAuthorityTool.signNodeId(id, keys.getPublic())});
+    store.setCertificateEntry(NodeIdCertificate.CA_CERT_ALIAS, certificateAuthorityTool.getCertificate());
     return store;
   }
 
   static int freePort() throws IOException {
-    try (ServerSocket s = new ServerSocket(0)) {
-      return s.getLocalPort();
+    try (ServerSocket serverSocket = new ServerSocket(0)) {
+      return serverSocket.getLocalPort();
     }
   }
 

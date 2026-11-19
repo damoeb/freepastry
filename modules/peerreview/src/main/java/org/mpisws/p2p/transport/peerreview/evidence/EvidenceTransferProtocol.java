@@ -50,6 +50,6 @@ public interface EvidenceTransferProtocol<Handle, Identifier> extends WitnessLis
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options);
 
-  public void requestWitnesses(Collection<Identifier> subjects, Continuation<Map<Identifier,Collection<Handle>>, Exception> c);
+  public void requestWitnesses(Collection<Identifier> subjects, Continuation<Map<Identifier,Collection<Handle>>, Exception> continuation);
   public void sendEvidence(Handle source, Identifier id);
 }

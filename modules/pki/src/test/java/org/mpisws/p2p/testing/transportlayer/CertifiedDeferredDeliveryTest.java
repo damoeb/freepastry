@@ -62,9 +62,9 @@ class CertifiedDeferredDeliveryTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    CertificateAuthorityTool ca = ca();
+    CertificateAuthorityTool certificateAuthorityTool = ca();
     int port = freePort();
-    factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
+    factoryA = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, ALICE), NO_PASSWORD, port, environment());
     a = factoryA.newNode();
     nodes.add(a);
     receiverA = new Receiver(a);
@@ -73,7 +73,7 @@ class CertifiedDeferredDeliveryTest {
     a.boot(addressA);
     awaitReady(a);
 
-    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(ca, BOB), NO_PASSWORD, freePort(), environment());
+    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, BOB), NO_PASSWORD, freePort(), environment());
     b = factoryB.newNode();
     nodes.add(b);
     receiverB = new Receiver(b);

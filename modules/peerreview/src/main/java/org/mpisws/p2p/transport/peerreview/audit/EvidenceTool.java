@@ -425,8 +425,8 @@ public class EvidenceTool<Handle extends RawSerializable, Identifier extends Raw
             sob.writeLong(evtAck.getAckedSeq());
             byte[] receiverContentHash = peerreview.hash(sob.getByteBuffer(),seidx.hashedPlusPayload);
 
-            byte[] h = peerreview.hash(evtAck.getPeerSeq(), EVT_RECV, evtAck.getHTopMinusOne(), receiverContentHash);
-            Authenticator receiverAuth = new Authenticator(evtAck.getPeerSeq(),h,evtAck.getSignature());
+            byte[] bytes = peerreview.hash(evtAck.getPeerSeq(), EVT_RECV, evtAck.getHTopMinusOne(), receiverContentHash);
+            Authenticator receiverAuth = new Authenticator(evtAck.getPeerSeq(),bytes,evtAck.getSignature());
 
             boolean isGoodAuth = peerreview.addAuthenticatorIfValid(authStoreOrNull, evtAck.getRemoteId(), receiverAuth);
             if (!isGoodAuth) {

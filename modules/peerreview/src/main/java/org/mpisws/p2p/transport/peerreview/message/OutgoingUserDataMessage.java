@@ -52,10 +52,10 @@ public final class OutgoingUserDataMessage<Handle extends RawSerializable> exten
 
   public OutgoingUserDataMessage(long topSeq, Handle senderHandle,
       byte[] topMinusOne, byte[] sig, ByteBuffer message, int relevantlen,
-      Map<String, Object> options, PeerCommitmentState<Handle> pi, MessageCallback<Handle, ByteBuffer> deliverAckToMe) {
+      Map<String, Object> options, PeerCommitmentState<Handle> peerCommitmentState, MessageCallback<Handle, ByteBuffer> deliverAckToMe) {
     super(topSeq, senderHandle, topMinusOne, sig, message, relevantlen);
     this.options = options;
-    this.pi = pi;
+    this.pi = peerCommitmentState;
     this.deliverAckToMe = deliverAckToMe;
   }
 

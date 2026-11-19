@@ -48,7 +48,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
  * Hashes PeerReview log entries with SHA-256 (it used to be SHA-1); hashes are 32 bytes.
  */
 public class SHA256HashProvider implements HashProvider {
-  private final MessageDigest md = HashUtils.newDigest();
+  private final MessageDigest messageDigest = HashUtils.newDigest();
 
   public SHA256HashProvider() {
   }
@@ -80,12 +80,12 @@ public class SHA256HashProvider implements HashProvider {
   @Override
   public synchronized byte[] hash(ByteBuffer... hashMe) {
 
-    for (ByteBuffer bb : hashMe) {
-      int pos = bb.position();
-      md.update(bb);
-      bb.position(pos);
+    for (ByteBuffer buffer : hashMe) {
+      int pos = buffer.position();
+      messageDigest.update(buffer);
+      buffer.position(pos);
     }
-    byte[] ret = md.digest();
+    byte[] ret = messageDigest.digest();
     return ret;
   }
 

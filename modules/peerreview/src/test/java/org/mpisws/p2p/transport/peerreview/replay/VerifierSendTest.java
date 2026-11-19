@@ -49,8 +49,8 @@ public class VerifierSendTest {
 
   static final Serializer<Node> SERIALIZER = new Serializer<Node>() {
     @Override
-    public void serialize(Node n, OutputBuffer buf) throws IOException {
-      n.serialize(buf);
+    public void serialize(Node node, OutputBuffer buf) throws IOException {
+      node.serialize(buf);
     }
 
     @Override
@@ -139,15 +139,15 @@ public class VerifierSendTest {
   }
 
   static byte[] withLastByteChanged() {
-    byte[] other = MESSAGE.clone();
-    other[other.length - 1]++;
-    return other;
+    byte[] bytes = MESSAGE.clone();
+    bytes[bytes.length - 1]++;
+    return bytes;
   }
 
   static byte[] withFirstByteChanged() {
-    byte[] other = MESSAGE.clone();
-    other[0]++;
-    return other;
+    byte[] bytes = MESSAGE.clone();
+    bytes[0]++;
+    return bytes;
   }
 
   @Test

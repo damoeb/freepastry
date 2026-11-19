@@ -129,8 +129,8 @@ public class CertifiedNodeIdTest {
     Id other = new RandomNodeIdFactory(env).generateNodeId();
     byte[] der = ca.signNodeId(id, nodeKeys.getPublic()).getEncoded();
     byte[] from = id.toStringFull().getBytes(StandardCharsets.US_ASCII);
-    byte[] to = other.toStringFull().getBytes(StandardCharsets.US_ASCII);
-    System.arraycopy(to, 0, der, indexOf(der, from), to.length); // the id is in the subject, which the signature covers
+    byte[] bytes = other.toStringFull().getBytes(StandardCharsets.US_ASCII);
+    System.arraycopy(bytes, 0, der, indexOf(der, from), bytes.length); // the id is in the subject, which the signature covers
     X509Certificate tampered = parse(der);
 
     assertThrows(CertificateException.class, () -> NodeIdCertificate.verify(tampered, ca.getCertificate(), Instant.now()));
@@ -163,9 +163,9 @@ public class CertifiedNodeIdTest {
   @Test
   void nodeThatDoesNotHoldTheCertificateKeyCannotUseTheId() throws Exception {
     X509Certificate cert = ca.signNodeId(id, nodeKeys.getPublic());
-    KeyPair other = CertificateAuthorityTool.generateKeyPair();
+    KeyPair keyPair = CertificateAuthorityTool.generateKeyPair();
 
-    CertifiedNodeIdFactory factory = new CertifiedNodeIdFactory(cert, other.getPrivate(), ca.getCertificate(), env);
+    CertifiedNodeIdFactory factory = new CertifiedNodeIdFactory(cert, keyPair.getPrivate(), ca.getCertificate(), env);
 
     assertThrows(SecurityException.class, factory::generateNodeId);
   }

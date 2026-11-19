@@ -167,31 +167,31 @@ public class AuthenticatorPushProtocol<Handle extends RawSerializable, Identifie
 
     /* Once all the messages are sent, we don't need the authenticators any more */
     logger.trace("Push completed; releasing authenticators");
-    for (Identifier i : subjectsToWitnesses.keySet()) {
-      authOutStore.flush(i);
+    for (Identifier identifier : subjectsToWitnesses.keySet()) {
+      authOutStore.flush(identifier);
     }
   }
 
   /**
    * TODO: make this use udp, or smaller AuthPushMessages
    */
-  protected void sendAuthenticators(Handle h, Map<Identifier, List<Authenticator>> authenticators) throws IOException {
+  protected void sendAuthenticators(Handle handle, Map<Identifier, List<Authenticator>> authenticators) throws IOException {
     if (probabilistic) {
-      for (Entry<Identifier, List<Authenticator>> e : authenticators.entrySet()) {
+      for (Entry<Identifier, List<Authenticator>> entry : authenticators.entrySet()) {
         /*
          * If probabilistic checking is enabled, we can skip the authenticators
          * with some probability
          */
-        Iterator<Authenticator> i = e.getValue().iterator();
-        while (i.hasNext()) {
+        Iterator<Authenticator> iterator = entry.getValue().iterator();
+        while (iterator.hasNext()) {
           if (random.nextFloat() < 1.0-pXmit) {
-            i.remove();
+            iterator.remove();
           }
         }
       }
     }
 
-    peerreview.transmit(h, new AuthPushMessage<Identifier>(authenticators), null, null);
+    peerreview.transmit(handle, new AuthPushMessage<Identifier>(authenticators), null, null);
   }
 
   /**
@@ -218,15 +218,15 @@ public class AuthenticatorPushProtocol<Handle extends RawSerializable, Identifie
    */
   public void handleIncomingAuthenticators(Handle source, AuthPushMessage<Identifier> msg) {
     logger.info("Received authenticators from {}", source);
-    for (Entry<Identifier, List<Authenticator>> e : msg.authenticators().entrySet()) {
-      Identifier id = e.getKey();
-      logger.debug("  Subject <{}>, {} authenticators", id, e.getValue().size());
+    for (Entry<Identifier, List<Authenticator>> entry : msg.authenticators().entrySet()) {
+      Identifier id = entry.getKey();
+      logger.debug("  Subject <{}>, {} authenticators", id, entry.getValue().size());
       if (transport.hasCertificate(id)) {
-        addAuthenticatorsIfValid(e.getValue(), id);
+        addAuthenticatorsIfValid(entry.getValue(), id);
       } else {
         logger.debug("  Missing certificate for this subject; requesting from {} and recording auths as pending", source);
-        for (Authenticator a : e.getValue()) {
-          authPendingStore.addAuthenticator(id, a);
+        for (Authenticator authenticator : entry.getValue()) {
+          authPendingStore.addAuthenticator(id, authenticator);
         }
         peerreview.requestCertificate(source, id);
       }

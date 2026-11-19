@@ -74,11 +74,11 @@ public class TempFileAllocationStrategy implements FileAllocationStrategy {
   }
 
   @Override
-  public void fileCancelled(ByteBuffer metadata, Path f, long offset,
+  public void fileCancelled(ByteBuffer metadata, Path path, long offset,
       long downloadedLength, long requestedLength, Exception reason) {
     // as with File.delete, a failure is ignored
     try {
-      Files.deleteIfExists(f);
+      Files.deleteIfExists(path);
     } catch (IOException ignored) {
       // the temp file is left behind
     }

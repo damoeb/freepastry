@@ -230,11 +230,11 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
         /* If the RECV entry already exists, retrieve it */
 
-        IndexEntry i2 = history.statEntry(indexOfRecvEntry);
+        IndexEntry indexEntry = history.statEntry(indexOfRecvEntry);
         IndexEntry i1 = history.statEntry(indexOfRecvEntry-1);
-        assert(i1 != null && i2 != null && i2.getType() == EVT_RECV) : "i1:"+i1+" i2:"+i2;
-        seqOfRecvEntry = i2.getSeq();
-        myHashTop = i2.getNodeHash();
+        assert(i1 != null && indexEntry != null && indexEntry.getType() == EVT_RECV) : "i1:"+i1+" i2:"+indexEntry;
+        seqOfRecvEntry = indexEntry.getSeq();
+        myHashTop = indexEntry.getNodeHash();
         myHashTopMinusOne = i1.getNodeHash();
         logger.debug("This message has already been logged as seq#{}", seqOfRecvEntry);
       }
@@ -264,8 +264,8 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
   }
 
   protected void makeProgressAllPeers() {
-    for (Identifier i : peer.keySet()) {
-      makeProgress(i);
+    for (Identifier identifier : peer.keySet()) {
+      makeProgress(identifier);
     }
   }
 
@@ -457,8 +457,8 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
       final Map<String, Object> options) {
     int relevantlen = message.remaining();
     if (options != null && options.containsKey(PeerReview.RELEVANT_LENGTH)) {
-      Number n = (Number)options.get(PeerReview.RELEVANT_LENGTH);
-      relevantlen = n.intValue();
+      Number number = (Number)options.get(PeerReview.RELEVANT_LENGTH);
+      relevantlen = number.intValue();
     }
     assert(relevantlen >= 0);
 
@@ -510,13 +510,13 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
     assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(UserDataMessage.RELEVANT_LEN_ALL)));
 
-    PeerCommitmentState<Handle> pi = lookupPeer(target);
+    PeerCommitmentState<Handle> peerCommitmentState = lookupPeer(target);
 
-    OutgoingUserDataMessage<Handle> udm = new OutgoingUserDataMessage<Handle>(top.getSeq(), peerreview.getLocalHandle(), hTopMinusOne, signature, message, relevantlen, options, pi, deliverAckToMe);
+    OutgoingUserDataMessage<Handle> udm = new OutgoingUserDataMessage<Handle>(top.getSeq(), peerreview.getLocalHandle(), hTopMinusOne, signature, message, relevantlen, options, peerCommitmentState, deliverAckToMe);
 
     /* ... and put it into the send queue. If the node is trusted and does not have any
        unacknowledged messages, makeProgress() will simply send it out. */
-    pi.xmitQueue.addLast(udm);
+    peerCommitmentState.xmitQueue.addLast(udm);
     makeProgress(peerreview.getIdentifierExtractor().extractIdentifier(target));
 
     return udm;
@@ -531,14 +531,14 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
     // TODO: check that ackMessage came from the source
 
     if (transport.hasCertificate(ackMessage.getNodeId())) {
-      PeerCommitmentState<Handle> p = lookupPeer(source);
+      PeerCommitmentState<Handle> peerCommitmentState = lookupPeer(source);
 
       boolean checkAck = true;
       OutgoingUserDataMessage<Handle> udm = null;
-      if (p.xmitQueue.isEmpty()) {
+      if (peerCommitmentState.xmitQueue.isEmpty()) {
         checkAck = false;  // don't know why this happens, but maybe the ACK gets duplicated somehow
       } else {
-        udm = p.xmitQueue.getFirst();
+        udm = peerCommitmentState.xmitQueue.getFirst();
       }
 
       /* The ACK must acknowledge the sequence number of the packet that is currently
@@ -569,12 +569,12 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
           /* Remove the message from the xmit queue */
 
-          p.xmitQueue.removeFirst();
-          p.numOutstandingPackets--;
+          peerCommitmentState.xmitQueue.removeFirst();
+          peerCommitmentState.numOutstandingPackets--;
 
           /* Make progress (e.g. by sending the next message) */
 
-          makeProgress(peerreview.getIdentifierExtractor().extractIdentifier(p.getHandle()));
+          makeProgress(peerreview.getIdentifierExtractor().extractIdentifier(peerCommitmentState.getHandle()));
         } else {
           logger.warn("Invalid ACK from <{}>; discarding", ackMessage.getNodeId());
         }

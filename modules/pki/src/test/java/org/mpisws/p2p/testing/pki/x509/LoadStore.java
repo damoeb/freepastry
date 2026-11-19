@@ -48,21 +48,21 @@ import org.mpisws.p2p.pki.x509.CertificateAuthorityTool;
 public class LoadStore {
 
   public static void main(String[] args) throws Exception {
-    char[] pw = new char[0];
+    char[] chars = new char[0];
     if (args.length > 0) {
-      pw = args[0].toCharArray();
+      chars = args[0].toCharArray();
     }
 
     // store it
     KeyStore store = KeyStore.getInstance(CertificateAuthorityTool.DEFAULT_KEYSTORE_TYPE);
-    store.load(new FileInputStream("ca-store"), pw);
+    store.load(new FileInputStream("ca-store"), chars);
 
-    Enumeration<String> e = store.aliases();
-    while(e.hasMoreElements()) {
-      System.out.println(e.nextElement());
+    Enumeration<String> enumeration = store.aliases();
+    while(enumeration.hasMoreElements()) {
+      System.out.println(enumeration.nextElement());
     }
 
-    Key privateKey = store.getKey("private", pw);
+    Key privateKey = store.getKey("private", chars);
     Certificate[] chain = store.getCertificateChain("private");
     System.out.println(privateKey);
     System.out.println(chain[0]);

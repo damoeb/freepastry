@@ -58,26 +58,26 @@ public class LogSnippitTest {
   }
 
   private void serializationRoundTrip(long seed) throws Exception {
-    Random r = new Random(seed);
-    int hashSize = r.nextInt(100)+1;
+    Random random = new Random(seed);
+    int hashSize = random.nextInt(100)+1;
 
     ArrayList<SnippetEntry> list = new ArrayList<SnippetEntry>(100);
 
     @SuppressWarnings("MathAbsoluteNegative") // Long.MIN_VALUE is a 2^-64 chance; keeps the seeded sequence as it was
-    long seq = Math.abs(r.nextLong());
+    long seq = Math.abs(random.nextLong());
     for (int i = 0; i < 400; i++) {
-      boolean isHash = r.nextInt(10) == 1;
+      boolean isHash = random.nextInt(10) == 1;
       byte[] content;
       if (isHash) {
         content = new byte[hashSize];
       } else {
         // pick a size
-        switch(r.nextInt(15)) {
+        switch(random.nextInt(15)) {
         case 9:
-          content = new byte[r.nextInt(65535)];
+          content = new byte[random.nextInt(65535)];
           break;
         case 8:
-          content = new byte[r.nextInt(Short.MAX_VALUE*10)];
+          content = new byte[random.nextInt(Short.MAX_VALUE*10)];
           break;
         case 10:
           content = new byte[0xFF];
@@ -95,12 +95,12 @@ public class LogSnippitTest {
           content = new byte[0xFFFE];
           break;
         default:
-          content = new byte[r.nextInt(254)+1];
+          content = new byte[random.nextInt(254)+1];
         }
       }
-      r.nextBytes(content);
+      random.nextBytes(content);
 
-      int seqChoice = r.nextInt(10);
+      int seqChoice = random.nextInt(10);
       if (seqChoice < 5) {
         seq++; // increment the index
       } else if (seqChoice < 8) {
@@ -108,22 +108,22 @@ public class LogSnippitTest {
         seq-= (seq%SnippetEntry.NUM_INDEXES);
         seq+= SnippetEntry.NUM_INDEXES;
       } else {
-        seq+=r.nextInt(Integer.MAX_VALUE);
+        seq+=random.nextInt(Integer.MAX_VALUE);
       }
-      list.add(new SnippetEntry((byte)r.nextInt(256),seq,isHash,content));
+      list.add(new SnippetEntry((byte)random.nextInt(256),seq,isHash,content));
     }
 
     byte[] baseHash = new byte[hashSize];
-    r.nextBytes(baseHash);
-    LogSnippet ls = new LogSnippet(baseHash,list);
+    random.nextBytes(baseHash);
+    LogSnippet logSnippet = new LogSnippet(baseHash,list);
 
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    ls.serialize(sob);
+    logSnippet.serialize(sob);
 
     SimpleInputBuffer sib = new SimpleInputBuffer(sob.getBytes());
     LogSnippet ls2 = new LogSnippet(sib,hashSize);
 
-    assertEquals(ls, ls2, "seed "+seed);
+    assertEquals(logSnippet, ls2, "seed "+seed);
   }
 
 }

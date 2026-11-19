@@ -656,25 +656,25 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
     case EX_TYPE_Unknown:
       String className = nextEvent.readUTF();
       String message = nextEvent.readUTF();
-      Class<? extends IOException> c;
+      Class<? extends IOException> exceptionClass;
       try {
         // don't initialize the class before we know it is an IOException
         Class<?> loaded = Class.forName(className, false, Verifier.class.getClassLoader());
         if (!IOException.class.isAssignableFrom(loaded)) {
           throw new RuntimeException("Logged exception class "+className+" is not an IOException: "+message);
         }
-        c = loaded.asSubclass(IOException.class);
+        exceptionClass = loaded.asSubclass(IOException.class);
       } catch (ClassNotFoundException cnfe) {
         throw new RuntimeException("Couldn't find class "+className+" "+message);
       }
 
       try {
-        return c.getConstructor(String.class).newInstance(message);
+        return exceptionClass.getConstructor(String.class).newInstance(message);
       } catch (Exception e) {
         try {
           // no String constructor, fall back to the no-arg constructor (the message is lost)
-          return c.getConstructor().newInstance();
-        } catch (Exception e2) {
+          return exceptionClass.getConstructor().newInstance();
+        } catch (Exception exception) {
           throw new RuntimeException("Couldn't find constructor for "+className+" "+message);
         }
       }
@@ -688,10 +688,10 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   Map<Integer, ReplaySocket<Handle>> sockets = new HashMap<Integer, ReplaySocket<Handle>>();
 
   @Override
-  public SocketRequestHandle<Handle> openSocket(final Handle i, SocketCallback<Handle> deliverSocketToMe, final Map<String, Object> options) {
+  public SocketRequestHandle<Handle> openSocket(final Handle handle, SocketCallback<Handle> deliverSocketToMe, final Map<String, Object> options) {
     try {
-      int socketId = openSocket(i);
-      ReplaySocket<Handle> socket = new ReplaySocket<Handle>(i,socketId,this,options);
+      int socketId = openSocket(handle);
+      ReplaySocket<Handle> socket = new ReplaySocket<Handle>(handle,socketId,this,options);
       socket.setDeliverSocketToMe(deliverSocketToMe);
       sockets.put(socketId, socket);
       return socket;
@@ -700,7 +700,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
 
         @Override
         public Handle getIdentifier() {
-          return i;
+          return handle;
         }
 
         @Override

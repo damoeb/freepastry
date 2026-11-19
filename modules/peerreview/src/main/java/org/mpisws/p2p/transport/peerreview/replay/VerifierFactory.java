@@ -75,19 +75,19 @@ public class VerifierFactory<Handle extends RawSerializable, Identifier extends 
     Parameters params = new SimpleParameters(Environment.defaultParamFileArray,null);
     DirectTimeSource dts = new DirectTimeSource(startTime);
 
-    LogManager lm;
+    LogManager logManager;
     if (lm2 instanceof Slf4jLogManager clm) {
-      lm = clm.clone(clm.getPrefix()+"-"+name);
+      logManager = clm.clone(clm.getPrefix()+"-"+name);
     } else {
-      lm = Environment.generateDefaultLogManager();
+      logManager = Environment.generateDefaultLogManager();
     }
-    RandomSource rs = new SimpleRandomSource(randSeed, lm);
-    dts.setLogManager(lm);
-    SelectorLoop selector = new ReplaySelectorManager("Replay "+name, dts, lm);
+    RandomSource randomSource = new SimpleRandomSource(randSeed, logManager);
+    dts.setLogManager(logManager);
+    SelectorLoop selector = new ReplaySelectorManager("Replay "+name, dts, logManager);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
-    return new Environment(selector,proc,rs,dts,lm,
-        params, Environment.generateDefaultExceptionStrategy(lm));
+    return new Environment(selector,proc,randomSource,dts,logManager,
+        params, Environment.generateDefaultExceptionStrategy(logManager));
   }
 
 }

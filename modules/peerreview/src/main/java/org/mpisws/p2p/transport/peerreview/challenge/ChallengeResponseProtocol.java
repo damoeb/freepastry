@@ -120,12 +120,12 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
     list.add(new PacketInfo<Handle, Identifier>(source,evidence,isAccusation,subject,originator,evidenceSeq,options));
   }
 
-  protected void deliver(PacketInfo<Handle, Identifier> pi) {
+  protected void deliver(PacketInfo<Handle, Identifier> packetInfo) {
     try {
-      if (pi.isAccusation) {
-        infoStore.addEvidence(pi.originator, pi.subject, pi.evidenceSeq, pi.message, pi.source);
+      if (packetInfo.isAccusation) {
+        infoStore.addEvidence(packetInfo.originator, packetInfo.subject, packetInfo.evidenceSeq, packetInfo.message, packetInfo.source);
       } else {
-        commitmentProtocol.handleIncomingMessage(pi.source, (UserDataMessage<Handle>)pi.message, pi.options);
+        commitmentProtocol.handleIncomingMessage(packetInfo.source, (UserDataMessage<Handle>)packetInfo.message, packetInfo.options);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -140,8 +140,8 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
     case STATUS_TRUSTED:
       List<PacketInfo<Handle, Identifier>> list = queue.remove(id);
       if (list != null) {
-        for (PacketInfo<Handle, Identifier> pi : list) {
-          deliver(pi);
+        for (PacketInfo<Handle, Identifier> packetInfo : list) {
+          deliver(packetInfo);
         }
       }
       break;
@@ -448,16 +448,16 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
    *  Handle an incoming RESPONSE or ACCUSATION from another node
    */
 
-  public void handleStatement(Handle source, PeerReviewMessage m, Map<String, Object> options) throws IOException {
-    assert(m instanceof AccusationMessage || m instanceof ResponseMessage);
+  public void handleStatement(Handle source, PeerReviewMessage msg, Map<String, Object> options) throws IOException {
+    assert(msg instanceof AccusationMessage || msg instanceof ResponseMessage);
 
     /* We get called from the StatementProtocol, so we already know that the statement
        is well-formed, and that we have acquired all the necessary supplementary material,
        such as certificates or hash maps */
 
-    switch(PeerReviewMessageType.find(m.getType())) {
+    switch(PeerReviewMessageType.find(msg.getType())) {
     case RESPONSE: {
-        ResponseMessage<Identifier> message = (ResponseMessage<Identifier>)m;
+        ResponseMessage<Identifier> message = (ResponseMessage<Identifier>)msg;
         logger.debug("Statement completed: RESPONSE  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
         handleResponse(message, options);
         if (infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source)) == STATUS_SUSPECTED) {
@@ -467,7 +467,7 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
         return;
       }
     case ACCUSATION:
-      AccusationMessage<Identifier> message = (AccusationMessage<Identifier>)m;
+      AccusationMessage<Identifier> message = (AccusationMessage<Identifier>)msg;
       logger.debug("Statement completed: ACCUSATION  (orig={}, subject={}, ts={})", message.getOriginator(), message.getSubject(), message.getEvidenceSeq());
 
       int status = infoStore.getStatus(peerreview.getIdentifierExtractor().extractIdentifier(source));

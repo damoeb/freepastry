@@ -70,9 +70,9 @@ class CertifiedDatagramTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    CertificateAuthorityTool ca = ca();
+    CertificateAuthorityTool certificateAuthorityTool = ca();
     int port = freePort();
-    CertifiedSocketPastryNodeFactory factoryA = new CertifiedSocketPastryNodeFactory(store(ca, ALICE), NO_PASSWORD, port, environment());
+    CertifiedSocketPastryNodeFactory factoryA = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, ALICE), NO_PASSWORD, port, environment());
     a = factoryA.newNode();
     nodes.add(a);
     receiverA = new CertifiedDeferredDeliveryTest.Receiver(a);
@@ -82,7 +82,7 @@ class CertifiedDatagramTest {
     awaitReady(a);
 
     int portB = freePort();
-    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(ca, BOB), NO_PASSWORD, portB, environment());
+    CertifiedSocketPastryNodeFactory factoryB = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, BOB), NO_PASSWORD, portB, environment());
     b = factoryB.newNode();
     nodes.add(b);
     receiverB = new CertifiedDeferredDeliveryTest.Receiver(b);
@@ -103,9 +103,9 @@ class CertifiedDatagramTest {
   @DisplayName("a datagram that claims an authenticated id does not reach the application")
   void aForgedDatagramFromAnAuthenticatedIdIsNotDelivered() throws Exception {
     // M at its own address, claiming B's id
-    PastryNode m = attacker(BOB, null);
+    PastryNode pastryNode = attacker(BOB, null);
 
-    sendDatagram(m, 13);
+    sendDatagram(pastryNode, 13);
 
     assertNever(() -> receiverA.received.contains(13), "A's application got the forged message");
     assertEquals(List.of(), receiverA.received, "numbers A's application got");
@@ -118,10 +118,10 @@ class CertifiedDatagramTest {
     // M claims B's address (it binds a socket of its own, but the stack's headers say B's address) and, created
     // after B, has the newer epoch; the id is a fresh one, the node change rule only looks at address and epoch
     Thread.sleep(5);
-    PastryNode m = attacker(new RandomNodeIdFactory(a.getEnvironment()).generateNodeId(), addressB);
-    assertTrue(((SocketNodeHandle) m.getLocalHandle()).getEpoch() > ((SocketNodeHandle) realB).getEpoch());
+    PastryNode pastryNode = attacker(new RandomNodeIdFactory(a.getEnvironment()).generateNodeId(), addressB);
+    assertTrue(((SocketNodeHandle) pastryNode.getLocalHandle()).getEpoch() > ((SocketNodeHandle) realB).getEpoch());
 
-    sendDatagram(m, 14);
+    sendDatagram(pastryNode, 14);
 
     assertNever(() -> realB.getLiveness() >= NodeHandle.LIVENESS_DEAD, "A marked the real B dead");
     assertTrue(a.getLeafSet().member(BOB), "B is still in A's leaf set");
@@ -141,19 +141,19 @@ class CertifiedDatagramTest {
   // helpers
 
   /** sends A a routed message for A's id, carrying this number, from M as a datagram */
-  void sendDatagram(PastryNode m, int number) throws Exception {
-    CertifiedDeferredDeliveryTest.Receiver receiverM = new CertifiedDeferredDeliveryTest.Receiver(m);
+  void sendDatagram(PastryNode pastryNode, int number) throws Exception {
+    CertifiedDeferredDeliveryTest.Receiver receiverM = new CertifiedDeferredDeliveryTest.Receiver(pastryNode);
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
     a.getLocalHandle().serialize(buf);
-    onSelector(m, () -> {
-      NodeHandle aAtM = m.readNodeHandle(new SimpleInputBuffer(buf.getBytes()));
+    onSelector(pastryNode, () -> {
+      NodeHandle aAtM = pastryNode.readNodeHandle(new SimpleInputBuffer(buf.getBytes()));
       PastryEndpointMessage message = new PastryEndpointMessage(((PastryEndpoint) receiverM.endpoint).getAddress(),
-          new CertifiedDeferredDeliveryTest.Numbered(number), m.getLocalHandle());
-      RouteMessage route = new RouteMessage(ALICE, message, aAtM, m.getConfig().routeMsgVersion());
+          new CertifiedDeferredDeliveryTest.Numbered(number), pastryNode.getLocalHandle());
+      RouteMessage route = new RouteMessage(ALICE, message, aAtM, pastryNode.getConfig().routeMsgVersion());
       Map<String, Object> options = new HashMap<>();
       options.put(WireTransportLayer.OPTION_TRANSPORT_TYPE, WireTransportLayer.TRANSPORT_TYPE_DATAGRAM);
       options.put(PriorityTransportLayer.OPTION_PRIORITY, message.getPriority());
-      return m.send(aAtM, route, null, options);
+      return pastryNode.send(aAtM, route, null, options);
     });
   }
 
@@ -170,9 +170,9 @@ class CertifiedDatagramTest {
         return super.buildWireTransportLayer(real, pn);
       }
     };
-    PastryNode m = factory.newNode(id, new MultiInetSocketAddress(claimedAddress == null ? real : claimedAddress));
-    nodes.add(m);
-    return m;
+    PastryNode pastryNode = factory.newNode(id, new MultiInetSocketAddress(claimedAddress == null ? real : claimedAddress));
+    nodes.add(pastryNode);
+    return pastryNode;
   }
 
   static NodeHandle handleOf(PastryNode node, Id id) {

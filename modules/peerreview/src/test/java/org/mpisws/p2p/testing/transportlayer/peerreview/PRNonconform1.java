@@ -93,9 +93,9 @@ public class PRNonconform1 extends PRRegressionTest {
   }
 
   @Override
-  public BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> pr,
+  public BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> peerReview,
       Environment env) {
-    return new BogusApp(player,pr,env) {
+    return new BogusApp(player,peerReview,env) {
 
       /**
        * Make bob incorrectly send messages
@@ -114,9 +114,9 @@ public class PRNonconform1 extends PRRegressionTest {
       }
 
       @Override
-      public void messageReceived(HandleImpl i, ByteBuffer m,
+      public void messageReceived(HandleImpl handleImpl, ByteBuffer msg,
           Map<String, Object> options) throws IOException {
-        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())));
+        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())));
       }
 
       @Override

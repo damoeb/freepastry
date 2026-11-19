@@ -83,14 +83,14 @@ public class ProfileFileTest {
 
   public static void main(String[] args) throws Exception {
     // globals
-    Path f = Path.of("delme.txt");
-    if (!Files.exists(f)) {
+    Path path = Path.of("delme.txt");
+    if (!Files.exists(path)) {
       // make a 10 meg file
-      Random r = new Random();
-      try (OutputStream fos = Files.newOutputStream(f)) {
+      Random random = new Random();
+      try (OutputStream fos = Files.newOutputStream(path)) {
         byte[] foo = new byte[10000];
         for (int ctr = 0; ctr < 1000; ctr++) {
-          r.nextBytes(foo);
+          random.nextBytes(foo);
           fos.write(foo);
         }
       }
@@ -115,20 +115,20 @@ public class ProfileFileTest {
     etl1.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
 
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m,
+      public void messageReceived(InetSocketAddress address, ByteBuffer msg,
           Map<String, Object> options) throws IOException {
 
       }
 
       @Override
-      public void incomingSocket(P2PSocket<InetSocketAddress> s) throws IOException {
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) throws IOException {
         // we got a socket, convert it to an AppSocket, then a FileTransfer
-        logger.info("incomingSocket({})", s);
-        final AppSocket sock = new SocketAdapter<InetSocketAddress>(s, env);
-        FileTransfer ft = new FileTransferImpl(sock,new FileTransferCallback() {
+        logger.info("incomingSocket({})", socket);
+        final AppSocket appSocket = new SocketAdapter<InetSocketAddress>(socket, env);
+        FileTransfer fileTransfer = new FileTransferImpl(appSocket,new FileTransferCallback() {
 
           @Override
-          public void messageReceived(ByteBuffer bb) {
+          public void messageReceived(ByteBuffer buffer) {
 
           }
 
@@ -151,7 +151,7 @@ public class ProfileFileTest {
 
 
 
-        ft.addListener(new FileTransferListener() {
+        fileTransfer.addListener(new FileTransferListener() {
           Map<FileReceipt, Long> startTimes = new HashMap<FileReceipt, Long>();
 
           @Override
@@ -270,9 +270,9 @@ public class ProfileFileTest {
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<InetSocketAddress> s,
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
           Exception ex) {
-        logger.warn("receiveException({})", s, ex);
+        logger.warn("receiveException({})", request, ex);
       }
     }, null);
 

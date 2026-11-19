@@ -264,26 +264,26 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
          break;
        }
        case PROOF_INCONSISTENT: {
-         ProofInconsistent pi = (ProofInconsistent)payload;
+         ProofInconsistent proofInconsistent = (ProofInconsistent)payload;
 
-         if (!peerreview.verify(subject, pi.getFirstAuthenticator())) {
+         if (!peerreview.verify(subject, proofInconsistent.getFirstAuthenticator())) {
            logger.warn("INCONSISTENT proof's first authenticator has an invalid signature");
            idx.finish();
            return;
          }
 
-         if (!peerreview.verify(subject, pi.getSecondAuthenticator())) {
+         if (!peerreview.verify(subject, proofInconsistent.getSecondAuthenticator())) {
            logger.warn("INCONSISTENT proof's second authenticator has an invalid signature");
            idx.finish();
            return;
          }
 
-         long seq1 = pi.getFirstAuthenticator().getSeq();
-         long seq2 = pi.getSecondAuthenticator().getSeq();
-         byte[] hash1 = pi.getFirstAuthenticator().getHash();
-         byte[] hash2 = pi.getSecondAuthenticator().getHash();
+         long seq1 = proofInconsistent.getFirstAuthenticator().getSeq();
+         long seq2 = proofInconsistent.getSecondAuthenticator().getSeq();
+         byte[] hash1 = proofInconsistent.getFirstAuthenticator().getHash();
+         byte[] hash2 = proofInconsistent.getSecondAuthenticator().getHash();
 
-         if(pi.getSnippet() == null) {
+         if(proofInconsistent.getSnippet() == null) {
            if (seq1 != seq2) {
              logger.warn("INCONSISTENT-0 proof's authenticators don't have matching sequence numbers (seq1={}, seq2={}) -- discarding", seq1, seq2);
              idx.finish();
@@ -297,7 +297,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
            }
          } else {
 
-           long firstSeq = pi.getSnippet().getFirstSeq();
+           long firstSeq = proofInconsistent.getSnippet().getFirstSeq();
 
            if (!((firstSeq<seq2) && (seq2<seq1))) {
              logger.warn("INCONSISTENT-1 proof's sequence numbers do not make sense (first={}, seq2={}, seq1={}) -- discarding", firstSeq, seq2, seq1);
@@ -305,13 +305,13 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
              return;
            }
 
-           if (!pi.getSnippet().checkHashChainContains(hash1, seq1, transport, logger)) {
+           if (!proofInconsistent.getSnippet().checkHashChainContains(hash1, seq1, transport, logger)) {
              logger.warn("Snippet in INCONSISTENT-1 proof cannot be authenticated using first authenticator (#{}) -- discarding", seq1);
              idx.finish();
              return;
            }
 
-           if (pi.getSnippet().checkHashChainContains(hash2, seq2, transport, logger)) {
+           if (proofInconsistent.getSnippet().checkHashChainContains(hash2, seq2, transport, logger)) {
              logger.warn("INCONSISTENT-1 proof claims that authenticator 2 (#{}) is not in the snippet, but it is -- discarding", seq2);
              idx.finish();
              return;

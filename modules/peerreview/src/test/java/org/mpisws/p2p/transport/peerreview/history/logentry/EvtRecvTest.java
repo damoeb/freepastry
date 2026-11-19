@@ -72,8 +72,8 @@ public class EvtRecvTest {
 
   static final Serializer<Id> ID_SERIALIZER = new Serializer<Id>() {
     @Override
-    public void serialize(Id i, OutputBuffer buf) throws IOException {
-      i.serialize(buf);
+    public void serialize(Id id, OutputBuffer buf) throws IOException {
+      id.serialize(buf);
     }
 
     @Override

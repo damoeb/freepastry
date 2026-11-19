@@ -31,16 +31,16 @@ public class CAToolTest {
 
   @Test
   void generatedKeysAndCertificatesUseModernDefaults() throws Exception {
-    CertificateAuthorityTool ca = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
+    CertificateAuthorityTool certificateAuthorityTool = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
     KeyPair node = CertificateAuthorityTool.generateKeyPair();
 
-    X509Certificate cert = ca.sign("node", node.getPublic());
+    X509Certificate cert = certificateAuthorityTool.sign("node", node.getPublic());
 
     assertEquals(CertificateAuthorityTool.DEFAULT_KEY_SIZE, ((RSAPublicKey) node.getPublic()).getModulus().bitLength());
-    assertEquals(CertificateAuthorityTool.DEFAULT_KEY_SIZE, ((RSAPublicKey) ca.getCertificate().getPublicKey()).getModulus().bitLength());
+    assertEquals(CertificateAuthorityTool.DEFAULT_KEY_SIZE, ((RSAPublicKey) certificateAuthorityTool.getCertificate().getPublicKey()).getModulus().bitLength());
     assertEquals("SHA256WITHRSA", cert.getSigAlgName().toUpperCase(Locale.ROOT));
-    assertEquals("SHA256WITHRSA", ca.getCertificate().getSigAlgName().toUpperCase(Locale.ROOT));
-    cert.verify(ca.getCertificate().getPublicKey());
+    assertEquals("SHA256WITHRSA", certificateAuthorityTool.getCertificate().getSigAlgName().toUpperCase(Locale.ROOT));
+    cert.verify(certificateAuthorityTool.getCertificate().getPublicKey());
   }
 
   @Test
@@ -96,9 +96,9 @@ public class CAToolTest {
 
   @Test
   void passwordComesFromTheEnvironment() {
-    char[] pw = CertificateAuthorityTool.readPassword("PW", "prompt", java.util.Map.of("PW", "secret"), null);
+    char[] chars = CertificateAuthorityTool.readPassword("PW", "prompt", java.util.Map.of("PW", "secret"), null);
 
-    assertEquals("secret", new String(pw));
+    assertEquals("secret", new String(chars));
   }
 
   @Test

@@ -175,19 +175,19 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
     /* For each of these nodes ... */
 
-    for (Handle h : buffer) {
-      Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(h);
+    for (Handle handle : buffer) {
+      Identifier identifier = peerreview.getIdentifierExtractor().extractIdentifier(handle);
       /* If the node is not trusted, we don't audit */
 
-      int status = infoStore.getStatus(i);
+      int status = infoStore.getStatus(identifier);
       if (status != STATUS_TRUSTED) {
-        logger.atDebug().log(() -> "Node "+h+" is "+renderStatus(status)+"; skipping audit");
+        logger.atDebug().log(() -> "Node "+handle+" is "+renderStatus(status)+"; skipping audit");
         continue;
       }
 
       /* If a previous audit of this node is still in progress, we skip this round */
 
-      if (!activeAudit.containsKey(h)) {
+      if (!activeAudit.containsKey(handle)) {
 
         /* Retrieve the node's newest and last-checked authenticators. Note that we need
            at least two distinct authenticators to be able to audit a node. */
@@ -197,10 +197,10 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
         boolean haveEnoughAuthenticators = true;
         byte needPrevCheckpoint = 0;
 
-        logger.info("Starting to audit {}", h);
+        logger.info("Starting to audit {}", handle);
 
-        if ((authFrom = infoStore.getLastCheckedAuth(i)) == null) {
-          if ((authFrom = authInStore.getOldestAuthenticator(i)) != null) {
+        if ((authFrom = infoStore.getLastCheckedAuth(identifier)) == null) {
+          if ((authFrom = authInStore.getOldestAuthenticator(identifier)) != null) {
             logger.debug("We haven't audited this node before; using oldest authenticator");
             needPrevCheckpoint = 1;
           } else {
@@ -209,7 +209,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
           }
         }
 
-        if ((authTo = authInStore.getMostRecentAuthenticator(i)) == null) {
+        if ((authTo = authInStore.getMostRecentAuthenticator(identifier)) == null) {
           logger.debug("No recent authenticator; skipping this audit");
           haveEnoughAuthenticators = false;
         }
@@ -223,10 +223,10 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
            be checked by cleanupAudits() */
 
         if (haveEnoughAuthenticators) {
-          beginAudit(h, authFrom, authTo, needPrevCheckpoint, true);
+          beginAudit(handle, authFrom, authTo, needPrevCheckpoint, true);
         }
       } else {
-        logger.warn("Node {} is already being audited; skipping", h);
+        logger.warn("Node {} is already being audited; skipping", handle);
       }
     }
 
@@ -256,28 +256,28 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
     for (OngoingAudit<Handle, Identifier> foo : activeAudit.values()) {
       if ((now >= foo.getCurrentTimeout()) && !foo.isReplaying()) {
-        Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.getTarget());
+        Identifier identifier = peerreview.getIdentifierExtractor().extractIdentifier(foo.getTarget());
 
         logger.warn("No response to AUDIT request; filing as evidence {}", foo.getEvidenceSeq());
         try {
-          infoStore.addEvidence(peerreview.getLocalId(), i, foo.getEvidenceSeq(),
+          infoStore.addEvidence(peerreview.getLocalId(), identifier, foo.getEvidenceSeq(),
               foo.getRequest().challenge());
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-        peerreview.sendEvidenceToWitnesses(i, foo.getEvidenceSeq(), foo.getRequest().challenge());
+        peerreview.sendEvidenceToWitnesses(identifier, foo.getEvidenceSeq(), foo.getRequest().challenge());
 
         terminateAudit(foo.getTarget());
       }
     }
   }
 
-  void terminateAudit(Handle h) {
-    activeAudit.remove(h);
+  void terminateAudit(Handle handle) {
+    activeAudit.remove(handle);
   }
 
-  void terminateInvestigation(Handle h) {
-    activeInvestigation.remove(h);
+  void terminateInvestigation(Handle handle) {
+    activeInvestigation.remove(handle);
   }
 
   void makeProgressOnInvestigations() {
@@ -556,8 +556,8 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
       /* Do the replay */
 
-      ReplaySelectorManager sm = ((ReplaySelectorManager)verifier.getEnvironment().getSelectorManager());
-      while(sm.makeProgress());
+      ReplaySelectorManager replaySelectorManager = ((ReplaySelectorManager)verifier.getEnvironment().getSelectorManager());
+      while(replaySelectorManager.makeProgress());
 
       boolean verifiedOK = verifier.isVerificationSuccessful();
       logger.atInfo().log(() -> "END OF REPLAY: "+(verifiedOK ? "VERIFIED OK" : "VERIFICATION FAILED")+" =================");
@@ -620,14 +620,14 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
           /* There are several places we might find 'old' authenticators. Check all of them,
              and pick the authenticator that is closest to T */
 
-          Authenticator a1 = authInStore.getLastAuthenticatorBefore(request.subject(), request.timestamp());
+          Authenticator authenticator = authInStore.getLastAuthenticatorBefore(request.subject(), request.timestamp());
           Authenticator a2 = authCacheStore.getLastAuthenticatorBefore(request.subject(), request.timestamp());
           Authenticator a3 = authInStore.getOldestAuthenticator(request.subject());
 
           Authenticator best = null;
 
-          if (a1 != null && (best == null || (!(best.getSeq()<request.timestamp()) && (a1.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (a1.getSeq()<request.timestamp()) && (best.getSeq()<a1.getSeq())))) {
-            best = a1;
+          if (authenticator != null && (best == null || (!(best.getSeq()<request.timestamp()) && (authenticator.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (authenticator.getSeq()<request.timestamp()) && (best.getSeq()<authenticator.getSeq())))) {
+            best = authenticator;
           }
 
           if (a2 != null && (best == null || (!(best.getSeq()<request.timestamp()) && (a2.getSeq()<request.timestamp())) || ((best.getSeq()<request.timestamp()) && (a2.getSeq()<request.timestamp()) && (best.getSeq()<a2.getSeq())))) {

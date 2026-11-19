@@ -58,13 +58,13 @@ public class PendingInvestigation<Handle> {
   }
 
   /** Keeps the earliest authFrom and the latest authTo seen so far. */
-  public void offerAuthenticators(Authenticator from, Authenticator to) {
+  public void offerAuthenticators(Authenticator from, Authenticator authenticator) {
     if (authFrom == null || (from.getSeq()<authFrom.getSeq())) {
       authFrom = from;
     }
 
-    if (authTo == null || (to.getSeq()>authTo.getSeq())) {
-      authTo = to;
+    if (authTo == null || (authenticator.getSeq()>authTo.getSeq())) {
+      authTo = authenticator;
     }
   }
 

@@ -85,9 +85,9 @@ public class LogSnippet {
     if (!(o instanceof LogSnippet that)) return false;
     if (!Arrays.equals(this.baseHash, that.baseHash)) return false;
     if (this.entries.size() != that.entries.size()) return false;
-    Iterator<SnippetEntry> i2 = that.entries.iterator();
+    Iterator<SnippetEntry> iterator = that.entries.iterator();
     for (SnippetEntry snippetEntry : this.entries) {
-      if (!snippetEntry.equals(i2.next())) return false;
+      if (!snippetEntry.equals(iterator.next())) return false;
     }
     return true;
   }
@@ -101,11 +101,11 @@ public class LogSnippet {
     buf.writeLong(entries.get(0).getSeq());
     buf.writeByte((byte)0);
     buf.write(baseHash, 0, baseHash.length);
-    Iterator<SnippetEntry> i = entries.iterator();
-    SnippetEntry prev = i.next();
+    Iterator<SnippetEntry> iterator = entries.iterator();
+    SnippetEntry prev = iterator.next();
     prev.serialize(buf, null);
-    while(i.hasNext()) {
-      SnippetEntry cur = i.next();
+    while(iterator.hasNext()) {
+      SnippetEntry cur = iterator.next();
       cur.serialize(buf, prev);
       prev = cur;
     }

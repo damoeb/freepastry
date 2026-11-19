@@ -119,12 +119,12 @@ public class CertificateAuthorityTool {
   /**
    *
    * @param CN only used when generating a new CA
-   * @param pw the password of the CA key store and of the CA key; must not be empty
+   * @param chars the password of the CA key store and of the CA key; must not be empty
    * @throws IllegalArgumentException if pw is empty
    */
-  public static CertificateAuthorityTool getCATool(String CN, char[] pw) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
+  public static CertificateAuthorityTool getCATool(String CN, char[] chars) throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, FileNotFoundException, IOException, UnrecoverableKeyException, InvalidKeyException, IllegalStateException, SignatureException, InvalidAlgorithmParameterException {
 
-    requirePassword(pw, "CA");
+    requirePassword(chars, "CA");
     X509Certificate caCert;
     KeyPair caPair;
 
@@ -132,12 +132,12 @@ public class CertificateAuthorityTool {
     if (Files.exists(caStoreFile)) {
       KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
       try (InputStream fis = Files.newInputStream(caStoreFile)) {
-        store.load(fis, pw);
+        store.load(fis, chars);
       } catch (IOException ioe) {
         throw new IOException("Could not load "+caStoreFile+" as a "+DEFAULT_KEYSTORE_TYPE+" key store: wrong password, or a store written by an older FreePastry (UBER format, no longer supported)", ioe);
       }
       caCert = (X509Certificate)store.getCertificate(CA_STORE_CERT);
-      PrivateKey priv = (PrivateKey)store.getKey(CA_STORE_PRIVATE, pw);
+      PrivateKey priv = (PrivateKey)store.getKey(CA_STORE_PRIVATE, chars);
       caPair = new KeyPair(caCert.getPublicKey(),priv);
     } else {
       // make a self-signed cert
@@ -155,11 +155,11 @@ public class CertificateAuthorityTool {
       // PKCS12 cannot hold a bare public key: it is read back from the certificate
       KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
       store.load(null, null);
-      store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), pw, chain);
+      store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), chars, chain);
       store.setCertificateEntry(CA_STORE_CERT, caCert);
 
       try (OutputStream fos = newPrivateOutputStream(caStoreFile)) {
-        store.store(fos, pw);
+        store.store(fos, chars);
       }
     }
     return new CertificateAuthorityTool(caCert, caPair);
@@ -213,8 +213,8 @@ public class CertificateAuthorityTool {
   private static X509Certificate generate(org.bouncycastle.cert.X509CertificateHolder holder) throws CertificateEncodingException {
     try {
       return new JcaX509CertificateConverter().setProvider(SecurityUtils.BOUNCY_CASTLE).getCertificate(holder);
-    } catch (CertificateException ce) {
-      throw new CertificateEncodingException(ce);
+    } catch (CertificateException certificateException) {
+      throw new CertificateEncodingException(certificateException);
     }
   }
 
@@ -274,8 +274,8 @@ public class CertificateAuthorityTool {
   /** Environment variable that holds the password of a node store written with {@code -store}. */
   public static final String NODE_PASSWORD_ENV = "FREEPASTRY_NODE_PASSWORD";
 
-  private static void requirePassword(char[] pw, String what) {
-    if (pw == null || pw.length == 0) throw new IllegalArgumentException("The "+what+" key store needs a non-empty password");
+  private static void requirePassword(char[] chars, String what) {
+    if (chars == null || chars.length == 0) throw new IllegalArgumentException("The "+what+" key store needs a non-empty password");
   }
 
   /**
@@ -308,16 +308,16 @@ public class CertificateAuthorityTool {
 
   public static char[] readPassword(String envVar, String prompt, Map<String, String> env, Console console) {
     String value = env.get(envVar);
-    char[] pw;
+    char[] chars;
     if (value != null) {
-      pw = value.toCharArray();
+      chars = value.toCharArray();
     } else if (console != null) {
-      pw = console.readPassword("%s", prompt);
+      chars = console.readPassword("%s", prompt);
     } else {
       throw new IllegalStateException("No password: set "+envVar+" or run on a terminal");
     }
-    if (pw == null || pw.length == 0) throw new IllegalStateException("The password must not be empty ("+envVar+")");
-    return pw;
+    if (chars == null || chars.length == 0) throw new IllegalStateException("The password must not be empty ("+envVar+")");
+    return chars;
   }
 
   /** also the aliases of a node store, which {@code CertifiedNodeIdFactory} reads */
@@ -356,7 +356,7 @@ public class CertificateAuthorityTool {
       }
     }
 
-    char[] pw = readPassword(CA_PASSWORD_ENV, "Password of the CA store "+caName+"-store: ");
+    char[] chars = readPassword(CA_PASSWORD_ENV, "Password of the CA store "+caName+"-store: ");
     char[] nodePw = store ? readPassword(NODE_PASSWORD_ENV, "Password of the new node store: ") : null;
 
     Environment env = null;
@@ -366,7 +366,7 @@ public class CertificateAuthorityTool {
       CN = id.toStringFull();
     }
 
-    CertificateAuthorityTool caTool = getCATool(caName,pw);
+    CertificateAuthorityTool caTool = getCATool(caName,chars);
 
     KeyPair pair = generateKeyPair();
     X509Certificate cert = caTool.sign(CN,pair.getPublic());
@@ -435,7 +435,7 @@ public class CertificateAuthorityTool {
       try {
         cert.verify(bogusPair.getPublic());
         System.out.println("WARNING!  Bogus key verified!!!");
-      } catch (InvalidKeyException | SignatureException se) {
+      } catch (InvalidKeyException | SignatureException invalidKeyException) {
         System.out.println("bogus didn't verify.");
       }
 
@@ -451,7 +451,7 @@ public class CertificateAuthorityTool {
       verifier.update(msg);
       System.out.println("verified (should fail):"+verifier.verify(signature));
     }
-    Arrays.fill(pw, '\0');
+    Arrays.fill(chars, '\0');
     if (nodePw != null) Arrays.fill(nodePw, '\0');
     if (env != null) env.destroy();
   }

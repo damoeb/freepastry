@@ -135,8 +135,8 @@ public class Recorder implements MyEvents {
 
       @Override
       @SuppressWarnings("unchecked")
-      protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, ProximityNeighborSelector pns) {
-        final Bootstrapper<InetSocketAddress> internal = super.getBootstrapper(pn, tl, handleFactory, pns);
+      protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn, NodeHandleAdapter nodeHandleAdapter, NodeHandleFactory<?> handleFactory, ProximityNeighborSelector pns) {
+        final Bootstrapper<InetSocketAddress> internal = super.getBootstrapper(pn, nodeHandleAdapter, handleFactory, pns);
         Bootstrapper<InetSocketAddress> ret = bootaddresses -> {
           try {
             recorders.get(pn).logEvent(EVT_BOOT);
@@ -191,13 +191,13 @@ public class Recorder implements MyEvents {
     }
 
     // for the first app subscribe then start the publishtask
-    Iterator<MyScribeClient> i = apps.iterator();
-    MyScribeClient app = (MyScribeClient) i.next();
+    Iterator<MyScribeClient> iterator = apps.iterator();
+    MyScribeClient app = (MyScribeClient) iterator.next();
     env.getSelectorManager().invoke(new SubscribeInvokation(app));
     env.getSelectorManager().invoke(new PublishInvokation(app));
     // for all the rest just subscribe
-    while (i.hasNext()) {
-      app = (MyScribeClient) i.next();
+    while (iterator.hasNext()) {
+      app = (MyScribeClient) iterator.next();
       env.getSelectorManager().invoke(new SubscribeInvokation(app));
     }
 

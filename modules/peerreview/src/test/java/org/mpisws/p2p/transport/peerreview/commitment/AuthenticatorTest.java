@@ -56,10 +56,10 @@ public class AuthenticatorTest {
 
   @Test
   public void isNotEqualToOtherTypesOrNull() {
-    Authenticator a = auth(5, 1);
-    assertNotEquals((Object)"not an authenticator", a);
-    assertNotEquals(a, (Object)"not an authenticator");
-    assertNotEquals(null, a);
-    assertNotEquals(a, null);
+    Authenticator authenticator = auth(5, 1);
+    assertNotEquals((Object)"not an authenticator", authenticator);
+    assertNotEquals(authenticator, (Object)"not an authenticator");
+    assertNotEquals(null, authenticator);
+    assertNotEquals(authenticator, null);
   }
 }

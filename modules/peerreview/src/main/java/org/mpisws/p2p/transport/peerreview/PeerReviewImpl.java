@@ -442,8 +442,8 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   @Override
-  public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> c, Map<String, Object> options) {
-    return transport.requestCertificate(source, certHolder, c, options);
+  public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> continuation, Map<String, Object> options) {
+    return transport.requestCertificate(source, certHolder, continuation, options);
   }
 
   @Override
@@ -648,13 +648,13 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   }
 
   @Override
-  public SocketRequestHandle<Handle> openSocket(Handle i, SocketCallback<Handle> deliverSocketToMe, Map<String, Object> options) {
-    return transport.openSocket(i, deliverSocketToMe, options);
+  public SocketRequestHandle<Handle> openSocket(Handle handle, SocketCallback<Handle> deliverSocketToMe, Map<String, Object> options) {
+    return transport.openSocket(handle, deliverSocketToMe, options);
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Handle> s) throws IOException {
-    callback.incomingSocket(s);
+  public void incomingSocket(P2PSocket<Handle> socket) throws IOException {
+    callback.incomingSocket(socket);
   }
 
   @Override

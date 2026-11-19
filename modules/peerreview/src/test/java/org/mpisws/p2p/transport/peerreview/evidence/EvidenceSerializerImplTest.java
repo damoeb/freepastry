@@ -58,7 +58,7 @@ public class EvidenceSerializerImplTest {
 
   static final Serializer<Id> ID_SERIALIZER = new Serializer<Id>() {
     @Override
-    public void serialize(Id i, OutputBuffer buf) throws IOException {
+    public void serialize(Id id, OutputBuffer buf) throws IOException {
     }
 
     @Override

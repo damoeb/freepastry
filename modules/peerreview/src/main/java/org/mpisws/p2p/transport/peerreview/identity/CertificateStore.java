@@ -50,6 +50,6 @@ public interface CertificateStore<Handle, Identifier> {
   public byte[] sign(byte[] bytes);
   public int verify(Identifier id, byte[] msg, byte[] signature);
   public boolean hasCertificate(Identifier id);
-  public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> c, Map<String, Object> options);
+  public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> continuation, Map<String, Object> options);
   public short getSignatureSizeBytes();
 }

@@ -98,8 +98,8 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     this.logger = env.getLogManager().getLogger(PeerInfoStoreImpl.class, null);
   }
 
-  public static boolean isProof(Evidence e) {
-    switch (e.getEvidenceType()) {
+  public static boolean isProof(Evidence evidence) {
+    switch (evidence.getEvidenceType()) {
       case CHAL_AUDIT:
         return false;
       case CHAL_SEND:
@@ -109,7 +109,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
       case PROOF_NONCONFORMANT:
         return true;
       default:
-        throw new IllegalArgumentException("Cannot evaluate isProof("+e+"):"+e.getEvidenceType());
+        throw new IllegalArgumentException("Cannot evaluate isProof("+evidence+"):"+evidence.getEvidenceType());
     }
   }
 
@@ -332,9 +332,9 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
     FileInputBuffer buf = new FileInputBuffer(infile, logger);
     byte type = buf.readByte();
-    Evidence e = evidenceSerializer.deserialize(buf, type, false);
+    Evidence evidence = evidenceSerializer.deserialize(buf, type, false);
     buf.close();
-    return e;
+    return evidence;
   }
 
 

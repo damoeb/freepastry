@@ -60,8 +60,8 @@ public abstract class DeterministicSelectorManager extends SelectorLoop {
 
   protected final DirectTimeSource simTime;
 
-  protected DeterministicSelectorManager(String instance, DirectTimeSource simTime, LogManager log, RandomSource rs) {
-    super(instance, simTime, log, rs);
+  protected DeterministicSelectorManager(String instance, DirectTimeSource simTime, LogManager log, RandomSource randomSource) {
+    super(instance, simTime, log, randomSource);
     this.simTime = simTime;
   }
 

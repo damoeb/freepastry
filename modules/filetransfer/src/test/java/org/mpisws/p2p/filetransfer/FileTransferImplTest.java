@@ -51,7 +51,7 @@ class FileTransferImplTest {
     final List<WorkRequest<?>> blockingIO = new ArrayList<WorkRequest<?>>();
 
     @Override
-    public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorLoop selector, TimeSource ts, LogManager log) {
+    public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorLoop selector, TimeSource timeSource, LogManager log) {
       throw new UnsupportedOperationException();
     }
 

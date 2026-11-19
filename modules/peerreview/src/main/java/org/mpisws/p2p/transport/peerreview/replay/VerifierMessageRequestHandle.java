@@ -46,8 +46,8 @@ public class VerifierMessageRequestHandle<Handle> extends MessageRequestHandleIm
 
   private final MessageCallback<Handle, ByteBuffer> callback;
 
-  public VerifierMessageRequestHandle(Handle i, ByteBuffer m, MessageCallback<Handle, ByteBuffer> callback, Map<String, Object> options) {
-    super(i, m, options);
+  public VerifierMessageRequestHandle(Handle handle, ByteBuffer msg, MessageCallback<Handle, ByteBuffer> callback, Map<String, Object> options) {
+    super(handle, msg, options);
     this.callback = callback;
   }
 

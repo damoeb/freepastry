@@ -142,17 +142,17 @@ class FileTransferWireRoundTripTest {
     volatile boolean closedWhenFailureReported;
 
     @Override
-    public void messageReceived(ByteBuffer bb) {
-      byte[] bytes = new byte[bb.remaining()];
-      bb.get(bytes);
+    public void messageReceived(ByteBuffer buffer) {
+      byte[] bytes = new byte[buffer.remaining()];
+      buffer.get(bytes);
       events.add(bytes);
     }
 
     @Override
-    public void fileReceived(Path f, ByteBuffer metadata) {
+    public void fileReceived(Path path, ByteBuffer metadata) {
       byte[] meta = new byte[metadata.remaining()];
       metadata.get(meta);
-      events.add(new ReceivedFile(f, meta));
+      events.add(new ReceivedFile(path, meta));
     }
 
     @Override
@@ -195,24 +195,24 @@ class FileTransferWireRoundTripTest {
   }
 
   private Pair pair(int senderChunk, int receiverChunk) {
-    PipeAppSocket a = new PipeAppSocket();
+    PipeAppSocket pipeAppSocket = new PipeAppSocket();
     PipeAppSocket b = new PipeAppSocket();
-    a.peer = b;
-    b.peer = a;
+    pipeAppSocket.peer = b;
+    b.peer = pipeAppSocket;
     Inbox inbox = new Inbox();
     inbox.watched = b;
-    FileTransferImpl sender = new FileTransferImpl(a, new Inbox(), null, env, null, senderChunk, CHUNKS_IN_FLIGHT);
+    FileTransferImpl sender = new FileTransferImpl(pipeAppSocket, new Inbox(), null, env, null, senderChunk, CHUNKS_IN_FLIGHT);
     FileTransferImpl receiver = new FileTransferImpl(b, inbox, new TempFileAllocationStrategy("ft", null, dir), env,
         null, receiverChunk, CHUNKS_IN_FLIGHT);
-    return new Pair(sender, inbox, receiver, a, b);
+    return new Pair(sender, inbox, receiver, pipeAppSocket, b);
   }
 
   private static byte[] payload(int length, int seed) {
-    byte[] b = new byte[length];
+    byte[] bytes = new byte[length];
     for (int i = 0; i < length; i++) {
-      b[i] = (byte) (seed + i * 31);
+      bytes[i] = (byte) (seed + i * 31);
     }
-    return b;
+    return bytes;
   }
 
   private static <T> Continuation<T, Exception> into(CompletableFuture<T> future) {
@@ -381,21 +381,21 @@ class FileTransferWireRoundTripTest {
   }
 
   private static ByteBuffer frame(byte type, int uid, int... ints) {
-    ByteBuffer b = ByteBuffer.allocate(5 + ints.length * 4);
-    b.put(type).putInt(uid);
+    ByteBuffer buffer = ByteBuffer.allocate(5 + ints.length * 4);
+    buffer.put(type).putInt(uid);
     for (int i : ints) {
-      b.putInt(i);
+      buffer.putInt(i);
     }
-    b.flip();
-    return b;
+    buffer.flip();
+    return buffer;
   }
 
   private static ByteBuffer fileHeader(int uid, long offset, long length, int nameSize, int nameBytes) {
-    ByteBuffer b = ByteBuffer.allocate(5 + 20 + nameBytes);
-    b.put(FileTransferImpl.MSG_FILE_HEADER).putInt(uid).putLong(offset).putLong(length).putInt(nameSize);
-    b.put(new byte[nameBytes]);
-    b.flip();
-    return b;
+    ByteBuffer buffer = ByteBuffer.allocate(5 + 20 + nameBytes);
+    buffer.put(FileTransferImpl.MSG_FILE_HEADER).putInt(uid).putLong(offset).putLong(length).putInt(nameSize);
+    buffer.put(new byte[nameBytes]);
+    buffer.flip();
+    return buffer;
   }
 
   private void assertRejected(Pair pair, ByteBuffer hostile) throws Exception {

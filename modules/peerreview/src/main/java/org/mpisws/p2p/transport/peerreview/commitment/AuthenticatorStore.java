@@ -197,11 +197,11 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
     authFile.seek(0);
 
     // write all the elements
-    for (Identifier i : authenticators.keySet()) {
-      SortedSet<Authenticator> list = authenticators.get(i);
-      for (Authenticator a : list) {
-        idSerializer.serialize(i,authFile);
-        a.serialize(authFile);
+    for (Identifier identifier : authenticators.keySet()) {
+      SortedSet<Authenticator> list = authenticators.get(identifier);
+      for (Authenticator authenticator : list) {
+        idSerializer.serialize(identifier,authFile);
+        authenticator.serialize(authFile);
       }
     }
   }

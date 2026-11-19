@@ -105,22 +105,22 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
 
     Collection<MessageInfo<Handle, Identifier>> sendMe = pendingMessage.remove(subject);
     if (sendMe != null) {
-      for (MessageInfo<Handle, Identifier> m : sendMe) {
-        doSendMessageToWitnesses(idx.witness,m);
+      for (MessageInfo<Handle, Identifier> msg : sendMe) {
+        doSendMessageToWitnesses(idx.witness,msg);
       }
     }
     /**
      *  If this witness set was part of a query, we update the results and answer if possible
      */
-    for (QueryInfo qi : pendingQuery) {
-      qi.updateWitnesses(idx);
+    for (QueryInfo queryInfo : pendingQuery) {
+      queryInfo.updateWitnesses(idx);
     }
   }
 
-  void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo<Handle, Identifier> m) {
+  void doSendMessageToWitnesses(Collection<Handle> witnesses, MessageInfo<Handle, Identifier> msg) {
 
-    for (Handle h : witnesses) {
-      peerreview.transmit(h,m.message,m.deliverAckToMe,m.options);
+    for (Handle handle : witnesses) {
+      peerreview.transmit(handle,msg.message,msg.deliverAckToMe,msg.options);
     }
   }
 
@@ -134,7 +134,7 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
   public void sendMessageToWitnesses(Identifier subject, PeerReviewMessage message,
       MessageCallback<Handle, ByteBuffer> deliverAckToMe,
       Map<String, Object> options) {
-    MessageInfo<Handle, Identifier> m = new MessageInfo<>(subject, message, deliverAckToMe, options);
+    MessageInfo<Handle, Identifier> msg = new MessageInfo<>(subject, message, deliverAckToMe, options);
     Collection<Handle> witnesses = getWitnesses(subject);
     if (witnesses == null) {
       List<MessageInfo<Handle, Identifier>> foo = pendingMessage.get(subject);
@@ -142,17 +142,17 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
         foo = new ArrayList<MessageInfo<Handle, Identifier>>();
         pendingMessage.put(subject, foo);
       }
-      foo.add(m);
+      foo.add(msg);
       requestWitnesses(subject);
     } else {
-      doSendMessageToWitnesses(witnesses, m);
+      doSendMessageToWitnesses(witnesses, msg);
     }
   }
 
   /* Requests witness sets for several nodes */
   @Override
-  public void requestWitnesses(Collection<Identifier> subjectList, Continuation<Map<Identifier,Collection<Handle>>, Exception> c) {
-    new QueryInfo(subjectList,c);
+  public void requestWitnesses(Collection<Identifier> subjectList, Continuation<Map<Identifier,Collection<Handle>>, Exception> continuation) {
+    new QueryInfo(subjectList,continuation);
   }
 
   /**
@@ -244,18 +244,18 @@ public class EvidenceTransferProtocolImpl<Handle extends RawSerializable, Identi
     int numWitnessesWaitingFor = 0;
     boolean done = false;
 
-    public QueryInfo(Collection<Identifier> subjects, Continuation<Map<Identifier, Collection<Handle>>, Exception> c) {
+    public QueryInfo(Collection<Identifier> subjects, Continuation<Map<Identifier, Collection<Handle>>, Exception> continuation) {
       subjectList = new HashMap<Identifier, Collection<Handle>>();
       numWitnessesWaitingFor = subjects.size();
-      this.c = c;
+      this.c = continuation;
 
       pendingQuery.add(this);
 
-      for (Identifier s : subjects) {
-        Collection<Handle> foo = getWitnesses(s);
-        subjectList.put(s, foo);
+      for (Identifier identifier : subjects) {
+        Collection<Handle> foo = getWitnesses(identifier);
+        subjectList.put(identifier, foo);
         if (foo == null) {
-          requestWitnesses(s);
+          requestWitnesses(identifier);
         } else {
           numWitnessesWaitingFor--;
         }

@@ -91,11 +91,11 @@ public record AuthPushMessage<Identifier extends RawSerializable>(Map<Identifier
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)authenticators.size());
-    for (Entry<Identifier, List<Authenticator>> e : authenticators.entrySet()) {
-      e.getKey().serialize(buf);
-      buf.writeShort((short)e.getValue().size());
-      for (Authenticator a : e.getValue()) {
-        a.serialize(buf);
+    for (Entry<Identifier, List<Authenticator>> entry : authenticators.entrySet()) {
+      entry.getKey().serialize(buf);
+      buf.writeShort((short)entry.getValue().size());
+      for (Authenticator authenticator : entry.getValue()) {
+        authenticator.serialize(buf);
       }
     }
   }

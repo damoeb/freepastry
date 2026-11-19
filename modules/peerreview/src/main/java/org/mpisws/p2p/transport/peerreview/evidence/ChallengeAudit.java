@@ -68,8 +68,8 @@ public record ChallengeAudit(byte flags, Authenticator from, Authenticator to) i
   public ChallengeAudit(InputBuffer buf, int hashSize, int signatureSize) throws IOException {
     byte flags = buf.readByte();
     Authenticator from = new Authenticator(buf,hashSize,signatureSize);
-    Authenticator to = new Authenticator(buf,hashSize,signatureSize);
-    this(flags, from, to);
+    Authenticator authenticator = new Authenticator(buf,hashSize,signatureSize);
+    this(flags, from, authenticator);
   }
 
   @Override

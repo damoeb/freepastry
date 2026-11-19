@@ -172,9 +172,9 @@ public class PRInconsistent1 extends PRRegressionTest {
   }
 
   @Override
-  public BogusApp getBogusApp(Player player, final PeerReview<HandleImpl, IdImpl> pr,
+  public BogusApp getBogusApp(Player player, final PeerReview<HandleImpl, IdImpl> peerReview,
       Environment env) {
-    return new BogusApp(player,pr,env) {
+    return new BogusApp(player,peerReview,env) {
 
       @Override
       public void notifyStatusChange(

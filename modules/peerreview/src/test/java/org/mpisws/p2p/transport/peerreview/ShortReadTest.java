@@ -34,8 +34,8 @@ class ShortReadTest {
 
   private static final Serializer<TestId> ID_SERIALIZER = new Serializer<>() {
     @Override
-    public void serialize(TestId i, OutputBuffer buf) throws IOException {
-      i.serialize(buf);
+    public void serialize(TestId testId, OutputBuffer buf) throws IOException {
+      testId.serialize(buf);
     }
 
     @Override

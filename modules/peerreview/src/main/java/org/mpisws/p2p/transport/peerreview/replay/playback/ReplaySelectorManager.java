@@ -61,8 +61,8 @@ public class ReplaySelectorManager extends DeterministicSelectorManager {
     setSelect(false);
   }
 
-  public void setVerifier(Verifier<?, ?> v) {
-    this.verifier = v;
+  public void setVerifier(Verifier<?, ?> verifier) {
+    this.verifier = verifier;
   }
 
   /**

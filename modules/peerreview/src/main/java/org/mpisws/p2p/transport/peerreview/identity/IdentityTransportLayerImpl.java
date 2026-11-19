@@ -126,11 +126,11 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
 
   public IdentityTransportLayerImpl(
       Serializer<I> iSerializer, X509Serializer cSerializer, I localId,
-      X509Certificate localCert, PrivateKey localPrivate, TransportLayer<Identifier, ByteBuffer> tl,
+      X509Certificate localCert, PrivateKey localPrivate, TransportLayer<Identifier, ByteBuffer> transportLayer,
       HashProvider hasher, Environment env) throws InvalidKeyException, NoSuchAlgorithmException {
-    super(iSerializer, cSerializer, loadTableStore(localId, localCert, iSerializer, cSerializer, null), tl, env);
-    this.tl = tl;
-    tl.setCallback(this);
+    super(iSerializer, cSerializer, loadTableStore(localId, localCert, iSerializer, cSerializer, null), transportLayer, env);
+    this.tl = transportLayer;
+    transportLayer.setCallback(this);
     this.hasher = hasher;
     this.logger = env.getLogManager().getLogger(IdentityTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(this.logger);
@@ -154,9 +154,9 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    */
   @Override
   public Cancellable requestCertificate(final Identifier source,
-      final I principal, final Continuation<X509Certificate, Exception> c,
+      final I principal, final Continuation<X509Certificate, Exception> continuation,
       Map<String, Object> options) {
-    return super.requestValue(source, principal, c, options);
+    return super.requestValue(source, principal, continuation, options);
   }
 
   @Override
@@ -171,9 +171,9 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       byte[] ret = signer.sign();
       logger.atTrace().log(() -> "Signature of "+MathUtils.toBase64(bytes)+" was "+MathUtils.toBase64(ret));
       return ret;
-    } catch (SignatureException se) {
+    } catch (SignatureException signatureException) {
       RuntimeException throwMe = new RuntimeException("Couldn't sign "+bytes.length+" bytes");
-      throwMe.initCause(se);
+      throwMe.initCause(signatureException);
       throw throwMe;
     }
   }
@@ -191,8 +191,8 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
           return SIGNATURE_OK;
         }
       }
-    } catch (SignatureException se) {
-      throw new RuntimeException(se);
+    } catch (SignatureException signatureException) {
+      throw new RuntimeException(signatureException);
     }
     return SIGNATURE_BAD;
   }

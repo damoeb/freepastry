@@ -108,14 +108,14 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
   int socketCtr = Integer.MIN_VALUE;
 
-  public RecordLayer(TransportLayer<Identifier, ByteBuffer> tl, String name, Serializer<Identifier> serializer, Environment env) throws IOException {
+  public RecordLayer(TransportLayer<Identifier, ByteBuffer> transportLayer, String name, Serializer<Identifier> serializer, Environment env) throws IOException {
     this.logger = env.getLogManager().getLogger(RecordLayer.class, null);
     this.identifierSerializer = serializer;
 
     NullHashProvider nhp = new NullHashProvider();
     SecureHistoryFactory shf = new SecureHistoryFactory(nhp, env);
 
-    this.tl = tl;
+    this.tl = transportLayer;
     this.tl.setCallback(this);
     this.history = shf.create(name, 0, nhp.EMPTY_HASH);
 
@@ -155,38 +155,38 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
 
   @Override
-  public SocketRequestHandle<Identifier> openSocket(final Identifier i, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
+  public SocketRequestHandle<Identifier> openSocket(final Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, final Map<String, Object> options) {
     final int socketId = socketCtr++;
     final ByteBuffer socketIdBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(socketId));
     try {
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      identifierSerializer.serialize(i, sob);
+      identifierSerializer.serialize(identifier, sob);
       logEvent(EVT_SOCKET_OPEN_OUTGOING, socketIdBuffer, sob.getByteBuffer());
     } catch (IOException ioe) {
-      logger.warn("openSocket({})", i, ioe);
+      logger.warn("openSocket({})", identifier, ioe);
     }
 
-    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(i, options, logger);
+    final SocketRequestHandleImpl<Identifier> ret = new SocketRequestHandleImpl<Identifier>(identifier, options, logger);
 
-    ret.setSubCancellable(tl.openSocket(i, new SocketCallback<Identifier>(){
+    ret.setSubCancellable(tl.openSocket(identifier, new SocketCallback<Identifier>(){
       @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
+      public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> socket) {
         socketIdBuffer.clear();
         try {
           logEvent(EVT_SOCKET_OPENED_OUTGOING, socketIdBuffer);
         } catch (IOException ioe) {
-          logger.warn("error logging in openSocket({})", i, ioe);
+          logger.warn("error logging in openSocket({})", identifier, ioe);
         }
         socketIdBuffer.clear();
-        deliverSocketToMe.receiveResult(ret, new RecordSocket<Identifier>(i, sock, logger, options, socketId, socketIdBuffer, RecordLayer.this));
+        deliverSocketToMe.receiveResult(ret, new RecordSocket<Identifier>(identifier, socket, logger, options, socketId, socketIdBuffer, RecordLayer.this));
       }
       @Override
-      public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<Identifier> request, Exception ex) {
         socketIdBuffer.clear();
         try {
           logSocketException(socketIdBuffer, ex);
         } catch (IOException ioe) {
-          logger.warn("openSocket({})@{}", i, socketId, ioe);
+          logger.warn("openSocket({})@{}", identifier, socketId, ioe);
         }
         deliverSocketToMe.receiveException(ret, ex);
       }
@@ -196,33 +196,33 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
   }
 
   @Override
-  public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
+  public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
     final int socketId = socketCtr++;
     final ByteBuffer socketIdBuffer = ByteBuffer.wrap(MathUtils.intToByteArray(socketId));
     try {
       socketIdBuffer.clear();
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      identifierSerializer.serialize(s.getIdentifier(), sob);
+      identifierSerializer.serialize(socket.getIdentifier(), sob);
       logEvent(EVT_SOCKET_OPEN_INCOMING, socketIdBuffer, sob.getByteBuffer());
     } catch (IOException ioe) {
-      logger.warn("incomingSocket({})", s.getIdentifier(), ioe);
+      logger.warn("incomingSocket({})", socket.getIdentifier(), ioe);
     }
 
-    callback.incomingSocket(new RecordSocket<Identifier>(s.getIdentifier(), s, logger, s.getOptions(), socketId, socketIdBuffer, RecordLayer.this));
+    callback.incomingSocket(new RecordSocket<Identifier>(socket.getIdentifier(), socket, logger, socket.getOptions(), socketId, socketIdBuffer, RecordLayer.this));
   }
 
   @Override
-  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier i, ByteBuffer m, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
+  public MessageRequestHandle<Identifier, ByteBuffer> sendMessage(Identifier identifier, ByteBuffer msg, MessageCallback<Identifier, ByteBuffer> deliverAckToMe, Map<String, Object> options) {
     if (logger.isTraceEnabled()) {
-      logger.trace("sendMessage("+i+","+m+"):"+java.util.HexFormat.of().formatHex(Arrays.copyOfRange(m.array(), m.arrayOffset()+m.position(), m.arrayOffset()+m.limit())), new Exception("Stack Trace"));
-    } else logger.debug("sendMessage({},{})", i, m);
+      logger.trace("sendMessage("+identifier+","+msg+"):"+java.util.HexFormat.of().formatHex(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())), new Exception("Stack Trace"));
+    } else logger.debug("sendMessage({},{})", identifier, msg);
     // If the 'RELEVANT_MSG' flag is set to false, the message is passed through to the transport
     // layer. This is used e.g. for liveness/proximity pings in Pastry.
     if (options == null || !options.containsKey(PR_RELEVANT_MSG) || ((Integer)options.get(PR_RELEVANT_MSG)).intValue() != 0) {
-      int position = m.position(); // mark the current position
+      int position = msg.position(); // mark the current position
 
       @SuppressWarnings("UnusedVariable") // the SEND entry holds the whole message; PR_RELEVANT_LEN is not applied yet
-      int relevantLen = m.remaining();
+      int relevantLen = msg.remaining();
 
       // If someone sets relevantLen=-1, it means the whole message is relevant.
       if (options != null && options.containsKey(PR_RELEVANT_LEN) && ((Integer)options.get(PR_RELEVANT_LEN)).intValue() >= 0) {
@@ -231,16 +231,16 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
 
       try {
         SimpleOutputBuffer sob = new SimpleOutputBuffer();
-        identifierSerializer.serialize(i, sob);
-        logEvent(EVT_SEND, sob.getByteBuffer(), m);
+        identifierSerializer.serialize(identifier, sob);
+        logEvent(EVT_SEND, sob.getByteBuffer(), msg);
       } catch (IOException ioe) {
-        logger.warn("sendMessage({},{})", i, m, ioe);
+        logger.warn("sendMessage({},{})", identifier, msg, ioe);
       }
 
-      m.position(position); // set the incoming position
+      msg.position(position); // set the incoming position
     }
 
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+    return tl.sendMessage(identifier, msg, deliverAckToMe, options);
 
     // Pass the message to the Commitment protocol
 
@@ -248,22 +248,22 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
   }
 
   @Override
-  public void messageReceived(Identifier i, ByteBuffer m, Map<String, Object> options) throws IOException {
+  public void messageReceived(Identifier identifier, ByteBuffer msg, Map<String, Object> options) throws IOException {
     try {
       if (identifierSerializer == null) {
         // just drop this event, it's while we're booting,
         // don't forward it or you will mess up the state of the state machine vs the log
-        logger.warn("Dropping messageReceived({},{}) while booting", i, m);
+        logger.warn("Dropping messageReceived({},{}) while booting", identifier, msg);
         return;
       }
       SimpleOutputBuffer sob = new SimpleOutputBuffer();
-      identifierSerializer.serialize(i, sob);
-      logEvent(EVT_RECV, sob.getByteBuffer(), m);
+      identifierSerializer.serialize(identifier, sob);
+      logEvent(EVT_RECV, sob.getByteBuffer(), msg);
     } catch (IOException ioe) {
-      logger.warn("messageReceived({},{})", i, m, ioe);
+      logger.warn("messageReceived({},{})", identifier, msg, ioe);
     }
 
-    callback.messageReceived(i, m, options);
+    callback.messageReceived(identifier, msg, options);
   }
 
   @Override
@@ -355,10 +355,10 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
       }
 
       @Override
-      protected SelectorLoop cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
+      protected SelectorLoop cloneSelectorManager(String prefix, TimeSource timeSource, RandomSource rs, LogManager lman, boolean cloneSelector) {
         SelectorLoop sman = getSelectorManager();
         if (cloneSelector) {
-          sman = new RecordingSelectorManager(prefix + " Selector", new SimpleTimeSource(), (DirectTimeSource)ts,lman,rs);
+          sman = new RecordingSelectorManager(prefix + " Selector", new SimpleTimeSource(), (DirectTimeSource)timeSource,lman,rs);
         }
         return sman;
       }

@@ -43,12 +43,12 @@ public interface FileTransferCallback {
   /**
    * Called when a message is received.
    */
-  public void messageReceived(ByteBuffer bb);
+  public void messageReceived(ByteBuffer buffer);
 
   /**
    * Called when a file is received.
    */
-  public void fileReceived(Path f, ByteBuffer metadata);
+  public void fileReceived(Path path, ByteBuffer metadata);
 
   /**
    * Called when the FileTransfer fails.

@@ -62,5 +62,5 @@ public interface PeerReviewCallback<Handle extends RawSerializable, Identifier e
   boolean loadCheckpoint(InputBuffer buffer) throws IOException;
   void getWitnesses(Identifier subject, WitnessListener<Handle, Identifier> callback);
   public Collection<Handle> getMyWitnessedNodes();
-  PeerReviewCallback<Handle, Identifier> getReplayInstance(Verifier<Handle, Identifier> v);
+  PeerReviewCallback<Handle, Identifier> getReplayInstance(Verifier<Handle, Identifier> verifier);
 }

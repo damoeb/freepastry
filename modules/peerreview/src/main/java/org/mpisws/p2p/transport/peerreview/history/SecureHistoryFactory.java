@@ -74,13 +74,13 @@ public class SecureHistoryFactory implements IndexEntryFactory {
     String indexName = name+".index";
     String dataName = name+".data";
 
-    Path f = Path.of(indexName);
-    if (Files.exists(f)) {
-      throw new RuntimeException("File "+f+" already exists.");
+    Path path = Path.of(indexName);
+    if (Files.exists(path)) {
+      throw new RuntimeException("File "+path+" already exists.");
     }
-    f = Path.of(dataName);
-    if (Files.exists(f)) {
-      throw new RuntimeException("File "+f+" already exists.");
+    path = Path.of(dataName);
+    if (Files.exists(path)) {
+      throw new RuntimeException("File "+path+" already exists.");
     }
 
     indexFile = new RandomAccessFileIOBuffer(indexName, "rw"); // may be rw
@@ -126,8 +126,8 @@ public class SecureHistoryFactory implements IndexEntryFactory {
       fileMode = "rw"; // may be "rw"
     }
 
-    Path f = Path.of(name+".index");
-    if (!Files.exists(f)) {
+    Path path = Path.of(name+".index");
+    if (!Files.exists(path)) {
       return null;
     }
 

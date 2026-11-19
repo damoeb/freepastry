@@ -63,8 +63,8 @@ import rice.environment.time.simulated.DirectTimeSource;
 public class RecordingSelectorManager extends DeterministicSelectorManager {
   TimeSource realTime;
 
-  public RecordingSelectorManager(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource rs) {
-    super(instance, simTime, log, rs);
+  public RecordingSelectorManager(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource randomSource) {
+    super(instance, simTime, log, randomSource);
     this.realTime = realTime;
   }
 
@@ -77,9 +77,9 @@ public class RecordingSelectorManager extends DeterministicSelectorManager {
   }
 
   @Override
-  public synchronized void invoke(Runnable d) {
-    Objects.requireNonNull(d);
-    super.invoke(isSelectorThread() ? d : new Input(d));
+  public synchronized void invoke(Runnable task) {
+    Objects.requireNonNull(task);
+    super.invoke(isSelectorThread() ? task : new Input(task));
   }
 
   @Override
@@ -99,11 +99,11 @@ public class RecordingSelectorManager extends DeterministicSelectorManager {
   private boolean runNextInput() {
     Runnable input = null;
     synchronized (this) {
-      for (Iterator<Runnable> i = pendingInvocations().iterator(); i.hasNext();) {
-        Runnable r = i.next();
-        if (r instanceof Input) {
-          i.remove();
-          input = r;
+      for (Iterator<Runnable> iterator = pendingInvocations().iterator(); iterator.hasNext();) {
+        Runnable task = iterator.next();
+        if (task instanceof Input) {
+          iterator.remove();
+          input = task;
           break;
         }
       }
@@ -121,11 +121,11 @@ public class RecordingSelectorManager extends DeterministicSelectorManager {
   protected void runInvocations() {
     List<Runnable> inputs = new ArrayList<Runnable>();
     synchronized (this) {
-      for (Iterator<Runnable> i = pendingInvocations().iterator(); i.hasNext();) {
-        Runnable r = i.next();
-        if (r instanceof Input) {
-          inputs.add(r);
-          i.remove();
+      for (Iterator<Runnable> iterator = pendingInvocations().iterator(); iterator.hasNext();) {
+        Runnable task = iterator.next();
+        if (task instanceof Input) {
+          inputs.add(task);
+          iterator.remove();
         }
       }
     }

@@ -51,8 +51,8 @@ public class VerifierAckTest {
 
   static final Serializer<Node> SERIALIZER = new Serializer<Node>() {
     @Override
-    public void serialize(Node n, OutputBuffer buf) throws IOException {
-      n.serialize(buf);
+    public void serialize(Node node, OutputBuffer buf) throws IOException {
+      node.serialize(buf);
     }
 
     @Override

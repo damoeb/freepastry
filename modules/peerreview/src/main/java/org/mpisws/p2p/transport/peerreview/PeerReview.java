@@ -88,7 +88,7 @@ public interface PeerReview<Handle extends RawSerializable, Identifier extends R
   Serializer<Handle> getHandleSerializer();
   Serializer<Identifier> getIdSerializer();
 
-  void challengeSuspectedNode(Handle h);
+  void challengeSuspectedNode(Handle handle);
 
   public Identifier getLocalId();
   public Handle getLocalHandle();

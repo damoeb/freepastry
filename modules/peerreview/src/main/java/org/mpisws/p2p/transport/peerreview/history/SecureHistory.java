@@ -139,29 +139,29 @@ public class SecureHistory {
       pointerAtEnd = true;
     }
 
-    IndexEntry e = new IndexEntry(nextSeq++);
+    IndexEntry indexEntry = new IndexEntry(nextSeq++);
 
     // Calculate the content hash */
 
-    e.contentHash = hashProv.hash(entry);
+    indexEntry.contentHash = hashProv.hash(entry);
 
     // Calculate the node hash. Note that this also covers the sequence number and
     // the entry type.
 
-    e.nodeHash = hashProv.hash(e.seq, type, topEntry.nodeHash, e.contentHash);
+    indexEntry.nodeHash = hashProv.hash(indexEntry.seq, type, topEntry.nodeHash, indexEntry.contentHash);
 
     // Write the entry to the data file
 
-    e.type = type;
-    e.fileIndex = dataFile.getFilePointer();
+    indexEntry.type = type;
+    indexEntry.fileIndex = dataFile.getFilePointer();
     if (storeFullEntry) {
-      e.sizeInFile = 0;
+      indexEntry.sizeInFile = 0;
       for (ByteBuffer ent : entry) {
-        e.sizeInFile += ent.remaining();
+        indexEntry.sizeInFile += ent.remaining();
         dataFile.write(ent.array(), ent.arrayOffset()+ent.position(), ent.remaining());
       }
     } else {
-      e.sizeInFile = -1;
+      indexEntry.sizeInFile = -1;
     }
 
     // Optionally, the index file entries can be padded to a multiple of 16 bytes,
@@ -169,7 +169,7 @@ public class SecureHistory {
 
     // Write the entry to the index file
 
-    topEntry = e;
+    topEntry = indexEntry;
     topEntry.serialize(indexFile);
     numEntries++;
   }
@@ -191,17 +191,17 @@ public class SecureHistory {
       pointerAtEnd = true;
     }
 
-    IndexEntry e = new IndexEntry(nextSeq++);
+    IndexEntry indexEntry = new IndexEntry(nextSeq++);
 
-    e.contentHash = hash;
+    indexEntry.contentHash = hash;
 
-    e.nodeHash = hashProv.hash(e.seq, type, topEntry.nodeHash, e.contentHash);
-    e.type = type;
-    e.fileIndex = -1;
-    e.sizeInFile = -1;
+    indexEntry.nodeHash = hashProv.hash(indexEntry.seq, type, topEntry.nodeHash, indexEntry.contentHash);
+    indexEntry.type = type;
+    indexEntry.fileIndex = -1;
+    indexEntry.sizeInFile = -1;
 
     // Write an entry to the index file
-    topEntry = e;
+    topEntry = indexEntry;
     topEntry.serialize(indexFile);
     numEntries++;
   }

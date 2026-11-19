@@ -141,12 +141,12 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    */
   private int fileChunksInMemory = 0;
 
-  public FileTransferImpl(AppSocket socket, FileTransferCallback callback, FileAllocationStrategy fileAllocater, Environment env, Processor p) {
-    this(socket,callback,fileAllocater,env,p,-1,-1);
+  public FileTransferImpl(AppSocket socket, FileTransferCallback callback, FileAllocationStrategy fileAllocater, Environment env, Processor processor) {
+    this(socket,callback,fileAllocater,env,processor,-1,-1);
   }
 
   public FileTransferImpl(AppSocket socket, FileTransferCallback callback,
-      FileAllocationStrategy fileAllocater, Environment env, Processor p, int chunkSize, int numChunksToWriteToNetwork) {
+      FileAllocationStrategy fileAllocater, Environment env, Processor processor, int chunkSize, int numChunksToWriteToNetwork) {
     if (chunkSize > 0) {
       CHUNK_SIZE = chunkSize;
     }
@@ -160,7 +160,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     this.selectorManager = env.getSelectorManager();
     this.logger = env.getLogManager().getLogger(FileTransferImpl.class, null);
     this.queue = new BoundedPriorityWriteQueue<MessageWrapper>(MAX_QUEUE_SIZE, MessageWrapper::drop, logger);
-    this.processor = p;
+    this.processor = processor;
     if (this.processor == null) this.processor = env.getProcessor();
     this.environment = env;
     Parameters params = env.getParameters();
@@ -205,11 +205,11 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     for (MessageWrapper foo : dropMe) {
       foo.drop();
     }
-    for (DataReader r : new ArrayList<DataReader>(incomingData.values())) {
-      notifyListenersTransferFailed(r, true);
+    for (DataReader dataReader : new ArrayList<DataReader>(incomingData.values())) {
+      notifyListenersTransferFailed(dataReader, true);
     }
-    for (ReceiptImpl r : new ArrayList<ReceiptImpl>(outgoingData.values())) {
-      r.failed();
+    for (ReceiptImpl receiptImpl : new ArrayList<ReceiptImpl>(outgoingData.values())) {
+      receiptImpl.failed();
     }
   }
 
@@ -290,87 +290,87 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   protected void notifyListenersSendMsgProgress(ByteBufferReceipt receipt,
       int bytesSent, int bytesTotal) {
     logger.debug("notifyListenersSendMsgProgress({},{},{})", receipt, bytesSent, bytesTotal);
-    for (FileTransferListener l : getListeners()) {
-      l.msgTransferred(receipt, bytesSent, bytesTotal, false);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.msgTransferred(receipt, bytesSent, bytesTotal, false);
     }
   }
 
   protected void notifyListenersReceiveMsgProgress(ByteBufferReceipt receipt,
       int bytesReceived, int bytesTotal) {
     logger.debug("notifyListenersReceiveMsgProgress({},{},{})", receipt, bytesReceived, bytesTotal);
-    for (FileTransferListener l : getListeners()) {
-      l.msgTransferred(receipt, bytesReceived, bytesTotal, true);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.msgTransferred(receipt, bytesReceived, bytesTotal, true);
     }
   }
 
   protected void notifyListenersSendFileProgress(FileReceipt receipt,
       long bytesSent, long bytesTotal) {
     logger.debug("notifyListenersSendFileProgress({},{},{})", receipt, bytesSent, bytesTotal);
-    for (FileTransferListener l : getListeners()) {
-      l.fileTransferred(receipt, bytesSent, bytesTotal, false);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.fileTransferred(receipt, bytesSent, bytesTotal, false);
     }
   }
 
   protected void notifyListenersReceiveFileProgress(FileReceipt receipt,
       long bytesReceived, long bytesTotal) {
     logger.debug("notifyListenersReceiveFileProgress({},{},{})", receipt, bytesReceived, bytesTotal);
-    for (FileTransferListener l : getListeners()) {
-      l.fileTransferred(receipt, bytesReceived, bytesTotal, true);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.fileTransferred(receipt, bytesReceived, bytesTotal, true);
     }
   }
 
   protected void notifyListenersSenderCancelled(DataReader receipt) {
     logger.debug("notifyListenersSenderCancelled({})", receipt);
-    for (FileTransferListener l : getListeners()) {
-      l.transferCancelled(receipt, true);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.transferCancelled(receipt, true);
     }
   }
 
   protected void notifyListenersReceiverCancelled(Receipt receipt) {
     logger.debug("notifyListenersReceiverCancelled({})", receipt);
-    for (FileTransferListener l : getListeners()) {
-      l.transferCancelled(receipt, false);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.transferCancelled(receipt, false);
     }
   }
 
   protected void notifyListenersTransferFailed(Receipt receipt, boolean incoming) {
     logger.debug("notifyListenersTransferFailed({})", receipt);
-    for (FileTransferListener l : getListeners()) {
-      l.transferFailed(receipt, incoming);
+    for (FileTransferListener fileTransferListener : getListeners()) {
+      fileTransferListener.transferFailed(receipt, incoming);
     }
   }
 
   /**
    * @return the length of the file, or 0 if it does not exist or cannot be read, as File.length() did
    */
-  private static long length(Path f) {
+  private static long length(Path path) {
     try {
-      return Files.size(f);
+      return Files.size(path);
     } catch (IOException e) {
       return 0;
     }
   }
 
   @Override
-  public FileReceipt sendFile(Path f, ByteBuffer metadata, byte priority,
-      Continuation<FileReceipt, Exception> c) throws IOException  {
-    return sendFile(f,metadata,priority,0,length(f),c);
+  public FileReceipt sendFile(Path path, ByteBuffer metadata, byte priority,
+      Continuation<FileReceipt, Exception> continuation) throws IOException  {
+    return sendFile(path,metadata,priority,0,length(path),continuation);
   }
 
-  public FileReceipt sendFile(Path f, ByteBuffer metadataBB, byte priority, long offset, long length,
-      Continuation<FileReceipt, Exception> c) throws IOException {
-    if (f == null || !Files.exists(f) || Files.isDirectory(f)) throw new IllegalArgumentException("File f must be non-null, exist, and must not be a directory. "+f);
+  public FileReceipt sendFile(Path path, ByteBuffer metadataBB, byte priority, long offset, long length,
+      Continuation<FileReceipt, Exception> continuation) throws IOException {
+    if (path == null || !Files.exists(path) || Files.isDirectory(path)) throw new IllegalArgumentException("File f must be non-null, exist, and must not be a directory. "+path);
     byte[] metadata = new byte[metadataBB.remaining()];
     metadataBB.get(metadata);
-    FileReceiptImpl ret = new FileReceiptImpl(f,metadata,priority,offset,length,allocateTransferUid(),c);
+    FileReceiptImpl ret = new FileReceiptImpl(path,metadata,priority,offset,length,allocateTransferUid(),continuation);
     return ret;
   }
 
   @Override
-  public ByteBufferReceipt sendMessage(ByteBuffer bb, byte priority,
-      Continuation<ByteBufferReceipt, Exception> c) {
-    if (bb == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
-    BBReceiptImpl ret = new BBReceiptImpl(bb,priority,allocateTransferUid(),c);
+  public ByteBufferReceipt sendMessage(ByteBuffer buffer, byte priority,
+      Continuation<ByteBufferReceipt, Exception> continuation) {
+    if (buffer == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
+    BBReceiptImpl ret = new BBReceiptImpl(buffer,priority,allocateTransferUid(),continuation);
     return ret;
   }
 
@@ -461,10 +461,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     int initialPosition;
     Continuation<ByteBufferReceipt, Exception> deliverAckToMe;
 
-    public BBReceiptImpl(ByteBuffer bb, byte priority, int uid, Continuation<ByteBufferReceipt, Exception> c) {
+    public BBReceiptImpl(ByteBuffer buffer, byte priority, int uid, Continuation<ByteBufferReceipt, Exception> continuation) {
       super(priority, uid);
-      this.deliverAckToMe = c;
-      this.msg = bb;
+      this.deliverAckToMe = continuation;
+      this.msg = buffer;
       initialPosition = msg.position();
       msgList = new ArrayList<ByteBuffer>();
       // shares msg's content, position and limit, whatever its arrayOffset()
@@ -475,7 +475,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       header = ByteBuffer.allocate(9);
       header.put(MSG_BB_HEADER);
       header.put(MathUtils.intToByteArray(uid));
-      header.put(MathUtils.intToByteArray(bb.remaining()));
+      header.put(MathUtils.intToByteArray(buffer.remaining()));
       header.clear();
       msgList.add(header);
 
@@ -589,13 +589,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     long initialPosition;
 
 
-    public FileReceiptImpl(Path f, byte[] metadata, byte priority, long offset, long length, int uid, Continuation<FileReceipt, Exception> c) throws IOException {
+    public FileReceiptImpl(Path path, byte[] metadata, byte priority, long offset, long length, int uid, Continuation<FileReceipt, Exception> continuation) throws IOException {
       super(priority, uid);
-      if (offset+length > length(f)) throw new IllegalArgumentException("File is only "+length(f)+" but you are trying to send "+length+" bytes starting at "+offset);
-      this.f = f;
+      if (offset+length > length(path)) throw new IllegalArgumentException("File is only "+length(path)+" but you are trying to send "+length+" bytes starting at "+offset);
+      this.f = path;
       this.metadata = metadata;
       try {
-        this.file = Files.newInputStream(f);
+        this.file = Files.newInputStream(path);
       } catch (IOException | RuntimeException | Error e) {
         failed();
         throw e;
@@ -603,7 +603,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       file.skip(offset);
       lastByte = offset+length;
 
-      this.deliverAckToMe = c;
+      this.deliverAckToMe = continuation;
       this.initialPosition = offset;
       this.ptr = offset;
       this.length = length;
@@ -771,8 +771,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public boolean cancel() {
       cancelled = true;
 
-      for (WorkRequest<Object> wr : outstandingWRs) {
-        wr.cancel();
+      for (WorkRequest<Object> workRequest : outstandingWRs) {
+        workRequest.cancel();
       }
       for (MessageWrapperImpl mri : outstanding) {
         mri.cancel();
@@ -1241,8 +1241,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (incomingData.containsKey(uid)) throw new IOException("Protocol error: message "+uid+" is announced twice");
     if (size < 0 || size > maxMessageSize) throw new IOException("Protocol error: message " + uid + " announces " + size + " bytes, at most " + maxMessageSize + " are accepted");
     long inFlight = size;
-    for (DataReader r : incomingData.values()) {
-      if (r instanceof BBDataReader bb) inFlight += bb.bytes.length;
+    for (DataReader dataReader : incomingData.values()) {
+      if (dataReader instanceof BBDataReader bBDataReader) inFlight += bBDataReader.bytes.length;
     }
     if (inFlight > maxMessageBytesInFlight) throw new IOException("Protocol error: message " + uid + " would bring the incoming messages to " + inFlight + " bytes, at most " + maxMessageBytesInFlight + " are accepted");
     BBDataReader bbdr = new BBDataReader(uid, size);
@@ -1257,8 +1257,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   public void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
     // check before the allocater creates a temp file
     if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file "+uid+" is announced twice");
-    Path f = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
-    FileDataReader fdr = new FileDataReader(uid, metadata, f, offset, length);
+    Path path = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
+    FileDataReader fdr = new FileDataReader(uid, metadata, path, offset, length);
     incomingData.put(uid,fdr);
     notifyListenersReceiveFileProgress(fdr, 0, length);
     // the sender writes a chunk only for a file that has bytes, so nothing else would complete an empty one
@@ -1391,13 +1391,13 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
      */
     Exception exception = null;
 
-    public FileDataReader(int uid, byte[] metadata, Path f, long offset, long length) throws IOException {
+    public FileDataReader(int uid, byte[] metadata, Path path, long offset, long length) throws IOException {
       this.uid = uid;
-      this.f = f;
+      this.f = path;
       this.ptr = offset;
       this.offset = offset;
       this.length = length;
-      file = new RandomAccessFile(f.toFile(), "rw");
+      file = new RandomAccessFile(path.toFile(), "rw");
       this.metadata = metadata;
       file.seek(offset);
       bytes = new byte[CHUNK_SIZE];
@@ -1456,7 +1456,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       // schedule them to be written, then notified on the blockingIOThread
 
       // note, that it is required that these are in order
-      WorkRequest<Long> wr = new WorkRequest<Long>(new Continuation<Long, Exception>() {
+      WorkRequest<Long> workRequest = new WorkRequest<Long>(new Continuation<Long, Exception>() {
 
         @Override
         public void receiveResult(Long myPtrL) {
@@ -1486,7 +1486,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           return ptr;
         }
       };
-      processor.processBlockingIO(wr);
+      processor.processBlockingIO(workRequest);
       reader = msgTypeReader;
     }
 
@@ -1549,7 +1549,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       cancelled = true;
 
       // Don't close the file on the wrong thread.
-      WorkRequest<RandomAccessFile> wr = new WorkRequest<RandomAccessFile>(new Continuation<RandomAccessFile, Exception>() {
+      WorkRequest<RandomAccessFile> workRequest = new WorkRequest<RandomAccessFile>(new Continuation<RandomAccessFile, Exception>() {
 
         @Override
         public void receiveResult(RandomAccessFile result) {
@@ -1570,7 +1570,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
           return file;
         }
       };
-      processor.processBlockingIO(wr);
+      processor.processBlockingIO(workRequest);
 
     }
   }

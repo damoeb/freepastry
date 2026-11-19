@@ -105,8 +105,8 @@ public class EvtSendTest {
     serialized.get(bytes);
     Serializer<Id> idSerializer = new Serializer<Id>() {
       @Override
-      public void serialize(Id i, OutputBuffer buf) throws IOException {
-        i.serialize(buf);
+      public void serialize(Id id, OutputBuffer buf) throws IOException {
+        id.serialize(buf);
       }
 
       @Override

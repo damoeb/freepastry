@@ -160,7 +160,7 @@ public class SSLTest {
   @AfterEach
   void tearDown() {
     try {
-      for (SSLTransportLayer<InetSocketAddress, ByteBuffer> tl : layers) tl.destroy();
+      for (SSLTransportLayer<InetSocketAddress, ByteBuffer> sSLTransportLayer : layers) sSLTransportLayer.destroy();
     } finally {
       // a failing destroy must not leave the selector thread of the environment running
       rootEnv.destroy();
@@ -188,8 +188,8 @@ public class SSLTest {
   void acceptOn(SSLTransportLayer<InetSocketAddress, ByteBuffer> alice) {
     alice.setErrorHandler(new ErrorHandler<InetSocketAddress>() {
       @Override
-      public void receivedUnexpectedData(InetSocketAddress i, byte[] bytes, int location, Map<String, Object> options) {
-        aliceError.complete(new IOException("unexpected data from " + i));
+      public void receivedUnexpectedData(InetSocketAddress address, byte[] bytes, int location, Map<String, Object> options) {
+        aliceError.complete(new IOException("unexpected data from " + address));
       }
 
       @Override
@@ -223,7 +223,7 @@ public class SSLTest {
       }
 
       @Override
-      public void messageReceived(InetSocketAddress i, ByteBuffer m, Map<String, Object> options) throws IOException {
+      public void messageReceived(InetSocketAddress i, ByteBuffer msg, Map<String, Object> options) throws IOException {
       }
     });
   }
@@ -233,12 +233,12 @@ public class SSLTest {
    *
    * @return completes with the opened socket, or exceptionally if opening it failed
    */
-  CompletableFuture<P2PSocket<InetSocketAddress>> sendPayload(SSLTransportLayer<InetSocketAddress, ByteBuffer> bob, InetSocketAddress to) {
+  CompletableFuture<P2PSocket<InetSocketAddress>> sendPayload(SSLTransportLayer<InetSocketAddress, ByteBuffer> bob, InetSocketAddress address) {
     final CompletableFuture<P2PSocket<InetSocketAddress>> opened = new CompletableFuture<P2PSocket<InetSocketAddress>>();
     environments.get(bob).getSelectorManager().invoke(new Runnable() {
       @Override
       public void run() {
-        bob.openSocket(to, new SocketCallback<InetSocketAddress>() {
+        bob.openSocket(address, new SocketCallback<InetSocketAddress>() {
           @Override
           public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
             opened.complete(sock);
@@ -258,7 +258,7 @@ public class SSLTest {
           }
 
           @Override
-          public void receiveException(SocketRequestHandle<InetSocketAddress> s, Exception ex) {
+          public void receiveException(SocketRequestHandle<InetSocketAddress> request, Exception ex) {
             opened.completeExceptionally(ex);
           }
         }, null);
@@ -395,7 +395,7 @@ public class SSLTest {
 
       @Override
       public boolean equals(Object obj) {
-        return obj instanceof NodeHandle h && h.getNodeId().equals(getNodeId());
+        return obj instanceof NodeHandle nodeHandle && nodeHandle.getNodeId().equals(getNodeId());
       }
 
       @Override
@@ -450,10 +450,10 @@ public class SSLTest {
   @DisplayName("only a certificate changes the binding of an authenticated id, and a certificate beats an unverified binding")
   void onlyACertificateReplacesTheBindingOfAnAuthenticatedId() {
     CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
-    Id other = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
+    Id id = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
     TransportLayerNodeHandle<MultiInetSocketAddress> bob = handleWithId(BOB);
-    TransportLayerNodeHandle<MultiInetSocketAddress> claimant = handleWithId(other);
-    Map<String, Object> claimantsCertificate = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, other.toStringFull());
+    TransportLayerNodeHandle<MultiInetSocketAddress> claimant = handleWithId(id);
+    Map<String, Object> claimantsCertificate = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, id.toStringFull());
 
     assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, null), "neither verified: the epochs decide");
     assertEquals(BindStrategy.Replacement.REPLACE, strategy.replace(bob, claimant, claimantsCertificate), "certified over unverified");

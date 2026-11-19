@@ -88,11 +88,11 @@ public class PRNonconform2 extends PRRegressionTest {
   }
 
   @Override
-  public BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> pr,
+  public BogusApp getBogusApp(Player player, PeerReview<HandleImpl, IdImpl> peerReview,
       Environment env) {
     if (player.localHandle.id.id == 1) {
       // alice
-      return new BogusApp(player,pr,env) {
+      return new BogusApp(player,peerReview,env) {
         int msgNum = 0;
 
         /**
@@ -117,7 +117,7 @@ public class PRNonconform2 extends PRRegressionTest {
 
       };
     } else {
-      return new BogusApp(player,pr,env) {
+      return new BogusApp(player,peerReview,env) {
        @Override
         public void notifyStatusChange(
             IdImpl id,

@@ -78,8 +78,8 @@ class PeerReviewWireRoundTripTest {
 
   private static final Serializer<TestId> IDS = new Serializer<>() {
     @Override
-    public void serialize(TestId i, OutputBuffer buf) throws IOException {
-      i.serialize(buf);
+    public void serialize(TestId testId, OutputBuffer buf) throws IOException {
+      testId.serialize(buf);
     }
 
     @Override
@@ -110,10 +110,10 @@ class PeerReviewWireRoundTripTest {
   }
 
   private static <T> T readAll(byte[] bytes, Reader<T> reader, Object value) throws IOException {
-    SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-    T read = reader.read(in);
+    SimpleInputBuffer input = new SimpleInputBuffer(bytes);
+    T read = reader.read(input);
     assertNotNull(read, () -> "read " + value);
-    assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + value);
+    assertEquals(0, input.bytesRemaining(), () -> "bytes left after reading " + value);
     return read;
   }
 
@@ -131,11 +131,11 @@ class PeerReviewWireRoundTripTest {
   }
 
   private static byte[] fill(int length, int seed) {
-    byte[] b = new byte[length];
+    byte[] bytes = new byte[length];
     for (int i = 0; i < length; i++) {
-      b[i] = (byte) (seed + i * 7);
+      bytes[i] = (byte) (seed + i * 7);
     }
-    return b;
+    return bytes;
   }
 
   private static Authenticator auth(long seq) {
@@ -152,33 +152,33 @@ class PeerReviewWireRoundTripTest {
   @ValueSource(longs = {0, 1, -1, Long.MAX_VALUE, Long.MIN_VALUE})
   @DisplayName("Authenticator round-trips at the extreme sequence numbers")
   void authenticator(long seq) throws IOException {
-    Authenticator a = auth(seq);
+    Authenticator authenticator = auth(seq);
 
-    assertEquals(a, roundTrip(a, Authenticator::serialize, buf -> new Authenticator(buf, HASH, SIG)));
-    assertEquals(a, roundTrip(a, Authenticator::serialize, AUTHENTICATORS::deserialize));
+    assertEquals(authenticator, roundTrip(authenticator, Authenticator::serialize, buf -> new Authenticator(buf, HASH, SIG)));
+    assertEquals(authenticator, roundTrip(authenticator, Authenticator::serialize, AUTHENTICATORS::deserialize));
   }
 
   // ---- message.*
 
   @Test
   void ack() throws IOException {
-    AckMessage<TestId> a = new AckMessage<>(id(9), 5, Long.MAX_VALUE, fill(HASH, 1), fill(SIG, 2));
+    AckMessage<TestId> ackMessage = new AckMessage<>(id(9), 5, Long.MAX_VALUE, fill(HASH, 1), fill(SIG, 2));
 
-    AckMessage<TestId> read = roundTrip(a, buf -> AckMessage.build(buf, IDS, HASH, SIG));
+    AckMessage<TestId> read = roundTrip(ackMessage, buf -> AckMessage.build(buf, IDS, HASH, SIG));
 
-    assertEquals(a.getNodeId(), read.getNodeId());
+    assertEquals(ackMessage.getNodeId(), read.getNodeId());
     assertEquals(5, read.getSendEntrySeq());
     assertEquals(Long.MAX_VALUE, read.getRecvEntrySeq());
-    assertArrayEquals(a.getPreviousTopHash(), read.getPreviousTopHash());
-    assertArrayEquals(a.getSignature(), read.getSignature());
+    assertArrayEquals(ackMessage.getPreviousTopHash(), read.getPreviousTopHash());
+    assertArrayEquals(ackMessage.getSignature(), read.getSignature());
   }
 
   @Test
   @DisplayName("AuthPush with zero ids")
   void authPushEmpty() throws IOException {
-    AuthPushMessage<TestId> m = new AuthPushMessage<>(new LinkedHashMap<>());
+    AuthPushMessage<TestId> msg = new AuthPushMessage<>(new LinkedHashMap<>());
 
-    assertEquals(m, roundTrip(m, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
+    assertEquals(msg, roundTrip(msg, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
   }
 
   @Test
@@ -189,9 +189,9 @@ class PeerReviewWireRoundTripTest {
     map.put(id(2), List.of(auth(7)));
     map.put(id(3), List.of(auth(8), auth(9), auth(10)));
     map.put(id(4), List.of());
-    AuthPushMessage<TestId> m = new AuthPushMessage<>(map);
+    AuthPushMessage<TestId> msg = new AuthPushMessage<>(map);
 
-    assertEquals(m, roundTrip(m, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
+    assertEquals(msg, roundTrip(msg, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
   }
 
   @Test
@@ -201,9 +201,9 @@ class PeerReviewWireRoundTripTest {
     for (int i = 0; i < AuthPushMessage.MAX_IDENTIFIERS; i++) {
       map.put(id(i), List.of());
     }
-    AuthPushMessage<TestId> m = new AuthPushMessage<>(map);
+    AuthPushMessage<TestId> msg = new AuthPushMessage<>(map);
 
-    assertEquals(m, roundTrip(m, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
+    assertEquals(msg, roundTrip(msg, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
   }
 
   @Test
@@ -213,9 +213,9 @@ class PeerReviewWireRoundTripTest {
     for (int i = 0; i < AuthPushMessage.MAX_AUTHENTICATORS_PER_ID; i++) {
       list.add(auth(i));
     }
-    AuthPushMessage<TestId> m = new AuthPushMessage<>(Map.of(id(1), list));
+    AuthPushMessage<TestId> msg = new AuthPushMessage<>(Map.of(id(1), list));
 
-    assertEquals(m, roundTrip(m, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
+    assertEquals(msg, roundTrip(msg, buf -> AuthPushMessage.build(buf, IDS, AUTHENTICATORS)));
   }
 
   @Test
@@ -223,7 +223,7 @@ class PeerReviewWireRoundTripTest {
   void authPushZeroByteIdentifiers() throws IOException {
     Serializer<EmptyId> empty = new Serializer<>() {
       @Override
-      public void serialize(EmptyId i, OutputBuffer buf) {
+      public void serialize(EmptyId emptyId, OutputBuffer buf) {
       }
 
       @Override
@@ -231,57 +231,57 @@ class PeerReviewWireRoundTripTest {
         return new EmptyId();
       }
     };
-    AuthPushMessage<EmptyId> m = new AuthPushMessage<>(Map.of(new EmptyId(), List.of()));
+    AuthPushMessage<EmptyId> msg = new AuthPushMessage<>(Map.of(new EmptyId(), List.of()));
 
-    assertEquals(m, roundTrip(m, buf -> AuthPushMessage.build(buf, empty, AUTHENTICATORS)));
+    assertEquals(msg, roundTrip(msg, buf -> AuthPushMessage.build(buf, empty, AUTHENTICATORS)));
   }
 
   @Test
   void authRequest() throws IOException {
-    AuthRequest<TestId> m = new AuthRequest<>(Long.MIN_VALUE, id(3));
+    AuthRequest<TestId> authRequest = new AuthRequest<>(Long.MIN_VALUE, id(3));
 
-    assertEquals(m, roundTrip(m, buf -> new AuthRequest<>(buf, IDS)));
+    assertEquals(authRequest, roundTrip(authRequest, buf -> new AuthRequest<>(buf, IDS)));
   }
 
   @Test
   void authResponse() throws IOException {
-    AuthResponse<TestId> m = new AuthResponse<>(id(3), auth(1), auth(2));
+    AuthResponse<TestId> authResponse = new AuthResponse<>(id(3), auth(1), auth(2));
 
-    assertEquals(m, roundTrip(m, buf -> new AuthResponse<>(buf, IDS, HASH, SIG)));
+    assertEquals(authResponse, roundTrip(authResponse, buf -> new AuthResponse<>(buf, IDS, HASH, SIG)));
   }
 
   @Test
   void userDataFullyRelevant() throws IOException {
-    UserDataMessage<TestId> m = userData(fill(40, 3), 40);
+    UserDataMessage<TestId> msg = userData(fill(40, 3), 40);
 
-    assertSameUserData(m, roundTrip(m, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
+    assertSameUserData(msg, roundTrip(msg, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
   }
 
   @Test
   void userDataEmptyPayload() throws IOException {
-    UserDataMessage<TestId> m = userData(new byte[0], 0);
+    UserDataMessage<TestId> msg = userData(new byte[0], 0);
 
-    assertSameUserData(m, roundTrip(m, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
+    assertSameUserData(msg, roundTrip(msg, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
   }
 
   @ParameterizedTest
   @ValueSource(ints = {0, 1, 39, 100, 254})
   @DisplayName("UserData with only the first bytes relevant, up to the largest length the one-byte code can carry")
   void userDataPartlyRelevant(int relevant) throws IOException {
-    UserDataMessage<TestId> m = userData(fill(300, 3), relevant);
+    UserDataMessage<TestId> msg = userData(fill(300, 3), relevant);
 
-    UserDataMessage<TestId> read = roundTrip(m, buf -> UserDataMessage.build(buf, IDS, HASH, SIG));
+    UserDataMessage<TestId> read = roundTrip(msg, buf -> UserDataMessage.build(buf, IDS, HASH, SIG));
 
-    assertSameUserData(m, read);
+    assertSameUserData(msg, read);
     assertEquals(relevant, read.getRelevantLength());
   }
 
   @Test
   @DisplayName("UserData whose payload is exactly as long as the full-relevance code")
   void userDataPayload255() throws IOException {
-    UserDataMessage<TestId> m = userData(fill(255, 3), 255);
+    UserDataMessage<TestId> msg = userData(fill(255, 3), 255);
 
-    assertSameUserData(m, roundTrip(m, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
+    assertSameUserData(msg, roundTrip(msg, buf -> UserDataMessage.build(buf, IDS, HASH, SIG)));
   }
 
   private static UserDataMessage<TestId> userData(byte[] payload, int relevant) {
@@ -299,21 +299,21 @@ class PeerReviewWireRoundTripTest {
 
   @Test
   void challengeWithAuditChallenge() throws IOException {
-    ChallengeMessage<TestId> m = new ChallengeMessage<>(id(1), 12, new ChallengeAudit((byte) 5, auth(1), auth(2)));
+    ChallengeMessage<TestId> msg = new ChallengeMessage<>(id(1), 12, new ChallengeAudit((byte) 5, auth(1), auth(2)));
 
-    ChallengeMessage<TestId> read = roundTrip(m, buf -> new ChallengeMessage<>(buf, IDS, EVIDENCE));
+    ChallengeMessage<TestId> read = roundTrip(msg, buf -> new ChallengeMessage<>(buf, IDS, EVIDENCE));
 
-    assertEquals(m.originator(), read.originator());
+    assertEquals(msg.originator(), read.originator());
     assertEquals(12, read.evidenceSeq());
-    assertEquals(m.challenge(), read.challenge());
+    assertEquals(msg.challenge(), read.challenge());
   }
 
   @Test
   void challengeWithSendChallenge() throws IOException {
     UserDataMessage<TestId> udm = userData(fill(10, 1), 4);
-    ChallengeMessage<TestId> m = new ChallengeMessage<>(id(1), 12, udm);
+    ChallengeMessage<TestId> msg = new ChallengeMessage<>(id(1), 12, udm);
 
-    ChallengeMessage<TestId> read = roundTrip(m, buf -> new ChallengeMessage<>(buf, IDS, EVIDENCE));
+    ChallengeMessage<TestId> read = roundTrip(msg, buf -> new ChallengeMessage<>(buf, IDS, EVIDENCE));
 
     assertEquals(PeerReviewConstants.CHAL_SEND, read.getChallengeType());
     @SuppressWarnings("unchecked")
@@ -345,11 +345,11 @@ class PeerReviewWireRoundTripTest {
         proofInconsistent(false), proofInconsistent(true), nonconformantProof());
 
     for (Evidence e : evidence) {
-      AccusationMessage<TestId> m = new AccusationMessage<>(id(1), id(2), 55, e);
+      AccusationMessage<TestId> msg = new AccusationMessage<>(id(1), id(2), 55, e);
 
-      AccusationMessage<TestId> read = roundTrip(m, buf -> new AccusationMessage<>(buf, IDS, EVIDENCE));
+      AccusationMessage<TestId> read = roundTrip(msg, buf -> new AccusationMessage<>(buf, IDS, EVIDENCE));
 
-      assertStatement(m, read);
+      assertStatement(msg, read);
       assertEquals(e.getEvidenceType(), read.getEvidence().getEvidenceType());
       assertEquals(e.getClass(), read.getEvidence().getClass());
     }
@@ -361,11 +361,11 @@ class PeerReviewWireRoundTripTest {
         new AuditResponse<>(id(6), snippet(4, true)), new AckMessage<>(id(9), 5, 6, fill(HASH, 1), fill(SIG, 2)));
 
     for (Evidence e : evidence) {
-      ResponseMessage<TestId> m = new ResponseMessage<>(id(1), id(2), 55, e);
+      ResponseMessage<TestId> msg = new ResponseMessage<>(id(1), id(2), 55, e);
 
-      ResponseMessage<TestId> read = roundTrip(m, buf -> new ResponseMessage<>(buf, IDS, EVIDENCE));
+      ResponseMessage<TestId> read = roundTrip(msg, buf -> new ResponseMessage<>(buf, IDS, EVIDENCE));
 
-      assertStatement(m, read);
+      assertStatement(msg, read);
       assertEquals(e.getEvidenceType(), read.getEvidence().getEvidenceType());
       assertEquals(e.getClass(), read.getEvidence().getClass());
     }
@@ -381,21 +381,21 @@ class PeerReviewWireRoundTripTest {
 
   @Test
   void challengeAudit() throws IOException {
-    ChallengeAudit c = new ChallengeAudit(PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT, auth(1), auth(2));
+    ChallengeAudit challengeAudit = new ChallengeAudit(PeerReviewConstants.FLAG_INCLUDE_CHECKPOINT, auth(1), auth(2));
 
-    ChallengeAudit read = roundTrip(c, Evidence::serialize, buf -> new ChallengeAudit(buf, HASH, SIG));
+    ChallengeAudit read = roundTrip(challengeAudit, Evidence::serialize, buf -> new ChallengeAudit(buf, HASH, SIG));
 
-    assertEquals(c, read);
+    assertEquals(challengeAudit, read);
     assertTrue(read.isIncludePrevCheckpoint());
   }
 
   @Test
   void auditResponse() throws IOException {
-    AuditResponse<TestId> r = new AuditResponse<>(id(4), snippet(3, true));
+    AuditResponse<TestId> auditResponse = new AuditResponse<>(id(4), snippet(3, true));
 
-    AuditResponse<TestId> read = roundTrip(r, Evidence::serialize, buf -> new AuditResponse<>(buf, IDS, HASH));
+    AuditResponse<TestId> read = roundTrip(auditResponse, Evidence::serialize, buf -> new AuditResponse<>(buf, IDS, HASH));
 
-    assertEquals(r, read);
+    assertEquals(auditResponse, read);
     assertEquals(100, read.getFirstSeq());
   }
 
@@ -418,13 +418,13 @@ class PeerReviewWireRoundTripTest {
 
   @Test
   void proofNonconformant() throws IOException {
-    ProofNonconformant<TestId> p = nonconformantProof();
+    ProofNonconformant<TestId> proofNonconformant = nonconformantProof();
 
-    ProofNonconformant<TestId> read = roundTrip(p, Evidence::serialize, buf -> new ProofNonconformant<>(buf, IDS, HASH, SIG));
+    ProofNonconformant<TestId> read = roundTrip(proofNonconformant, Evidence::serialize, buf -> new ProofNonconformant<>(buf, IDS, HASH, SIG));
 
-    assertEquals(p.getTo(), read.getTo());
-    assertEquals(p.getMyHandle(), read.getMyHandle());
-    assertEquals(p.getSnippet(), read.getSnippet());
+    assertEquals(proofNonconformant.getTo(), read.getTo());
+    assertEquals(proofNonconformant.getMyHandle(), read.getMyHandle());
+    assertEquals(proofNonconformant.getSnippet(), read.getSnippet());
   }
 
   @ParameterizedTest
@@ -448,19 +448,19 @@ class PeerReviewWireRoundTripTest {
 
   @Test
   void logSnippetSingleEntry() throws IOException {
-    LogSnippet s = snippet(1, false);
+    LogSnippet logSnippet = snippet(1, false);
 
-    assertEquals(s, roundTrip(s, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH)));
+    assertEquals(logSnippet, roundTrip(logSnippet, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH)));
   }
 
   @ParameterizedTest
   @ValueSource(ints = {1, 2, 252, 253, 254, 255, 256, 1000, 65534, 65535, 65536, 70000})
   @DisplayName("SnippetEntry content lengths around the one-byte, two-byte and four-byte size codes")
   void snippetContentLengths(int length) throws IOException {
-    LogSnippet s = new LogSnippet(fill(HASH, 1), List.of(new SnippetEntry((byte) 7, 10, false, fill(length, 3)),
+    LogSnippet logSnippet = new LogSnippet(fill(HASH, 1), List.of(new SnippetEntry((byte) 7, 10, false, fill(length, 3)),
         new SnippetEntry((byte) 8, 11, false, fill(length, 4))));
 
-    assertEquals(s, roundTrip(s, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH)));
+    assertEquals(logSnippet, roundTrip(logSnippet, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH)));
   }
 
   @Test
@@ -473,11 +473,11 @@ class PeerReviewWireRoundTripTest {
     for (int i = 0; i < seqs.length; i++) {
       entries.add(new SnippetEntry((byte) 1, seqs[i], i % 3 == 0, i % 3 == 0 ? fill(HASH, i) : fill(3, i)));
     }
-    LogSnippet s = new LogSnippet(fill(HASH, 1), entries);
+    LogSnippet logSnippet = new LogSnippet(fill(HASH, 1), entries);
 
-    LogSnippet read = roundTrip(s, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH));
+    LogSnippet read = roundTrip(logSnippet, LogSnippet::serialize, buf -> new LogSnippet(buf, HASH));
 
-    assertEquals(s, read);
+    assertEquals(logSnippet, read);
     for (int i = 0; i < seqs.length; i++) {
       assertEquals(seqs[i], read.getEntries().get(i).getSeq(), "entry " + i);
     }
@@ -504,31 +504,31 @@ class PeerReviewWireRoundTripTest {
   void indexEntry() throws IOException {
     SecureHistoryFactory factory = new SecureHistoryFactory(HASHER, null);
     for (int size : new int[] {-1, 0, 1, Integer.MAX_VALUE}) {
-      IndexEntry e = new IndexEntry(Long.MAX_VALUE, 1234567890123L, (short) -2, size, fill(HASH, 1), fill(HASH, 2));
+      IndexEntry indexEntry = new IndexEntry(Long.MAX_VALUE, 1234567890123L, (short) -2, size, fill(HASH, 1), fill(HASH, 2));
 
-      IndexEntry read = roundTrip(e, IndexEntry::serialize, factory::build);
+      IndexEntry read = roundTrip(indexEntry, IndexEntry::serialize, factory::build);
 
-      assertEquals(e.getSeq(), read.getSeq());
-      assertEquals(e.getFileIndex(), read.getFileIndex());
+      assertEquals(indexEntry.getSeq(), read.getSeq());
+      assertEquals(indexEntry.getFileIndex(), read.getFileIndex());
       assertEquals(size, read.getSizeInFile());
-      assertEquals(e.getType(), read.getType());
-      assertArrayEquals(e.getContentHash(), read.getContentHash());
-      assertArrayEquals(e.getNodeHash(), read.getNodeHash());
-      assertEquals(factory.getSerializedSize(), bytes(e, IndexEntry::serialize).length);
+      assertEquals(indexEntry.getType(), read.getType());
+      assertArrayEquals(indexEntry.getContentHash(), read.getContentHash());
+      assertArrayEquals(indexEntry.getNodeHash(), read.getNodeHash());
+      assertEquals(factory.getSerializedSize(), bytes(indexEntry, IndexEntry::serialize).length);
     }
   }
 
   @Test
   void evtAck() throws IOException {
-    EvtAck<TestId> e = new EvtAck<>(id(3), 4, Long.MAX_VALUE, fill(HASH, 1), fill(SIG, 2));
+    EvtAck<TestId> evtAck = new EvtAck<>(id(3), 4, Long.MAX_VALUE, fill(HASH, 1), fill(SIG, 2));
 
-    EvtAck<TestId> read = roundTrip(e, EvtAck::serialize, buf -> new EvtAck<>(buf, IDS, HASH, SIG));
+    EvtAck<TestId> read = roundTrip(evtAck, EvtAck::serialize, buf -> new EvtAck<>(buf, IDS, HASH, SIG));
 
-    assertEquals(e.getRemoteId(), read.getRemoteId());
+    assertEquals(evtAck.getRemoteId(), read.getRemoteId());
     assertEquals(4, read.getAckedSeq());
     assertEquals(Long.MAX_VALUE, read.getPeerSeq());
-    assertArrayEquals(e.getHTopMinusOne(), read.getHTopMinusOne());
-    assertArrayEquals(e.getSignature(), read.getSignature());
+    assertArrayEquals(evtAck.getHTopMinusOne(), read.getHTopMinusOne());
+    assertArrayEquals(evtAck.getSignature(), read.getSignature());
   }
 
   @Test
@@ -552,13 +552,13 @@ class PeerReviewWireRoundTripTest {
     events.add(new EvtRecv<>(id(1), 8, ByteBuffer.wrap(payload), length / 2, HASHER));
     events.add(new EvtRecv<>(id(1), 8, ByteBuffer.wrap(payload), 0, HASHER));
     events.add(new EvtRecv<>(id(1), 8, ByteBuffer.wrap(payload), length, HASHER));
-    for (EvtRecv<TestId> e : events) {
-      EvtRecv<TestId> read = roundTrip(e, EvtRecv::serialize, buf -> new EvtRecv<>(buf, IDS, HASH));
+    for (EvtRecv<TestId> evtRecv : events) {
+      EvtRecv<TestId> read = roundTrip(evtRecv, EvtRecv::serialize, buf -> new EvtRecv<>(buf, IDS, HASH));
 
-      assertEquals(e.getSenderHandle(), read.getSenderHandle());
+      assertEquals(evtRecv.getSenderHandle(), read.getSenderHandle());
       assertEquals(8, read.getSenderSeq());
-      assertArrayEquals(e.getPayload(), read.getPayload());
-      assertArrayEquals(e.getHash(), read.getHash());
+      assertArrayEquals(evtRecv.getPayload(), read.getPayload());
+      assertArrayEquals(evtRecv.getHash(), read.getHash());
     }
   }
 
@@ -571,22 +571,22 @@ class PeerReviewWireRoundTripTest {
     events.add(new EvtSend<>(id(1), ByteBuffer.wrap(payload), length / 2, HASHER));
     events.add(new EvtSend<>(id(1), ByteBuffer.wrap(payload), 0, HASHER));
     events.add(new EvtSend<>(id(1), ByteBuffer.wrap(payload), length, HASHER));
-    for (EvtSend<TestId> e : events) {
-      EvtSend<TestId> read = roundTrip(e, EvtSend::serialize, buf -> new EvtSend<>(buf, IDS, HASH));
+    for (EvtSend<TestId> evtSend : events) {
+      EvtSend<TestId> read = roundTrip(evtSend, EvtSend::serialize, buf -> new EvtSend<>(buf, IDS, HASH));
 
-      assertEquals(e.getReceiverId(), read.getReceiverId());
-      assertEquals(e.getPayload(), read.getPayload());
+      assertEquals(evtSend.getReceiverId(), read.getReceiverId());
+      assertEquals(evtSend.getPayload(), read.getPayload());
     }
   }
 
   @Test
   void evtSign() throws IOException {
-    EvtSign e = new EvtSign(fill(HASH, 1), fill(SIG, 2));
+    EvtSign evtSign = new EvtSign(fill(HASH, 1), fill(SIG, 2));
 
-    EvtSign read = roundTrip(e, EvtSign::serialize, buf -> new EvtSign(buf, HASH, SIG));
+    EvtSign read = roundTrip(evtSign, EvtSign::serialize, buf -> new EvtSign(buf, HASH, SIG));
 
-    assertArrayEquals(e.getHTopMinusOne(), read.getHTopMinusOne());
-    assertArrayEquals(e.getSignature(), read.getSignature());
+    assertArrayEquals(evtSign.getHTopMinusOne(), read.getHTopMinusOne());
+    assertArrayEquals(evtSign.getSignature(), read.getSignature());
   }
 
   @ParameterizedTest

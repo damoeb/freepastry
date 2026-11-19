@@ -40,8 +40,8 @@ public class HashAndSequence {
   private byte[] hash;
   private long seq;
 
-  public HashAndSequence(byte[] h, long s) {
-    hash = h;
+  public HashAndSequence(byte[] bytes, long s) {
+    hash = bytes;
     seq = s;
   }
 
