@@ -154,7 +154,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   /**
    * Should be holding the lock on measured
    */
-  public Tuple<int[], Collection<MySocket>> getVals(Identifier i) {
+  public Tuple<int[], Collection<MySocket>> getOrCreateMeasurements(Identifier i) {
     Tuple<int[], Collection<MySocket>> ret = measured.get(i);
     if (ret == null) {
       ret = new Tuple<int[], Collection<MySocket>>(new int[NUM_VALS], new ArrayList<MySocket>());
@@ -199,7 +199,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     @Override
     public void close() {
       synchronized(measured) {
-        getVals(identifier).second().remove(this);
+        getOrCreateMeasurements(identifier).second().remove(this);
       }
       super.close();
     }
@@ -207,7 +207,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     @Override
     public void receiveException(P2PSocket<Identifier> socket, Exception e) {
       synchronized(measured) {
-        getVals(identifier).second().remove(this);
+        getOrCreateMeasurements(identifier).second().remove(this);
       }
       super.receiveException(socket, e);
     }
@@ -230,7 +230,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
         @Nullable Map<String, Object> options) {
       super(identifier, socket, logger, errorHandler, options);
       synchronized(measured) {
-        getVals(identifier).second().add(this);
+        getOrCreateMeasurements(identifier).second().add(this);
       }
     }
 
@@ -238,7 +238,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     public long write(ByteBuffer srcs) throws IOException {
       long ret = super.write(srcs);
       synchronized(measured) {
-        int[] vals = getVals(getIdentifier()).first();
+        int[] vals = getOrCreateMeasurements(getIdentifier()).first();
         if (srcs.hasRemaining()) {
           vals[CUR_SATURATED] = SATURATED;
         }
@@ -251,7 +251,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
     public long read(ByteBuffer srcs) throws IOException {
       long ret = super.read(srcs);
       synchronized(measured) {
-        int[] vals = getVals(getIdentifier()).first();
+        int[] vals = getOrCreateMeasurements(getIdentifier()).first();
         vals[CUR_DOWN] = (int) (vals[CUR_DOWN] + ret);
       }
       return ret;
@@ -263,7 +263,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
   public void messageReceived(Identifier i, ByteBuffer m,
       @Nullable Map<String, Object> options) throws IOException {
     synchronized (measured) {
-      getVals(i).first()[CUR_DOWN]+=m.remaining();
+      getOrCreateMeasurements(i).first()[CUR_DOWN]+=m.remaining();
     }
     callback.messageReceived(i, m, options);
   }
@@ -273,7 +273,7 @@ public class BandwidthMeasuringTransportLayer<Identifier> implements
       ByteBuffer m, @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe,
       @Nullable Map<String, Object> options) {
     synchronized (measured) {
-      getVals(i).first()[CUR_UP]+=m.remaining();
+      getOrCreateMeasurements(i).first()[CUR_UP]+=m.remaining();
     }
     return tl.sendMessage(i, m, deliverAckToMe, options);
   }

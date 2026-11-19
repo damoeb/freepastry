@@ -216,7 +216,7 @@ public class ConnectivityVerifier {
     // pull a random node off the list, and try it, we do this so the recursion works
     InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size()));
 
-    ret.attach(lookup.getMyInetAddress(target, new Continuation<InetSocketAddress, IOException>() {
+    ret.attach(lookup.requestExternalAddress(target, new Continuation<InetSocketAddress, IOException>() {
       @Override
       public void receiveResult(final InetSocketAddress result) {
         logger.info("findExternalAddressHelper({},{},{}).success:{}", lookup, local, probeList, result);

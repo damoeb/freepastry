@@ -76,7 +76,7 @@ public interface InetSocketAddressLookup extends Destructable {
    * @param options can be null
    * @return you can cancel the operation
    */
-  public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
+  public Cancellable requestExternalAddress(InetSocketAddress bootstrap,
       Continuation<InetSocketAddress, IOException> c,
       @Nullable Map<String, Object> options);
 

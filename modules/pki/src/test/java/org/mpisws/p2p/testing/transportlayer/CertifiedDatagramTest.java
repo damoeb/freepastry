@@ -166,8 +166,8 @@ class CertifiedDatagramTest {
     InetSocketAddress real = new InetSocketAddress(bindAddress, port);
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(null, bindAddress, port, environment()) {
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
-        return super.getWireTransportLayer(real, pn);
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+        return super.buildWireTransportLayer(real, pn);
       }
     };
     PastryNode m = factory.newNode(id, new MultiInetSocketAddress(claimedAddress == null ? real : claimedAddress));

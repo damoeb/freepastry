@@ -93,7 +93,7 @@ public class DistTutorial {
        * Swap in Direct instead of wire.
        */
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(final InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(final InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         DirectTransportLayer<InetSocketAddress, ByteBuffer> tl = new DirectTransportLayer<InetSocketAddress, ByteBuffer>(
             innermostAddress, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment());
         simulator.registerNode(innermostAddress, tl, simulator.generateNodeRecord());

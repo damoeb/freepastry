@@ -102,7 +102,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    * TODO: Use a param to load the store from a file.
    * @param buf must be null: loading a persistent store is not implemented and throws
    */
-  static <H, I> TableStore<I, X509Certificate> getTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
+  static <H, I> TableStore<I, X509Certificate> loadTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
     MyStore<H, I> ret = new MyStore<H, I>();
     ret.put(localId, localCert);
     if (buf != null) {
@@ -128,7 +128,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       Serializer<I> iSerializer, X509Serializer cSerializer, I localId,
       X509Certificate localCert, PrivateKey localPrivate, TransportLayer<Identifier, ByteBuffer> tl,
       HashProvider hasher, Environment env) throws InvalidKeyException, NoSuchAlgorithmException {
-    super(iSerializer, cSerializer, getTableStore(localId, localCert, iSerializer, cSerializer, null), tl, env);
+    super(iSerializer, cSerializer, loadTableStore(localId, localCert, iSerializer, cSerializer, null), tl, env);
     this.tl = tl;
     tl.setCallback(this);
     this.hasher = hasher;

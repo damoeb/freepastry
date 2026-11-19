@@ -119,7 +119,7 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
         logger.trace("{}.openSocket({},{}):{}.receiveResult()", this, i, deliverSocketToMe, ret);
-        deliverSocketToMe.receiveResult(ret, getLSSock(sock));
+        deliverSocketToMe.receiveResult(ret, wrapAndTrackSocket(sock));
       }
       @Override
       public void receiveException(SocketRequestHandle<Identifier> s, Exception ex) {
@@ -139,10 +139,10 @@ public class LimitSocketsTransportLayer<Identifier, MessageType> implements Tran
   @Override
   public void incomingSocket(P2PSocket<Identifier> s) throws IOException {
     logger.trace("{}.incomingSocket({})", this, s);
-    callback.incomingSocket(getLSSock(s));
+    callback.incomingSocket(wrapAndTrackSocket(s));
   }
 
-  protected LSSocket getLSSock(P2PSocket<Identifier> sock) {
+  protected LSSocket wrapAndTrackSocket(P2PSocket<Identifier> sock) {
     LSSocket ret = new LSSocket(sock);
     cache.put(ret,ret);
     closeIfNecessary();

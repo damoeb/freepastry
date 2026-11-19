@@ -123,11 +123,11 @@ public class Recorder implements MyEvents {
       }
 
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // record here
 
         RecordLayer<InetSocketAddress> ret = new RecordLayer<InetSocketAddress>(
-            super.getWireTransportLayer(innermostAddress, pn), "0x"+pn.getNodeId().toStringBare(),
+            super.buildWireTransportLayer(innermostAddress, pn), "0x"+pn.getNodeId().toStringBare(),
             new InetSocketAddressSerializer(), pn.getEnvironment());
         recorders.put(pn, ret);
         return ret;

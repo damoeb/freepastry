@@ -120,9 +120,9 @@ public class BandwidthMeasuringTLTest implements Application {
     SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindPort, env) {
 
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(
           InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
-        TransportLayer<InetSocketAddress, ByteBuffer> wtl = super.getWireTransportLayer(innermostAddress, pn);
+        TransportLayer<InetSocketAddress, ByteBuffer> wtl = super.buildWireTransportLayer(innermostAddress, pn);
 
         final BandwidthLimitingTransportLayer<InetSocketAddress> ret = new BandwidthLimitingTransportLayer<InetSocketAddress>(wtl,40000,1000,pn.getEnvironment());
 

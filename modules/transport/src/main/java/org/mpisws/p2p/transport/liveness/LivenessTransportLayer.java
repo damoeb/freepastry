@@ -188,7 +188,7 @@ public class LivenessTransportLayer<Identifier>
     return getManager(i).checkLiveness(options);
   }
 
-  public P2PSocket<Identifier> getLSocket(P2PSocket<Identifier> s, LivenessTracker<Identifier> manager) {
+  public P2PSocket<Identifier> wrapSocketWithLivenessCheck(P2PSocket<Identifier> s, LivenessTracker<Identifier> manager) {
     LSocket<Identifier> sock = new LSocket<>(this, manager, s, manager.identifier.get());
     synchronized(manager.sockets) {
       manager.sockets.add(sock);
@@ -290,7 +290,7 @@ public class LivenessTransportLayer<Identifier>
     return tl.openSocket(i, new SocketCallback<Identifier>(){
       @Override
       public void receiveResult(SocketRequestHandle<Identifier> cancellable, P2PSocket<Identifier> sock) {
-        deliverSocketToMe.receiveResult(cancellable, getLSocket(sock,getManager(i)));
+        deliverSocketToMe.receiveResult(cancellable, wrapSocketWithLivenessCheck(sock,getManager(i)));
       }
 
       @Override
@@ -511,7 +511,7 @@ public class LivenessTransportLayer<Identifier>
       m.updated = 0L;
       m.checkLiveness(s.getOptions());
     }
-    callback.incomingSocket(getLSocket(s, getManager(s.getIdentifier())));
+    callback.incomingSocket(wrapSocketWithLivenessCheck(s, getManager(s.getIdentifier())));
   }
 
   final List<LivenessListener<Identifier>> livenessListeners;

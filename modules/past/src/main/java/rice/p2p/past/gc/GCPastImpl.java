@@ -195,7 +195,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public void insert(final PastContent obj, final long expiration, Continuation<? super Boolean[], Exception> command) {
     logger.atDebug().log(() -> "Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    doInsert(obj.getId(), () -> new GCInsertMessage(getUID(), obj, expiration, getLocalNodeHandle(), obj.getId()), command,
+    doInsert(obj.getId(), () -> new GCInsertMessage(nextRequestId(), obj, expiration, getLocalNodeHandle(), obj.getId()), command,
     socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
   }
 
@@ -290,7 +290,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
     logger.debug("REFRESH: GETTINGS ALL HANDLES OF {}", start);
 
 
-    sendRequest(start.id(), new GCLookupHandlesMessage(getUID(), start.id(), getLocalNodeHandle(), start.id()),
+    sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id()),
                 new NamedContinuation<Object, Exception>("GCLookupHandles for " + start.id(), command) {
       @Override
       public void receiveResult(Object o) {
@@ -338,7 +338,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
                   logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, sent);
 
 
-                  sendRequest(next, new GCRefreshMessage(getUID(), sent, getLocalNodeHandle(), next.getId()),
+                  sendRequest(next, new GCRefreshMessage(nextRequestId(), sent, getLocalNodeHandle(), next.getId()),
                               new NamedContinuation<Object, Exception>("GCRefresh to " + next, new StandardContinuation<Object, Object, Exception>(this) {
                     @Override
                     public void receiveResult(Object answers) {

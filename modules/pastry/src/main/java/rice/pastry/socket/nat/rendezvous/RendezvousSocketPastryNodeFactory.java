@@ -418,8 +418,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * For testing, may return a FirewallTL impl for testing.
    */
   @Override
-  protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
-    TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.getWireTransportLayer(innermostAddress, pn);
+  protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+    TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.buildWireTransportLayer(innermostAddress, pn);
     if ((pn.getVars().containsKey(SIMULATE_FIREWALL) && ((Boolean)pn.getVars().get(SIMULATE_FIREWALL)).booleanValue()) ||
         rendezvousConfig.simulateFirewall()) {
       return new FirewallTLImpl<InetSocketAddress, ByteBuffer>(baseTl,SIMULATED_FIREWALL_TIMEOUT_MILLIS,pn.getEnvironment());

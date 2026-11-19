@@ -150,7 +150,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
    *  Starts to audit a node
    */
   void beginAudit(Handle target, Authenticator authFrom, Authenticator authTo, byte needPrevCheckpoint, boolean replayAnswer) {
-    long evidenceSeq = peerreview.getEvidenceSeq();
+    long evidenceSeq = peerreview.allocateEvidenceSeq();
 
     /* Put together an AUDIT challenge */
     ChallengeAudit audit = new ChallengeAudit(needPrevCheckpoint,authFrom,authTo);
@@ -465,7 +465,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
           logger.debug("Extracting proof of misbehavior from audit response");
           ProofInconsistent proof = new ProofInconsistent(toAuthenticator,nextAuth,snippet);
 
-          long evidenceSeq = peerreview.getEvidenceSeq();
+          long evidenceSeq = peerreview.allocateEvidenceSeq();
           logger.debug("Filing proof against {} under evidence sequence number #{}", subject, evidenceSeq);
           infoStore.addEvidence(peerreview.getLocalId(), subject, evidenceSeq, proof);
           peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
@@ -576,7 +576,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
         logger.warn("Audit revealed a protocol violation; filing evidence (snippet from {})", lastCheckpointSeq);
 
         ProofNonconformant<Handle> proof = new ProofNonconformant<Handle>(toAuthenticator,subjectHandle,snippet);
-        long evidenceSeq = peerreview.getEvidenceSeq();
+        long evidenceSeq = peerreview.allocateEvidenceSeq();
         infoStore.addEvidence(peerreview.getLocalId(), subject, evidenceSeq, proof);
         peerreview.sendEvidenceToWitnesses(subject, evidenceSeq, proof);
       }

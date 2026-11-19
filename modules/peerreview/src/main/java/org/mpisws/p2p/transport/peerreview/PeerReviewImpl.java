@@ -218,7 +218,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
 
   /* Gets a fresh, unique sequence number for evidence */
   @Override
-  public long getEvidenceSeq() {
+  public long allocateEvidenceSeq() {
     if (nextEvidenceSeq < getTime()) {
       nextEvidenceSeq = getTime();
     }
@@ -426,7 +426,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
               * [entries]
               */
              ProofInconsistent proof = new ProofInconsistent(auth,existingAuth);
-        long evidenceSeq = getEvidenceSeq();
+        long evidenceSeq = allocateEvidenceSeq();
         infoStore.addEvidence(identifierExtractor.extractIdentifier(transport.getLocalIdentifier()), subject, evidenceSeq, proof, null);
         sendEvidenceToWitnesses(subject, evidenceSeq, proof);
          return false;

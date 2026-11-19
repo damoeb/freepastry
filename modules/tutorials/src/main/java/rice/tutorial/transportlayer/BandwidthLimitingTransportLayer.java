@@ -350,11 +350,11 @@ public class BandwidthLimitingTransportLayer<Identifier> implements
        * the default wire implementation.
        */
       @Override
-      protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(
           InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
         // get the default layer
         TransportLayer<InetSocketAddress, ByteBuffer> wtl =
-          super.getWireTransportLayer(innermostAddress, pn);
+          super.buildWireTransportLayer(innermostAddress, pn);
 
         // wrap it with our layer
         return new BandwidthLimitingTransportLayer<InetSocketAddress>(

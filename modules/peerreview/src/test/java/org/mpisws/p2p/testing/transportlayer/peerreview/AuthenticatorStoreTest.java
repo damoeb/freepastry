@@ -200,7 +200,7 @@ public class AuthenticatorStoreTest {
     }
 
     @Override
-    public long getEvidenceSeq() {
+    public long allocateEvidenceSeq() {
       return 0;
     }
 

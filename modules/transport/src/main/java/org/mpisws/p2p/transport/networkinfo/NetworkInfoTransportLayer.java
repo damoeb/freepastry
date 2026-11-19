@@ -156,7 +156,7 @@ public class NetworkInfoTransportLayer implements
   }
 
   @Override
-  public Cancellable getMyInetAddress(InetSocketAddress bootstrap,
+  public Cancellable requestExternalAddress(InetSocketAddress bootstrap,
       final Continuation<InetSocketAddress, IOException> c, @Nullable Map<String, Object> options) {
     AttachableCancellable ret = new AttachableCancellable();
     ret.attach(openSocket(bootstrap, HEADER_IP_ADDRESS_REQUEST, new SocketCallback<InetSocketAddress>() {

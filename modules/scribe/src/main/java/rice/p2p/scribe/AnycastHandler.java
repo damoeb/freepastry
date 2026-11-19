@@ -162,11 +162,11 @@ final class AnycastHandler {
     aMessage.setSource(endpoint.getLocalNodeHandle());
 
     // get the next hop
-    NodeHandle handle = aMessage.getNext();
+    NodeHandle handle = aMessage.removeNextToVisit();
 
     // make sure that the next node is alive
     while ((handle != null) && !endpoint.isAlive(handle)) {
-      handle = aMessage.getNext();
+      handle = aMessage.removeNextToVisit();
     }
 
     logger.trace("Forwarding anycast message for topic {}on to {}", aMessage.getTopic(), handle);

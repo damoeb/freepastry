@@ -170,7 +170,7 @@ class TransportLayersWireRoundTripTest {
     networkInfo(addr(2, 9002));
     AtomicReference<InetSocketAddress> answer = new AtomicReference<>();
 
-    a.getMyInetAddress(addr(2, 9002), result(answer), null);
+    a.requestExternalAddress(addr(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(addr(1, 9001).getAddress(), answer.get().getAddress());
@@ -183,7 +183,7 @@ class TransportLayersWireRoundTripTest {
     networkInfo(addr6(2, 9002));
     AtomicReference<InetSocketAddress> answer = new AtomicReference<>();
 
-    a.getMyInetAddress(addr6(2, 9002), result(answer), null);
+    a.requestExternalAddress(addr6(2, 9002), result(answer), null);
     net.run();
 
     assertEquals(addr6(1, 9001).getAddress(), answer.get().getAddress());

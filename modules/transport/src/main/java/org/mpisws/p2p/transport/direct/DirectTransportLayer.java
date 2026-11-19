@@ -206,7 +206,7 @@ public class DirectTransportLayer<Identifier, MessageType> implements TransportL
 
   int seq = Integer.MIN_VALUE;
 
-  public synchronized int getNextSeq() {
+  public synchronized int allocateNextSequenceNumber() {
     return seq++;
   }
 

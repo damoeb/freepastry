@@ -407,7 +407,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @return A new id
    */
-  protected synchronized int getUID() {
+  protected synchronized int nextRequestId() {
     return id++;
   }
 
@@ -635,7 +635,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     if (set.size() == max) {
       command.receiveResult(set);
     } else {
-      sendRequest(id, new LookupHandlesMessage(getUID(), id, max, getLocalNodeHandle(), id), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
+      sendRequest(id, new LookupHandlesMessage(nextRequestId(), id, max, getLocalNodeHandle(), id), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
         @Override
         public void receiveResult(NodeHandleSet replicas) {
 
@@ -775,7 +775,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     logger.atTrace().log(() -> " Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    doInsert(obj.getId(), () -> new InsertMessage(getUID(), obj, getLocalNodeHandle(), obj.getId()), new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
+    doInsert(obj.getId(), () -> new InsertMessage(nextRequestId(), obj, getLocalNodeHandle(), obj.getId()), new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
       @Override
       public void receiveResult(final Boolean[] array) {
         cache(obj, new SimpleContinuation()  {
@@ -850,7 +850,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * failed, all replicas are tried, just in case; this may fail too, but at least we tried.
    */
   private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    sendRequest(id, new LookupMessage(getUID(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
+    sendRequest(id, new LookupMessage(nextRequestId(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
       @Override
       public void receiveResult(final PastContent o) {
         if (o != null && isAuthentic(id, o)) {
@@ -975,7 +975,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
     logger.debug("Retrieving handle for id {} from node {}", id, handle);
 
-    sendRequest(handle, new FetchHandleMessage(getUID(), id, getLocalNodeHandle(), handle.getId()),
+    sendRequest(handle, new FetchHandleMessage(nextRequestId(), id, getLocalNodeHandle(), handle.getId()),
                 new NamedContinuation<PastContentHandle, Exception>("FetchHandleMessage to " + handle + " for " + id, command));
   }
 
@@ -1009,7 +1009,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         }
       }
     };
-    sendRequest(han, new FetchMessage(getUID(), handle, getLocalNodeHandle(), han.getId()),
+    sendRequest(han, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), han.getId()),
                 new NamedContinuation<PastContent, Exception>("FetchMessage to " + handle.getNodeHandle() + " for " + handle.getId(), checked));
   }
 

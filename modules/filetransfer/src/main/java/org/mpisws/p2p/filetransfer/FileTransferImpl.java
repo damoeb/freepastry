@@ -362,7 +362,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (f == null || !Files.exists(f) || Files.isDirectory(f)) throw new IllegalArgumentException("File f must be non-null, exist, and must not be a directory. "+f);
     byte[] metadata = new byte[metadataBB.remaining()];
     metadataBB.get(metadata);
-    FileReceiptImpl ret = new FileReceiptImpl(f,metadata,priority,offset,length,getUid(),c);
+    FileReceiptImpl ret = new FileReceiptImpl(f,metadata,priority,offset,length,allocateTransferUid(),c);
     return ret;
   }
 
@@ -370,11 +370,11 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   public BBReceipt sendMsg(ByteBuffer bb, byte priority,
       Continuation<BBReceipt, Exception> c) {
     if (bb == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
-    BBReceiptImpl ret = new BBReceiptImpl(bb,priority,getUid(),c);
+    BBReceiptImpl ret = new BBReceiptImpl(bb,priority,allocateTransferUid(),c);
     return ret;
   }
 
-  protected int getUid() {
+  protected int allocateTransferUid() {
     synchronized (uidLock) {
       return seq++;
     }

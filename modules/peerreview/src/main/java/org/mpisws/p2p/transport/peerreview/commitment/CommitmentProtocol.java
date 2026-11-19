@@ -340,7 +340,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
           OutgoingUserDataMessage<Handle> challenge = info.xmitQueue.removeFirst();
           challenge.sendFailed(new IOException("Peer Review Giving Up sending message to "+idx));
 
-          long evidenceSeq = peerreview.getEvidenceSeq();
+          long evidenceSeq = peerreview.allocateEvidenceSeq();
 
           try {
             infoStore.addEvidence(peerreview.getLocalId(),

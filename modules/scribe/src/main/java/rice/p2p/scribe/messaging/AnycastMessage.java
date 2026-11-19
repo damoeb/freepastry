@@ -122,7 +122,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
    *
    * @return The next handle to visit
    */
-  public NodeHandle getNext() {
+  public NodeHandle removeNextToVisit() {
     if (toVisit.size() == 0) {
       return null;
     }

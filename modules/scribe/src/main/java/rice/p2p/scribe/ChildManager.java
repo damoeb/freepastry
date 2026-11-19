@@ -413,11 +413,11 @@ final class ChildManager {
         aMessage.setSource(endpoint.getLocalNodeHandle());
 
         // get the next hop
-        NodeHandle handle = aMessage.getNext();
+        NodeHandle handle = aMessage.removeNextToVisit();
 
         // make sure that the next node is alive
         while ((handle != null) && !endpoint.isAlive(handle)) {
-          handle = aMessage.getNext();
+          handle = aMessage.removeNextToVisit();
         }
 
         if (handle == null || !endpoint.isAlive(handle)) handle = null;

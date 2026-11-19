@@ -291,11 +291,11 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
         message.addLast(bad.remove(index));
       }
 
-      NodeHandle nextHop = message.getNext();
+      NodeHandle nextHop = message.removeNextToVisit();
 
       /* make sure that the next node is alive */
       while ((nextHop != null) && !isAlive(nextHop)) {
-        nextHop = message.getNext();
+        nextHop = message.removeNextToVisit();
       }
 
       if (nextHop == null) {

@@ -68,7 +68,7 @@ import org.slf4j.Logger;
       this.options = options;
       this.from = from;
       this.networkSimulator = sim;
-      this.seq = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getNextSeq();
+      this.seq = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).allocateNextSequenceNumber();
 
       // Note: this is done to reduce memory thrashing.  There are a ton of strings created
       // in getLogger(), and this is a really temporary object.

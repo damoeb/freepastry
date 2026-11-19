@@ -304,7 +304,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
    */
   public TransportLayer<InetSocketAddress, ByteBuffer> getBottomLayers(PastryNode pn, MultiInetSocketAddress proxyAddress) throws IOException {
     // wire layer
-    TransportLayer<InetSocketAddress, ByteBuffer> wtl = getWireTransportLayer(proxyAddress.getInnermostAddress(), pn);
+    TransportLayer<InetSocketAddress, ByteBuffer> wtl = buildWireTransportLayer(proxyAddress.getInnermostAddress(), pn);
 
     // magic number layer
     TransportLayer<InetSocketAddress, ByteBuffer> mntl = getMagicNumberTransportLayer(wtl,pn);
@@ -334,7 +334,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer> iptl = getBottomLayers(pn, proxyAddress);
 
     // MultiInet layer
-    TransportLayer<MultiInetSocketAddress, ByteBuffer> etl = getMultiAddressSourceRouteTransportLayer(iptl, pn, proxyAddress);
+    TransportLayer<MultiInetSocketAddress, ByteBuffer> etl = buildMultiAddressSourceRouteTransportLayer(iptl, pn, proxyAddress);
     pn.getVars().put(MULTI_INET_TL, etl);
 
     // SourceRoute<MultiInet> layer
@@ -392,7 +392,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return new MultiAddressSourceRouteFactory(SourceRouteConfig.fromParameters(pn.getEnvironment().getParameters()).maxNumHops());
   }
 
-  protected TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
+  protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
     WireTransportLayer wtl = new WireTransportLayer(innermostAddress,environment, null);
     return wtl;
@@ -455,7 +455,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return ipTL;
   }
 
-  protected TransportLayer<MultiInetSocketAddress, ByteBuffer> getMultiAddressSourceRouteTransportLayer(
+  protected TransportLayer<MultiInetSocketAddress, ByteBuffer> buildMultiAddressSourceRouteTransportLayer(
       TransportLayer<InetSocketAddress, ByteBuffer> mntl,
       PastryNode pn,
       MultiInetSocketAddress localAddress) {
