@@ -47,7 +47,7 @@ import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 
 /**
  * Consolidates aggregates that hold too few objects, or too many dead ones: fetches a random selection of
@@ -199,7 +199,7 @@ final class AggregateConsolidator {
     }
 
     private void storeConsolidated() {
-      GCPastContent[] components = new GCPastContent[objectsTotal];
+      ExpiringPastContent[] components = new ExpiringPastContent[objectsTotal];
       ObjectDescriptor[] desc = new ObjectDescriptor[objectsTotal];
       int componentIndex = 0;
 
@@ -209,7 +209,7 @@ final class AggregateConsolidator {
         for (int j=0; j<adc[i].getObjects().length; j++) {
           if (adc[i].getObjects()[j].isAliveAt(now)) {
 
-            GCPastContent temp = aggr[i].getComponent(j);
+            ExpiringPastContent temp = aggr[i].getComponent(j);
 
             components[componentIndex] = temp;
             desc[componentIndex] = adc[i].getObjects()[j];

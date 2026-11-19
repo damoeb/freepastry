@@ -45,7 +45,7 @@ import rice.Continuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.glacier.VersionKey;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 import rice.persistence.StorageManager;
 
 /**
@@ -235,7 +235,7 @@ final class AggregateFlusher {
   private final class AggregateBuilder implements Continuation<Object, Exception> {
     private final int index;
     private final ObjectDescriptor[] desc;
-    private final GCPastContent[] obj;
+    private final ExpiringPastContent[] obj;
     private final long aggrExpiration;
     private final Continuation<Object, Exception> command;
     private int currentQuery = 0;
@@ -243,7 +243,7 @@ final class AggregateFlusher {
     AggregateBuilder(int index, ObjectDescriptor[] desc, Continuation<Object, Exception> command) {
       this.index = index;
       this.desc = desc;
-      this.obj = new GCPastContent[desc.length];
+      this.obj = new ExpiringPastContent[desc.length];
       this.aggrExpiration = AggregateStorer.chooseAggregateLifetime(desc);
       this.command = command;
     }
@@ -255,7 +255,7 @@ final class AggregateFlusher {
 
     @Override
     public void receiveResult(Object o) {
-      if ((o!=null) && (o instanceof GCPastContent gcPastContent)) {
+      if ((o!=null) && (o instanceof ExpiringPastContent gcPastContent)) {
         obj[currentQuery++] = gcPastContent;
         if (currentQuery < desc.length) {
           logger.debug("Retrieving #{}.{}: {}", index, currentQuery, desc[currentQuery].getKey());

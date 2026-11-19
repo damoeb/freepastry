@@ -41,13 +41,13 @@ import java.util.function.Supplier;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.persistence.StorageSerializer;
 
 /**
  * Persists what a {@link PastImpl} stores: {@link PastContent} objects, written with their raw type id and
  * {@link PastContent#serialize(OutputBuffer)} as on the wire and read back with the Past's
- * {@link PastImpl#getContentDeserializer() content deserializer}, and {@link GCPastMetadata} metadata.
+ * {@link PastImpl#getContentDeserializer() content deserializer}, and {@link ExpiringPastMetadata} metadata.
  * <p>
  * The storage is built before the Past that uses it, so the Past is looked up only when an object is read.
  */
@@ -80,7 +80,7 @@ public class PastStorageSerializer implements StorageSerializer {
 
   @Override
   public void writeMetadata(Object metadata, OutputBuffer buf) throws IOException {
-    if (!(metadata instanceof GCPastMetadata gcPastMetadata)) {
+    if (!(metadata instanceof ExpiringPastMetadata gcPastMetadata)) {
       throw new IOException("Cannot persist metadata " + metadata + " of " + metadata.getClass().getName());
     }
     gcPastMetadata.serialize(buf);
@@ -88,6 +88,6 @@ public class PastStorageSerializer implements StorageSerializer {
 
   @Override
   public Object readMetadata(InputBuffer buf) throws IOException {
-    return new GCPastMetadata(buf);
+    return new ExpiringPastMetadata(buf);
   }
 }

@@ -63,15 +63,15 @@ import rice.p2p.glacier.v2.GlacierContentHandle;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
 import rice.persistence.StorageManager;
 
 @SuppressWarnings("unchecked")
-public class AggregationImpl implements GCPast, VersioningPast, Aggregation, Application, DebugCommandHandler {
+public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregation, Application, DebugCommandHandler {
   private final Past aggregateStore;
   private final StorageManager waitingList;
   private final AggregationPolicy policy;
@@ -325,7 +325,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
   public void insert(final PastContent obj, final long lifetime, final Continuation<? super Boolean[], Exception> command) {
 
     long theVersion;
-    if (obj instanceof GCPastContent gcPastContent) {
+    if (obj instanceof ExpiringPastContent gcPastContent) {
       theVersion = gcPastContent.getVersion();
     } else {
       theVersion = 0;
@@ -338,7 +338,7 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
     if (policy.shouldBeAggregated(obj, theSize)) {
       logger.info("AGGREGATE INSERT: {} version={} size={} class={}", obj.getId(), theVersion, theSize, obj.getClass().getName());
 
-      if (objectStore instanceof GCPast gcPast)
+      if (objectStore instanceof ExpiringPast gcPast)
         gcPast.insert(obj, lifetime, command);
       else
         objectStore.insert(obj, command);
@@ -357,12 +357,12 @@ public class AggregationImpl implements GCPast, VersioningPast, Aggregation, App
 
       Continuation<Boolean[], Exception> c = new InsertJoin(command);
 
-      if (objectStore instanceof GCPast gcPast)
+      if (objectStore instanceof ExpiringPast gcPast)
         gcPast.insert(obj, lifetime, c);
       else
         objectStore.insert(obj, c);
 
-      if (aggregateStore instanceof GCPast gcPast)
+      if (aggregateStore instanceof ExpiringPast gcPast)
         gcPast.insert(new NonAggregate(obj), lifetime, c);
       else
         aggregateStore.insert(new NonAggregate(obj), c);

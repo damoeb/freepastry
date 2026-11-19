@@ -31,13 +31,13 @@ class GCIdTest {
   void equalityIgnoresExpiration() {
     var id = idFactory.buildId("a");
 
-    assertEquals(new GCId(id, 100), new GCId(id, 200));
-    assertEquals(new GCId(id, 100).hashCode(), new GCId(id, 200).hashCode());
+    assertEquals(new ExpiringId(id, 100), new ExpiringId(id, 200));
+    assertEquals(new ExpiringId(id, 100).hashCode(), new ExpiringId(id, 200).hashCode());
   }
 
   @Test
   @DisplayName("different underlying ids are not equal")
   void differentIdsAreNotEqual() {
-    assertNotEquals(new GCId(idFactory.buildId("a"), 100), new GCId(idFactory.buildId("b"), 100));
+    assertNotEquals(new ExpiringId(idFactory.buildId("a"), 100), new ExpiringId(idFactory.buildId("b"), 100));
   }
 }

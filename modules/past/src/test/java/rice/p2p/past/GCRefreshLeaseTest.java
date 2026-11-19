@@ -15,8 +15,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.FutureContinuation;
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.gc.GCPastImpl;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPastImpl;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
@@ -51,10 +51,10 @@ class GCRefreshLeaseTest {
     ring.close();
   }
 
-  private GCPastImpl newPast(PastryNode node) {
+  private ExpiringPastImpl newPast(PastryNode node) {
     StorageManager trash = new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf));
     trashes.add(trash);
-    GCPastImpl past = new GCPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
+    ExpiringPastImpl past = new ExpiringPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
         "gc-lease", new PastPolicy.DefaultPastPolicy(), 100_000_000L, trash);
     past.setContentDeserializer((buf, endpoint, type) -> new GCPastInsertTest.Content(buf, endpoint));
     past.setContentHandleDeserializer((buf, endpoint, type) -> {
@@ -70,7 +70,7 @@ class GCRefreshLeaseTest {
   @Test
   @DisplayName("a refresh to Long.MAX_VALUE leases the object only up to the maximum lease")
   void refreshExpirationIsCapped() throws Exception {
-    List<GCPastImpl> pasts = ring.boot(3, this::newPast);
+    List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("lease");
     long start = now();
     FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), start + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
@@ -79,10 +79,10 @@ class GCRefreshLeaseTest {
 
     assertEquals(true, result[0]);
     int holders = 0;
-    for (GCPastImpl past : pasts) {
+    for (ExpiringPastImpl past : pasts) {
       if (past.storage.exists(id)) {
         holders++;
-        long expiration = ((GCPastMetadata) past.storage.getMetadata(id)).expiration();
+        long expiration = ((ExpiringPastMetadata) past.storage.getMetadata(id)).expiration();
         assertTrue(expiration > start + HOUR, "the refresh did not extend the lease: " + expiration);
         assertTrue(expiration <= now() + MAX_LEASE_BOUND, "lease not capped: " + expiration);
       }
@@ -93,16 +93,16 @@ class GCRefreshLeaseTest {
   @Test
   @DisplayName("a refresh does not bring an object back out of the trash")
   void refreshDoesNotResurrect() throws Exception {
-    List<GCPastImpl> pasts = ring.boot(3, this::newPast);
+    List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("trashed");
     GCPastInsertTest.Content content = new GCPastInsertTest.Content(id, false);
     FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, now() + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
     // what the garbage collection does with an expired object: into the trash, out of the storage
     for (int i = 0; i < pasts.size(); i++) {
-      GCPastImpl past = pasts.get(i);
+      ExpiringPastImpl past = pasts.get(i);
       StorageManager trash = trashes.get(i);
       if (past.storage.exists(id)) {
-        FutureContinuation.<Boolean>call(c -> trash.store(id, new GCPastMetadata(1), content, c)).get(SECONDS, TimeUnit.SECONDS);
+        FutureContinuation.<Boolean>call(c -> trash.store(id, new ExpiringPastMetadata(1), content, c)).get(SECONDS, TimeUnit.SECONDS);
         FutureContinuation.<Boolean>call(c -> past.storage.unstore(id, c)).get(SECONDS, TimeUnit.SECONDS);
       }
     }
@@ -110,7 +110,7 @@ class GCRefreshLeaseTest {
     Object[] result = FutureContinuation.<Object[]>call(c -> pasts.get(0).refresh(new Id[] {id}, new long[] {now() + HOUR}, c)).get(SECONDS, TimeUnit.SECONDS);
 
     assertInstanceOf(ObjectNotFoundException.class, result[0]);
-    for (GCPastImpl past : pasts) {
+    for (ExpiringPastImpl past : pasts) {
       assertFalse(past.storage.exists(id), "refresh restored a trashed object");
     }
   }

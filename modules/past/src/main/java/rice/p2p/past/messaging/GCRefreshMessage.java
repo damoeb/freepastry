@@ -44,13 +44,13 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCId;
+import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.gc.GCIdSet;
 import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * This class represents a message which is an request to extend the lifetime
- * of a set of keys stored in GCPast.
+ * of a set of keys stored in ExpiringPast.
  *
  * response is expected to be Boolean[]
  *
@@ -60,7 +60,7 @@ import rice.p2p.util.rawserialization.WireLengths;
  */
 public final class GCRefreshMessage extends ContinuationMessage {
   // the list of keys which should be refreshed
-  private final GCId[] keys;
+  private final ExpiringId[] keys;
 
   /**
    * Constructor which takes a unique integer Id, as well as the
@@ -74,7 +74,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
   public GCRefreshMessage(int uid, GCIdSet keys, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
-    this.keys = new GCId[keys.numElements()];
+    this.keys = new ExpiringId[keys.numElements()];
     System.arraycopy(keys.asArray(),0,this.keys, 0, this.keys.length);
   }
 
@@ -83,7 +83,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
    *
    * @return The list of keys to be refreshed
    */
-  public GCId[] getKeys() {
+  public ExpiringId[] getKeys() {
     return keys;
   }
 
@@ -118,7 +118,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
     }
 
     buf.writeInt(keys.length);
-    for (GCId key : keys) {
+    for (ExpiringId key : keys) {
       buf.writeShort(key.getType());
       key.serialize(buf);
     }
@@ -146,10 +146,10 @@ public final class GCRefreshMessage extends ContinuationMessage {
       response = array;
     }
 
-    keys = new GCId[WireLengths.readInt(buf, 2)];
+    keys = new ExpiringId[WireLengths.readInt(buf, 2)];
     for (int i = 0; i < keys.length; i++) {
-      if (!(endpoint.readId(buf, buf.readShort()) instanceof GCId gcId)) {
-        throw new IOException("Not a GCId in a refresh message");
+      if (!(endpoint.readId(buf, buf.readShort()) instanceof ExpiringId gcId)) {
+        throw new IOException("Not a ExpiringId in a refresh message");
       }
       keys[i] = gcId;
     }

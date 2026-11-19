@@ -56,7 +56,7 @@ import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersioningPast;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPast;
+import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
@@ -70,7 +70,7 @@ import rice.persistence.StorageManager;
  * {@link GlacierPolicy#storageId(Id)}: under {@link GlacierDefaultPolicy}, each owner has its own namespace,
  * and a node finds and refreshes only the objects it inserted with the same key pair.
  */
-public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application, DebugCommandHandler {
+public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Application, DebugCommandHandler {
   private final Environment environment;
   private final Logger logger;
   private final String instance;
@@ -144,7 +144,7 @@ public class GlacierImpl implements Glacier, GCPast, VersioningPast, Application
 
   @Override
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
-    insert(obj, GCPast.INFINITY_EXPIRATION, command);
+    insert(obj, ExpiringPast.INFINITY_EXPIRATION, command);
   }
 
   @Override

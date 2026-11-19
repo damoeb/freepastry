@@ -46,10 +46,10 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  * Class which is used as the metadata storage for the GC past implementation.
  * Basically wraps the long timestamp.
  *
- * @version $Id: GCPastMetadata.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: ExpiringPastMetadata.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Peter Druschel
  */
-public record GCPastMetadata(long expiration) implements Comparable<GCPastMetadata> {
+public record ExpiringPastMetadata(long expiration) implements Comparable<ExpiringPastMetadata> {
 
   /**
    * Returns a copy of this metadata with the given expiration time
@@ -57,13 +57,13 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
    * @param expiration The new expiration time
    * @return the new metadata
    */
-  public GCPastMetadata setExpiration(long expiration) {
-    return new GCPastMetadata(expiration);
+  public ExpiringPastMetadata setExpiration(long expiration) {
+    return new ExpiringPastMetadata(expiration);
   }
 
   @Override
   public boolean equals(Object o) {
-    return o instanceof GCPastMetadata other && other.expiration == expiration;
+    return o instanceof ExpiringPastMetadata other && other.expiration == expiration;
   }
 
   @Override
@@ -78,8 +78,8 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
    * @return the comparison
    */
   @Override
-  public int compareTo(GCPastMetadata other) {
-    GCPastMetadata metadata = (GCPastMetadata) other;
+  public int compareTo(ExpiringPastMetadata other) {
+    ExpiringPastMetadata metadata = (ExpiringPastMetadata) other;
 
     if (metadata.expiration > expiration)
       return -1;
@@ -97,7 +97,7 @@ public record GCPastMetadata(long expiration) implements Comparable<GCPastMetada
   /**
    * Reading constructor, the counterpart of {@link #serialize(OutputBuffer)}.
    */
-  public GCPastMetadata(InputBuffer buf) throws IOException {
+  public ExpiringPastMetadata(InputBuffer buf) throws IOException {
     long expiration = buf.readLong();
     this(expiration);
   }

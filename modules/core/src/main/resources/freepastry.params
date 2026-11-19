@@ -211,7 +211,7 @@ p2p_filetransfer_max_chunk_size = 1048576
 #past
 p2p_past_messageTimeout = 30000
 p2p_past_successfulInsertThreshold = 0.5
-# GCPast: the longest a refresh may extend the lease of an object, counted from the time of the refresh, in milliseconds; 365 days.
+# ExpiringPast: the longest a refresh may extend the lease of an object, counted from the time of the refresh, in milliseconds; 365 days.
 # A refresh asking for more is capped to this. Refreshes never restore an object from the trash.
 p2p_past_gc_max_lease = 31536000000
 

@@ -40,16 +40,16 @@ package rice.p2p.past.gc;
 import rice.p2p.past.PastContent;
 
 /**
- * This interface represents an object which is storable in the GCPast
+ * This interface represents an object which is storable in the ExpiringPast
  * system.  This interface adds on methods which return the object's
  * version number, which to used to disambiguate multiple versions of
  * the same object.
  *
- * @version $Id: GCPastContent.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: ExpiringPastContent.java 3613 2007-02-15 14:45:14Z jstewart $
  * @author Alan Mislove
  * @author Andreas Haeberlen
  */
-public interface GCPastContent extends PastContent {
+public interface ExpiringPastContent extends PastContent {
 
   /**
    * Returns the version number associated with this PastContent object -
@@ -64,11 +64,11 @@ public interface GCPastContent extends PastContent {
    * Produces a handle for this content object. The handle is retrieved and returned to the
    * client as a result of the Past.lookupHandles() method.
    *
-   * @param local The local GCPast service which the content is on.
+   * @param local The local ExpiringPast service which the content is on.
    * @param expiration The expiration time to put in the handle
    * @return the handle
    */
-  public GCPastContentHandle getHandle(GCPast local, long expiration);
+  public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration);
 
   /**
    * Returns the metadata which should be stored with this object.  Allows applications
@@ -77,6 +77,6 @@ public interface GCPastContent extends PastContent {
    * @param expiration The expiration time of the object
    * @return the metadata
    */
-  public GCPastMetadata getMetadata(long expiration);
+  public ExpiringPastMetadata getMetadata(long expiration);
 
 }

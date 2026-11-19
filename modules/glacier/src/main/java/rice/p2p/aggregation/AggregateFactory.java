@@ -40,8 +40,8 @@ advised of the possibility of such damage.
 package rice.p2p.aggregation;
 
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 
 public interface AggregateFactory {
-  public Aggregate buildAggregate(GCPastContent[] components, Id[] pointers);
+  public Aggregate buildAggregate(ExpiringPastContent[] components, Id[] pointers);
 }

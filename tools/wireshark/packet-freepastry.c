@@ -189,7 +189,7 @@ static const value_string freepastry_priority[] = {
 static const value_string freepastry_id_type[] = {
   { ID_TYPE_NORMAL,  "Normal" },
   { ID_TYPE_RINGID,  "RingId" },
-  { ID_TYPE_GCID,  "GCId" },
+  { ID_TYPE_GCID,  "ExpiringId" },
   { ID_TYPE_VERSIONKEY,  "Version Key" },
   { ID_TYPE_FRAGMENTKEY,  "Fragment Key" },
   { 0, NULL }

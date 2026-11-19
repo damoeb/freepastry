@@ -47,7 +47,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.gc.GCPast;
+import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
@@ -140,7 +140,7 @@ final class AggregateStorer {
       }
     };
 
-    if (aggregateStore instanceof GCPast gcPast)
+    if (aggregateStore instanceof ExpiringPast gcPast)
       gcPast.insert(aggr, expiration, c);
     else
       aggregateStore.insert(aggr, c);

@@ -46,13 +46,13 @@ class GCIdSetTest {
     Id b = idFactory.buildId("b");
     GCIdSet left = new GCIdSet(idFactory);
     GCIdSet right = new GCIdSet(idFactory);
-    left.addId(new GCId(a, 100));
-    right.addId(new GCId(a, 100));
+    left.addId(new ExpiringId(a, 100));
+    right.addId(new ExpiringId(a, 100));
 
     assertEquals(right, left);
 
-    right.addId(new GCId(b, 100));
-    left.addId(new GCId(idFactory.buildId("c"), 100));
+    right.addId(new ExpiringId(b, 100));
+    left.addId(new ExpiringId(idFactory.buildId("c"), 100));
 
     assertNotEquals(right, left);
   }
@@ -62,15 +62,15 @@ class GCIdSetTest {
     Id a = idFactory.buildId("a");
     Id b = idFactory.buildId("b");
     GCIdSet original = new GCIdSet(idFactory);
-    original.addId(new GCId(a, 100));
+    original.addId(new ExpiringId(a, 100));
 
     GCIdSet copy = original.copy();
-    copy.addId(new GCId(b, 200));
-    copy.addId(new GCId(a, 300));
+    copy.addId(new ExpiringId(b, 200));
+    copy.addId(new ExpiringId(a, 300));
 
     assertEquals(1, original.numElements());
-    assertFalse(original.isMemberId(new GCId(b, 200)));
-    assertEquals(new GCId(a, 100), original.getIterator().next());
+    assertFalse(original.isMemberId(new ExpiringId(b, 200)));
+    assertEquals(new ExpiringId(a, 100), original.getIterator().next());
     assertEquals(2, copy.numElements());
   }
 }

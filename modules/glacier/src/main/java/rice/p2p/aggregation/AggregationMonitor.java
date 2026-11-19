@@ -48,7 +48,7 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.glacier.v2.DebugContent;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
 
 /**
  * The monitor: a set of test objects, inserted with the "monitor add" debug command, whose lifetimes are
@@ -177,12 +177,12 @@ final class AggregationMonitor {
         logger.debug("Monitor: Retr {} a={} got {}", currentLookup, lookupInAggrStore, o);
         Id currentId = (Id) monitorIDs.get(currentLookup);
         PastContentHandle[] handles = (PastContentHandle[]) o;
-        GCPastContentHandle handle = null;
+        ExpiringPastContentHandle handle = null;
         boolean skipToNext = true;
 
         for (int i=0; i<handles.length; i++)
           if (handles[i] != null)
-            handle = (GCPastContentHandle) handles[i];
+            handle = (ExpiringPastContentHandle) handles[i];
 
         if (!lookupInAggrStore) {
           result.append(currentId.toStringFull() + " - OS ");

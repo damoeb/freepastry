@@ -46,13 +46,13 @@ import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.GCPastContentHandle;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.p2p.util.rawserialization.WireLengths;
 
-public class DebugContent implements GCPastContent {
+public class DebugContent implements ExpiringPastContent {
   /** Content type id; whoever reads DebugContent registers it with its PastContentDeserializer. */
   public static final short TYPE = 3;
 
@@ -83,11 +83,11 @@ public class DebugContent implements GCPastContent {
 
   @Override
   public PastContentHandle getHandle(Past local) {
-    return new DebugContentHandle(myId, version, GCPast.INFINITY_EXPIRATION, local.getLocalNodeHandle());
+    return new DebugContentHandle(myId, version, ExpiringPast.INFINITY_EXPIRATION, local.getLocalNodeHandle());
   }
 
   @Override
-  public GCPastContentHandle getHandle(GCPast local, long expiration) {
+  public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
     return new DebugContentHandle(myId, version, expiration, local.getLocalNodeHandle());
   }
 
@@ -131,7 +131,7 @@ public class DebugContent implements GCPastContent {
   }
 
   @Override
-  public GCPastMetadata getMetadata(long expiration) {
-    return new GCPastMetadata(expiration);
+  public ExpiringPastMetadata getMetadata(long expiration) {
+    return new ExpiringPastMetadata(expiration);
   }
 }

@@ -16,7 +16,7 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 import rice.pastry.commonapi.PastryIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +63,7 @@ class AggregateTreeTest {
   }
 
   private Aggregate aggregate(Id id, Id... pointers) {
-    Aggregate aggregate = new Aggregate(new GCPastContent[] {}, pointers);
+    Aggregate aggregate = new Aggregate(new ExpiringPastContent[] {}, pointers);
     aggregate.setId(id);
     return aggregate;
   }

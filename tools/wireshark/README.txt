@@ -107,7 +107,7 @@ Here are some basic filtering options:
 -Show only the FreePastry KBR traffic: freepastry
 -Show only the Scribe traffic: scribe
 -Show only the Past traffic: past
--Show only the GCPast traffic: gcpast
+-Show only the ExpiringPast traffic: gcpast
 -Show only the Replication Manager traffic: replication
 -Show only traffic related to an Id starting with 0xAE4567...: freepastry.id contains "AE4567"
 

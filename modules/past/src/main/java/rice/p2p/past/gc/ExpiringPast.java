@@ -53,12 +53,12 @@ import rice.p2p.past.PastContent;
  * which they are interested in.  Otherwise, objects may be reclaimed and
  * will be no longer available.
  *
- * @version $Id: GCPast.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: ExpiringPast.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove
  * @author Andreas Haeberlen
  */
 @SuppressWarnings("unchecked")
-public interface GCPast extends Past {
+public interface ExpiringPast extends Past {
 
   /**
    * Timeout value which indicates that the object should never expire.

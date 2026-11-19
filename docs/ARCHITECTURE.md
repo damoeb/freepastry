@@ -6,7 +6,7 @@ FreePastry has three layers:
 
 1. **Infrastructure**: the `Environment` (`rice.environment`), which bundles configuration, clock, randomness, logging, the selector thread (`rice.selector`) and the worker threads (`rice.environment.processing`).
 2. **The overlay**: a `PastryNode` (`rice.pastry`) with its leaf set, routing table and maintenance protocols, on top of a pluggable stack of transport layers (`org.mpisws.p2p.transport.**`). The stack is either real TCP/UDP (`rice.pastry.socket`) or a discrete-event simulator (`rice.pastry.direct`).
-3. **Applications**: written against the protocol-independent common API (`rice.p2p.commonapi`). These are PAST, GCPast, Glacier, Aggregation, Scribe, SplitStream, Replication and Multiring (`rice.p2p.**`), with local storage from `rice.persistence`.
+3. **Applications**: written against the protocol-independent common API (`rice.p2p.commonapi`). These are PAST, ExpiringPast, Glacier, Aggregation, Scribe, SplitStream, Replication and Multiring (`rice.p2p.**`), with local storage from `rice.persistence`.
 
 ## Modules
 
@@ -351,7 +351,7 @@ The implementations:
 - A `PastPolicy` (`DefaultPastPolicy`) decides how to fetch and validate content.
 - `ContentHashPastContent` is content whose id is the hash of its data.
 
-**GCPast** (`rice.p2p.past.gc`, `GCPastImpl`): PAST with versions and expiration times. `insert(obj, expiration, c)` and `refresh(ids, expirations, c)` extend the lifetime of objects; a `GCCollectMessage` scheduled every `collectionInterval` removes expired objects. Internally it wraps the node in a `GCNode`, so that ids become `GCId`s (id plus expiration) and the replication layer carries expiration information.
+**ExpiringPast** (`rice.p2p.past.gc`, `ExpiringPastImpl`): PAST with versions and expiration times. `insert(obj, expiration, c)` and `refresh(ids, expirations, c)` extend the lifetime of objects; a `GCCollectMessage` scheduled every `collectionInterval` removes expired objects. Internally it wraps the node in a `ExpiringIdNode`, so that ids become `ExpiringId`s (id plus expiration) and the replication layer carries expiration information.
 
 **Glacier** (`rice.p2p.glacier.v2`, `GlacierImpl`): durable archival storage, designed to survive large correlated failures.
 
@@ -359,9 +359,9 @@ The implementations:
 - Fragments are stored, with a `Manifest` that contains the fragment hashes and a signature, on the nodes responsible for `getFragmentLocation(key, fragmentIndex)`. The fragments go in `fragmentStorage`; neighbor information goes in `neighborStorage`.
 - Manifests are signed by the object's owner (`GlacierDefaultPolicy`). Each node owns the objects it inserts, with an RSA key pair given to the policy. The id an application inserts under, `a`, is the object's name `N = a.toByteArray()`; Glacier stores it under the storage id `buildId(first 20 bytes of SHA-256("FreePastry Glacier id v1" || len(K) || K || N))` (`GlacierPolicy.storageId()`), where `K` is the owner's public key encoded by `SecurityUtils.encodePublicKey()` and `len(K)` its length as a 4-byte int. The manifest carries `K` and `N` next to the object hash, the fragment hashes and the expiration, and a SHA256withRSA signature (`SecurityUtils.sign()`) over a length-prefixed encoding of the storage id, the version, the object hash, the fragment hashes, the expiration, `K` and `N` (`GlacierDefaultPolicy.signedBytes()`). Every node that receives a manifest (insert, refresh, handoff, sync, manifest fetch, bulk-refresh patch) checks that `K` and `N` derive the storage id and that the signature verifies, and drops it otherwise. So a node cannot place fragments under another owner's id, and only the owner can extend an object's expiration: `refresh()` re-signs the manifest on the owner's node (`GlacierPolicy.updateManifest()` returns null on any other node), and fragment holders only verify. Because the storage id depends on the owner's key, `lookup()` and `refresh()` find only the node's own objects, and a node that loses its key pair loses access to what it stored. `GlacierImpl` has no default policy; the old stub that "signed" with the key's own bytes survives only as `InsecureGlacierPolicy` in the test sources.
 - Periodic tasks synchronize fragments with neighbors using bloom filters (the `p2p_glacier_sync*` parameters), hand off fragments the node is no longer responsible for, expire neighbors, and restore missing fragments.
-- `GlacierImpl` implements `GCPast` and `VersioningPast`, so it can serve as the aggregate store for Aggregation.
+- `GlacierImpl` implements `ExpiringPast` and `VersioningPast`, so it can serve as the aggregate store for Aggregation.
 
-**Aggregation** (`rice.p2p.aggregation`, `AggregationImpl`): stores many small objects efficiently in a durable store. It wraps two stores: `objectStore`, a PAST/GCPast instance for fast lookups, and `aggregateStore`, typically Glacier.
+**Aggregation** (`rice.p2p.aggregation`, `AggregationImpl`): stores many small objects efficiently in a durable store. It wraps two stores: `objectStore`, a PAST/ExpiringPast instance for fast lookups, and `aggregateStore`, typically Glacier.
 
 - If `AggregationPolicy.shouldBeAggregated()` says so, an inserted object goes into `objectStore` at once and onto a local `waitingList` (`StorageManager`).
 - A periodic flush (`p2p_aggregation_flushInterval`) packs waiting objects into an `Aggregate` and inserts it into `aggregateStore`.
@@ -369,7 +369,7 @@ The implementations:
 - `AggregateList` records which aggregate holds which object and is saved to `configFileName`.
 - Consolidation (`p2p_aggregation_consolidation*`) repacks aggregates whose objects have mostly expired.
 - Lookups that miss in `objectStore` retrieve the object from its aggregate.
-- `Moraine` layers a new `GCPast` over an old one, as a migration aid.
+- `Moraine` layers a new `ExpiringPast` over an old one, as a migration aid.
 
 **Scribe** (`rice.p2p.scribe`, `ScribeImpl`): publish/subscribe and anycast over trees.
 

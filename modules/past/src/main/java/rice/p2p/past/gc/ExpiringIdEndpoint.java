@@ -63,11 +63,11 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
  * This class wraps an endpoint and allows for applications to transparently
  * use GC functionality.
  *
- * @version $Id: GCEndpoint.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: ExpiringIdEndpoint.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Alan Mislove
  */
-public class GCEndpoint implements Endpoint {
+public class ExpiringIdEndpoint implements Endpoint {
 
   /**
    * The endpoint which this GC endpoint is wrapping
@@ -79,7 +79,7 @@ public class GCEndpoint implements Endpoint {
    *
    * @param endpoint The endpoint to wrap
    */
-  protected GCEndpoint(Endpoint endpoint) {
+  protected ExpiringIdEndpoint(Endpoint endpoint) {
     this.endpoint = endpoint;
   }
 
@@ -321,7 +321,7 @@ public class GCEndpoint implements Endpoint {
   @Override
   public Id readId(InputBuffer buf, short type) throws IOException {
     if (type == IdType.GC_ID.id())
-      return new GCId(buf, endpoint);
+      return new ExpiringId(buf, endpoint);
 
     return endpoint.readId(buf, type);
   }

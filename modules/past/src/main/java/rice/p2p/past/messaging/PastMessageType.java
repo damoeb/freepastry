@@ -41,7 +41,7 @@ import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * The wire type ids of Past's and GCPast's messages. They share one scope: a GCPast endpoint reads
+ * The wire type ids of Past's and ExpiringPast's messages. They share one scope: a ExpiringPast endpoint reads
  * both with one deserializer. {@link #MESSAGE_LOST} and {@link #GC_COLLECT} are local messages
  * that never go on the wire, but keep their ids reserved.
  */

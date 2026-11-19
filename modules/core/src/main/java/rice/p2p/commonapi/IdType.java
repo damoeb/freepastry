@@ -49,7 +49,7 @@ public enum IdType implements MessageTypeId {
   PASTRY_ID(1),
   /** {@code rice.p2p.multiring.RingId} */
   RING_ID(2),
-  /** {@code rice.p2p.past.gc.GCId} */
+  /** {@code rice.p2p.past.gc.ExpiringId} */
   GC_ID(3),
   /** {@code rice.p2p.glacier.VersionKey} */
   VERSION_KEY(41),

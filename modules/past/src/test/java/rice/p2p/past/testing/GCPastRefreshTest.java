@@ -22,11 +22,11 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
 import rice.p2p.past.PastPolicy;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.GCPastContentHandle;
-import rice.p2p.past.gc.GCPastImpl;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastImpl;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.persistence.EmptyCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.StorageManagerImpl;
@@ -34,7 +34,7 @@ import rice.persistence.StorageManagerImpl;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
- * Refreshes objects through {@link GCPastImpl} on a ring of the direct simulator.
+ * Refreshes objects through {@link ExpiringPastImpl} on a ring of the direct simulator.
  */
 @Tag("integration")
 class GCPastRefreshTest {
@@ -56,16 +56,16 @@ class GCPastRefreshTest {
     private static final long COLLECTION_INTERVAL = 100_000_000;
     private static final long FAR_FUTURE = 1_000_000_000_000L;
 
-    private final GCPastImpl[] pasts;
+    private final ExpiringPastImpl[] pasts;
 
     RefreshRing(Environment env) throws IOException {
       super(env);
-      pasts = new GCPastImpl[NUM_NODES];
+      pasts = new ExpiringPastImpl[NUM_NODES];
     }
 
     @Override
     protected void processNode(int num, Node node) {
-      pasts[num] = new GCPastImpl(node, new StorageManagerImpl(FACTORY, new MemoryStorage(FACTORY), new EmptyCache(FACTORY)),
+      pasts[num] = new ExpiringPastImpl(node, new StorageManagerImpl(FACTORY, new MemoryStorage(FACTORY), new EmptyCache(FACTORY)),
           null, REPLICAS, "gc-refresh-test", new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
       pasts[num].setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
       pasts[num].setContentHandleDeserializer((buf, endpoint, type) -> {
@@ -75,11 +75,11 @@ class GCPastRefreshTest {
 
     @Override
     protected void runTest() {
-      GCPastImpl local = pasts[0];
+      ExpiringPastImpl local = pasts[0];
       Id existing = FACTORY.buildId("existing");
       Id missing = FACTORY.buildId("missing");
 
-      sectionStart("GCPast refresh");
+      sectionStart("ExpiringPast refresh");
 
       stepStart("Insert");
       Object inserted = await(done -> local.insert(new Content(existing), FAR_FUTURE / 2, done));
@@ -112,7 +112,7 @@ class GCPastRefreshTest {
       sectionDone();
     }
 
-    private Object[] refresh(GCPast past, Id[] ids, long expiration) {
+    private Object[] refresh(ExpiringPast past, Id[] ids, long expiration) {
       long[] expirations = new long[ids.length];
       java.util.Arrays.fill(expirations, expiration);
       Object result = await(done -> past.refresh(ids, expirations, done));
@@ -141,7 +141,7 @@ class GCPastRefreshTest {
   }
 
   /** An object with a fixed version, stored under its id. */
-  static class Content implements GCPastContent {
+  static class Content implements ExpiringPastContent {
     private final Id id;
 
     Content(Id id) {
@@ -178,13 +178,13 @@ class GCPastRefreshTest {
     }
 
     @Override
-    public GCPastContentHandle getHandle(GCPast local, long expiration) {
+    public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public GCPastMetadata getMetadata(long expiration) {
-      return new GCPastMetadata(expiration);
+    public ExpiringPastMetadata getMetadata(long expiration) {
+      return new ExpiringPastMetadata(expiration);
     }
 
     @Override

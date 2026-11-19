@@ -18,11 +18,11 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.GCPastContentHandle;
-import rice.p2p.past.gc.GCPastImpl;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastImpl;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
@@ -31,7 +31,7 @@ import rice.persistence.MemoryStorage;
 import rice.persistence.StorageManagerImpl;
 
 /**
- * The insert path of GCPastImpl: the object is checked by its own checkInsert, then stored with the expiration of the
+ * The insert path of ExpiringPastImpl: the object is checked by its own checkInsert, then stored with the expiration of the
  * insert as its metadata.
  */
 class GCPastInsertTest {
@@ -52,8 +52,8 @@ class GCPastInsertTest {
     ring.close();
   }
 
-  private GCPastImpl newPast(PastryNode node) {
-    GCPastImpl past = new GCPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
+  private ExpiringPastImpl newPast(PastryNode node) {
+    ExpiringPastImpl past = new ExpiringPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
         "gc-insert", new PastPolicy.DefaultPastPolicy(), 100_000_000L, null);
     past.setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
     past.setContentHandleDeserializer((buf, endpoint, type) -> {
@@ -62,24 +62,24 @@ class GCPastInsertTest {
     return past;
   }
 
-  private List<GCPastImpl> boot() throws Exception {
+  private List<ExpiringPastImpl> boot() throws Exception {
     return ring.boot(3, this::newPast);
   }
 
   @Test
   @DisplayName("an insert stores the object with the expiration of the insert as its metadata")
   void insertStoresTheObjectWithItsExpiration() throws Exception {
-    List<GCPastImpl> pasts = boot();
+    List<ExpiringPastImpl> pasts = boot();
     Content content = new Content(idf.buildId("gc"), false);
 
     Boolean[] result = FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, EXPIRATION, c)).get(SECONDS, TimeUnit.SECONDS);
 
     assertTrue(result[0]);
     int holders = 0;
-    for (GCPastImpl past : pasts) {
+    for (ExpiringPastImpl past : pasts) {
       if (past.storage.exists(content.getId())) {
         holders++;
-        assertEquals(new GCPastMetadata(EXPIRATION), past.storage.getMetadata(content.getId()));
+        assertEquals(new ExpiringPastMetadata(EXPIRATION), past.storage.getMetadata(content.getId()));
       }
     }
     assertTrue(holders > 0, "no node stored the object");
@@ -88,19 +88,19 @@ class GCPastInsertTest {
   @Test
   @DisplayName("an object whose checkInsert refuses is not stored")
   void insertRefusedByCheckInsertStoresNothing() throws Exception {
-    List<GCPastImpl> pasts = boot();
+    List<ExpiringPastImpl> pasts = boot();
     Content content = new Content(idf.buildId("refused"), true);
 
     assertThrows(ExecutionException.class,
         () -> FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, EXPIRATION, c)).get(SECONDS, TimeUnit.SECONDS));
 
-    for (GCPastImpl past : pasts) {
+    for (ExpiringPastImpl past : pasts) {
       assertFalse(past.storage.exists(content.getId()), "refused object stored");
     }
   }
 
   /** An object that refuses every insert when it was built to. */
-  static class Content implements GCPastContent {
+  static class Content implements ExpiringPastContent {
     private final Id id;
     private final boolean refuse;
 
@@ -128,13 +128,13 @@ class GCPastInsertTest {
     }
 
     @Override
-    public GCPastContentHandle getHandle(GCPast local, long expiration) {
+    public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public GCPastMetadata getMetadata(long expiration) {
-      return new GCPastMetadata(expiration);
+    public ExpiringPastMetadata getMetadata(long expiration) {
+      return new ExpiringPastMetadata(expiration);
     }
 
     @Override

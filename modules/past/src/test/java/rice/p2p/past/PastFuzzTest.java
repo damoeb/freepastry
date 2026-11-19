@@ -10,8 +10,8 @@ import org.junit.jupiter.api.BeforeAll;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
-import rice.p2p.past.gc.GCPastImpl;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPastImpl;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.p2p.replication.ReplicationClient;
 import rice.p2p.replication.ReplicationImpl;
@@ -42,7 +42,7 @@ class PastFuzzTest {
     env = Environment.directEnvironment(1);
     node = StubHandleNodes.newNode(env);
     PastryIdFactory factory = new PastryIdFactory(env);
-    GCPastImpl gcPast = new GCPastImpl(node,
+    ExpiringPastImpl gcPast = new ExpiringPastImpl(node,
         new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory)), null, REPLICAS, "past-fuzz",
         new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
     gcPast.setContentDeserializer((buf, ep, type) -> switch (type) {
@@ -95,6 +95,6 @@ class PastFuzzTest {
 
   @FuzzTest(maxDuration = "30s")
   void gcMetadata(FuzzedDataProvider data) {
-    FuzzSupport.read(data, GCPastMetadata::new);
+    FuzzSupport.read(data, ExpiringPastMetadata::new);
   }
 }

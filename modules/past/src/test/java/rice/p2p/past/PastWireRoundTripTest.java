@@ -28,12 +28,12 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.past.gc.GCId;
+import rice.p2p.past.gc.ExpiringId;
+import rice.p2p.past.gc.ExpiringPastImpl;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.p2p.past.gc.GCIdFactory;
 import rice.p2p.past.gc.GCIdRange;
 import rice.p2p.past.gc.GCIdSet;
-import rice.p2p.past.gc.GCPastImpl;
-import rice.p2p.past.gc.GCPastMetadata;
 import rice.p2p.past.messaging.FetchHandleMessage;
 import rice.p2p.past.messaging.FetchMessage;
 import rice.p2p.past.messaging.GCCollectMessage;
@@ -60,7 +60,7 @@ import rice.persistence.MemoryStorage;
 import rice.persistence.StorageManagerImpl;
 
 /**
- * The messages of Past and GCPast, and the handles, ids and metadata they carry, through the bytes of a socket ring:
+ * The messages of Past and ExpiringPast, and the handles, ids and metadata they carry, through the bytes of a socket ring:
  * read where they arrive, given a response there (as the replica does) and sent back, and routed hop by hop.
  */
 class PastWireRoundTripTest {
@@ -73,7 +73,7 @@ class PastWireRoundTripTest {
   private static IdFactory idf;
   private static NodeHandle local;
   private static NodeHandle remote;
-  private static GCPastImpl gcPast;
+  private static ExpiringPastImpl gcPast;
   private static Endpoint pastEndpoint;
   private static Endpoint gcInner;
   private static MessageDeserializer pastDeserializer;
@@ -93,7 +93,7 @@ class PastWireRoundTripTest {
     pastEndpoint = past.getEndpoint();
     pastDeserializer = pastEndpoint.getDeserializer();
 
-    gcPast = new GCPastImpl(sn.node, storage(), null, REPLICAS, "gcpast-wire", new PastPolicy.DefaultPastPolicy(),
+    gcPast = new ExpiringPastImpl(sn.node, storage(), null, REPLICAS, "gcpast-wire", new PastPolicy.DefaultPastPolicy(),
         COLLECTION_INTERVAL, null);
     gcPast.setContentDeserializer(TestContentReader.INSTANCE);
     // SocketNode.route wraps the message for the pastry endpoint underneath the GC wrapper
@@ -435,7 +435,7 @@ class PastWireRoundTripTest {
   private static GCIdSet gcIds(long... expirations) {
     GCIdSet set = (GCIdSet) new GCIdFactory(idf).buildIdSet();
     for (int i = 0; i < expirations.length; i++) {
-      set.addId(new GCId(Id.build(String.format("%04X", 0x1000 + 0x111 * i)), expirations[i]));
+      set.addId(new ExpiringId(Id.build(String.format("%04X", 0x1000 + 0x111 * i)), expirations[i]));
     }
     return set;
   }
@@ -548,20 +548,20 @@ class PastWireRoundTripTest {
   @Test
   void gcMetadata() throws IOException {
     for (long expiration : new long[] {0, 1, -1, Long.MAX_VALUE, Long.MIN_VALUE}) {
-      GCPastMetadata metadata = new GCPastMetadata(expiration);
-      assertEquals(metadata, WireRoundTrip.roundTrip(metadata, GCPastMetadata::serialize, GCPastMetadata::new));
+      ExpiringPastMetadata metadata = new ExpiringPastMetadata(expiration);
+      assertEquals(metadata, WireRoundTrip.roundTrip(metadata, ExpiringPastMetadata::serialize, ExpiringPastMetadata::new));
     }
   }
 
   @Test
   void gcId() throws IOException {
-    GCId id = new GCId(Id.build("5000"), EXPIRATION);
+    ExpiringId id = new ExpiringId(Id.build("5000"), EXPIRATION);
 
     // a message writes the type of a key, then the key writes its own type again
-    GCId copy = WireRoundTrip.roundTrip(id, (key, buf) -> {
+    ExpiringId copy = WireRoundTrip.roundTrip(id, (key, buf) -> {
       buf.writeShort(key.getType());
       key.serialize(buf);
-    }, buf -> (GCId) gcPast.getEndpoint().readId(buf, buf.readShort()));
+    }, buf -> (ExpiringId) gcPast.getEndpoint().readId(buf, buf.readShort()));
 
     assertEquals(id, copy);
     assertEquals(EXPIRATION, copy.expiration());
@@ -583,7 +583,7 @@ class PastWireRoundTripTest {
   }
 
   @Test
-  @DisplayName("GCIdSet is not a wire type: only GCId keys are carried, one by one")
+  @DisplayName("GCIdSet is not a wire type: only ExpiringId keys are carried, one by one")
   void gcIdSetIsNotSerializable() {
     assertFalse(RawSerializable.class.isAssignableFrom(GCIdSet.class));
   }

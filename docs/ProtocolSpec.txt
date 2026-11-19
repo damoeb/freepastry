@@ -76,10 +76,10 @@ Table of contents:
   InsertMessage
   LookupHandlesMessage
   LookupMessage    
-2.2: GCPast 
-2.2.1: GCPast Objects 
-  GCId 
-2.2.2: GCPast Messages 
+2.2: ExpiringPast 
+2.2.1: ExpiringPast Objects 
+  ExpiringId 
+2.2.2: ExpiringPast Messages 
   GCRefreshMessage
   GCInsertMessage
   GCLookupHandlesMessage  
@@ -952,19 +952,19 @@ Chapter 2 CommonApi Apps ******************************************************
       short idType // the type of the id (next value)
       Id id // the id to fetch
   
-2.2 GCPast ********************************************************************
-2.2.1 GCPast Objects **********************************************************
-  GCId 
+2.2 ExpiringPast ********************************************************************
+2.2.1 ExpiringPast Objects **********************************************************
+  ExpiringId 
     type 3
     use: Holds an id and an expiration, used to refresh Ids
     short idType // the type of the id (next value)
     Id id
     time expiration
 
-2.2.2 GCPast Messages *********************************************************
+2.2.2 ExpiringPast Messages *********************************************************
   GCRefreshMessage:    
     type 11
-    use: A request to extend the lifetime of a set of keys stored in GCPast.   
+    use: A request to extend the lifetime of a set of keys stored in ExpiringPast.   
     format:
       byte version (0)
       int id // unique id of this message
@@ -985,7 +985,7 @@ Chapter 2 CommonApi Apps ******************************************************
       int numKeys
       // for each numKey
         short idType // the type of the id (next value)
-        GCId gcid 
+        ExpiringId gcid 
         
         
   GCInsertMessage:    
@@ -1357,9 +1357,9 @@ appropriate ring.
                 
           
 2.6 Aggregation ***************************************************************
-Note that Aggregation doesn't define any new messages, but it does define a GCPastContent.
+Note that Aggregation doesn't define any new messages, but it does define a ExpiringPastContent.
 
-  Aggregate (A GCPastContent):
+  Aggregate (A ExpiringPastContent):
     use: convert lots of small GCPastContents into a larger one
     type 1
     format:
@@ -1371,10 +1371,10 @@ Note that Aggregation doesn't define any new messages, but it does define a GCPa
         Id pointer
       int numComponents
         short GCPastContentType
-        GCPastContent
+        ExpiringPastContent
         
-  NonAggregate (A GCPastContent):
-    use: wrap a GCPastContent (to prevent type space collision)
+  NonAggregate (A ExpiringPastContent):
+    use: wrap a ExpiringPastContent (to prevent type space collision)
     type 2
     format:
       byte version (0)

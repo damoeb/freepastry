@@ -46,10 +46,10 @@ import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.PastException;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.GCPastContentHandle;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.util.HashUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -59,13 +59,13 @@ import rice.p2p.util.rawserialization.WireLengths;
  * An aggregate: a group of small objects stored in Past as one, plus the pointers to the aggregates it
  * refers to.
  */
-public class Aggregate implements GCPastContent {
+public class Aggregate implements ExpiringPastContent {
 
-  protected GCPastContent[] components;
+  protected ExpiringPastContent[] components;
   protected Id[] pointers;
   protected Id myId;
 
-  public Aggregate(GCPastContent[] components, Id[] pointers) {
+  public Aggregate(ExpiringPastContent[] components, Id[] pointers) {
     this.components = components;
     this.myId = null;
     this.pointers = pointers;
@@ -83,9 +83,9 @@ public class Aggregate implements GCPastContent {
         for (int i = 0; i < pointers.length; i++) {
           pointers[i] = endpoint.readId(buf, buf.readShort());
         }
-        components = new GCPastContent[WireLengths.readShort(buf, 2)];
+        components = new ExpiringPastContent[WireLengths.readShort(buf, 2)];
         for (int i = 0; i < components.length; i++) {
-          components[i] = (GCPastContent) contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
+          components[i] = (ExpiringPastContent) contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
         }
         break;
       default:
@@ -110,7 +110,7 @@ public class Aggregate implements GCPastContent {
     return components.length;
   }
 
-  public GCPastContent getComponent(int index) {
+  public ExpiringPastContent getComponent(int index) {
     return components[index];
   }
 
@@ -149,17 +149,17 @@ public class Aggregate implements GCPastContent {
 
   @Override
   public PastContentHandle getHandle(Past local) {
-    return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), GCPast.INFINITY_EXPIRATION);
+    return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), ExpiringPast.INFINITY_EXPIRATION);
   }
 
   @Override
-  public GCPastContentHandle getHandle(GCPast local, long expiration) {
+  public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
     return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), expiration);
   }
 
   @Override
-  public GCPastMetadata getMetadata(long expiration) {
-    return new GCPastMetadata(expiration);
+  public ExpiringPastMetadata getMetadata(long expiration) {
+    return new ExpiringPastMetadata(expiration);
   }
 
   @Override
@@ -183,7 +183,7 @@ public class Aggregate implements GCPastContent {
     }
 
     buf.writeShort((short)components.length);
-    for (GCPastContent component : components) {
+    for (ExpiringPastContent component : components) {
       buf.writeShort(component.getType());
       component.serialize(buf);
     }

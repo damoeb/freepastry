@@ -47,7 +47,7 @@ import rice.p2p.glacier.VersioningPast;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 
 /**
  * Looks objects up: in the object store first, and in their aggregate (found through the aggregate list) if
@@ -249,9 +249,9 @@ final class ObjectRetriever {
       return;
     }
 
-    retrieveObjectFromAggregate(adc, objDescIndex, new Continuation<GCPastContent, Exception>() {
+    retrieveObjectFromAggregate(adc, objDescIndex, new Continuation<ExpiringPastContent, Exception>() {
       @Override
-      public void receiveResult(GCPastContent o) {
+      public void receiveResult(ExpiringPastContent o) {
         logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, o);
         /* re-inserted implicitly by retrieveObjectFromAggregate */
         objectStore.lookupHandles(id, max, command);
@@ -268,7 +268,7 @@ final class ObjectRetriever {
    * Fetches the aggregate, validates its content hash (on the processing thread), reinserts the object into
    * the object store and returns it.
    */
-  private void retrieveObjectFromAggregate(final AggregateDescriptor adc, final int objDescIndex, final Continuation<? super GCPastContent, Exception> command) {
+  private void retrieveObjectFromAggregate(final AggregateDescriptor adc, final int objDescIndex, final Continuation<? super ExpiringPastContent, Exception> command) {
     aggregateStore.lookup(adc.getKey(), new Continuation<PastContent, Exception>() {
       @Override
       public void receiveResult(PastContent o) {
@@ -287,7 +287,7 @@ final class ObjectRetriever {
     });
   }
 
-  private void validateAndExtract(final AggregateDescriptor adc, final int objDescIndex, final Aggregate aggr, final Continuation<? super GCPastContent, Exception> command) {
+  private void validateAndExtract(final AggregateDescriptor adc, final int objDescIndex, final Aggregate aggr, final Continuation<? super ExpiringPastContent, Exception> command) {
     endpoint.process(() -> factory.buildId(aggr.getContentHash()), new Continuation<Id, Exception>() {
       @Override
       public void receiveResult(Id o) {

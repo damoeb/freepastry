@@ -52,7 +52,7 @@ import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
 import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
 import rice.p2p.past.PastContent;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 
 /**
  * Inserts objects (erasure-codes them, creates their manifests and sends the fragments to their
@@ -90,7 +90,7 @@ final class GlacierInserter {
   }
 
   void insert(final PastContent obj, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    long theVersion = (obj instanceof GCPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
+    long theVersion = (obj instanceof ExpiringPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
     final VersionKey vkey = new VersionKey(policy.storageId(obj.getId()), theVersion);
 
     logger.atInfo().log(() -> "insert(" + obj + " (id=" + vkey.toStringFull() + ", mutable=" + obj.isMutable() + ")");

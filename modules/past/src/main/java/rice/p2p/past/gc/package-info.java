@@ -35,10 +35,10 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * PAST with garbage collection. {@link rice.p2p.past.gc.GCPast} gives every object a version and an
+ * PAST with garbage collection. {@link rice.p2p.past.gc.ExpiringPast} gives every object a version and an
  * expiration time; applications must {@code refresh()} the objects they still need, and
- * {@link rice.p2p.past.gc.GCPastImpl} periodically deletes expired objects. Internally the ids are
- * {@link rice.p2p.past.gc.GCId}s (id plus expiration), and {@link rice.p2p.past.gc.GCNode} wraps the
+ * {@link rice.p2p.past.gc.ExpiringPastImpl} periodically deletes expired objects. Internally the ids are
+ * {@link rice.p2p.past.gc.ExpiringId}s (id plus expiration), and {@link rice.p2p.past.gc.ExpiringIdNode} wraps the
  * node so that the underlying PAST and replication code see them.
  */
 package rice.p2p.past.gc;

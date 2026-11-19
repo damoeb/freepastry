@@ -49,9 +49,9 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
-import rice.p2p.past.gc.GCPastContentHandle;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
 
 /**
  * The tree of aggregates that pointers link to the root (the handle): rebuilds the aggregate list by walking
@@ -130,7 +130,7 @@ final class AggregateTree {
 
     logger.info("Found {} disconnected aggregates; inserting pointer array", disconnected.length);
     storer.storeAggregate(
-      aggregateFactory.buildAggregate(new GCPastContent[] {}, disconnected),
+      aggregateFactory.buildAggregate(new ExpiringPastContent[] {}, disconnected),
       timeSource.currentTimeMillis() + config.getPointerArrayLifetime(),
       new ObjectDescriptor[] {},
       disconnected,
@@ -206,7 +206,7 @@ final class AggregateTree {
 
       PastContentHandle bestHandle = null;
       for (PastContentHandle pastContentHandle : o) {
-        if ((pastContentHandle == null) || ((pastContentHandle instanceof GCPastContentHandle gcPastContentHandle) && (gcPastContentHandle.getVersion() != 0)))
+        if ((pastContentHandle == null) || ((pastContentHandle instanceof ExpiringPastContentHandle gcPastContentHandle) && (gcPastContentHandle.getVersion() != 0)))
           continue;
 
         if (bestHandle == null)
@@ -243,7 +243,7 @@ final class AggregateTree {
       logger.atInfo().log(() -> "Rebuild: Got aggregate " + fromKey.toStringFull());
 
       ObjectDescriptor[] objects = new ObjectDescriptor[aggr.numComponents()];
-      long aggregateExpiration = (thisHandle instanceof GCPastContentHandle gcPastContentHandle) ? gcPastContentHandle.getExpiration() : GCPast.INFINITY_EXPIRATION;
+      long aggregateExpiration = (thisHandle instanceof ExpiringPastContentHandle gcPastContentHandle) ? gcPastContentHandle.getExpiration() : ExpiringPast.INFINITY_EXPIRATION;
 
       for (int i=0; i<aggr.numComponents(); i++) {
         objects[i] = new ObjectDescriptor(
@@ -299,7 +299,7 @@ final class AggregateTree {
      * Reinserts a component of a rebuilt aggregate into the object store, unless the object store has that
      * version (or a newer one) already.
      */
-    private void restoreInObjectStore(final GCPastContent objData) {
+    private void restoreInObjectStore(final ExpiringPastContent objData) {
       logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
       objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
         @Override
@@ -309,8 +309,8 @@ final class AggregateTree {
           boolean gotOne = false;
           for (int i=0; i<result.length; i++) {
             if (result[i] != null) {
-              if (logger.isDebugEnabled()) logger.debug("Have v"+((GCPastContentHandle)result[i]).getVersion());
-              if (((GCPastContentHandle)result[i]).getVersion() >= objData.getVersion())
+              if (logger.isDebugEnabled()) logger.debug("Have v"+((ExpiringPastContentHandle)result[i]).getVersion());
+              if (((ExpiringPastContentHandle)result[i]).getVersion() >= objData.getVersion())
                 gotOne = true;
             }
           }

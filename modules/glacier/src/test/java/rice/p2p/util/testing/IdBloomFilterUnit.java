@@ -45,7 +45,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.multiring.MultiringIdFactory;
-import rice.p2p.past.gc.GCId;
+import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.gc.GCIdFactory;
 import rice.p2p.util.IdBloomFilter;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -63,7 +63,7 @@ public class IdBloomFilterUnit {
     IdSet set = gFactory.buildIdSet();
 
     for (int i=0; i<n; i++)
-      set.addId(new GCId(factory.buildRandomId(random), System.currentTimeMillis()));
+      set.addId(new ExpiringId(factory.buildRandomId(random), System.currentTimeMillis()));
 
 
     System.out.println("Start: " + System.currentTimeMillis());
@@ -80,7 +80,7 @@ public class IdBloomFilterUnit {
     int count = 0;
 
     for (int j=0; j<set.numElements(); j++) {
-      if (filter.check(new GCId(factory.buildRandomId(random), System.currentTimeMillis())))
+      if (filter.check(new ExpiringId(factory.buildRandomId(random), System.currentTimeMillis())))
         count++;
     }
     System.out.println("Done3: " + System.currentTimeMillis());

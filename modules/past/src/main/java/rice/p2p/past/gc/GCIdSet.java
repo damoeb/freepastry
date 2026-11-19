@@ -91,10 +91,10 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public void addId(Id id) {
-    GCId gcid = (GCId) id;
+    ExpiringId gcid = (ExpiringId) id;
 
     ids.addId(gcid.id());
-    timeouts.put(gcid.id(), new GCPastMetadata(gcid.expiration()));
+    timeouts.put(gcid.id(), new ExpiringPastMetadata(gcid.expiration()));
   }
 
   /**
@@ -103,7 +103,7 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public void removeId(Id id) {
-    GCId gcid = (GCId) id;
+    ExpiringId gcid = (ExpiringId) id;
     ids.removeId(gcid.id());
     timeouts.remove(gcid.id());
   }
@@ -115,7 +115,7 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public boolean isMemberId(Id id) {
-    GCId gcid = (GCId) id;
+    ExpiringId gcid = (ExpiringId) id;
     return ids.isMemberId(gcid.id());
   }
 
@@ -147,13 +147,13 @@ public class GCIdSet implements IdSet {
     };
   }
 
-  protected GCId getGCId(Id id) {
-    GCPastMetadata metadata = (GCPastMetadata) timeouts.get(id);
+  protected ExpiringId getGCId(Id id) {
+    ExpiringPastMetadata metadata = (ExpiringPastMetadata) timeouts.get(id);
 
     if (metadata != null)
-      return new GCId(id, metadata.expiration());
+      return new ExpiringId(id, metadata.expiration());
     else
-      return new GCId(id, GCPastImpl.DEFAULT_EXPIRATION);
+      return new ExpiringId(id, ExpiringPastImpl.DEFAULT_EXPIRATION);
   }
 
   /**

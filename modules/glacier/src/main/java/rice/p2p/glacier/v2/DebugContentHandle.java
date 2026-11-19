@@ -41,9 +41,9 @@ import java.io.IOException;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
 
-public record DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) implements GCPastContentHandle {
+public record DebugContentHandle(Id id, long version, long expiration, NodeHandle nodeHandle) implements ExpiringPastContentHandle {
   public static final short TYPE = 3;
 
   @Override

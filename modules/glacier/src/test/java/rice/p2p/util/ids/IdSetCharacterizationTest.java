@@ -15,7 +15,7 @@ import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersionKeyFactory;
 import rice.p2p.multiring.MultiringIdFactory;
 import rice.p2p.multiring.RingId;
-import rice.p2p.past.gc.GCId;
+import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.gc.GCIdFactory;
 import rice.pastry.commonapi.PastryIdFactory;
 
@@ -222,7 +222,7 @@ class IdSetCharacterizationTest {
     List<Id> keys = new ArrayList<>();
     long expiration = 1000;
     for (Id id : pastryIds()) {
-      keys.add(new GCId(id, expiration));
+      keys.add(new ExpiringId(id, expiration));
       expiration += 977;
     }
     IdSet set = fill(factory.buildIdSet(), keys);

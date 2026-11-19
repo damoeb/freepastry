@@ -74,7 +74,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    */
   @Override
   public boolean containsId(Id key) {
-    return range.containsId(((GCId) key).id());
+    return range.containsId(((ExpiringId) key).id());
   }
 
   /**
@@ -84,7 +84,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    */
   @Override
   public Id getCounterClockwiseBound() {
-    return new GCId(range.getCounterClockwiseBound(), GCPastImpl.DEFAULT_EXPIRATION);
+    return new ExpiringId(range.getCounterClockwiseBound(), ExpiringPastImpl.DEFAULT_EXPIRATION);
   }
 
   /**
@@ -94,7 +94,7 @@ public record GCIdRange(IdRange range) implements IdRange {
    */
   @Override
   public Id getClockwiseBound() {
-    return new GCId(range.getClockwiseBound(), GCPastImpl.DEFAULT_EXPIRATION);
+    return new ExpiringId(range.getClockwiseBound(), ExpiringPastImpl.DEFAULT_EXPIRATION);
   }
 
   /**

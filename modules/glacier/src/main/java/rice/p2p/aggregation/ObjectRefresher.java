@@ -47,8 +47,8 @@ import rice.p2p.glacier.VersioningPast;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
-import rice.p2p.past.gc.GCPast;
-import rice.p2p.past.gc.GCPastContent;
+import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.ExpiringPastContent;
 import rice.persistence.StorageManager;
 
 /**
@@ -165,10 +165,10 @@ final class ObjectRefresher {
   }
 
   private void refreshInObjectStore(Id[] ids, long[] expirations, Continuation<Object, Exception> command) {
-    if (objectStore instanceof GCPast gcPast) {
+    if (objectStore instanceof ExpiringPast gcPast) {
       gcPast.refresh(ids, expirations, command);
     } else {
-      // same contract as GCPast.refresh: one result per id
+      // same contract as ExpiringPast.refresh: one result per id
       Object[] result = new Object[ids.length];
       Arrays.fill(result, true);
       command.receiveResult(result);
@@ -388,7 +388,7 @@ final class ObjectRefresher {
       logger.atWarn().log(() -> "Refresh: Found in PAST, but not in aggregate list: "+id.toStringFull());
 
       long theVersion;
-      if (obj instanceof GCPastContent gcPastContent) {
+      if (obj instanceof ExpiringPastContent gcPastContent) {
         theVersion = gcPastContent.getVersion();
       } else {
         theVersion = 0;

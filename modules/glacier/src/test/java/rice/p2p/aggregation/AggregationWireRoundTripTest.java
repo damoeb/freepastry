@@ -18,6 +18,7 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.glacier.v2.DebugContent;
+import rice.p2p.past.gc.ExpiringPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
@@ -76,7 +77,7 @@ class AggregationWireRoundTripTest {
     for (int i = 0; i < pointers; i++) {
       pointerIds[i] = Id.build(Integer.toHexString(0x4000 + i));
     }
-    rice.p2p.past.gc.GCPastContent[] parts = new rice.p2p.past.gc.GCPastContent[components];
+    ExpiringPastContent[] parts = new ExpiringPastContent[components];
     for (int i = 0; i < components; i++) {
       parts[i] = content(i);
     }

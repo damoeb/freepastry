@@ -45,7 +45,7 @@ import rice.Continuation;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
-import rice.p2p.past.gc.GCPast;
+import rice.p2p.past.gc.ExpiringPast;
 
 /**
  * The lifetimes of the aggregates: renews aggregates that are about to expire but still hold live objects,
@@ -145,7 +145,7 @@ final class AggregateExpiration {
 
     if (!refreshAggregateList.isEmpty()) {
       logger.info("Refreshing {} aggregate(s)", refreshAggregateList.size());
-      if (aggregateStore instanceof GCPast gcPast) {
+      if (aggregateStore instanceof ExpiringPast gcPast) {
         renewInAggregateStore(gcPast, refreshAggregateList, refreshLifetimeList);
       } else {
         logger.debug("Aggregate store does not support GC; refreshing directly");
@@ -158,7 +158,7 @@ final class AggregateExpiration {
     }
   }
 
-  private void renewInAggregateStore(GCPast store, final List<AggregateDescriptor> refreshAggregateList, final List<Long> refreshLifetimeList) {
+  private void renewInAggregateStore(ExpiringPast store, final List<AggregateDescriptor> refreshAggregateList, final List<Long> refreshLifetimeList) {
     Id[] ids = new Id[refreshAggregateList.size()];
     long[] lifetimes = new long[refreshAggregateList.size()];
     for (int i=0; i<refreshAggregateList.size(); i++) {

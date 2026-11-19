@@ -37,33 +37,89 @@ advised of the possibility of such damage.
 
 package rice.p2p.past.gc;
 
-import rice.p2p.past.PastContentHandle;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
 
 /**
- * This interface represents a content handle which is used in the versioned and
- * garbage-collected version of Past.  It adds support for a version number as
- * well as the current expiration time.
+ * This class wraps a Node
  *
- * @version $Id: GCPastContentHandle.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: ExpiringIdNode.java 3992 2007-12-02 20:09:18Z jeffh $
+ *
  * @author Alan Mislove
- * @author Andreas Haeberlen
  */
-public interface GCPastContentHandle extends PastContentHandle {
+public class ExpiringIdNode implements Node {
 
   /**
-   * Returns the version number associated with this PastContentHandle -
-   * version numbers are designed to be monotonically increasing numbers which
-   * signify different versions of the same object.
-   *
-   * @return The version number of this object
+   * The node which this GC node is wrapping
    */
-  public long getVersion();
+  private final Node node;
 
   /**
-   * Returns the current expiration time of this object.
+   * Constructor
    *
-   * @return The current expiration time of this object
+   * @param node The node which this GC node is wrapping
    */
-  public long getExpiration();
+  public ExpiringIdNode(Node node) {
+    this.node = node;
+  }
 
+  @Override
+  public Endpoint buildEndpoint(Application application, String instance) {
+    return new ExpiringIdEndpoint(node.buildEndpoint(application, instance));
+  }
+
+  /**
+   * Method which returns the node handle to the local node
+   *
+   * @return A handle to the local node
+   */
+  @Override
+  public NodeHandle getLocalNodeHandle() {
+    return node.getLocalNodeHandle();
+  }
+
+  /**
+   * Returns the Id of this node
+   *
+   * @return This node's Id
+   */
+  @Override
+  public Id getId() {
+    return node.getId();
+  }
+
+  /**
+   * Returns a factory for Ids specific to this node's protocol.
+   *
+   * @return A factory for creating Ids.
+   */
+  @Override
+  public IdFactory getIdFactory() {
+    return new GCIdFactory(node.getIdFactory());
+  }
+
+  /**
+   * Prints out the string
+   *
+   * @return A string
+   */
+  @Override
+  public String toString() {
+    return "{ExpiringIdNode " + node + "}";
+  }
+
+  @Override
+  public Environment getEnvironment() {
+    return node.getEnvironment();
+  }
+
+  @Override
+  public String printRouteState() {
+    return node.printRouteState();
+  }
 }

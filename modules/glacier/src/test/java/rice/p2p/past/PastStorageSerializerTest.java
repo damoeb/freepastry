@@ -13,7 +13,7 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.glacier.v2.DebugContent;
-import rice.p2p.past.gc.GCPastMetadata;
+import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.pastry.PastryNode;
@@ -81,9 +81,9 @@ class PastStorageSerializerTest {
   void writesAndReadsGcMetadata() throws IOException {
     SimpleOutputBuffer buf = new SimpleOutputBuffer();
 
-    testObj.writeMetadata(new GCPastMetadata(424242L), buf);
+    testObj.writeMetadata(new ExpiringPastMetadata(424242L), buf);
 
-    assertEquals(new GCPastMetadata(424242L), testObj.readMetadata(reread(buf)));
+    assertEquals(new ExpiringPastMetadata(424242L), testObj.readMetadata(reread(buf)));
   }
 
   @Test

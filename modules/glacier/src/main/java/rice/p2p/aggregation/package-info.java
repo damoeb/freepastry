@@ -36,7 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 /**
  * Aggregation, which bundles small objects into large aggregates before storing them in an underlying
- * store (typically Glacier). {@link rice.p2p.aggregation.AggregationImpl} implements {@code GCPast}: an
+ * store (typically Glacier). {@link rice.p2p.aggregation.AggregationImpl} implements {@code ExpiringPast}: an
  * object that the {@link rice.p2p.aggregation.AggregationPolicy} wants aggregated is inserted into the
  * object store at once and kept on a local waiting list until a periodic flush packs waiting objects
  * into an {@link rice.p2p.aggregation.Aggregate} for the aggregate store; the

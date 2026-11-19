@@ -51,11 +51,11 @@ import rice.p2p.util.MathUtils;
  * expiration time in the GC Past system.  Should not be used
  * by applications.
  *
- * @version $Id: GCId.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: ExpiringId.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Alan Mislove
  */
-public record GCId(Id id, long expiration) implements Id {
+public record ExpiringId(Id id, long expiration) implements Id {
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
    *
@@ -65,7 +65,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public boolean isBetween(Id ccw, Id cw) {
-    return id.isBetween(((GCId) ccw).id(), ((GCId) cw).id());
+    return id.isBetween(((ExpiringId) ccw).id(), ((ExpiringId) cw).id());
   }
 
   /**
@@ -78,7 +78,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public boolean clockwise(Id nid) {
-    return id.clockwise(((GCId) nid).id());
+    return id.clockwise(((ExpiringId) nid).id());
   }
 
   /**
@@ -89,7 +89,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public Id addToId(Distance offset) {
-    return new GCId(id.addToId(offset), expiration);
+    return new ExpiringId(id.addToId(offset), expiration);
   }
 
   /**
@@ -100,7 +100,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public Distance distanceFromId(Id nid) {
-    return id.distanceFromId(((GCId) nid).id());
+    return id.distanceFromId(((ExpiringId) nid).id());
   }
 
   /**
@@ -111,7 +111,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public Distance longDistanceFromId(Id nid) {
-    return id.longDistanceFromId(((GCId) nid).id());
+    return id.longDistanceFromId(((ExpiringId) nid).id());
   }
 
   /**
@@ -158,7 +158,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public boolean equals(Object o) {
-    if (! (o instanceof GCId gcId))
+    if (! (o instanceof ExpiringId gcId))
       return false;
 
     return gcId.id.equals(id);
@@ -201,7 +201,7 @@ public record GCId(Id id, long expiration) implements Id {
    */
   @Override
   public int compareTo(Id o) {
-    return id.compareTo(((GCId) o).id);
+    return id.compareTo(((ExpiringId) o).id);
   }
 
   /***************** Raw Serialization ***************************************/
@@ -219,7 +219,7 @@ public record GCId(Id id, long expiration) implements Id {
     id.serialize(buf);
   }
 
-  public GCId(InputBuffer buf, Endpoint endpoint) throws IOException {
+  public ExpiringId(InputBuffer buf, Endpoint endpoint) throws IOException {
     buf.readShort();
     long expiration = buf.readLong();
     Id id = endpoint.readId(buf, buf.readShort());

@@ -43,7 +43,7 @@ class GCRefreshResultsTest {
     outcome.put(found, true);
     outcome.put(missing, false);
 
-    Object[] actual = GCPastImpl.collectRefreshResults(new Id[] {missing, found, silent}, outcome);
+    Object[] actual = ExpiringPastImpl.collectRefreshResults(new Id[] {missing, found, silent}, outcome);
 
     assertEquals(3, actual.length);
     assertInstanceOf(ObjectNotFoundException.class, actual[0]);

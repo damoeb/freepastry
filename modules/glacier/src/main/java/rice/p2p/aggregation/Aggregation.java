@@ -38,7 +38,7 @@ package rice.p2p.aggregation;
 
 /**
  * This interface is exported by all instances of the Aggregation
- * service, in addition to the Past and GCPast interfaces.
+ * service, in addition to the Past and ExpiringPast interfaces.
  * The additional functions are used mainly to recover from failures,
  * i.e. cases in which the service loses its local metadata.
  *

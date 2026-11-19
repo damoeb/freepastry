@@ -43,9 +43,9 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.past.gc.GCPastContentHandle;
+import rice.p2p.past.gc.ExpiringPastContentHandle;
 
-public record AggregateHandle(NodeHandle nodeHandle, Id id, long version, long expiration) implements GCPastContentHandle {
+public record AggregateHandle(NodeHandle nodeHandle, Id id, long version, long expiration) implements ExpiringPastContentHandle {
 
   @Override
   public Id getId() {

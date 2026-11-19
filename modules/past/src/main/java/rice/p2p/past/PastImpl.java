@@ -68,9 +68,9 @@ import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.past.PastPolicy.DefaultPastPolicy;
+import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.messaging.ContinuationMessage;
 import rice.p2p.past.messaging.FetchHandleMessage;
-import rice.p2p.past.gc.GCId;
 import rice.p2p.past.messaging.FetchMessage;
 import rice.p2p.past.messaging.GCCollectMessage;
 import rice.p2p.past.messaging.GCRefreshMessage;
@@ -224,7 +224,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     }
 
     /**
-     * Reads a GCPast message; plain Past does not know them.
+     * Reads a ExpiringPast message; plain Past does not know them.
      */
     protected Message deserializeGC(InputBuffer buf, PastMessageType type) throws IOException {
       throw unknownType(type.id());
@@ -668,7 +668,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         logger.warn("Rejecting content-hash object {}: its payload does not hash to its id", hashed.getId());
         return false;
       }
-      Id wanted = requested instanceof GCId gcid ? gcid.id() : requested;
+      Id wanted = requested instanceof ExpiringId gcid ? gcid.id() : requested;
       if (wanted != null && !wanted.equals(hashed.getId())) {
         logger.warn("Rejecting content-hash object {}: {} was asked for", hashed.getId(), wanted);
         return false;
