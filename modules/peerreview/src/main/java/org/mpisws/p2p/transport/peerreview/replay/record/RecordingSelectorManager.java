@@ -41,7 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import org.mpisws.p2p.transport.peerreview.replay.DeterministicSM;
+import org.mpisws.p2p.transport.peerreview.replay.DeterministicSelectorManager;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
@@ -60,10 +60,10 @@ import rice.environment.time.simulated.DirectTimeSource;
  * @author Jeff Hoye
  *
  */
-public class RecordSM extends DeterministicSM {
+public class RecordingSelectorManager extends DeterministicSelectorManager {
   TimeSource realTime;
 
-  public RecordSM(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource rs) {
+  public RecordingSelectorManager(String instance, TimeSource realTime, DirectTimeSource simTime, LogManager log, RandomSource rs) {
     super(instance, simTime, log, rs);
     this.realTime = realTime;
   }

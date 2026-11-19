@@ -36,60 +36,54 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.peerreview.audit;
 
-import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
+import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
+import org.mpisws.p2p.transport.peerreview.replay.Verifier;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
 
-/**
- * Here we remember calls to investigate() that have not been resolved yet
- */
-public class ActiveInvestigationInfo<Handle> {
+/* Here we keep state about audits for which (a) we have not received a
+response yet, or (b) we are currently replaying the log */
+public class OngoingAudit<Handle extends RawSerializable, Identifier extends RawSerializable> {
   private final Handle target;
-  private long since; // in nanoseconds
-  private long currentTimeout;
-  private Authenticator authFrom;
-  private Authenticator authTo;
+  private final boolean shouldBeReplayed;
+  private boolean isReplaying;
+  private final long currentTimeout;
+  private final ChallengeMessage<Identifier> request;
+  private final long evidenceSeq;
 
-  public ActiveInvestigationInfo(Handle target, long since,
-      long currentTimeout, Authenticator authFrom, Authenticator authTo) {
+  public OngoingAudit(Handle target, boolean shouldBeReplayed,
+      boolean isReplaying, long currentTimeout,
+      ChallengeMessage<Identifier> request, long evidenceSeq,
+      Verifier<Handle, Identifier> verifier) {
     this.target = target;
-    this.since = since;
+    this.shouldBeReplayed = shouldBeReplayed;
+    this.isReplaying = isReplaying;
     this.currentTimeout = currentTimeout;
-    this.authFrom = authFrom;
-    this.authTo = authTo;
+    this.request = request;
+    this.evidenceSeq = evidenceSeq;
   }
 
-  /** Keeps the earliest authFrom and the latest authTo seen so far. */
-  public void offerAuthenticators(Authenticator from, Authenticator to) {
-    if (authFrom == null || (from.getSeq()<authFrom.getSeq())) {
-      authFrom = from;
-    }
-
-    if (authTo == null || (to.getSeq()>authTo.getSeq())) {
-      authTo = to;
-    }
-  }
-
-  public void extendTimeout(long millis) {
-    currentTimeout += millis;
-  }
-
-  public void extendSince(long since) {
-    this.since = since;
-  }
-
-  public Authenticator getAuthFrom() {
-    return authFrom;
-  }
-
-  public Authenticator getAuthTo() {
-    return authTo;
+  public void startReplay(Verifier<Handle, Identifier> verifier) {
+    this.isReplaying = true;
   }
 
   public long getCurrentTimeout() {
     return currentTimeout;
   }
 
-  public long getSince() {
-    return since;
+  public long getEvidenceSeq() {
+    return evidenceSeq;
+  }
+
+  public boolean isReplaying() {
+    return isReplaying;
+  }
+
+  public ChallengeMessage<Identifier> getRequest() {
+    return request;
+  }
+
+  public boolean shouldBeReplayed() {
+    return shouldBeReplayed;
   }
 
   public Handle getTarget() {

@@ -31,7 +31,7 @@ public class AuditProtocolProgressTimerTest {
     try {
       AuditProtocol<RawSerializable, RawSerializable> audit = newAudit(env);
       RawSerializable target = buf -> { };
-      audit.activeInvestigation.put(target, new ActiveInvestigationInfo<>(target, 0, Long.MAX_VALUE, null, null));
+      audit.activeInvestigation.put(target, new PendingInvestigation<>(target, 0, Long.MAX_VALUE, null, null));
       audit.scheduleProgressTimer();
       TimerTask first = audit.progressTimer;
 

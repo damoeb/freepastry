@@ -41,7 +41,7 @@ import java.nio.ByteBuffer;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 
-public interface IdentityTransport<Handle, Identifier> extends CertificateManager<Handle, Identifier>,
+public interface IdentityTransport<Handle, Identifier> extends CertificateStore<Handle, Identifier>,
   TransportLayer<Handle, ByteBuffer>,
   HashProvider {
 

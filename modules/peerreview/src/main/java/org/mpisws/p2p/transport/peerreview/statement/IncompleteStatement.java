@@ -34,22 +34,65 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.identity;
+package org.mpisws.p2p.transport.peerreview.statement;
 
-import java.security.cert.X509Certificate;
 import java.util.Map;
 
-import rice.Continuation;
-import rice.p2p.commonapi.Cancellable;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
+import org.mpisws.p2p.transport.peerreview.message.Statement;
 
-/**
- * Stores some Certificates, sign/verify, can fetch Certificates
- * @author Jeff Hoye
- */
-public interface CertificateManager<Handle, Identifier> {
-  public byte[] sign(byte[] bytes);
-  public int verify(Identifier id, byte[] msg, byte[] signature);
-  public boolean hasCertificate(Identifier id);
-  public Cancellable requestCertificate(Handle source, Identifier certHolder, Continuation<X509Certificate, Exception> c, Map<String, Object> options);
-  public short getSignatureSizeBytes();
+public class IncompleteStatement<Handle, Identifier extends RawSerializable> {
+  private boolean finished;
+  private final Handle sender;
+  private final long currentTimeout;
+  private final Statement<Identifier> statement;
+  private boolean isMissingCertificate;
+  private final Map<String, Object> options;
+
+  public IncompleteStatement(boolean finished, Handle source, long currentTimeout,
+      Statement<Identifier> statement, boolean isMissingCertificate, Identifier missingCertificateId, Map<String, Object> options) {
+    this.finished = finished;
+    this.sender = source;
+    this.currentTimeout = currentTimeout;
+    this.statement = statement;
+    this.isMissingCertificate = isMissingCertificate;
+    this.options = options;
+  }
+
+  public boolean isMissingCertificate() {
+    return isMissingCertificate;
+  }
+
+  public void finish() {
+    finished = true;
+  }
+
+  /** Records that the statement cannot be processed until the certificate of {@code id} arrives. */
+  public void markMissingCertificate(Identifier id) {
+    isMissingCertificate = true;
+  }
+
+  public void clearMissingCertificate() {
+    isMissingCertificate = false;
+  }
+
+  public boolean isFinished() {
+    return finished;
+  }
+
+  public long getCurrentTimeout() {
+    return currentTimeout;
+  }
+
+  public Map<String, Object> getOptions() {
+    return options;
+  }
+
+  public Handle getSender() {
+    return sender;
+  }
+
+  public Statement<Identifier> getStatement() {
+    return statement;
+  }
 }

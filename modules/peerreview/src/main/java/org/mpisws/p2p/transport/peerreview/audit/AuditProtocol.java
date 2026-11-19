@@ -64,13 +64,13 @@ import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessageType;
 import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
 import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
+import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
 
-import static org.mpisws.p2p.transport.peerreview.Basics.renderStatus;
+import static org.mpisws.p2p.transport.peerreview.StatusRenderer.renderStatus;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.AUTH_CACHE_INTERVAL;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_AUDIT_INTERVAL_MILLIS;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.DEFAULT_LOG_DOWNLOAD_TIMEOUT;
@@ -96,12 +96,12 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
   /**
    * Here we remember calls to investigate() that have not been resolved yet
    */
-  Map<Identifier,ActiveInvestigationInfo<Handle>> activeInvestigation = new HashMap<Identifier, ActiveInvestigationInfo<Handle>>();
+  Map<Identifier,PendingInvestigation<Handle>> activeInvestigation = new HashMap<Identifier, PendingInvestigation<Handle>>();
 
   /**
    * Here we remember calls to investigate() that have not been resolved yet
    */
-  Map<Identifier,ActiveAuditInfo<Handle, Identifier>> activeAudit = new HashMap<Identifier, ActiveAuditInfo<Handle,Identifier>>();
+  Map<Identifier,OngoingAudit<Handle, Identifier>> activeAudit = new HashMap<Identifier, OngoingAudit<Handle,Identifier>>();
 
   int logDownloadTimeout;
   boolean replayEnabled;
@@ -158,7 +158,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
     /* Create an entry in our audit buffer */
 
-    ActiveAuditInfo<Handle, Identifier> aai = new ActiveAuditInfo<Handle, Identifier>(
+    OngoingAudit<Handle, Identifier> aai = new OngoingAudit<Handle, Identifier>(
         target,replayAnswer,false,peerreview.getTime()+logDownloadTimeout,auditRequest,evidenceSeq,null);
     activeAudit.put(peerreview.getIdentifierExtractor().extractIdentifier(target),aai);
 
@@ -254,7 +254,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
   void cleanupAudits() {
     long now = peerreview.getTime();
 
-    for (ActiveAuditInfo<Handle, Identifier> foo : activeAudit.values()) {
+    for (OngoingAudit<Handle, Identifier> foo : activeAudit.values()) {
       if ((now >= foo.getCurrentTimeout()) && !foo.isReplaying()) {
         Identifier i = peerreview.getIdentifierExtractor().extractIdentifier(foo.getTarget());
 
@@ -283,7 +283,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
   void makeProgressOnInvestigations() {
     long now = peerreview.getTime();
 
-    for (ActiveInvestigationInfo<Handle> aii : activeInvestigation.values()) {
+    for (PendingInvestigation<Handle> aii : activeInvestigation.values()) {
       if (aii.getCurrentTimeout() < now) {
         long authFromSeq = aii.getAuthFrom()!=null ? aii.getAuthFrom().getSeq() : -1;
         long authToSeq = aii.getAuthTo()!=null ? aii.getAuthTo().getSeq() : -1;
@@ -370,7 +370,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
    */
   public void processAuditResponse(Identifier subject, long timestamp, AuditResponse<Handle> response) throws IOException {
     LogSnippet snippet = response.logSnippet();
-    ActiveAuditInfo<Handle, Identifier> aai = findOngoingAudit(subject, timestamp);
+    OngoingAudit<Handle, Identifier> aai = findOngoingAudit(subject, timestamp);
 
     /* Read the header of the log snippet */
 
@@ -556,7 +556,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
 
       /* Do the replay */
 
-      ReplaySM sm = ((ReplaySM)verifier.getEnvironment().getSelectorManager());
+      ReplaySelectorManager sm = ((ReplaySelectorManager)verifier.getEnvironment().getSelectorManager());
       while(sm.makeProgress());
 
       boolean verifiedOK = verifier.isVerificationSuccessful();
@@ -589,8 +589,8 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
     terminateAudit(aai.getTarget());
   }
 
-  public ActiveAuditInfo<Handle, Identifier> findOngoingAudit(Identifier subject, long evidenceSeq) {
-    ActiveAuditInfo<Handle, Identifier> ret = activeAudit.get(subject);
+  public OngoingAudit<Handle, Identifier> findOngoingAudit(Identifier subject, long evidenceSeq) {
+    OngoingAudit<Handle, Identifier> ret = activeAudit.get(subject);
     if (ret == null) return null;
     if (!ret.isReplaying() && ret.getEvidenceSeq() == evidenceSeq) {
         return ret;
@@ -599,7 +599,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
   }
 
   public Evidence statOngoingAudit(Identifier subject, long evidenceSeq) {
-    ActiveAuditInfo<Handle, Identifier> aii = findOngoingAudit(subject, evidenceSeq);
+    OngoingAudit<Handle, Identifier> aii = findOngoingAudit(subject, evidenceSeq);
     if (aii == null) return null;
     return aii.getRequest().challenge();
   }
@@ -659,7 +659,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
           logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject(), response.authFrom(), response.authTo(), handle);
 
           // TODO: check the signatures of response.authFrom and response.authTo
-          ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(response.subject());
+          PendingInvestigation<Handle> investigation = activeInvestigation.get(response.subject());
           if (investigation != null) {
             investigation.offerAuthenticators(response.authFrom(), response.authTo());
           } else {
@@ -678,7 +678,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
    * witnesses. Most of them are (hopefully) going to respond; we're going to
    * pick the authenticators that work best for us.
    */
-  protected void sendInvestigation(ActiveInvestigationInfo<Handle> investigation) {
+  protected void sendInvestigation(PendingInvestigation<Handle> investigation) {
     Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(investigation.getTarget());
     AuthRequest<Identifier> request = new AuthRequest<Identifier>(investigation.getSince(),id);
 
@@ -692,7 +692,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
   public void investigate(Handle target, long since) {
     Identifier id = peerreview.getIdentifierExtractor().extractIdentifier(
         target);
-    ActiveInvestigationInfo<Handle> investigation = activeInvestigation.get(id);
+    PendingInvestigation<Handle> investigation = activeInvestigation.get(id);
     if (investigation != null) {
       if (since * SEQS_PER_MILLI > investigation.getSince()) {
         logger.debug("Skipping investigation request for {} at {}, since an investigation at {} is already ongoing", target, since, investigation.getSince());
@@ -702,7 +702,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
       if (logger.isDebugEnabled()) logger.debug("Extending existing investigation from "+ investigation.getSince() + " to " + since * SEQS_PER_MILLI);
       investigation.extendSince(since * SEQS_PER_MILLI); /* log granularity */
     } else {
-      investigation = new ActiveInvestigationInfo<Handle>(target, since * SEQS_PER_MILLI,
+      investigation = new PendingInvestigation<Handle>(target, since * SEQS_PER_MILLI,
           peerreview.getTime() + INVESTIGATION_INTERVAL_MILLIS, null, null);
       activeInvestigation.put(id, investigation);
     }

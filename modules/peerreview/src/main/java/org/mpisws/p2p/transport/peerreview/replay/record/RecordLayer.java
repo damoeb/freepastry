@@ -311,7 +311,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
     DirectTimeSource dts = new DirectTimeSource(System.currentTimeMillis());
     LogManager lm = Environment.generateDefaultLogManager();
     dts.setLogManager(lm);
-    SelectorLoop selector = new RecordSM("Default", new SimpleTimeSource(), dts,lm,rs);
+    SelectorLoop selector = new RecordingSelectorManager("Default", new SimpleTimeSource(), dts,lm,rs);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
     Environment ret = new Environment(selector,proc,rs,dts,lm,
@@ -358,7 +358,7 @@ public class RecordLayer<Identifier> implements TransportLayer<Identifier, ByteB
       protected SelectorLoop cloneSelectorManager(String prefix, TimeSource ts, RandomSource rs, LogManager lman, boolean cloneSelector) {
         SelectorLoop sman = getSelectorManager();
         if (cloneSelector) {
-          sman = new RecordSM(prefix + " Selector", new SimpleTimeSource(), (DirectTimeSource)ts,lman,rs);
+          sman = new RecordingSelectorManager(prefix + " Selector", new SimpleTimeSource(), (DirectTimeSource)ts,lman,rs);
         }
         return sman;
       }

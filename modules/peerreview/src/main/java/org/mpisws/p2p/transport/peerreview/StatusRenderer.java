@@ -34,9 +34,24 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.infostore;
+package org.mpisws.p2p.transport.peerreview;
 
-public interface IdStrTranslator<Identifier> {
-  public Identifier readIdentifierFromString(String s);
-  public String toString(Identifier id);
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
+import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+
+public class StatusRenderer {
+  public static String renderStatus(int status) {
+    switch (status) {
+      case STATUS_TRUSTED:
+        return "TRUSTED";
+      case STATUS_SUSPECTED:
+        return "SUSPECTED";
+      case STATUS_EXPOSED:
+        return "EXPOSED";
+      default:
+        return "UNKNOWN";
+    }
+  }
+
 }

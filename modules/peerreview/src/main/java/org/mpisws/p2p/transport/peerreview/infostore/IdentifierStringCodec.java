@@ -34,65 +34,9 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.statement;
+package org.mpisws.p2p.transport.peerreview.infostore;
 
-import java.util.Map;
-
-import rice.p2p.commonapi.rawserialization.RawSerializable;
-import org.mpisws.p2p.transport.peerreview.message.Statement;
-
-public class IncompleteStatementInfo<Handle, Identifier extends RawSerializable> {
-  private boolean finished;
-  private final Handle sender;
-  private final long currentTimeout;
-  private final Statement<Identifier> statement;
-  private boolean isMissingCertificate;
-  private final Map<String, Object> options;
-
-  public IncompleteStatementInfo(boolean finished, Handle source, long currentTimeout,
-      Statement<Identifier> statement, boolean isMissingCertificate, Identifier missingCertificateId, Map<String, Object> options) {
-    this.finished = finished;
-    this.sender = source;
-    this.currentTimeout = currentTimeout;
-    this.statement = statement;
-    this.isMissingCertificate = isMissingCertificate;
-    this.options = options;
-  }
-
-  public boolean isMissingCertificate() {
-    return isMissingCertificate;
-  }
-
-  public void finish() {
-    finished = true;
-  }
-
-  /** Records that the statement cannot be processed until the certificate of {@code id} arrives. */
-  public void markMissingCertificate(Identifier id) {
-    isMissingCertificate = true;
-  }
-
-  public void clearMissingCertificate() {
-    isMissingCertificate = false;
-  }
-
-  public boolean isFinished() {
-    return finished;
-  }
-
-  public long getCurrentTimeout() {
-    return currentTimeout;
-  }
-
-  public Map<String, Object> getOptions() {
-    return options;
-  }
-
-  public Handle getSender() {
-    return sender;
-  }
-
-  public Statement<Identifier> getStatement() {
-    return statement;
-  }
+public interface IdentifierStringCodec<Identifier> {
+  public Identifier readIdentifierFromString(String s);
+  public String toString(Identifier id);
 }

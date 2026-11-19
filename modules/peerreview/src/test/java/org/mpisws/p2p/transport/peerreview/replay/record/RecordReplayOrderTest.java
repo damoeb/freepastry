@@ -17,7 +17,7 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
-import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
+import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager;
 import org.mpisws.p2p.transport.util.Serializer;
 import rice.environment.Environment;
 import rice.environment.time.simulated.DirectTimeSource;
@@ -38,9 +38,9 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.EVT_SIGN;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 
 /**
- * Records a node with the {@link RecordSM} while a message arrives by {@link SelectorLoop#invoke(Runnable)} from
+ * Records a node with the {@link RecordingSelectorManager} while a message arrives by {@link SelectorLoop#invoke(Runnable)} from
  * another thread as one of the node's timers is due, then replays the log with the production {@link Verifier}
- * and {@link ReplaySM}. The replay runs every timer due at or before a logged event before that event, so the
+ * and {@link ReplaySelectorManager}. The replay runs every timer due at or before a logged event before that event, so the
  * recording must order them the same way, or the auditor exposes a correct node.
  */
 public class RecordReplayOrderTest {
@@ -128,7 +128,7 @@ public class RecordReplayOrderTest {
   SecureHistory history;
   DirectTimeSource realTime;
   DirectTimeSource simTime;
-  RecordSM recordSM;
+  RecordingSelectorManager recordSM;
   StateMachine recorded;
   long lastLoggedMillis = -1;
 
@@ -140,7 +140,7 @@ public class RecordReplayOrderTest {
     realTime = new DirectTimeSource(START);
     simTime = new DirectTimeSource(START);
     // the selector thread is not started: the test drives the loop, other threads only invoke()
-    recordSM = new RecordSM("record", realTime, simTime, logEnv.getLogManager(), null);
+    recordSM = new RecordingSelectorManager("record", realTime, simTime, logEnv.getLogManager(), null);
     recorded = new StateMachine(recordSM, this::logSend);
   }
 
@@ -238,7 +238,7 @@ public class RecordReplayOrderTest {
     Environment env = VerifierFactory.generateEnvironment("replay", 0, 0, null);
     try {
       Verifier<Node, Node> verifier = new Verifier<>(peerreview, env, history, LOCAL, 0, null);
-      ReplaySM replaySM = (ReplaySM) env.getSelectorManager();
+      ReplaySelectorManager replaySM = (ReplaySelectorManager) env.getSelectorManager();
       replaySM.setVerifier(verifier);
       StateMachine replayed = new StateMachine(replaySM, (target, message) -> verifier.sendMessage(target, message, null, null));
       verifier.setApplication((PeerReviewCallback<Node, ?>) Proxy.newProxyInstance(getClass().getClassLoader(),

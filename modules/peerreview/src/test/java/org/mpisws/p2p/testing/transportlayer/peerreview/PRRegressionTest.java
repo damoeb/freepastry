@@ -82,7 +82,7 @@ import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
-import org.mpisws.p2p.transport.peerreview.infostore.IdStrTranslator;
+import org.mpisws.p2p.transport.peerreview.infostore.IdentifierStringCodec;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.record.RecordLayer;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -258,7 +258,7 @@ public class PRRegressionTest {
     TransportLayerCallback<HandleImpl, ByteBuffer> callback;
 
     /**
-     * Delivers the message as a timer task due now, not as an invocation. The RecordSM runs pending
+     * Delivers the message as a timer task due now, not as an invocation. The RecordingSelectorManager runs pending
      * invocations at the time of a due timer but before that timer, while the replay runs every timer due
      * at or before a logged event first; a message delivered by invocation while one of the app's timers
      * was due would thus be replayed in the wrong order, and the auditor would expose a correct node. A
@@ -575,8 +575,8 @@ public class PRRegressionTest {
 
   }
 
-  public IdStrTranslator<IdImpl> getIdStrTranslator() {
-    return new IdStrTranslator<IdImpl>(){
+  public IdentifierStringCodec<IdImpl> getIdStrTranslator() {
+    return new IdentifierStringCodec<IdImpl>(){
 
       @Override
       public IdImpl readIdentifierFromString(String s) {

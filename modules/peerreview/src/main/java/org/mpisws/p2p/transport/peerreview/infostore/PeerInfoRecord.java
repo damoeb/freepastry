@@ -210,7 +210,7 @@ public class PeerInfoRecord<Handle, Identifier> {
     return lastCheckedAuth;
   }
 
-  public void setLastCheckedAuth(Authenticator auth, Path dir, IdStrTranslator<Identifier> translator) throws IOException {
+  public void setLastCheckedAuth(Authenticator auth, Path dir, IdentifierStringCodec<Identifier> translator) throws IOException {
     FileOutputBuffer buf = new FileOutputBuffer(dir.resolve(translator.toString(subject)+".info"));
     auth.serialize(buf);
     buf.close();

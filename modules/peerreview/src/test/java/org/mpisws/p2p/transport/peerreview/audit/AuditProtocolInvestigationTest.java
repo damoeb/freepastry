@@ -132,7 +132,7 @@ public class AuditProtocolInvestigationTest {
   public void timedOutInvestigationAsksTheWitnessesAgain() {
     Id subject = new Id(7);
     // no authenticators yet, and the timeout has passed
-    audit.activeInvestigation.put(subject, new ActiveInvestigationInfo<Id>(subject, 100, 0, null, null));
+    audit.activeInvestigation.put(subject, new PendingInvestigation<Id>(subject, 100, 0, null, null));
 
     audit.makeProgressOnInvestigations();
 

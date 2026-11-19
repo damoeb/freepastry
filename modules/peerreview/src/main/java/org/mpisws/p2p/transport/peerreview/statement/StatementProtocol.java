@@ -91,8 +91,8 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
 
   private final Logger logger;
 
-  private final Map<Identifier, List<IncompleteStatementInfo<Handle, Identifier>>> incompleteStatement =
-    new HashMap<Identifier, List<IncompleteStatementInfo<Handle, Identifier>>>();
+  private final Map<Identifier, List<IncompleteStatement<Handle, Identifier>>> incompleteStatement =
+    new HashMap<Identifier, List<IncompleteStatement<Handle, Identifier>>>();
 
   private final ChallengeResponseProtocol<Handle, Identifier> challengeProtocol;
   private final IdentityTransport<Handle, Identifier> transport;
@@ -116,9 +116,9 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
    * them now.
    */
   public void notifyCertificateAvailable(Identifier id) {
-   Collection<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(id);
+   Collection<IncompleteStatement<Handle, Identifier>> foo = incompleteStatement.get(id);
    if (foo != null) {
-     for (IncompleteStatementInfo<Handle, Identifier> is : foo) {
+     for (IncompleteStatement<Handle, Identifier> is : foo) {
        if (!is.isFinished() && is.isMissingCertificate()) {
          makeProgressOnStatement(is);
        }
@@ -131,12 +131,12 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
    */
   public void cleanupIncompleteStatements() {
     long now = peerreview.getTime();
-    Iterator<List<IncompleteStatementInfo<Handle, Identifier>>> fooIter = incompleteStatement.values().iterator();
+    Iterator<List<IncompleteStatement<Handle, Identifier>>> fooIter = incompleteStatement.values().iterator();
     while(fooIter.hasNext()) {
-      List<IncompleteStatementInfo<Handle, Identifier>> foo = fooIter.next();
-      Iterator<IncompleteStatementInfo<Handle, Identifier>> barIter = foo.iterator();
+      List<IncompleteStatement<Handle, Identifier>> foo = fooIter.next();
+      Iterator<IncompleteStatement<Handle, Identifier>> barIter = foo.iterator();
       while(barIter.hasNext()) {
-        IncompleteStatementInfo<Handle, Identifier> bar = barIter.next();
+        IncompleteStatement<Handle, Identifier> bar = barIter.next();
         if (bar.isFinished() || (bar.getCurrentTimeout() < now)) {
           if (!bar.isFinished()) {
             logger.warn("Statement by {} is incomplete after the timeout; discarding {}", bar.getSender(), bar);
@@ -161,10 +161,10 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
     logger.atInfo().log(() -> "Incoming "+((statement instanceof AccusationMessage) ? "accusation" : "response")+" from "+source);
 
     /* Find an empty spot in our message buffer and store the message there */
-    IncompleteStatementInfo<Handle, Identifier> idx = new IncompleteStatementInfo<Handle, Identifier>(false,source,peerreview.getTime() + STATEMENT_COMPLETION_TIMEOUT_MILLIS,statement,false,null,options);
-    List<IncompleteStatementInfo<Handle, Identifier>> foo = incompleteStatement.get(statement.getSubject());
+    IncompleteStatement<Handle, Identifier> idx = new IncompleteStatement<Handle, Identifier>(false,source,peerreview.getTime() + STATEMENT_COMPLETION_TIMEOUT_MILLIS,statement,false,null,options);
+    List<IncompleteStatement<Handle, Identifier>> foo = incompleteStatement.get(statement.getSubject());
     if (foo == null) {
-      foo = new ArrayList<IncompleteStatementInfo<Handle,Identifier>>();
+      foo = new ArrayList<IncompleteStatement<Handle,Identifier>>();
       incompleteStatement.put(statement.getSubject(), foo);
     }
     foo.add(idx);
@@ -181,7 +181,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
    * Also, it checks if the snippet is malformed in any way. That way, the other
    * protocols won't have to do all these sanity checks later.
    */
-  int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatementInfo<Handle, Identifier> idx) {
+  int checkSnippetAndRequestCertificates(LogSnippet snippet, IncompleteStatement<Handle, Identifier> idx) {
     Tuple<Integer,Identifier> ret = peerreview.getEvidenceTool().checkSnippet(snippet);
     int code = ret.first();
     final Identifier missingCertID = ret.second();
@@ -203,7 +203,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
   the message because it's malformed. */
 
   @SuppressWarnings("unchecked")
-  public void makeProgressOnStatement(IncompleteStatementInfo<Handle, Identifier> idx) {
+  public void makeProgressOnStatement(IncompleteStatement<Handle, Identifier> idx) {
     assert !idx.isFinished();
 
     /* Fetch the statement and reset all the 'missing' fields */

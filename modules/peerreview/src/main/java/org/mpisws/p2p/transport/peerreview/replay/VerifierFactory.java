@@ -40,7 +40,7 @@ import java.io.IOException;
 
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
-import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
+import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.logging.Slf4jLogManager;
@@ -67,7 +67,7 @@ public class VerifierFactory<Handle extends RawSerializable, Identifier extends 
       Object extInfo) throws IOException {
     Environment env = generateEnvironment(localHandle.toString(), 0, 0,peerreview.getEnvironment().getLogManager());
     Verifier<Handle, Identifier> ret = new Verifier<Handle, Identifier>(peerreview,env,history,localHandle,firstEntryToReplay,extInfo);
-    ((ReplaySM)env.getSelectorManager()).setVerifier(ret);
+    ((ReplaySelectorManager)env.getSelectorManager()).setVerifier(ret);
     return ret;
   }
 
@@ -83,7 +83,7 @@ public class VerifierFactory<Handle extends RawSerializable, Identifier extends 
     }
     RandomSource rs = new SimpleRandomSource(randSeed, lm);
     dts.setLogManager(lm);
-    SelectorLoop selector = new ReplaySM("Replay "+name, dts, lm);
+    SelectorLoop selector = new ReplaySelectorManager("Replay "+name, dts, lm);
     dts.setSelectorManager(selector);
     Processor proc = new SimProcessor(selector);
     return new Environment(selector,proc,rs,dts,lm,

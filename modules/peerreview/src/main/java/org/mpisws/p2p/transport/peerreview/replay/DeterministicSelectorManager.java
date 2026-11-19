@@ -46,21 +46,21 @@ import rice.selector.SelectorLoop;
 import rice.selector.TimerTask;
 
 /**
- * The SelectorLoop of a node whose log PeerReview replays: the {@link org.mpisws.p2p.transport.peerreview.replay.record.RecordSM}
- * while the node runs, and the {@link org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM} while an auditor
+ * The SelectorLoop of a node whose log PeerReview replays: the {@link org.mpisws.p2p.transport.peerreview.replay.record.RecordingSelectorManager}
+ * while the node runs, and the {@link org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager} while an auditor
  * replays its log. Both run the timers and the invocations in the order of
  * {@link #advanceTo(LongSupplier, BooleanSupplier)}, before each input event (a message, a socket event, a
  * checkpoint, ...), so the replay reproduces the order of the recording.
  *
  * @see #advanceTo(LongSupplier, BooleanSupplier)
  */
-public abstract class DeterministicSM extends SelectorLoop {
+public abstract class DeterministicSelectorManager extends SelectorLoop {
   /** The time of a log without a next event. */
   public static final long NO_EVENT = -1;
 
   protected final DirectTimeSource simTime;
 
-  protected DeterministicSM(String instance, DirectTimeSource simTime, LogManager log, RandomSource rs) {
+  protected DeterministicSelectorManager(String instance, DirectTimeSource simTime, LogManager log, RandomSource rs) {
     super(instance, simTime, log, rs);
     this.simTime = simTime;
   }

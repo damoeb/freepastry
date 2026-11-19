@@ -54,7 +54,7 @@ import org.mpisws.p2p.transport.peerreview.PeerReviewCallback;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
-import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySM;
+import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -102,7 +102,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   /**
    * So we can call back when we get an ack.
    */
-  Map<Long, VerifierMRH<Handle>> callbacks = new HashMap<Long, VerifierMRH<Handle>>();
+  Map<Long, VerifierMessageRequestHandle<Handle>> callbacks = new HashMap<Long, VerifierMessageRequestHandle<Handle>>();
 
   private final Handle localHandle;
   private final SecureHistory history;
@@ -136,8 +136,8 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
       Handle localHandle,
       long firstEntryToReplay,
       Object extInfo) throws IOException {
-    if (!(env.getSelectorManager() instanceof ReplaySM)) {
-      throw new IllegalArgumentException("Environment.getSelectorManager() must be a ReplaySM, was a "+env.getSelectorManager().getClass());
+    if (!(env.getSelectorManager() instanceof ReplaySelectorManager)) {
+      throw new IllegalArgumentException("Environment.getSelectorManager() must be a ReplaySelectorManager, was a "+env.getSelectorManager().getClass());
     }
     this.environment = env;
     this.logger = environment.getLogManager().getLogger(Verifier.class, localHandle.toString());
@@ -230,7 +230,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
      * Handle any pending timers. Note that we have to be sure to call them in the exact same
      * order as in the main code; otherwise there can be subtle bugs and side-effects.
      */
-    // This code is the job of the SelectorLoop, it's done in the super class of ReplaySM
+    // This code is the job of the SelectorLoop, it's done in the super class of ReplaySelectorManager
 
     if (next == null)
       return false;
@@ -306,7 +306,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
       case EVT_ACK : /* Acknowledge the SEND replayed with the acked seq */
         peerreview.getIdSerializer().deserialize(nextEvent); // the acking node
         long ackedSeq = nextEvent.readLong();
-        VerifierMRH<Handle> foo = callbacks.remove(ackedSeq);
+        VerifierMessageRequestHandle<Handle> foo = callbacks.remove(ackedSeq);
         if (foo != null) {
           foo.ack();
         } else if (ackedSeq < windowStartSeq) {
@@ -491,7 +491,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
     }
 
     long sendSeq = next.getSeq();
-    VerifierMRH<Handle> ret = new VerifierMRH<Handle>(target,message,deliverAckToMe,options);
+    VerifierMessageRequestHandle<Handle> ret = new VerifierMessageRequestHandle<Handle>(target,message,deliverAckToMe,options);
     callbacks.put(sendSeq,ret);
 
     // If the SEND is hashed, simply compare it to the predicted entry

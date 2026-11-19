@@ -153,7 +153,7 @@ public class AuditProtocolAuthResponseTest {
 
     audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, from, to));
 
-    ActiveInvestigationInfo<Id> investigation = audit.activeInvestigation.get(subject);
+    PendingInvestigation<Id> investigation = audit.activeInvestigation.get(subject);
     assertSame(from, investigation.getAuthFrom());
     assertSame(to, investigation.getAuthTo());
 

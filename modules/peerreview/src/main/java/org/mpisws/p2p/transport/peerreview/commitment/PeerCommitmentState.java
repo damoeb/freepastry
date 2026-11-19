@@ -49,7 +49,7 @@ import rice.p2p.util.tuples.Tuple;
  * We need to keep some state for each peer, including separate transmit and
  * receive queues
  */
-public class PeerInfo<Handle extends RawSerializable> {
+public class PeerCommitmentState<Handle extends RawSerializable> {
   public static final int INITIAL_CHALLENGE_INTERVAL_MICROS = 30000000;
 
   Handle handle;
@@ -70,7 +70,7 @@ public class PeerInfo<Handle extends RawSerializable> {
   Deque<Tuple<UserDataMessage<Handle>, Map<String, Object>>> recvQueue;
   boolean isReceiving;
 
-  public PeerInfo(Handle handle) {
+  public PeerCommitmentState(Handle handle) {
     this.handle = handle;
     lastTransmit = 0;
     xmitQueue = new ArrayDeque<OutgoingUserDataMessage<Handle>>();

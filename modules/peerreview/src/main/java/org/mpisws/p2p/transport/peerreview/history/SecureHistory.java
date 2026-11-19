@@ -112,8 +112,8 @@ public class SecureHistory {
   /**
    *  Returns the node hash and the sequence number of the most recent log entry
    */
-  public HashSeq getTopLevelEntry() {
-    return new HashSeq(topEntry.nodeHash, topEntry.seq);
+  public HashAndSequence getTopLevelEntry() {
+    return new HashAndSequence(topEntry.nodeHash, topEntry.seq);
   }
 
   /**

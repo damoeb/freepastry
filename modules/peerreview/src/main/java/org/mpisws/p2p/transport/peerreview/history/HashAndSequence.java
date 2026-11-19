@@ -34,59 +34,24 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.audit;
+package org.mpisws.p2p.transport.peerreview.history;
 
-import org.mpisws.p2p.transport.peerreview.message.ChallengeMessage;
-import org.mpisws.p2p.transport.peerreview.replay.Verifier;
-import rice.p2p.commonapi.rawserialization.RawSerializable;
+public class HashAndSequence {
+  private byte[] hash;
+  private long seq;
 
-/* Here we keep state about audits for which (a) we have not received a
-response yet, or (b) we are currently replaying the log */
-public class ActiveAuditInfo<Handle extends RawSerializable, Identifier extends RawSerializable> {
-  private final Handle target;
-  private final boolean shouldBeReplayed;
-  private boolean isReplaying;
-  private final long currentTimeout;
-  private final ChallengeMessage<Identifier> request;
-  private final long evidenceSeq;
-
-  public ActiveAuditInfo(Handle target, boolean shouldBeReplayed,
-      boolean isReplaying, long currentTimeout,
-      ChallengeMessage<Identifier> request, long evidenceSeq,
-      Verifier<Handle, Identifier> verifier) {
-    this.target = target;
-    this.shouldBeReplayed = shouldBeReplayed;
-    this.isReplaying = isReplaying;
-    this.currentTimeout = currentTimeout;
-    this.request = request;
-    this.evidenceSeq = evidenceSeq;
+  public HashAndSequence(byte[] h, long s) {
+    hash = h;
+    seq = s;
   }
 
-  public void startReplay(Verifier<Handle, Identifier> verifier) {
-    this.isReplaying = true;
+  public byte[] getHash() {
+    return hash;
   }
 
-  public long getCurrentTimeout() {
-    return currentTimeout;
+  public long getSeq() {
+    return seq;
   }
 
-  public long getEvidenceSeq() {
-    return evidenceSeq;
-  }
 
-  public boolean isReplaying() {
-    return isReplaying;
-  }
-
-  public ChallengeMessage<Identifier> getRequest() {
-    return request;
-  }
-
-  public boolean shouldBeReplayed() {
-    return shouldBeReplayed;
-  }
-
-  public Handle getTarget() {
-    return target;
-  }
 }

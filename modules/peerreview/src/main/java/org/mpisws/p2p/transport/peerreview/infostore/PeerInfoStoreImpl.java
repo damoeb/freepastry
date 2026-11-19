@@ -76,7 +76,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
 
   private final Logger logger;
-  IdStrTranslator<Identifier> stringTranslator;
+  IdentifierStringCodec<Identifier> stringTranslator;
   AuthenticatorSerializer authSerializer;
 
   EvidenceSerializer evidenceSerializer;
@@ -84,7 +84,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
 
   public PeerInfoStoreImpl(
       IdentityTransport<Handle, Identifier> transport,
-      IdStrTranslator<Identifier> stringTranslator,
+      IdentifierStringCodec<Identifier> stringTranslator,
       AuthenticatorSerializer authSerializer,
       EvidenceSerializer evidenceSerializer,
       Environment env) {

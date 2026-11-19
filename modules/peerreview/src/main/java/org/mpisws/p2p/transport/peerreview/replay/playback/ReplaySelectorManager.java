@@ -34,24 +34,64 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.history;
+package org.mpisws.p2p.transport.peerreview.replay.playback;
 
-public class HashSeq {
-  private byte[] hash;
-  private long seq;
+import org.mpisws.p2p.transport.peerreview.replay.DeterministicSelectorManager;
+import org.mpisws.p2p.transport.peerreview.replay.Verifier;
+import rice.environment.Environment;
+import rice.environment.logging.LogManager;
+import rice.environment.time.simulated.DirectTimeSource;
 
-  public HashSeq(byte[] h, long s) {
-    hash = h;
-    seq = s;
+/**
+ * There are normally 3 kinds of events:
+ *   Invokations
+ *   TimerTasks
+ *   Network I/O
+ *
+ * The Network I/O should match exactly with our Log, and so we only have to pump Invokations
+ *
+ * @author Jeff Hoye
+ *
+ */
+public class ReplaySelectorManager extends DeterministicSelectorManager {
+  Verifier<?, ?> verifier;
+
+  public ReplaySelectorManager(String instance, DirectTimeSource timeSource, LogManager log) {
+    super(instance, timeSource, log, null);
+    setSelect(false);
   }
 
-  public byte[] getHash() {
-    return hash;
+  public void setVerifier(Verifier<?, ?> v) {
+    this.verifier = v;
   }
 
-  public long getSeq() {
-    return seq;
+  /**
+   * Don't automatically start the thread.
+   */
+  @Override
+  public void setEnvironment(Environment env) {
+    if (env == null) throw new IllegalArgumentException("env is null!");
+    if (environment != null) return;
+    environment = env;
   }
 
+  public boolean makeProgress() {
+    // Handle any pending timers. Note that we have to be sure to call them in the exact same
+    // order as in the main code (RecordingSelectorManager); otherwise there can be subtle bugs and side-effects.
+    logger.trace("executeDueTasks()");
 
+    if (isSuccess()) return false;
+    if (!advanceTo(verifier::getNextEventTime, verifier::isNextEventBeforeTimersAtItsTime)) return false;
+
+    return verifier.makeProgress();
+  }
+
+  protected boolean isSuccess() {
+    boolean ret = verifier.isSuccess();
+    if (ret) {
+      // TODO: let the caller decide what happens on success instead of destroying the environment
+      environment.destroy();
+    }
+    return ret;
+  }
 }

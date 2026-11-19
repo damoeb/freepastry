@@ -34,25 +34,18 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.replay;
+package org.mpisws.p2p.transport.peerreview.commitment;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
+/**
+ * We cache a few recently received messages, so we can recognize duplicates.
+ * We also remember the location of the corresponding RECV entry in the log,
+ * so we can reproduce the matching acknowledgment
+ */
+public class ReceivedMessageRecord<Identifier> {
+  long indexInLocalHistory;
 
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
-
-public class VerifierMRH<Handle> extends MessageRequestHandleImpl<Handle, ByteBuffer> {
-
-  private final MessageCallback<Handle, ByteBuffer> callback;
-
-  public VerifierMRH(Handle i, ByteBuffer m, MessageCallback<Handle, ByteBuffer> callback, Map<String, Object> options) {
-    super(i, m, options);
-    this.callback = callback;
+  public ReceivedMessageRecord(Identifier sender, long senderSeq, long indexInLocalHistory) {
+    super();
+    this.indexInLocalHistory = indexInLocalHistory;
   }
-
-  public void ack() {
-    if (callback != null) callback.ack(this);
-  }
-
 }

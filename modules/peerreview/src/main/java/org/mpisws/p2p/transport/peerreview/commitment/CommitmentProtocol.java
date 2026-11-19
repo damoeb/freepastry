@@ -46,7 +46,7 @@ import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewConstants;
-import org.mpisws.p2p.transport.peerreview.history.HashSeq;
+import org.mpisws.p2p.transport.peerreview.history.HashAndSequence;
 import org.mpisws.p2p.transport.peerreview.history.IndexEntry;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.logentry.EvtAck;
@@ -96,7 +96,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
    * We need to keep some state for each peer, including separate transmit and
    * receive queues
    */
-  Map<Identifier, PeerInfo<Handle>> peer = new HashMap<Identifier, PeerInfo<Handle>>();
+  Map<Identifier, PeerCommitmentState<Handle>> peer = new HashMap<Identifier, PeerCommitmentState<Handle>>();
 
   /**
    * We cache a few recently received messages, so we can recognize duplicates.
@@ -106,7 +106,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
   /** the key of the receive cache: a sender and its sequence number */
   record ReceiveKey<I>(I id, long seq) {}
 
-  Map<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> receiveCache;
+  Map<ReceiveKey<Identifier>, ReceivedMessageRecord<Identifier>> receiveCache;
 
   SecureHistory history;
   PeerReview<Handle, Identifier> peerreview;
@@ -149,9 +149,9 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
    * Load the last events from the history into the cache
    */
   protected void initReceiveCache() throws IOException {
-    receiveCache = new LinkedHashMap<ReceiveKey<Identifier>, ReceiveInfo<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
+    receiveCache = new LinkedHashMap<ReceiveKey<Identifier>, ReceivedMessageRecord<Identifier>>(RECEIVE_CACHE_SIZE, 0.75f, true) {
       @Override
-      protected boolean removeEldestEntry(Map.Entry<ReceiveKey<Identifier>, ReceiveInfo<Identifier>> eldest) {
+      protected boolean removeEldestEntry(Map.Entry<ReceiveKey<Identifier>, ReceivedMessageRecord<Identifier>> eldest) {
         return size() > RECEIVE_CACHE_SIZE;
       }
     };
@@ -170,14 +170,14 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
   }
 
   protected void addToReceiveCache(Identifier id, long senderSeq, long indexInLocalHistory) {
-    receiveCache.put(new ReceiveKey<Identifier>(id,senderSeq), new ReceiveInfo<Identifier>(id, senderSeq, indexInLocalHistory));
+    receiveCache.put(new ReceiveKey<Identifier>(id,senderSeq), new ReceivedMessageRecord<Identifier>(id, senderSeq, indexInLocalHistory));
   }
 
-  protected PeerInfo<Handle> lookupPeer(Handle handle) {
-    PeerInfo<Handle> ret = peer.get(peerreview.getIdentifierExtractor().extractIdentifier(handle));
+  protected PeerCommitmentState<Handle> lookupPeer(Handle handle) {
+    PeerCommitmentState<Handle> ret = peer.get(peerreview.getIdentifierExtractor().extractIdentifier(handle));
     if (ret != null) return ret;
 
-    ret = new PeerInfo<Handle>(handle);
+    ret = new PeerCommitmentState<Handle>(handle);
     peer.put(peerreview.getIdentifierExtractor().extractIdentifier(handle), ret);
     return ret;
   }
@@ -213,7 +213,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
         EvtRecv<Handle> recv = udm.getReceiveEvent(transport);
         history.appendEntry(EVT_RECV, true, recv.serialize());
 
-        HashSeq foo = history.getTopLevelEntry();
+        HashAndSequence foo = history.getTopLevelEntry();
         myHashTop = foo.getHash();
         seqOfRecvEntry = foo.getSeq();
 
@@ -274,7 +274,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
    * has become TRUSTED, or after it has sent us an acknowledgment
    */
   protected void makeProgress(Identifier idx) {
-    PeerInfo<Handle> info = peer.get(idx);
+    PeerCommitmentState<Handle> info = peer.get(idx);
     if (info == null || (info.xmitQueue.isEmpty() && info.recvQueue.isEmpty())) {
       return;
     }
@@ -306,7 +306,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
           return;
         case STATUS_TRUSTED: /* Node is trusted; continue below */
           info.lastChallenge = -1;
-          info.currentChallengeInterval = PeerInfo.INITIAL_CHALLENGE_INTERVAL_MICROS;
+          info.currentChallengeInterval = PeerCommitmentState.INITIAL_CHALLENGE_INTERVAL_MICROS;
           break;
       }
 
@@ -418,7 +418,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
   }
 
   protected long findRecvEntry(Identifier id, long seq) {
-    ReceiveInfo<Identifier> ret = receiveCache.get(new ReceiveKey<Identifier>(id,seq));
+    ReceivedMessageRecord<Identifier> ret = receiveCache.get(new ReceiveKey<Identifier>(id,seq));
     if (ret == null) return -1;
     return ret.indexInLocalHistory;
   }
@@ -483,7 +483,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
     }
 
     //  hTop, &topSeq
-    HashSeq top = history.getTopLevelEntry();
+    HashAndSequence top = history.getTopLevelEntry();
 
     /* Sign the authenticator */
     hToSign = transport.hash(ByteBuffer.wrap(MathUtils.longToByteArray(top.getSeq())), ByteBuffer.wrap(top.getHash()));
@@ -510,7 +510,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
     assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(UserDataMessage.RELEVANT_LEN_ALL)));
 
-    PeerInfo<Handle> pi = lookupPeer(target);
+    PeerCommitmentState<Handle> pi = lookupPeer(target);
 
     OutgoingUserDataMessage<Handle> udm = new OutgoingUserDataMessage<Handle>(top.getSeq(), peerreview.getLocalHandle(), hTopMinusOne, signature, message, relevantlen, options, pi, deliverAckToMe);
 
@@ -531,7 +531,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
     // TODO: check that ackMessage came from the source
 
     if (transport.hasCertificate(ackMessage.getNodeId())) {
-      PeerInfo<Handle> p = lookupPeer(source);
+      PeerCommitmentState<Handle> p = lookupPeer(source);
 
       boolean checkAck = true;
       OutgoingUserDataMessage<Handle> udm = null;

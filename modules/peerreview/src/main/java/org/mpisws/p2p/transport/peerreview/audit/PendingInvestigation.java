@@ -34,18 +34,65 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview.commitment;
+package org.mpisws.p2p.transport.peerreview.audit;
+
+import org.mpisws.p2p.transport.peerreview.commitment.Authenticator;
 
 /**
- * We cache a few recently received messages, so we can recognize duplicates.
- * We also remember the location of the corresponding RECV entry in the log,
- * so we can reproduce the matching acknowledgment
+ * Here we remember calls to investigate() that have not been resolved yet
  */
-public class ReceiveInfo<Identifier> {
-  long indexInLocalHistory;
+public class PendingInvestigation<Handle> {
+  private final Handle target;
+  private long since; // in nanoseconds
+  private long currentTimeout;
+  private Authenticator authFrom;
+  private Authenticator authTo;
 
-  public ReceiveInfo(Identifier sender, long senderSeq, long indexInLocalHistory) {
-    super();
-    this.indexInLocalHistory = indexInLocalHistory;
+  public PendingInvestigation(Handle target, long since,
+      long currentTimeout, Authenticator authFrom, Authenticator authTo) {
+    this.target = target;
+    this.since = since;
+    this.currentTimeout = currentTimeout;
+    this.authFrom = authFrom;
+    this.authTo = authTo;
+  }
+
+  /** Keeps the earliest authFrom and the latest authTo seen so far. */
+  public void offerAuthenticators(Authenticator from, Authenticator to) {
+    if (authFrom == null || (from.getSeq()<authFrom.getSeq())) {
+      authFrom = from;
+    }
+
+    if (authTo == null || (to.getSeq()>authTo.getSeq())) {
+      authTo = to;
+    }
+  }
+
+  public void extendTimeout(long millis) {
+    currentTimeout += millis;
+  }
+
+  public void extendSince(long since) {
+    this.since = since;
+  }
+
+  public Authenticator getAuthFrom() {
+    return authFrom;
+  }
+
+  public Authenticator getAuthTo() {
+    return authTo;
+  }
+
+  public long getCurrentTimeout() {
+    return currentTimeout;
+  }
+
+  public long getSince() {
+    return since;
+  }
+
+  public Handle getTarget() {
+    return target;
   }
 }

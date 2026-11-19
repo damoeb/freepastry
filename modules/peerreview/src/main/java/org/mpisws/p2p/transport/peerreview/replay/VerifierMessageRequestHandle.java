@@ -34,24 +34,25 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.peerreview;
+package org.mpisws.p2p.transport.peerreview.replay;
 
-import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
-import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_SUSPECTED;
-import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_TRUSTED;
+import java.nio.ByteBuffer;
+import java.util.Map;
 
-public class Basics {
-  public static String renderStatus(int status) {
-    switch (status) {
-      case STATUS_TRUSTED:
-        return "TRUSTED";
-      case STATUS_SUSPECTED:
-        return "SUSPECTED";
-      case STATUS_EXPOSED:
-        return "EXPOSED";
-      default:
-        return "UNKNOWN";
-    }
+import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
+
+public class VerifierMessageRequestHandle<Handle> extends MessageRequestHandleImpl<Handle, ByteBuffer> {
+
+  private final MessageCallback<Handle, ByteBuffer> callback;
+
+  public VerifierMessageRequestHandle(Handle i, ByteBuffer m, MessageCallback<Handle, ByteBuffer> callback, Map<String, Object> options) {
+    super(i, m, options);
+    this.callback = callback;
+  }
+
+  public void ack() {
+    if (callback != null) callback.ack(this);
   }
 
 }

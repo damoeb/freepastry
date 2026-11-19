@@ -69,14 +69,14 @@ import org.mpisws.p2p.transport.peerreview.evidence.EvidenceSerializerImpl;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocol;
 import org.mpisws.p2p.transport.peerreview.evidence.EvidenceTransferProtocolImpl;
 import org.mpisws.p2p.transport.peerreview.evidence.ProofInconsistent;
-import org.mpisws.p2p.transport.peerreview.history.HashSeq;
+import org.mpisws.p2p.transport.peerreview.history.HashAndSequence;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransport;
 import org.mpisws.p2p.transport.peerreview.infostore.Evidence;
 import org.mpisws.p2p.transport.peerreview.infostore.EvidenceSerializer;
-import org.mpisws.p2p.transport.peerreview.infostore.IdStrTranslator;
+import org.mpisws.p2p.transport.peerreview.infostore.IdentifierStringCodec;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStore;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStoreImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.StatusChangeListener;
@@ -91,8 +91,8 @@ import org.mpisws.p2p.transport.peerreview.message.PeerReviewMessage;
 import org.mpisws.p2p.transport.peerreview.message.ResponseMessage;
 import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
+import org.mpisws.p2p.transport.peerreview.replay.record.RecordingSelectorManager;
 import org.mpisws.p2p.transport.peerreview.replay.VerifierFactory;
-import org.mpisws.p2p.transport.peerreview.replay.record.RecordSM;
 import org.mpisws.p2p.transport.peerreview.statement.StatementProtocol;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -140,7 +140,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
   private final Serializer<Handle> handleSerializer;
   private final Serializer<Identifier> idSerializer;
   private final IdentifierExtractor<Handle, Identifier> identifierExtractor;
-  private final IdStrTranslator<Identifier> stringTranslator;
+  private final IdentifierStringCodec<Identifier> stringTranslator;
   private final EvidenceSerializer evidenceSerializer;
   private final AuthenticatorSerializer authenticatorSerialilzer;
   private EvidenceTool<Handle, Identifier> evidenceTool;
@@ -187,13 +187,13 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
       Environment env, Serializer<Handle> handleSerializer,
       Serializer<Identifier> idSerializer,
       IdentifierExtractor<Handle, Identifier> identifierExtractor,
-      IdStrTranslator<Identifier> stringTranslator
+      IdentifierStringCodec<Identifier> stringTranslator
 //      AuthenticatorSerializer authenticatorSerialilzer,
 //      EvidenceSerializer evidenceSerializer
       ) {
     super();
-    if (!(env.getSelectorManager() instanceof RecordSM)) {
-      throw new IllegalArgumentException("Environment.getSelectorManager() must return a RecordSM");
+    if (!(env.getSelectorManager() instanceof RecordingSelectorManager)) {
+      throw new IllegalArgumentException("Environment.getSelectorManager() must return a RecordingSelectorManager");
     }
     this.transport = transport;
     this.transport.setCallback(this);
@@ -504,7 +504,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
    * Periodic timer for writing checkpoints
    */
   protected void doCheckpoint() {
-    HashSeq foo = history.getTopLevelEntry();
+    HashAndSequence foo = history.getTopLevelEntry();
     long topSeq = foo.getSeq();
     try {
       long topIdx = history.findSeq(topSeq);
