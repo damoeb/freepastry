@@ -166,31 +166,39 @@ public class InternetPastryNodeFactory extends
    */
   protected FirewallPortOpener getDefaultNatHandler(Environment env, InetAddress localAddress) {
     if (natConfig.natHandlerClass() != null) {
-      String natHandlerClassName = natConfig.natHandlerClass();
-      try {
-        Class<?> loaded = Class.forName(natHandlerClassName);
-        if (!FirewallPortOpener.class.isAssignableFrom(loaded)) {
-          throw new IllegalArgumentException("nat_handler_class " + natHandlerClassName + " does not implement "
-              + FirewallPortOpener.class.getName());
-        }
-        Class<? extends FirewallPortOpener> natHandlerClass = loaded.asSubclass(FirewallPortOpener.class);
-        Constructor<? extends FirewallPortOpener> constructor = natHandlerClass.getConstructor(Environment.class, InetAddress.class);
-        return constructor.newInstance(env, localAddress);
-      } catch (ClassNotFoundException e) {
-        logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new NoOpFirewallPortOpener(env, localAddress);
-      } catch (NoClassDefFoundError e) {
-        logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new NoOpFirewallPortOpener(env, localAddress);
-      } catch (InvocationTargetException e) {
-        logger.info("Didn't find UPnP libs, skipping UPnP");
-        return new NoOpFirewallPortOpener(env, localAddress);
-      } catch (ReflectiveOperationException e) {
-        logger.warn("Error constructing FirewallPortOpener.", e);
-        throw new RuntimeException(e);
-      }
+      return loadNatHandler(natConfig.natHandlerClass(), env, localAddress, logger);
     } else {
       return new NoOpFirewallPortOpener(env, localAddress);
+    }
+  }
+
+  /**
+   * Loads the {@link FirewallPortOpener} that the parameter {@code nat_handler_class} names.
+   *
+   * @throws IllegalArgumentException if the class is no {@link FirewallPortOpener}
+   */
+  static FirewallPortOpener loadNatHandler(String natHandlerClassName, Environment env, InetAddress localAddress, org.slf4j.Logger logger) {
+    try {
+      Class<?> loaded = Class.forName(natHandlerClassName);
+      if (!FirewallPortOpener.class.isAssignableFrom(loaded)) {
+        throw new IllegalArgumentException("nat_handler_class " + natHandlerClassName + " does not implement "
+            + FirewallPortOpener.class.getName());
+      }
+      Class<? extends FirewallPortOpener> natHandlerClass = loaded.asSubclass(FirewallPortOpener.class);
+      Constructor<? extends FirewallPortOpener> constructor = natHandlerClass.getConstructor(Environment.class, InetAddress.class);
+      return constructor.newInstance(env, localAddress);
+    } catch (ClassNotFoundException e) {
+      logger.info("Didn't find UPnP libs, skipping UPnP");
+      return new NoOpFirewallPortOpener(env, localAddress);
+    } catch (NoClassDefFoundError e) {
+      logger.info("Didn't find UPnP libs, skipping UPnP");
+      return new NoOpFirewallPortOpener(env, localAddress);
+    } catch (InvocationTargetException e) {
+      logger.info("Didn't find UPnP libs, skipping UPnP");
+      return new NoOpFirewallPortOpener(env, localAddress);
+    } catch (ReflectiveOperationException e) {
+      logger.warn("Error constructing FirewallPortOpener.", e);
+      throw new RuntimeException(e);
     }
   }
 
