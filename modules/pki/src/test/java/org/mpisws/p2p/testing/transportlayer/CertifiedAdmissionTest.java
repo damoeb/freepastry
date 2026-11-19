@@ -99,6 +99,28 @@ class CertifiedAdmissionTest {
     assertEquals(BOB, second.getNodeId());
   }
 
+  @Test
+  @DisplayName("five certified nodes join one after the other, each verifying the handles the others advertise, and all know each other")
+  void certifiedRingOfFiveJoins() throws Exception {
+    CertificateAuthorityTool certificateAuthorityTool = ca();
+    int port = freePort();
+    InetSocketAddress bootstrap = null;
+    List<PastryNode> ring = new ArrayList<>();
+    for (int i = 1; i <= 5; i++) {
+      Id id = Id.build(String.format("%02X", i * 40) + "0".repeat(38));
+      CertifiedSocketPastryNodeFactory factory = new CertifiedSocketPastryNodeFactory(store(certificateAuthorityTool, id), NO_PASSWORD, bootstrap == null ? port : freePort(), environment());
+      PastryNode node = factory.newNode();
+      nodes.add(node);
+      if (bootstrap == null) {
+        bootstrap = new InetSocketAddress(factory.getBindAddress(), port);
+      }
+      node.boot(bootstrap);
+      awaitReady(node);
+      ring.add(node);
+    }
+    awaitTrue(() -> ring.stream().allMatch(node -> ring.stream().allMatch(other -> other.getNodeId().equals(node.getNodeId()) || node.getLeafSet().member(other.getNodeId()))));
+  }
+
   // helpers
 
   Environment environment() {
