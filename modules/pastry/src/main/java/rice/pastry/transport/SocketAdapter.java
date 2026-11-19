@@ -78,7 +78,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
 
   @Override
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void receiveException(P2PSocket<Identifier> s, Exception e) {
+  public void receiveException(P2PSocket<Identifier> socket, Exception e) {
     if (writer != null) {
       if (writer == reader) {
         AppSocketReceiver temp = writer;
@@ -101,7 +101,7 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
 
   @Override
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  public void receiveSelectResult(P2PSocket<Identifier> s,
+  public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
     logger.trace("{}rsr({},{},{})", this, internal, canRead, canWrite);
     if (canRead && canWrite && (reader == writer)) {

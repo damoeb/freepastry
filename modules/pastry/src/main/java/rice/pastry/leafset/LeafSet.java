@@ -515,16 +515,16 @@ public class LeafSet implements Iterable<NodeHandle> {
    * a node is the r-root for a key of the node becomes the numerically closest node to the key when
    * i-roots for the key fail, O&lt;=i&lt;r, where a key's 0-root is the numerically closest node to the key.
    *
-   * @param n the nodehandle
+   * @param nodeHandle the nodehandle
    * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
    */
-  public IdRange range(NodeHandle n, int r) {
+  public IdRange range(NodeHandle nodeHandle, int rank) {
    // first, we check the arguments
-   if (r < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted "+r);
-   if (! (member(n) || baseHandle.equals(n))) throw new LeafSetRangeCannotBeDeterminedException("Node "+n+" is not in this leafset.",r,Integer.MIN_VALUE, getUniqueCount(), n, this);
+   if (rank < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted "+rank);
+   if (! (member(nodeHandle) || baseHandle.equals(nodeHandle))) throw new LeafSetRangeCannotBeDeterminedException("Node "+nodeHandle+" is not in this leafset.",rank,Integer.MIN_VALUE, getUniqueCount(), nodeHandle, this);
 
    // get the position of the node and the number of nodes in the network
-   int pos = getIndex(n);
+   int position = getIndex(nodeHandle);
    int num = getUniqueCount();
    NodeHandle cw, ccw; // these are the nodes in the Leafset that represent the extents of the range
 
@@ -535,8 +535,8 @@ public class LeafSet implements Iterable<NodeHandle> {
 
      // if the rank is more than the number of nodes in the network, then we return
      // the whole range.
-     if (r+1 >= num) {
-       return new IdRange(n.getNodeId(), n.getNodeId());
+     if (rank+1 >= num) {
+       return new IdRange(nodeHandle.getNodeId(), nodeHandle.getNodeId());
      }
 
      // we determine the locations if it's pair nodes
@@ -549,23 +549,23 @@ public class LeafSet implements Iterable<NodeHandle> {
      //   num (as this will result in the range [0 .. num-1] as
      //   desired.  Last, we shift the range back down by substracting
      //   ccwSize.
-     ccw = get(mod(pos - r - 1 + ccwSet.size(), num) - ccwSet.size());
-     cw = get(mod(pos + r + 1 + ccwSet.size(), num) - ccwSet.size());
+     ccw = get(mod(position - rank - 1 + ccwSet.size(), num) - ccwSet.size());
+     cw = get(mod(position + rank + 1 + ccwSet.size(), num) - ccwSet.size());
     } else {
       // now, we need to find the pair nodes for this node range
-      ccw = get(pos - r - 1);
-      cw = get(pos + r + 1);
+      ccw = get(position - rank - 1);
+      cw = get(position + rank + 1);
     }
 
    // if either of it's pair nodes are null, then we cannot determine the range
    if ((ccw == null) || (cw == null)) {
-     throw new LeafSetRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.",r,pos, getUniqueCount(), n, this);
+     throw new LeafSetRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.",rank,position, getUniqueCount(), nodeHandle, this);
    }
 
    // otherwise, we then construct the ranges which comprise the main range, and finally
    // return the overlap
-   IdRange cwRange = new IdRange(n.getNodeId(), cw.getNodeId()).counterClockwiseHalf();
-   IdRange ccwRange = new IdRange(ccw.getNodeId(), n.getNodeId()).clockwiseHalf();
+   IdRange cwRange = new IdRange(nodeHandle.getNodeId(), cw.getNodeId()).counterClockwiseHalf();
+   IdRange ccwRange = new IdRange(ccw.getNodeId(), nodeHandle.getNodeId()).clockwiseHalf();
 
    return ccwRange.merge(cwRange);
   }
@@ -577,25 +577,25 @@ public class LeafSet implements Iterable<NodeHandle> {
    * i-roots for the key fail, O&lt;=i&lt;r, where a key's 0-root is the numerically closest node to the key.
    * there can be two contiguous ranges of keys; the cw parameter selects which one is returned.
    *
-   * @param n the nodehandle
-   * @param cw if true returns the clockwise range, else the counterclockwise range
+   * @param nodeHandle the nodehandle
+   * @param clockwise if true returns the clockwise range, else the counterclockwise range
    * @return the range of keys, or null if n is not a member of the leafset, or if the range cannot be computed
    */
-  public IdRange range(NodeHandle n, int r, boolean cw) {
-    IdRange rr = range(n, r);
-    if (r == 0) return rr;
+  public IdRange range(NodeHandle nodeHandle, int rank, boolean clockwise) {
+    IdRange range = range(nodeHandle, rank);
+    if (rank == 0) return range;
     IdRange rprev = null;
     try {
-      rprev = range(n, r-1);
+      rprev = range(nodeHandle, rank-1);
     } catch (LeafSetRangeCannotBeDeterminedException ignored) {
       // keeps previous functionality now that we are throwing rcbde rather than returning null
     }
-    if (rr == null || rprev == null) return rr;
+    if (range == null || rprev == null) return range;
 
     IdRange result;
 
-    if (!cw) result = rr.diff(rprev);
-    else     result = rprev.diff(rr);
+    if (!clockwise) result = range.diff(rprev);
+    else     result = rprev.diff(range);
     return result;
   }
 
@@ -705,29 +705,29 @@ public class LeafSet implements Iterable<NodeHandle> {
     }
 
     for (int i=cw; i<=cwSize; i++) {
-      NodeHandle nh;
+      NodeHandle currentHandle;
 
-      if (i == 0) nh = from;
-      else nh = remotels.get(i);
+      if (i == 0) currentHandle = from;
+      else currentHandle = remotels.get(i);
 
-      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
+      if (currentHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
 
       if (testOnly) {
         // see it is missing
-        changed = cwSet.test(nh);
+        changed = cwSet.test(currentHandle);
       }
       else {
         // merge into our cw leaf set half
-        changed = cwSet.put(nh, true);
+        changed = cwSet.put(currentHandle, true);
 
-        if (changed) myInsertedHandles.add(nh);
+        if (changed) myInsertedHandles.add(currentHandle);
 
         // update RT as well
-        routeTable.put(nh);
+        routeTable.put(currentHandle);
       }
 
       result |= changed;
-      if (insertedHandles != null && changed) insertedHandles.add(nh);
+      if (insertedHandles != null && changed) insertedHandles.add(currentHandle);
     }
 
     for (int i=ccw; i>= -ccwSize; i--) {
@@ -819,20 +819,20 @@ public class LeafSet implements Iterable<NodeHandle> {
   @Override
   public String toString()
   {
-    String s = "leafset: ";
+    String description = "leafset: ";
     for (int i=-ccwSet.size(); i<0; i++)
-      s = s + get(i).getNodeId();
-    s = s + " [ " + baseId + " ] ";
+      description = description + get(i).getNodeId();
+    description = description + " [ " + baseId + " ] ";
     for (int i=1; i<=cwSet.size(); i++)
-      s = s + get(i).getNodeId();
+      description = description + get(i).getNodeId();
 
-    s+=" complete:"+isComplete();
-    s+=" size:"+size();
+    description+=" complete:"+isComplete();
+    description+=" size:"+size();
     if (size() > 0)
-    s+=" s1:"+ ccwSet.member(cwSet.get(cwSet.size()-1));
-    s+=" s2:"+ cwSet.member(ccwSet.get(ccwSet.size()-1));
+    description+=" s1:"+ ccwSet.member(cwSet.get(cwSet.size()-1));
+    description+=" s2:"+ cwSet.member(ccwSet.get(ccwSet.size()-1));
 
-    return s;
+    return description;
   }
 
   protected boolean isProperlyRemoved(NodeHandle handle) {
@@ -1008,12 +1008,12 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @return list of NodeHandle
    */
   public synchronized List<NodeHandle> asList() {
-    List<NodeHandle> l = new ArrayList<NodeHandle>();
+    List<NodeHandle> handles = new ArrayList<NodeHandle>();
     for (int i=-counterClockwiseSize(); i<=clockwiseSize(); i++) {
       if (i != 0) {
-        l.add(get(i));
+        handles.add(get(i));
       }
     }
-    return l;
+    return handles;
   }
 }

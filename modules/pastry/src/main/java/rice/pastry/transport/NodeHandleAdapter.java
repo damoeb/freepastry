@@ -73,12 +73,12 @@ public class NodeHandleAdapter implements
   }
 
   @Override
-  public void acceptMessages(boolean b) {
-    tl.acceptMessages(b);
+  public void acceptMessages(boolean accept) {
+    tl.acceptMessages(accept);
   }
   @Override
-  public void acceptSockets(boolean b) {
-    tl.acceptSockets(b);
+  public void acceptSockets(boolean accept) {
+    tl.acceptSockets(accept);
   }
   @Override
   public NodeHandle getLocalIdentifier() {
@@ -90,8 +90,8 @@ public class NodeHandleAdapter implements
   }
 
   @Override
-  public MessageRequestHandle<NodeHandle, RawMessage> sendMessage(NodeHandle i, RawMessage m, MessageCallback<NodeHandle, RawMessage> deliverAckToMe, Map<String, Object> options) {
-    return tl.sendMessage(i, m, deliverAckToMe, options);
+  public MessageRequestHandle<NodeHandle, RawMessage> sendMessage(NodeHandle i, RawMessage message, MessageCallback<NodeHandle, RawMessage> deliverAckToMe, Map<String, Object> options) {
+    return tl.sendMessage(i, message, deliverAckToMe, options);
   }
   @Override
   public void setCallback(TransportLayerCallback<NodeHandle, RawMessage> callback) {

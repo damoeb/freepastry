@@ -81,10 +81,10 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   NetworkSimulator<Identifier, MessageType> sim;
 
 
-  public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> sim,
+  public BasicNetworkSimulator(Environment env, RandomSource random, NetworkSimulator<Identifier, MessageType> simulator,
       NetworkSimulatorConfig config) {
     super(env, random, env.getLogManager().getLogger(BasicNetworkSimulator.class, null));
-    this.sim = sim;
+    this.sim = simulator;
     manager.useLoopListeners(false);
     start();
   }
@@ -95,10 +95,10 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
   @Override
-  public CancellableTask enqueueDelivery(Delivery d, int delay) {
+  public CancellableTask enqueueDelivery(Delivery delivery, int delay) {
     long time = timeSource.currentTimeMillis()+delay;
-    logger.debug("BNS: enqueueDelivery {}:{}", d, time);
-    DeliveryTimerTask timerTask = new DeliveryTimerTask(d, time, d.getSeq());
+    logger.debug("BNS: enqueueDelivery {}:{}", delivery, time);
+    DeliveryTimerTask timerTask = new DeliveryTimerTask(delivery, time, delivery.getSeq());
     addTask(timerTask);
     return timerTask;
   }
@@ -112,8 +112,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     return deliverMessage(msg, node, from, delay, 0);
   }
 
-  void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
-    sim.notifySimulatorListenersReceived(m, from, to);
+  void notifySimulatorListenersReceived(MessageType message, Identifier from, Identifier receiver) {
+    sim.notifySimulatorListenersReceived(message, from, receiver);
   }
 
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from, int delay, int period) {
@@ -122,8 +122,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     DirectTimerTask timerTask = null;
 
     if (from == null || isAlive(from)) {
-      MessageDelivery<Identifier, MessageType> md = new MessageDelivery<Identifier, MessageType>(msg, node, from, null, this);
-      timerTask = new DirectTimerTask(md, timeSource.currentTimeMillis()+ delay,period);
+      MessageDelivery<Identifier, MessageType> delivery = new MessageDelivery<Identifier, MessageType>(msg, node, from, null, this);
+      timerTask = new DirectTimerTask(delivery, timeSource.currentTimeMillis()+ delay,period);
       addTask(timerTask);
     }
     return timerTask;
@@ -153,64 +153,64 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
 
   @Override
   public DirectTransportLayer<Identifier, MessageType> getTL(Identifier i) {
-    Tupel<Identifier, MessageType> t = nodes.get(i);
-    if (t == null) return null;
-    return t.tl;
+    Tupel<Identifier, MessageType> tupel = nodes.get(i);
+    if (tupel == null) return null;
+    return tupel.tl;
   }
 
   /**
    * computes the one-way distance between two NodeIds
    *
-   * @param a the first NodeId
-   * @param b the second NodeId
+   * @param first the first NodeId
+   * @param second the second NodeId
    * @return the proximity between the two input NodeIds
    */
   @Override
-  public float networkDelay(Identifier a, Identifier b) {
-    Tupel<Identifier, MessageType> ta = nodes.get(a);
-    Tupel<Identifier, MessageType> tb = nodes.get(b);
-    if (ta == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+a);
+  public float networkDelay(Identifier first, Identifier second) {
+    Tupel<Identifier, MessageType> tupelA = nodes.get(first);
+    Tupel<Identifier, MessageType> tupelB = nodes.get(second);
+    if (tupelA == null) {
+      throw new RuntimeException("asking about node proximity for unknown node "+first);
     }
 
-    if (tb == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+b);
+    if (tupelB == null) {
+      throw new RuntimeException("asking about node proximity for unknown node "+second);
     }
 
-    SimulatedNodePosition nra = ta.record;
-    SimulatedNodePosition nrb = tb.record;
+    SimulatedNodePosition nodePosition = tupelA.record;
+    SimulatedNodePosition peerPosition = tupelB.record;
 
-    return nra.networkDelay(nrb);
+    return nodePosition.networkDelay(peerPosition);
   }
 
   /**
    * computes the rtt between two NodeIds
    *
-   * @param a the first NodeId
-   * @param b the second NodeId
+   * @param first the first NodeId
+   * @param second the second NodeId
    * @return the proximity between the two input NodeIds
    */
-  public float proximity(Identifier a, Identifier b) {
-    Tupel<Identifier, MessageType> ta = nodes.get(a);
-    Tupel<Identifier, MessageType> tb = nodes.get(b);
-    if (ta == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+a+" "+b);
+  public float proximity(Identifier first, Identifier second) {
+    Tupel<Identifier, MessageType> tupelA = nodes.get(first);
+    Tupel<Identifier, MessageType> tupelB = nodes.get(second);
+    if (tupelA == null) {
+      throw new RuntimeException("asking about node proximity for unknown node "+first+" "+second);
     }
 
-    if (tb == null) {
-      throw new RuntimeException("asking about node proximity for unknown node "+b+" "+a);
+    if (tupelB == null) {
+      throw new RuntimeException("asking about node proximity for unknown node "+second+" "+first);
     }
 
-    SimulatedNodePosition nra = ta.record;
-    SimulatedNodePosition nrb = tb.record;
+    SimulatedNodePosition nodePosition = tupelA.record;
+    SimulatedNodePosition peerPosition = tupelB.record;
 
-    return nra.proximity(nrb);
+    return nodePosition.proximity(peerPosition);
   }
 
   public SimulatedNodePosition getNodeRecord(DirectNodeHandle handle) {
-    Tupel<Identifier, MessageType> t = nodes.get(handle);
-    if (t == null) return null;
-    return t.record;
+    Tupel<Identifier, MessageType> tupel = nodes.get(handle);
+    if (tupel == null) return null;
+    return tupel.record;
   }
 
   final List<LivenessListener<Identifier>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<Identifier>>();

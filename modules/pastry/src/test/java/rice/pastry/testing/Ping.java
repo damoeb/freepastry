@@ -90,25 +90,25 @@ public class Ping extends PastryAppl {
     double fDistance = pMsg.getDistance();
     double rDistance;
 
-    NetworkSimulator<DirectNodeHandle, RawMessage> sim = ((DirectNodeHandle) thePastryNode
+    NetworkSimulator<DirectNodeHandle, RawMessage> simulator = ((DirectNodeHandle) thePastryNode
         .getLocalHandle()).getSimulator();
-    PingTestRecord tr = (PingTestRecord) sim.getTestRecord();
+    PingTestRecord testRecord = (PingTestRecord) simulator.getTestRecord();
 
-    double dDistance = sim.networkDelay((DirectNodeHandle)thePastryNode.getLocalHandle(), (DirectNodeHandle)pMsg
+    double dDistance = simulator.networkDelay((DirectNodeHandle)thePastryNode.getLocalHandle(), (DirectNodeHandle)pMsg
         .getSender());
     if (dDistance == 0) {
       rDistance = 0;
     } else {
       rDistance = fDistance / dDistance;
     }
-    tr.addHops(nHops);
-    tr.addDistance(rDistance);
+    testRecord.addHops(nHops);
+    testRecord.addDistance(rDistance);
 
   }
 
   @Override
   public boolean enrouteMessage(Message msg, Id from, NodeHandle nextHop,
-      SendOptions opt) {
+      SendOptions options) {
 
     PingMessageNew pMsg = (PingMessageNew) msg;
     pMsg.incrHops();

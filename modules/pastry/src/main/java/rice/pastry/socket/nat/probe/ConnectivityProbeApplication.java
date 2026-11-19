@@ -104,8 +104,8 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
    * If there are no candidates at all, send the message to self (or call handleProbeRequest()
    */
   @Override
-  public Cancellable requestProbe(MultiInetSocketAddress addr, long uid, final Continuation<Boolean, Exception> deliverResultToMe) {
-    logger.debug("requestProbe({},{},{})", addr, uid, deliverResultToMe);
+  public Cancellable requestProbe(MultiInetSocketAddress addr, long uniqueId, final Continuation<Boolean, Exception> deliverResultToMe) {
+    logger.debug("requestProbe({},{},{})", addr, uniqueId, deliverResultToMe);
     // Step 1: find valid helpers
 
     // make a list of valid candidates
@@ -133,7 +133,7 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
     NodeHandle handle = valid.get(thePastryNode.getEnvironment().getRandomSource().nextInt(valid.size()));
 
     // Step 3: send the probeRequest
-    ProbeRequestMessage probeRequest = new ProbeRequestMessage(addr, uid, getAddress());
+    ProbeRequestMessage probeRequest = new ProbeRequestMessage(addr, uniqueId, getAddress());
     return thePastryNode.send(handle, probeRequest, new PastryMessageSendListener() {
       @Override
       public void sent(PastryMessageReceipt msg) {

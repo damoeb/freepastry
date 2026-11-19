@@ -121,9 +121,9 @@ public class SinglePingTest {
         }
       }
     }
-    long now = System.currentTimeMillis();
-    if (now-start > 10000)
-      System.out.println("Took "+(now-start)+" to create node "+pn);
+    long nowMillis = System.currentTimeMillis();
+    if (nowMillis-start > 10000)
+      System.out.println("Took "+(nowMillis-start)+" to create node "+pn);
 
     return pn;
   }

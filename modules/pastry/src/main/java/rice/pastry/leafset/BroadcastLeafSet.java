@@ -119,8 +119,8 @@ public class BroadcastLeafSet extends PastryRawMessage {
 
   @Override
   public String toString() {
-    String s = "BroadcastLeafSet("+theLeafSet+","+requestTimeStamp+")";
-    return s;
+    String description = "BroadcastLeafSet("+theLeafSet+","+requestTimeStamp+")";
+    return description;
   }
 
   /***************** Raw Serialization ***************************************/

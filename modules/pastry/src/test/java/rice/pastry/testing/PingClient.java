@@ -104,7 +104,7 @@ public class PingClient extends PastryAppl {
 
   @Override
   public boolean enrouteMessage(Message msg, Id from, NodeHandle nextHop,
-      SendOptions opt) {
+      SendOptions options) {
     System.out.print(msg);
     System.out.println(" at " + getNodeId());
 
@@ -170,8 +170,8 @@ class PingMessage extends PastryRawMessage {
 
   @Override
   public String toString() {
-    String s = "";
-    s += "ping from " + source + " to " + target;
-    return s;
+    String description = "";
+    description += "ping from " + source + " to " + target;
+    return description;
   }
 }

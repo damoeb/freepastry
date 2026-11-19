@@ -134,21 +134,21 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
 
   private void doGoneMaintainence() {
     synchronized (goneLock) {
-      Iterator<GoneSetEntry> it = gone.values().iterator();
-      long now = env.getTimeSource().currentTimeMillis();
+      Iterator<GoneSetEntry> iterator = gone.values().iterator();
+      long nowMillis = env.getTimeSource().currentTimeMillis();
 
-      logger.debug("Doing maintenance in PartitionHealer {}", now);
+      logger.debug("Doing maintenance in PartitionHealer {}", nowMillis);
 
       logger.trace("gone size 1 is {} of {}", gone.size(), maxGoneSize);
 
-      while (it.hasNext()) {
-        GoneSetEntry g = (GoneSetEntry)it.next();
-        if (now - g.timestamp > maxGoneAge) { // toss if too old
+      while (iterator.hasNext()) {
+        GoneSetEntry g = (GoneSetEntry)iterator.next();
+        if (nowMillis - g.timestamp > maxGoneAge) { // toss if too old
           logger.atTrace().log(() -> "Removing "+g+" from gone due to expiry");
-          it.remove();
+          iterator.remove();
         } else if (g.nodeHandle.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
           logger.atTrace().log(() -> "Removing "+g+" from gone due to death");
-          it.remove();
+          iterator.remove();
         }
       }
 
@@ -201,16 +201,16 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
       int which = env.getRandomSource().nextInt(maxGoneSize);
       logger.trace("getGone choosing node {} from gone or routing table", which);
 
-      Iterator<GoneSetEntry> it = gone.values().iterator();
-      while (which>0 && it.hasNext()) {
+      Iterator<GoneSetEntry> iterator = gone.values().iterator();
+      while (which>0 && iterator.hasNext()) {
         which--;
-        it.next();
+        iterator.next();
       }
 
-      if (it.hasNext()) {
+      if (iterator.hasNext()) {
         // assert which==0;
         logger.trace("getGone chose node from gone {}", which);
-        return ((GoneSetEntry)it.next()).nodeHandle;
+        return ((GoneSetEntry)iterator.next()).nodeHandle;
       }
     }
 

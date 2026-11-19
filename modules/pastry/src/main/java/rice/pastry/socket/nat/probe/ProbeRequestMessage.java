@@ -51,13 +51,13 @@ public class ProbeRequestMessage extends PastryRawMessage {
   /**
    *
    * @param probeRequestor please probe this guy
-   * @param uid use this unique identifier
+   * @param uniqueId use this unique identifier
    * @param appAddress the application address
    */
-  public ProbeRequestMessage(MultiInetSocketAddress probeRequestor, long uid, int appAddress) {
+  public ProbeRequestMessage(MultiInetSocketAddress probeRequestor, long uniqueId, int appAddress) {
     super(appAddress);
     this.probeRequestor = probeRequestor;
-    this.uid = uid;
+    this.uid = uniqueId;
   }
 
   // *********** Getters **************
@@ -86,7 +86,7 @@ public class ProbeRequestMessage extends PastryRawMessage {
     byte version = buf.readByte();
     if (version != 0) throw new IOException("Unknown version: "+version);
     MultiInetSocketAddress addr = MultiInetSocketAddress.build(buf);
-    long uid = buf.readLong();
-    return new ProbeRequestMessage(addr, uid, appAddress);
+    long uniqueId = buf.readLong();
+    return new ProbeRequestMessage(addr, uniqueId, appAddress);
   }
 }

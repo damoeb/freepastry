@@ -359,9 +359,9 @@ public class LeafSetHalf implements NodeSetEventSource {
     // the complicated case: we have to sort the live entries
     ArrayList<NodeHandle> toUse = new ArrayList<NodeHandle>();
     for (int index = 0; index < routeSet.size(); index++) {
-      NodeHandle nh = routeSet.get(index);
-      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
-        toUse.add(nh);
+      NodeHandle currentHandle = routeSet.get(index);
+      if (currentHandle.getLiveness() < NodeHandle.LIVENESS_DEAD)
+        toUse.add(currentHandle);
     }
 
     switch (toUse.size()) {

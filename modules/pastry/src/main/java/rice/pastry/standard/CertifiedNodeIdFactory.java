@@ -118,8 +118,8 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
    */
   public static CertifiedNodeIdFactory load(Path file, char[] password, String keyStoreType, Environment env) throws IOException, GeneralSecurityException {
     KeyStore store = KeyStore.getInstance(keyStoreType);
-    try (InputStream in = Files.newInputStream(file)) {
-      store.load(in, password);
+    try (InputStream input = Files.newInputStream(file)) {
+      store.load(input, password);
     }
     return fromKeyStore(store, password, env);
   }

@@ -314,11 +314,11 @@ public abstract class PastryAppl
    * @param msg the message that is passing through.
    * @param key the key
    * @param nextHop the default next hop for the message.
-   * @param opt the send options the message was sent with.
+   * @param options the send options the message was sent with.
    *
    * @return true if the message should be routed, false if the message should be cancelled.
    */
-  public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop, SendOptions opt) {
+  public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop, SendOptions options) {
     return true;
   }
 

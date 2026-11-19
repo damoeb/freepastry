@@ -210,14 +210,14 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Internal method for mapping digit -> num
    *
-   * @param c the printed char
+   * @param hexChar the printed char
    * @return the value of the digit
    */
-  protected static byte trans(char c) {
-    if (('0' <= c) && ('9' >= c))
-      return (byte) (c - '0');
+  protected static byte trans(char hexChar) {
+    if (('0' <= hexChar) && ('9' >= hexChar))
+      return (byte) (hexChar - '0');
     else
-      return (byte) (c - 'A' + 10);
+      return (byte) (hexChar - 'A' + 10);
   }
 
   /**
@@ -338,20 +338,20 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * Gets the ith digit in base 2^b. i = 0 is the least significant digit.
    *
    * @param i which digit to get.
-   * @param b which power of 2 is the base to get it in.
+   * @param bitsPerDigit which power of 2 is the base to get it in.
    * @return the ith digit in base 2^b.
    */
-  public int getDigit(int i, int b) {
-    int bitIndex = b * i + (IdBitLength % b);
+  public int getDigit(int i, int bitsPerDigit) {
+    int bitIndex = bitsPerDigit * i + (IdBitLength % bitsPerDigit);
     int index = bitIndex / 32;
     int shift = bitIndex % 32;
 
-    long val = Id[index];
-    if (shift + b > 32) {
-      val = (val & 0xffffffffL) | (((long) Id[index + 1]) << 32);
+    long word = Id[index];
+    if (shift + bitsPerDigit > 32) {
+      word = (word & 0xffffffffL) | (((long) Id[index + 1]) << 32);
     }
 
-    return ((int) (val >> shift)) & ((1 << b) - 1);
+    return ((int) (word >> shift)) & ((1 << bitsPerDigit) - 1);
   }
 
   /**
@@ -361,15 +361,15 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @param row the length of the prefix
    * @param column the value of the following digit
    * @param suffixDigit the value of the suffix digits
-   * @param b power of 2 of the base
+   * @param bitsPerDigit power of 2 of the base
    * @return the resulting Id
    */
-  public Id getDomainPrefix(int row, int column, int suffixDigit, int b) {
+  public Id getDomainPrefix(int row, int column, int suffixDigit, int bitsPerDigit) {
     Id result = new Id(Id);
 
-    result.setDigit(row, column, b);
+    result.setDigit(row, column, bitsPerDigit);
     for (int i = 0; i < row; i++) {
-      result.setDigit(i, suffixDigit, b);
+      result.setDigit(i, suffixDigit, bitsPerDigit);
     }
 
     return build(result.Id);
@@ -383,19 +383,19 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * with disjoint sets of interior nodes.
    *
    * @param num the number of Ids in the set (must be &lt;= 2^b)
-   * @param b the routing base (as a power of 2)
+   * @param bitsPerDigit the routing base (as a power of 2)
    * @param i the index of the requested member of the set (0&lt;=i&lt;num; the 0-th member is this)
    * @return the resulting set member, or null in case of illegal arguments
    */
-  public Id getAlternateId(int num, int b, int i) {
-    if (num > (1 << b) || i < 0 || i >= num) {
+  public Id getAlternateId(int num, int bitsPerDigit, int i) {
+    if (num > (1 << bitsPerDigit) || i < 0 || i >= num) {
       return null;
     }
 
     Id result = new Id(Id);
 
-    int digit = result.getDigit(numDigits(b) - 1, b) + ((1 << b) / num) * i;
-    result.setDigit(numDigits(b) - 1, digit, b);
+    int digit = result.getDigit(numDigits(bitsPerDigit) - 1, bitsPerDigit) + ((1 << bitsPerDigit) / num) * i;
+    result.setDigit(numDigits(bitsPerDigit) - 1, digit, bitsPerDigit);
 
     return build(result.Id);
   }
@@ -420,26 +420,26 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    *
    * @param i which digit to get.
    * @param v the new value of the digit
-   * @param b which power of 2 is the base to get it in.
+   * @param bitsPerDigit which power of 2 is the base to get it in.
    */
-  private void setDigit(int i, int v, int b) {
-    int bitIndex = b * i + (IdBitLength % b);
+  private void setDigit(int i, int v, int bitsPerDigit) {
+    int bitIndex = bitsPerDigit * i + (IdBitLength % bitsPerDigit);
     int index = bitIndex / 32;
     int shift = bitIndex % 32;
-    int mask = (1 << b) - 1;
+    int mask = (1 << bitsPerDigit) - 1;
 
-    if (shift + b > 32) {
+    if (shift + bitsPerDigit > 32) {
       // digit overlaps a word boundary
 
       long newd = ((long) (v & mask)) << shift;
       long vmask = ~(((long) mask) << shift);
-      long val = Id[index];
-      val = (val & 0xffffffffL) | (((long) Id[index + 1]) << 32);
+      long word = Id[index];
+      word = (word & 0xffffffffL) | (((long) Id[index + 1]) << 32);
 
-      val = (val & vmask) | newd;
+      word = (word & vmask) | newd;
 
-      Id[index] = (int) val;
-      Id[index + 1] = (int) (val >> 32);
+      Id[index] = (int) word;
+      Id[index + 1] = (int) (word >> 32);
     } else {
       int newd = (v & mask) << shift;
       int vmask = ~(mask << shift);
@@ -514,9 +514,9 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
 
     for (int i = nlen - 1; i >= 0; i--) {
       if (Id[i] != oth.Id[i]) {
-        long t = Id[i] & 0x0ffffffffL;
-        long o = oth.Id[i] & 0x0ffffffffL;
-        if (t < o) {
+        long ownWord = Id[i] & 0x0ffffffffL;
+        long peerWord = oth.Id[i] & 0x0ffffffffL;
+        if (ownWord < peerWord) {
           return -1;
         } else {
           return 1;
@@ -700,10 +700,10 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public boolean checkBit(int i) {
     int index = i / 32;
     int shift = i % 32;
-    int val = Id[index];
+    int word = Id[index];
     int mask = (1 << shift);
 
-    if ((val & mask) != 0) {
+    if ((word & mask) != 0) {
       return true;
     } else {
       return false;
@@ -785,8 +785,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     StringBuilder buffer = new StringBuilder();
     buffer.append("<0x");
 
-    int n = IdBitLength / 4;
-    for (int i = n-1; i >= n-6; i--)
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength-1; i >= hexLength-6; i--)
       buffer.append(tran[getDigit(i, 4)]);
 
     buffer.append("..>");
@@ -800,8 +800,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public String toStringBare() {
     StringBuilder buffer = new StringBuilder();
 
-    int n = IdBitLength / 4;
-    for (int i = n-1; i >= n-6; i--)
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength-1; i >= hexLength-6; i--)
       buffer.append(tran[getDigit(i, 4)]);
 
 
@@ -817,8 +817,8 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   public String toStringFull() {
     StringBuilder buffer = new StringBuilder();
 
-    int n = IdBitLength / 4;
-    for (int i = n - 1; i >= 0; i--)
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength - 1; i >= 0; i--)
       buffer.append(tran[getDigit(i, 4)]);
 
     return buffer.toString();
@@ -1022,9 +1022,9 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
 
       for (int i = nlen - 1; i >= 0; i--) {
         if (difference[i] != oth.difference[i]) {
-          long t = difference[i] & 0x0ffffffffL;
-          long o = oth.difference[i] & 0x0ffffffffL;
-          if (t < o) {
+          long ownWord = difference[i] & 0x0ffffffffL;
+          long peerWord = oth.difference[i] & 0x0ffffffffL;
+          if (ownWord < peerWord) {
             return -1;
           } else {
             return 1;
@@ -1133,17 +1133,17 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
      */
     @Override
     public String toString() {
-      String s = "0x";
+      String description = "0x";
 
       String tran[] = {"0", "1", "2", "3", "4", "5", "6", "7",
         "8", "9", "A", "B", "C", "D", "E", "F"};
 
       for (int j = IdBitLength / 8 - 1; j >= 0; j--) {
         int k = difference[j / 4] >> ((j % 4) * 8);
-        s = s + tran[(k >> 4) & 0x0f] + tran[k & 0x0f];
+        description = description + tran[(k >> 4) & 0x0f] + tran[k & 0x0f];
       }
 
-      return "< Id.distance " + s + " >";
+      return "< Id.distance " + description + " >";
     }
 
     // common API Support

@@ -90,11 +90,11 @@ public final class RequestRouteRow extends PastryRawMessage implements RouteSetP
 
   @Override
   public String toString() {
-    String s = "";
+    String description = "";
 
-    s += "RequestRouteRow(row " + row + " by " + getSender().getNodeId() + ")";
+    description += "RequestRouteRow(row " + row + " by " + getSender().getNodeId() + ")";
 
-    return s;
+    return description;
   }
 
   /***************** Raw Serialization ***************************************/

@@ -75,13 +75,13 @@ public class HelloMsg extends PastryRawMessage {
 
   public String getInfo() {
 
-    String s=toString();
+    String description=toString();
     if (messageDirect) {
-      s+=" direct";
+      description+=" direct";
     } else {
-      s+=" routed";
+      description+=" routed";
     }
-    return s;
+    return description;
   }
 
   public int getId(){

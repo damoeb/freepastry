@@ -112,10 +112,10 @@ class PNSApplicationTest {
     }.newNode();
   }
 
-  private void onSelector(Runnable r) throws InterruptedException {
+  private void onSelector(Runnable task) throws InterruptedException {
     CountDownLatch done = new CountDownLatch(1);
     env.getSelectorManager().invoke(() -> {
-      r.run();
+      task.run();
       done.countDown();
     });
     assertTrue(done.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));

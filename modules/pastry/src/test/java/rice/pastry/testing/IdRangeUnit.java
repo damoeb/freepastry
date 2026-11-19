@@ -53,34 +53,34 @@ public class IdRangeUnit {
   private RandomSource random;
 
   public IdRange createRandomIdRange() {
-    IdRange r;
-    r = new IdRange(Id.makeRandomId(random), Id.makeRandomId(random));
-    return r;
+    IdRange range;
+    range = new IdRange(Id.makeRandomId(random), Id.makeRandomId(random));
+    return range;
   }
 
   public IdRange createFullIdRange() {
-    IdRange r;
+    IdRange range;
     Id id = Id.makeRandomId(random);
-    r = new IdRange(id, id);
-    return r;
+    range = new IdRange(id, id);
+    return range;
   }
 
   public IdRange createEmptyIdRange() {
-    IdRange r;
-    r = new IdRange();
-    return r;
+    IdRange range;
+    range = new IdRange();
+    return range;
   }
 
   public IdRange createIdRangeStartingWith(Id counterClockwiseId) {
-    IdRange r;
-    r = new IdRange(counterClockwiseId, Id.makeRandomId(random));
-    return r;
+    IdRange range;
+    range = new IdRange(counterClockwiseId, Id.makeRandomId(random));
+    return range;
   }
 
   public IdRange createIdRangeEndingIn(Id clockwiseId) {
-    IdRange r;
-    r = new IdRange(Id.makeRandomId(random), clockwiseId);
-    return r;
+    IdRange range;
+    range = new IdRange(Id.makeRandomId(random), clockwiseId);
+    return range;
   }
 
   public Id createIdWithPrefix(byte b) {
@@ -91,9 +91,9 @@ public class IdRangeUnit {
   }
 
   public void halfTest() {
-    IdRange r = createFullIdRange();
-    IdRange counterClockwiseRange = r.counterClockwiseHalf();
-    IdRange clockwiseRange = r.clockwiseHalf();
+    IdRange range = createFullIdRange();
+    IdRange counterClockwiseRange = range.counterClockwiseHalf();
+    IdRange clockwiseRange = range.clockwiseHalf();
 
     if (!clockwiseRange.getClockwiseBound().distance(clockwiseRange.getCounterClockwiseBound()).equals(clockwiseRange.getClockwiseBound().longDistance(clockwiseRange.getCounterClockwiseBound()))) {
       System.out.println("ALERT: cw long distance not equal");
@@ -105,23 +105,23 @@ public class IdRangeUnit {
   }
 
   @SuppressWarnings("SelfEquals") // r1.equals(r1) checks that equals is reflexive
-  public void equalityTest(IdRange r1, IdRange r2) {
+  public void equalityTest(IdRange firstRange, IdRange secondRange) {
 
-    if (r1.equals(r2) && !r1.isEmpty() && !r1.isFull())
-      System.out.println("ALERT: equality failed with high probability" + r1
-          + r2);
+    if (firstRange.equals(secondRange) && !firstRange.isEmpty() && !firstRange.isFull())
+      System.out.println("ALERT: equality failed with high probability" + firstRange
+          + secondRange);
 
-    if (!r1.equals(r1))
-      System.out.println("ALERT: equality is not reflexive." + r1);
+    if (!firstRange.equals(firstRange))
+      System.out.println("ALERT: equality is not reflexive." + firstRange);
 
-    IdRange r3 = new IdRange(r2.getCounterClockwiseBound(), r2.getClockwiseBound());
+    IdRange r3 = new IdRange(secondRange.getCounterClockwiseBound(), secondRange.getClockwiseBound());
     IdRange r31 = new IdRange(r3);
 
-    if ((!r3.equals(r2) && !r2.isEmpty()) || !r3.equals(r31))
-      System.out.println("ALERT: equality failed." + r2 + r3 + r31);
+    if ((!r3.equals(secondRange) && !secondRange.isEmpty()) || !r3.equals(r31))
+      System.out.println("ALERT: equality failed." + secondRange + r3 + r31);
 
     IdRange r4 = new IdRange();
-    IdRange r5 = new IdRange(r1.getCounterClockwiseBound(), r1.getCounterClockwiseBound());
+    IdRange r5 = new IdRange(firstRange.getCounterClockwiseBound(), firstRange.getCounterClockwiseBound());
 
     if (r4.equals(r5))
       System.out.println("ALERT: equality failed" + r4 + r4);
@@ -130,79 +130,79 @@ public class IdRangeUnit {
 
   }
 
-  public void mergeIntersectTest(IdRange r1, IdRange r2) {
+  public void mergeIntersectTest(IdRange firstRange, IdRange secondRange) {
 
-    IdRange m1 = r1.merge(r2);
-    IdRange m2 = r2.merge(r1);
-    IdRange i1 = r1.intersect(r2);
+    IdRange m1 = firstRange.merge(secondRange);
+    IdRange m2 = secondRange.merge(firstRange);
+    IdRange i1 = firstRange.intersect(secondRange);
 
-    if (!m1.equals(m2) && (!i1.isEmpty() || r1.isAdjacent(r2)) && !r1.isEmpty())
-      System.out.println("ALERT: merge is not symmetric 1" + r1 + r2 + m1 + m2);
+    if (!m1.equals(m2) && (!i1.isEmpty() || firstRange.isAdjacent(secondRange)) && !firstRange.isEmpty())
+      System.out.println("ALERT: merge is not symmetric 1" + firstRange + secondRange + m1 + m2);
 
     boolean intersect = !i1.isEmpty();
-    boolean adjacent = r1.isAdjacent(r2);
+    boolean adjacent = firstRange.isAdjacent(secondRange);
     boolean intersectOrAdjacent = intersect || adjacent;
 
-    IdRange i2 = r2.intersect(r1);
+    IdRange i2 = secondRange.intersect(firstRange);
 
     if (i1.isEmpty() != i2.isEmpty())
       System.out.println("ALERT: intersect error 1." + i1 + i2);
 
     if (intersectOrAdjacent) {
 
-      if (m1.equals(r1) && !i1.isEmpty() && !i1.equals(r2))
-        System.out.println("ALERT: merge is not symmetric 2" + r1 + r2 + m1
+      if (m1.equals(firstRange) && !i1.isEmpty() && !i1.equals(secondRange))
+        System.out.println("ALERT: merge is not symmetric 2" + firstRange + secondRange + m1
             + i1);
 
-      if (m1.equals(r2) && !i1.isEmpty() && !i1.equals(r1))
-        System.out.println("ALERT: merge is not symmetric 3" + r1 + r2 + m1
+      if (m1.equals(secondRange) && !i1.isEmpty() && !i1.equals(firstRange))
+        System.out.println("ALERT: merge is not symmetric 3" + firstRange + secondRange + m1
             + i1);
 
-      IdRange re1 = m1.intersect(r1);
-      IdRange re2 = m1.intersect(r2);
+      IdRange re1 = m1.intersect(firstRange);
+      IdRange re2 = m1.intersect(secondRange);
 
-      if (!r1.equals(re1) || !r2.equals(re2))
-        System.out.println("ALERT: intersect error 2." + r1 + re1 + r2 + re2
+      if (!firstRange.equals(re1) || !secondRange.equals(re2))
+        System.out.println("ALERT: intersect error 2." + firstRange + re1 + secondRange + re2
             + m1);
 
     } else {
-      if (!m1.equals(r1) && !r1.isEmpty())
-        System.out.println("ALERT: merge error 0." + r1 + r2 + m1);
+      if (!m1.equals(firstRange) && !firstRange.isEmpty())
+        System.out.println("ALERT: merge error 0." + firstRange + secondRange + m1);
     }
 
-    if ((r1.isEmpty() || r2.isEmpty()) && !i1.isEmpty())
-      System.out.println("ALERT: intersect error 3." + r1 + r2 + i1);
+    if ((firstRange.isEmpty() || secondRange.isEmpty()) && !i1.isEmpty())
+      System.out.println("ALERT: intersect error 3." + firstRange + secondRange + i1);
 
-    if (r1.isEmpty() && !m1.equals(r2))
-      System.out.println("ALERT: merge error 1." + r1 + r2 + m1);
-    if (r2.isEmpty() && !m1.equals(r1))
-      System.out.println("ALERT: merge error 2." + r1 + r2 + m1);
+    if (firstRange.isEmpty() && !m1.equals(secondRange))
+      System.out.println("ALERT: merge error 1." + firstRange + secondRange + m1);
+    if (secondRange.isEmpty() && !m1.equals(firstRange))
+      System.out.println("ALERT: merge error 2." + firstRange + secondRange + m1);
 
-    if ((r1.isFull() || r2.isFull()) && !m1.isFull())
-      System.out.println("ALERT: merge error 3." + r1 + r2 + m1);
+    if ((firstRange.isFull() || secondRange.isFull()) && !m1.isFull())
+      System.out.println("ALERT: merge error 3." + firstRange + secondRange + m1);
 
-    if (r1.isFull() && !i1.equals(r2))
-      System.out.println("ALERT: intersect error 4." + r1 + r2 + i1);
-    if (r2.isFull() && !i1.equals(r1))
-      System.out.println("ALERT: intersect error 5." + r1 + r2 + m1);
+    if (firstRange.isFull() && !i1.equals(secondRange))
+      System.out.println("ALERT: intersect error 4." + firstRange + secondRange + i1);
+    if (secondRange.isFull() && !i1.equals(firstRange))
+      System.out.println("ALERT: intersect error 5." + firstRange + secondRange + m1);
 
   }
 
-  public void diffSubtractTest(IdRange r1, IdRange r2) {
+  public void diffSubtractTest(IdRange firstRange, IdRange secondRange) {
 
-    IdRange d1 = r1.diff(r2);
-    IdRange d2 = r2.diff(r1);
+    IdRange d1 = firstRange.diff(secondRange);
+    IdRange d2 = secondRange.diff(firstRange);
 
-    IdRange i1 = r1.intersect(r2);
-    IdRange i2 = r2.intersect(r1);
+    IdRange i1 = firstRange.intersect(secondRange);
+    IdRange i2 = secondRange.intersect(firstRange);
 
     if (!d1.intersect(i1).isEmpty() || !d1.intersect(i2).isEmpty()
         || !d2.intersect(i1).isEmpty() || !d2.intersect(i2).isEmpty())
-      System.out.println("ALERT: diff error 1." + r1 + r2 + d1 + d2 + i1 + i2);
+      System.out.println("ALERT: diff error 1." + firstRange + secondRange + d1 + d2 + i1 + i2);
 
     if (!i1.equals(i2)) {
       if (d1.equals(d2)) {
-        System.out.println("ALERT: diff error 15." + r1 + r2 + d1 + d2 + i1
+        System.out.println("ALERT: diff error 15." + firstRange + secondRange + d1 + d2 + i1
             + i2);
       }
     }
@@ -220,24 +220,24 @@ public class IdRangeUnit {
       re2 = re2.merge(d2);
       re2 = re2.merge(i2);
     }
-    IdRange r12 = r1.merge(r2);
+    IdRange r12 = firstRange.merge(secondRange);
 
-    if ((!re1.equals(r1) && !re1.equals(r2) && !re1.equals(r12))
-        || (!re2.equals(r1) && !re2.equals(r2) && !re2.equals(r12)))
-      System.out.println("ALERT: diff error 2." + r1 + r2 + d1 + d2 + i1 + i2
+    if ((!re1.equals(firstRange) && !re1.equals(secondRange) && !re1.equals(r12))
+        || (!re2.equals(firstRange) && !re2.equals(secondRange) && !re2.equals(r12)))
+      System.out.println("ALERT: diff error 2." + firstRange + secondRange + d1 + d2 + i1 + i2
           + re1 + re2);
 
-    d1 = r1.subtract(r2, false);
-    d2 = r1.subtract(r2, true);
+    d1 = firstRange.subtract(secondRange, false);
+    d2 = firstRange.subtract(secondRange, true);
 
     if (!d1.intersect(i1).isEmpty() || !d1.intersect(i2).isEmpty()
         || !d2.intersect(i1).isEmpty() || !d2.intersect(i2).isEmpty())
-      System.out.println("ALERT: subtract error 1." + r1 + r2 + d1 + d2 + i1
+      System.out.println("ALERT: subtract error 1." + firstRange + secondRange + d1 + d2 + i1
           + i2);
 
-    if ((!d1.isEmpty() && d1.intersect(r1).isEmpty())
-        || (!d2.isEmpty() && d2.intersect(r1).isEmpty()))
-      System.out.println("ALERT: subtract error 2." + r1 + r2 + d1 + d2);
+    if ((!d1.isEmpty() && d1.intersect(firstRange).isEmpty())
+        || (!d2.isEmpty() && d2.intersect(firstRange).isEmpty()))
+      System.out.println("ALERT: subtract error 2." + firstRange + secondRange + d1 + d2);
 
     // try to reconstitute
     re1 = d1;
@@ -253,21 +253,21 @@ public class IdRangeUnit {
       re2 = re2.merge(i2);
     }
 
-    if (!re1.equals(r1) && !re2.equals(r1))
-      System.out.println("ALERT: subtract error 25." + r1 + r2 + d1 + d2 + i1
+    if (!re1.equals(firstRange) && !re2.equals(firstRange))
+      System.out.println("ALERT: subtract error 25." + firstRange + secondRange + d1 + d2 + i1
           + i2 + re1 + re2);
 
-    d1 = r2.subtract(r1, false);
-    d2 = r2.subtract(r1, true);
+    d1 = secondRange.subtract(firstRange, false);
+    d2 = secondRange.subtract(firstRange, true);
 
     if (!d1.intersect(i1).isEmpty() || !d1.intersect(i2).isEmpty()
         || !d2.intersect(i1).isEmpty() || !d2.intersect(i2).isEmpty())
-      System.out.println("ALERT: subtract error 3." + r1 + r2 + d1 + d2 + i1
+      System.out.println("ALERT: subtract error 3." + firstRange + secondRange + d1 + d2 + i1
           + i2);
 
-    if ((!d1.isEmpty() && d1.intersect(r2).isEmpty())
-        || (!d2.isEmpty() && d2.intersect(r2).isEmpty()))
-      System.out.println("ALERT: subtract error 4." + r1 + r2 + d1 + d2);
+    if ((!d1.isEmpty() && d1.intersect(secondRange).isEmpty())
+        || (!d2.isEmpty() && d2.intersect(secondRange).isEmpty()))
+      System.out.println("ALERT: subtract error 4." + firstRange + secondRange + d1 + d2);
 
     // try to reconstitute
     re1 = d1;
@@ -283,29 +283,29 @@ public class IdRangeUnit {
       re2 = re2.merge(i2);
     }
 
-    if (!re1.equals(r2) && !re2.equals(r2))
-      System.out.println("ALERT: subtract error 5." + r1 + r2 + d1 + d2 + i1
+    if (!re1.equals(secondRange) && !re2.equals(secondRange))
+      System.out.println("ALERT: subtract error 5." + firstRange + secondRange + d1 + d2 + i1
           + i2 + re1 + re2);
 
   }
 
-  public void mergeTest(IdRange r1, IdRange r2) {
+  public void mergeTest(IdRange firstRange, IdRange secondRange) {
 
-    IdRange counterClockwiseRange = r1.counterClockwiseHalf();
-    IdRange clockwiseRange = r1.clockwiseHalf();
-
-    if (!counterClockwiseRange.intersect(clockwiseRange).isEmpty())
-      System.out.println("ALERT: ccw and cw halves intersect." + r1 + counterClockwiseRange + clockwiseRange);
-    if (!r1.equals(counterClockwiseRange.merge(clockwiseRange)))
-      System.out.println("ALERT: merge cw/ccw failure." + r1 + counterClockwiseRange + clockwiseRange);
-
-    counterClockwiseRange = r2.counterClockwiseHalf();
-    clockwiseRange = r2.clockwiseHalf();
+    IdRange counterClockwiseRange = firstRange.counterClockwiseHalf();
+    IdRange clockwiseRange = firstRange.clockwiseHalf();
 
     if (!counterClockwiseRange.intersect(clockwiseRange).isEmpty())
-      System.out.println("ALERT: ccw and cw halves intersect." + r2 + counterClockwiseRange + clockwiseRange);
-    if (!r2.equals(counterClockwiseRange.merge(clockwiseRange)))
-      System.out.println("ALERT: merge cw/ccw failure." + r2 + counterClockwiseRange + clockwiseRange);
+      System.out.println("ALERT: ccw and cw halves intersect." + firstRange + counterClockwiseRange + clockwiseRange);
+    if (!firstRange.equals(counterClockwiseRange.merge(clockwiseRange)))
+      System.out.println("ALERT: merge cw/ccw failure." + firstRange + counterClockwiseRange + clockwiseRange);
+
+    counterClockwiseRange = secondRange.counterClockwiseHalf();
+    clockwiseRange = secondRange.clockwiseHalf();
+
+    if (!counterClockwiseRange.intersect(clockwiseRange).isEmpty())
+      System.out.println("ALERT: ccw and cw halves intersect." + secondRange + counterClockwiseRange + clockwiseRange);
+    if (!secondRange.equals(counterClockwiseRange.merge(clockwiseRange)))
+      System.out.println("ALERT: merge cw/ccw failure." + secondRange + counterClockwiseRange + clockwiseRange);
 
   }
 
@@ -317,174 +317,174 @@ public class IdRangeUnit {
     halfTest();
 
     for (int i = 0; i < 1000; i++) {
-      IdRange r1 = createEmptyIdRange();
-      IdRange r2 = createEmptyIdRange();
+      IdRange firstRange = createEmptyIdRange();
+      IdRange secondRange = createEmptyIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createFullIdRange();
+      secondRange = createFullIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createRandomIdRange();
+      secondRange = createRandomIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      //
-      r1 = createFullIdRange();
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      r2 = createFullIdRange();
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      r2 = createEmptyIdRange();
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
       //
-      r1 = createRandomIdRange();
+      firstRange = createFullIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
+      secondRange = createFullIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
+      secondRange = createEmptyIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
-
-      r2 = r1.complement();
-
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
       //
-      r1 = createFullIdRange();
+      firstRange = createRandomIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
+      secondRange = createIdRangeStartingWith(firstRange.getClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
+      secondRange = createIdRangeStartingWith(firstRange.getCounterClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
+      secondRange = createIdRangeEndingIn(firstRange.getClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
+      secondRange = createIdRangeEndingIn(firstRange.getCounterClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      secondRange = firstRange.complement();
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
       //
-      r1 = createEmptyIdRange();
+      firstRange = createFullIdRange();
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getClockwiseBound());
+      secondRange = createIdRangeStartingWith(firstRange.getClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeStartingWith(r1.getCounterClockwiseBound());
+      secondRange = createIdRangeStartingWith(firstRange.getCounterClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeEndingIn(r1.getClockwiseBound());
+      secondRange = createIdRangeEndingIn(firstRange.getClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r2 = createIdRangeEndingIn(r1.getCounterClockwiseBound());
+      secondRange = createIdRangeEndingIn(firstRange.getCounterClockwiseBound());
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
 
-      r1 = new IdRange(createIdWithPrefix((byte) 0xC0),
+      //
+      firstRange = createEmptyIdRange();
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      secondRange = createIdRangeStartingWith(firstRange.getClockwiseBound());
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      secondRange = createIdRangeStartingWith(firstRange.getCounterClockwiseBound());
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      secondRange = createIdRangeEndingIn(firstRange.getClockwiseBound());
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      secondRange = createIdRangeEndingIn(firstRange.getCounterClockwiseBound());
+
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
+
+      firstRange = new IdRange(createIdWithPrefix((byte) 0xC0),
           createIdWithPrefix((byte) 0x40));
-      r2 = new IdRange(createIdWithPrefix((byte) 0xE0),
+      secondRange = new IdRange(createIdWithPrefix((byte) 0xE0),
           createIdWithPrefix((byte) 0x20));
 
-      equalityTest(r1, r2);
-      mergeIntersectTest(r1, r2);
-      diffSubtractTest(r1, r2);
-      mergeTest(r1, r2);
+      equalityTest(firstRange, secondRange);
+      mergeIntersectTest(firstRange, secondRange);
+      diffSubtractTest(firstRange, secondRange);
+      mergeTest(firstRange, secondRange);
     }
 
     System.out.println("IdRangeUnit test finished.");

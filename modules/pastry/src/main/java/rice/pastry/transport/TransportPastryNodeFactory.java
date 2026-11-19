@@ -197,7 +197,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
       NodeHandleFactory<?> handleFactory, TransportLayerDeserializer deserializer) throws IOException;
   protected abstract NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException;
   protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn,
-      NodeHandleAdapter tl,
+      NodeHandleAdapter nodeHandleAdapter,
       NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector neighborSelector);
 }

@@ -55,17 +55,17 @@ public class StandardAddress {
    * Returns the address of an application: the first two bytes of the SHA-256 hash of its class, followed by the
    * first two bytes of the SHA-256 hash of its instance name (or two zero bytes if there is none).
    *
-   * @param c The application class
+   * @param clazz The application class
    * @param instance The instance name, or null
    * @param env The environment (unused)
    * @return The address
    */
-  public static int getAddress(Class<?> c, String instance, Environment env) {
+  public static int getAddress(Class<?> clazz, String instance, Environment env) {
     byte[] digest = new byte[4];
 
     // each half is two bytes of ONE digest; this used to call MessageDigest.digest() once per byte, and as
     // digest() resets, the second byte was always that of the hash of nothing
-    byte[] classHash = HashUtils.hash(c.toString().getBytes(StandardCharsets.UTF_8));
+    byte[] classHash = HashUtils.hash(clazz.toString().getBytes(StandardCharsets.UTF_8));
     digest[0] = classHash[0];
     digest[1] = classHash[1];
 
@@ -87,8 +87,8 @@ public class StandardAddress {
    * Returns the short prefix to look for.
    *
    */
-  public static short getAddress(Class<?> c, Environment env) {
-    int myCode = getAddress(c, null, env);
+  public static short getAddress(Class<?> clazz, Environment env) {
+    int myCode = getAddress(clazz, null, env);
 
     short code = (short)unshift(myCode, 16);
     return code;
@@ -104,11 +104,11 @@ public class StandardAddress {
 
 
   public static void main(String[] args) {
-    Class<?> c = StandardAddress.class;
+    Class<?> clazz = StandardAddress.class;
 
-    int a = getAddress(c, null, null);
-    int b = getAddress(c, "b", null);
-    short a1 = getAddress(c, null);
+    int a = getAddress(clazz, null, null);
+    int b = getAddress(clazz, "b", null);
+    short a1 = getAddress(clazz, null);
 
     System.out.println(a+" "+Integer.toBinaryString(a)+" "+a1+" "+Integer.toBinaryString(a1));
     System.out.println(b+" "+Integer.toBinaryString(b));

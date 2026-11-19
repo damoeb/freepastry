@@ -80,11 +80,11 @@ public class RequestLeafSet extends PastryRawMessage {
 
   @Override
   public String toString() {
-    String s = "";
+    String description = "";
 
-    s += "RequestLeafSet("+getSender()+","+timeStamp+")";
+    description += "RequestLeafSet("+getSender()+","+timeStamp+")";
 
-    return s;
+    return description;
   }
 
   /***************** Raw Serialization ***************************************/

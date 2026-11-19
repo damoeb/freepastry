@@ -67,12 +67,12 @@ public final class BroadcastRouteRow extends PastryRawMessage implements RouteSe
    * Constructor.
    *
    * @param from the node id
-   * @param r the row
+   * @param rows the row
    */
-  public BroadcastRouteRow(NodeHandle from, RouteSet[] r) {
+  public BroadcastRouteRow(NodeHandle from, RouteSet[] rows) {
     super(RouteProtocolAddress.getCode());
     fromNode = from;
-    row = r;
+    row = rows;
     setPriority(MAX_PRIORITY);
   }
 
@@ -97,19 +97,19 @@ public final class BroadcastRouteRow extends PastryRawMessage implements RouteSe
 
   @Override
   public String toString() {
-    String s = "";
+    String description = "";
 
-    s += "BroadcastRouteRow(of " + fromNode.getNodeId() + ")";
+    description += "BroadcastRouteRow(of " + fromNode.getNodeId() + ")";
 
-    return s;
+    return description;
   }
 
   public String toStringFull() {
-    String s = "BRR{"+fromNode+"}:";
+    String description = "BRR{"+fromNode+"}:";
     for (RouteSet routeSet : row) {
-      s+=routeSet+"|";
+      description+=routeSet+"|";
     }
-    return s;
+    return description;
   }
 
   /***************** Raw Serialization ***************************************/

@@ -54,26 +54,26 @@ public class NodeIdUnit {
   private RandomSource random;
 
   public Id createNodeId() {
-    byte raw[] = new byte[Id.IdBitLength >> 3];
+    byte bytes[] = new byte[Id.IdBitLength >> 3];
 
-    random.nextBytes(raw);
+    random.nextBytes(bytes);
 
-    Id nodeId = Id.build(raw);
+    Id nodeId = Id.build(bytes);
 
     System.out.println("created node " + nodeId);
 
-    byte copy[] = new byte[raw.length];
+    byte copy[] = new byte[bytes.length];
 
     nodeId.blit(copy);
 
-    for (int i = 0; i < raw.length; i++)
-      if (copy[i] != raw[i])
+    for (int i = 0; i < bytes.length; i++)
+      if (copy[i] != bytes[i])
         System.out.println("blit test failed!");
 
     copy = nodeId.copy();
 
-    for (int i = 0; i < raw.length; i++)
-      if (copy[i] != raw[i])
+    for (int i = 0; i < bytes.length; i++)
+      if (copy[i] != bytes[i])
         System.out.println("copy test failed!");
 
     return nodeId;
@@ -297,9 +297,9 @@ public class NodeIdUnit {
 
     for (int b = 2; b < 7; b++)
       for (int row = nid.IdBitLength / b - 1; row >= 0; row--)
-        for (int col = 0; col < (1 << b); col++) {
-          Id domainFirst = nid.getDomainPrefix(row, col, 0, b);
-          Id domainLast = nid.getDomainPrefix(row, col, -1, b);
+        for (int column = 0; column < (1 << b); column++) {
+          Id domainFirst = nid.getDomainPrefix(row, column, 0, b);
+          Id domainLast = nid.getDomainPrefix(row, column, -1, b);
           System.out.println("prefixes " + nid + domainFirst + domainLast);
           int cmp = domainFirst.compareTo(domainLast);
           boolean equal = domainFirst.equals(domainLast);

@@ -72,14 +72,14 @@ public class RandomNodeIdFactory implements NodeIdFactory {
   @Override
   public Id generateNodeId() {
 
-    byte raw[] = new byte[8];
+    byte bytes[] = new byte[8];
     long tmp = ++next;
     for (int i = 0; i < 8; i++) {
-      raw[i] = (byte) (tmp & 0xff);
+      bytes[i] = (byte) (tmp & 0xff);
       tmp >>= 8;
     }
 
-    Id nodeId = Id.build(HashUtils.hashToIdMaterial(raw));
+    Id nodeId = Id.build(HashUtils.hashToIdMaterial(bytes));
 
     return nodeId;
   }

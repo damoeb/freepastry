@@ -86,8 +86,8 @@ public class TransportLayerDeserializer implements RawMessageDeserializer, Deser
   }
 
   @Override
-  public void serialize(RawMessage m, OutputBuffer o) throws IOException {
-    PastryRawMessage msg = (PastryRawMessage)m;
+  public void serialize(RawMessage message, OutputBuffer o) throws IOException {
+    PastryRawMessage msg = (PastryRawMessage)message;
     int address = msg.getDestination();
     o.writeInt(address);
 

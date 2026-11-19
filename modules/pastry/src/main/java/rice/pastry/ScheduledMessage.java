@@ -71,8 +71,8 @@ public class ScheduledMessage extends TimerTask {
   public void run() {
     try {
       // timing with cancellation
-      Message m = msg;
-      if (m != null) localNode.receiveMessage(msg);
+      Message message = msg;
+      if (message != null) localNode.receiveMessage(msg);
     } catch (Exception e) {
       Logger logger = localNode.getEnvironment().getLogManager().getLogger(getClass(), null);
       logger.warn("Delivering {} caused exception ", this, e);

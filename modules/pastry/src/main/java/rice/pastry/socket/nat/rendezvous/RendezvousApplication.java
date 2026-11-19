@@ -118,8 +118,8 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
           if (version == 0) { // version 0
             RendezvousSocketNodeHandle rendezvous = readRendezvousHandle(thePastryNode, buf);
             RendezvousSocketNodeHandle source = readRendezvousHandle(thePastryNode, buf);
-            int uid = buf.readInt();
-            return new OpenChannelMessage(getAddress(), rendezvous, source, uid);
+            int uniqueId = buf.readInt();
+            return new OpenChannelMessage(getAddress(), rendezvous, source, uniqueId);
           } else {
             throw new IOException("Unknown version for OpenChannelMessage: "+version);
           }
@@ -163,15 +163,15 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
   public Cancellable openChannel(final RendezvousSocketNodeHandle target,
       final RendezvousSocketNodeHandle rendezvous,
       final RendezvousSocketNodeHandle source,
-      final int uid,
+      final int uniqueId,
       final Continuation<Integer, Exception> deliverAckToMe,
       final Map<String, Object> options) {
 
-    logger.atInfo().log(() -> "openChannel()"+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
+    logger.atInfo().log(() -> "openChannel()"+source+"->"+target+" via "+rendezvous+" uid:"+uniqueId+","+deliverAckToMe+","+options);
 
     if (target.getLiveness() > LivenessTypes.LIVENESS_DEAD) {
       // if he's dead forever (consider changing this to dead... but think of implications)
-      logger.atInfo().log(() -> "openChannel() attempted to open to dead_forever target. Dropping."+source+"->"+target+" via "+rendezvous+" uid:"+uid+","+deliverAckToMe+","+options);
+      logger.atInfo().log(() -> "openChannel() attempted to open to dead_forever target. Dropping."+source+"->"+target+" via "+rendezvous+" uid:"+uniqueId+","+deliverAckToMe+","+options);
       if (deliverAckToMe != null) deliverAckToMe.receiveException(new NodeIsFaultyException(target));
       return null;
     }
@@ -184,11 +184,11 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
     // we don't want state changing, so this can only be called on the selector
     if (!selectorManager.isSelectorThread()) {
       final AttachableCancellable result = new AttachableCancellable();
-      selectorManager.invoke(() -> result.attach(openChannel(target, rendezvous, source, uid, deliverAckToMe, options)));
+      selectorManager.invoke(() -> result.attach(openChannel(target, rendezvous, source, uniqueId, deliverAckToMe, options)));
       return result;
     }
 
-    OpenChannelMessage msg = new OpenChannelMessage(getAddress(), rendezvous, source, uid);
+    OpenChannelMessage msg = new OpenChannelMessage(getAddress(), rendezvous, source, uniqueId);
     logger.debug("routing {} to {}", msg, target);
     final RouteMessage routeMessage =
       new RouteMessage(
@@ -197,11 +197,11 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
         thePastryNode.getConfig().routeMsgVersion());
     routeMessage.setDestinationHandle(target);
 
-    logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+routeMessage);
+    logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
-    final Cancellable ret = () -> {
-      logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
+    final Cancellable cancellable = () -> {
+      logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+").cancel()");
       return routeMessage.cancel();
     };
 
@@ -210,12 +210,12 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
       routeMessage.setRouteMessageNotification(new RouteMessageNotification() {
         @Override
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
-          logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
-          if (deliverAckToMe != null) deliverAckToMe.receiveResult(uid);
+          logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
+          if (deliverAckToMe != null) deliverAckToMe.receiveResult(uniqueId);
         }
         @Override
         public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
-          logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendFailed("+e+")");
+          logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+").sendFailed("+e+")");
           if (deliverAckToMe != null) deliverAckToMe.receiveException(e);
         }
       });
@@ -225,7 +225,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
     thePastryNode.getRouter().route(routeMessage);
 
-    return ret;
+    return cancellable;
   }
 
   @Override
@@ -276,7 +276,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
       // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
-      final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> ret = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
+      final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> requestHandle = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
 
         @Override
         public boolean cancel() {
@@ -306,12 +306,12 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
           @Override
           public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
             logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
-            if (deliverAckToMe != null) deliverAckToMe.ack(ret);
+            if (deliverAckToMe != null) deliverAckToMe.ack(requestHandle);
           }
           @Override
           public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
             logger.atDebug().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendFailed("+e+")");
-            if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, e);
+            if (deliverAckToMe != null) deliverAckToMe.sendFailed(requestHandle, e);
           }
         });
       }
@@ -320,7 +320,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
       thePastryNode.getRouter().route(routeMessage);
 
-      return ret;
+      return requestHandle;
     }
   }
 

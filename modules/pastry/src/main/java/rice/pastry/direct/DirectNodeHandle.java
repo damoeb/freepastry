@@ -63,15 +63,15 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<SimulatedNodePosi
   /**
    * Constructor for DirectNodeHandle.
    *
-   * @param ln The local pastry node
+   * @param node The local pastry node
    * @param sim The current network simulator
    */
-  protected DirectNodeHandle(PastryNode ln, NetworkSimulator<DirectNodeHandle, RawMessage> sim) {
-    localnode = ln;
-    logger = ln.getEnvironment().getLogManager().getLogger(getClass(), null);
+  protected DirectNodeHandle(PastryNode node, NetworkSimulator<DirectNodeHandle, RawMessage> sim) {
+    localnode = node;
+    logger = node.getEnvironment().getLogManager().getLogger(getClass(), null);
     simulator = sim;
 
-    ln.addPastryNodeListener(this);
+    node.addPastryNodeListener(this);
   }
 
   /**

@@ -70,8 +70,8 @@ public class PastryEndpointMessage extends PastryRawMessage {
    */
   public PastryEndpointMessage(int address, Message message, NodeHandle sender) {
     super(address);
-    if (message instanceof RawMessage raw) {
-      checkRawType(raw);
+    if (message instanceof RawMessage rawMessage) {
+      checkRawType(rawMessage);
     }
     setSender(sender);
     this.message = message;
@@ -118,12 +118,12 @@ public class PastryEndpointMessage extends PastryRawMessage {
    */
   @Override
   public short getType() {
-    return message instanceof RawMessage raw ? raw.getType() : 0;
+    return message instanceof RawMessage rawMessage ? rawMessage.getType() : 0;
   }
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    if (!(message instanceof RawMessage raw)) {
+    if (!(message instanceof RawMessage rawMessage)) {
       throw new IllegalStateException("Message "+message+" is not a RawMessage and cannot be sent.");
     }
 
@@ -131,7 +131,7 @@ public class PastryEndpointMessage extends PastryRawMessage {
     int priority = message.getPriority();
     if (priority > Byte.MAX_VALUE) throw new IllegalStateException("Priority must be in the range of "+Byte.MIN_VALUE+" to "+Byte.MAX_VALUE+".  Lower values are higher priority. Priority of "+message+" was "+priority+".");
     if (priority < Byte.MIN_VALUE) throw new IllegalStateException("Priority must be in the range of "+Byte.MIN_VALUE+" to "+Byte.MAX_VALUE+".  Lower values are higher priority. Priority of "+message+" was "+priority+".");
-    raw.serialize(buf);
+    rawMessage.serialize(buf);
   }
 
   public PastryEndpointMessage(int address, InputBuffer buf, MessageDeserializer deserializer, short type, int priority, NodeHandle sender) throws IOException {

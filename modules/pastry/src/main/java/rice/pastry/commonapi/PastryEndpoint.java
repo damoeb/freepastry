@@ -429,21 +429,21 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * result is the nearest range clockwise from key for which n is
    * responsible.
    *
-   * @param n nodeHandle of the node whose range is being queried
-   * @param r the rank
+   * @param nodeHandle nodeHandle of the node whose range is being queried
+   * @param rank the rank
    * @param key the key
    * @param cumulative if true, returns ranges for which n is an i-root for 0&lt;i&lt;=r
    * @return the range of keys, or null if range could not be determined for the given node and rank
    */
   @Override
-  public IdRange range(NodeHandle n, int r, Id key, boolean cumulative) {
+  public IdRange range(NodeHandle nodeHandle, int rank, Id key, boolean cumulative) {
     rice.pastry.Id pKey = (rice.pastry.Id) key;
 
     if (cumulative)
-      return getLeafSet().range((rice.pastry.NodeHandle) n, r);
+      return getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank);
 
-    rice.pastry.IdRange counterClockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) n, r, false);
-    rice.pastry.IdRange clockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) n, r, true);
+    rice.pastry.IdRange counterClockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank, false);
+    rice.pastry.IdRange clockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank, true);
 
     if (clockwiseRange == null || counterClockwiseRange.contains(pKey) || pKey.isBetween(clockwiseRange.getClockwiseBound(), counterClockwiseRange.getCounterClockwiseBound())) return counterClockwiseRange;
     else return clockwiseRange;
@@ -464,14 +464,14 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * result is the nearest range clockwise from key for which n is
    * responsible.
    *
-   * @param n nodeHandle of the node whose range is being queried
-   * @param r the rank
+   * @param nodeHandle nodeHandle of the node whose range is being queried
+   * @param rank the rank
    * @param key the key
    * @return the range of keys, or null if range could not be determined for the given node and rank
    */
   @Override
-  public IdRange range(NodeHandle n, int r, Id key) {
-    return range(n, r, key, false);
+  public IdRange range(NodeHandle nodeHandle, int rank, Id key) {
+    return range(nodeHandle, rank, key, false);
   }
 
   /**
@@ -508,7 +508,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
   }
 
   @Override
-  public final boolean enrouteMessage(rice.pastry.messaging.Message msg, rice.pastry.Id key, rice.pastry.NodeHandle nextHop, SendOptions opt) {
+  public final boolean enrouteMessage(rice.pastry.messaging.Message msg, rice.pastry.Id key, rice.pastry.NodeHandle nextHop, SendOptions options) {
     throw new RuntimeException("Should not be called, should only be handled by PastryEndpoint.receiveMessage()");
   }
 
@@ -703,8 +703,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       handles.add(nodeHandle);
     }
     l = thePastryNode.getLeafSet().asList();
-    for (rice.pastry.NodeHandle nh : l) {
-      handles.add(nh);
+    for (rice.pastry.NodeHandle currentHandle : l) {
+      handles.add(currentHandle);
     }
 
     NodeHandle[] array = handles.toArray(new NodeHandle[0]);
@@ -742,8 +742,8 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
   boolean consistentRouting = true;
   @Override
-  public void setRoutingConsistencyRequired(boolean val) {
-    consistentRouting = val;
+  public void setRoutingConsistencyRequired(boolean required) {
+    consistentRouting = required;
   }
 
   @Override

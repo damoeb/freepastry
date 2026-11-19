@@ -159,26 +159,26 @@ public class NetworkSimulator<Identifier, MessageType> {
 
   /**
    * Call this when a message is sent.
-   * @param m the message
+   * @param message the message
    * @param from the source
-   * @param to the destination
+   * @param receiver the destination
    * @param delay the network proximity (when the message will be received)
    */
-  public void notifySimulatorListenersSent(MessageType m, Identifier from, Identifier to, int delay) {
+  public void notifySimulatorListenersSent(MessageType message, Identifier from, Identifier receiver, int delay) {
     for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
-      listener.messageSent(m, from, to, delay);
+      listener.messageSent(message, from, receiver, delay);
     }
   }
 
   /**
    * Call this when a message is received.
-   * @param m the message
+   * @param message the message
    * @param from the source
-   * @param to the destination
+   * @param receiver the destination
    */
-  public void notifySimulatorListenersReceived(MessageType m, Identifier from, Identifier to) {
+  public void notifySimulatorListenersReceived(MessageType message, Identifier from, Identifier receiver) {
     for (GenericSimulatorListener<Identifier, MessageType> listener : listeners) {
-      listener.messageReceived(m, from, to);
+      listener.messageReceived(message, from, receiver);
     }
   }
 
@@ -214,25 +214,25 @@ public class NetworkSimulator<Identifier, MessageType> {
   /**
    * Determines delivery time from a to b.
    *
-   * @param a a node id.
-   * @param b another node id.
+   * @param first a node id.
+   * @param second another node id.
    *
    * @return proximity of b to a.
    */
-  public float networkDelay(Identifier a, Identifier b) {
-    return simulator.networkDelay(a, b);
+  public float networkDelay(Identifier first, Identifier second) {
+    return simulator.networkDelay(first, second);
   }
 
   /**
    * Determines rtt between two nodes.
    *
-   * @param a a node id.
-   * @param b another node id.
+   * @param first a node id.
+   * @param second another node id.
    *
    * @return proximity of b to a.
    */
-  public float proximity(Identifier a, Identifier b) {
-    return simulator.proximity(a, b);
+  public float proximity(Identifier first, Identifier second) {
+    return simulator.proximity(first, second);
   }
 
   public SimulatedNodePosition getNodeRecord(DirectNodeHandle handle) {
@@ -247,7 +247,7 @@ public class NetworkSimulator<Identifier, MessageType> {
     return simulator;
   }
 
-  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, SimulatedNodePosition nr) {
-    simulator.registerIdentifier(i, dtl, nr);
+  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, SimulatedNodePosition nodePosition) {
+    simulator.registerIdentifier(i, dtl, nodePosition);
   }
 }

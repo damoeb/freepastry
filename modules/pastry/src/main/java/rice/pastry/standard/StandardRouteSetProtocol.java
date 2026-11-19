@@ -92,16 +92,16 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
   /**
    * Constructor.
    *
-   * @param ln the local node
+   * @param localNode the local node
    * @param routingTable the routing table
    */
-  public StandardRouteSetProtocol(PastryNode ln, RoutingTable routingTable) {
-    this(ln, routingTable, null);
+  public StandardRouteSetProtocol(PastryNode localNode, RoutingTable routingTable) {
+    this(localNode, routingTable, null);
   }
 
-  public StandardRouteSetProtocol(PastryNode ln, RoutingTable routingTable, MessageDeserializer deserializer) {
-    super(ln, null, RouteProtocolAddress.getCode(),  deserializer == null ? new SRSPDeserializer(ln) : deserializer);
-    this.environmet = ln.getEnvironment();
+  public StandardRouteSetProtocol(PastryNode localNode, RoutingTable routingTable, MessageDeserializer deserializer) {
+    super(localNode, null, RouteProtocolAddress.getCode(),  deserializer == null ? new SRSPDeserializer(localNode) : deserializer);
+    this.environmet = localNode.getEnvironment();
     maxTrials = (1 << routingTable.baseBitLength()) / 2;
     routeTable = routingTable;
   }
@@ -144,12 +144,12 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       case RequestRouteRow requestRouteRow -> {
 
         int reqRow = requestRouteRow.getRow();
-        NodeHandle nh = requestRouteRow.returnHandle();
+        NodeHandle currentHandle = requestRouteRow.returnHandle();
 
         RouteSet row[] = routeTable.getRow(reqRow);
         BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
         if (logger.isTraceEnabled()) logger.trace("Responding to "+requestRouteRow+" with "+brr.toStringFull());
-        thePastryNode.send(nh,brr,null,options);
+        thePastryNode.send(currentHandle,brr,null,options);
       }
 
       // request for routing table maintenance
@@ -183,11 +183,11 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       // try up to maxTrials times to find a column with live entries
       for (j = 0; j < maxTrials; j++) {
         // pick a random column
-        int col = environmet.getRandomSource().nextInt(routeTable.numColumns());
-        if (col == myCol)
+        int column = environmet.getRandomSource().nextInt(routeTable.numColumns());
+        if (column == myCol)
           continue;
 
-        RouteSet routeSet = row[col];
+        RouteSet routeSet = row[column];
 
         // swap row with closest node only
 

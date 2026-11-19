@@ -473,10 +473,10 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
       return null;
     }
 
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable cancellable = new AttachableCancellable();
 
     // get closest node in leafset
-    ret.attach(getLeafSet(seed,
+    cancellable.attach(getLeafSet(seed,
       new Continuation<LeafSet, Exception>() {
 
         @Override
@@ -487,7 +487,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
           // seed is the bootstrap node that we use to enter the pastry ring
           NodeHandle nearNode = seed;
 
-          ret.attach(closestToMe(nearNode, result, new Continuation<NodeHandle, Exception>() {
+          cancellable.attach(closestToMe(nearNode, result, new Continuation<NodeHandle, Exception>() {
 
             /**
              * Now we have the closest node in the leafset.
@@ -510,7 +510,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
               // fix it up to not throw an error if the number is too big
               if (i < 0) i = 0;
 
-              ret.attach(seekThroughRouteRows(i,depth,nearNode,new Continuation<NodeHandle, Exception>(){
+              cancellable.attach(seekThroughRouteRows(i,depth,nearNode,new Continuation<NodeHandle, Exception>(){
 
                 @Override
                 public void receiveResult(NodeHandle result) {
@@ -537,7 +537,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
         }
       }));
 
-    return ret;
+    return cancellable;
   }
 
 
@@ -553,13 +553,13 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
    */
   private Cancellable seekThroughRouteRows(final short i, final short depth, final NodeHandle currentClosest,
       final Continuation<NodeHandle, Exception> returnToMe) {
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable cancellable = new AttachableCancellable();
 
     // base case
-    ret.attach(getRouteRow(currentClosest, i, new Continuation<RouteSet[], Exception>(){
+    cancellable.attach(getRouteRow(currentClosest, i, new Continuation<RouteSet[], Exception>(){
       @Override
       public void receiveResult(RouteSet[] result) {
-        ret.attach(closestToMe(currentClosest,result,new Continuation<NodeHandle, Exception>() {
+        cancellable.attach(closestToMe(currentClosest,result,new Continuation<NodeHandle, Exception>() {
           @Override
           public void receiveResult(NodeHandle nearNode) {
             if ((i >= depth-1) && currentClosest.equals(nearNode)) {
@@ -589,7 +589,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
 
     }));
 
-    return ret;
+    return cancellable;
   }
 
 
@@ -653,7 +653,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
    */
   private Cancellable closestToMe(final NodeHandle handle, final Collection<NodeHandle> handles, final Continuation<NodeHandle, Exception> continuation) {
     logger.debug("closestToMe({},{})", handle, handles);
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable cancellable = new AttachableCancellable();
     final NodeHandle[] closestNode = {handle};
 
     final Collection<NodeHandle> remaining = new HashSet<NodeHandle>(handles);
@@ -666,7 +666,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
     for (NodeHandle nodeHandle : temp) {
       final NodeHandle tempNode = nodeHandle;
       logger.trace("closestToMe checking prox on {}({},{})", tempNode, handle, handles);
-      ret.attach(getProximity(handle, new Continuation<Integer, IOException>(){
+      cancellable.attach(getProximity(handle, new Continuation<Integer, IOException>(){
 
         @Override
         public void receiveResult(Integer result) {
@@ -688,14 +688,14 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
 
         void finish() {
           if (remaining.isEmpty()) {
-            ret.cancel();
+            cancellable.cancel();
             continuation.receiveResult(closestNode[0]);
           }
         }
       }, 10000));
     }
 
-    return ret;
+    return cancellable;
   }
 
 

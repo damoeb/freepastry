@@ -331,19 +331,19 @@ public class StandardRouter extends PastryAppl implements Router {
 
         // try the routing table
         if (iterator.hasNext()) {
-          NodeHandle ret = iterator.next();
+          NodeHandle next = iterator.next();
 
           // don't return nodes from best
-          if (best != null && best.getIndex(ret) != -1) {
+          if (best != null && best.getIndex(next) != -1) {
             return getNext();
           }
 
           // if this goes into the leafset, then stop using the rtIterator
-          if (iterator == rtIterator && lsCollection.contains(ret)) {
+          if (iterator == rtIterator && lsCollection.contains(next)) {
             iterator = lsCollection.iterator();
             return iterator.next(); // this will always succeed, since it contains the old version of next, even though it's unguarded by hasNext()
           } else {
-            return ret;
+            return next;
           }
         } else {
           // switch to the leafset iterator if possible

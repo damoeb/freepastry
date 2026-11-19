@@ -61,18 +61,18 @@ import org.slf4j.Logger;
     /**
      * Constructor for MessageDelivery.
      */
-    public MessageDelivery(MessageType m, Identifier to, Identifier from, Map<String, Object> options, BasicNetworkSimulator<Identifier, MessageType> sim) {
-      logger = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getLogger();
-      msg = m;
-      node = to;
+    public MessageDelivery(MessageType message, Identifier receiver, Identifier from, Map<String, Object> options, BasicNetworkSimulator<Identifier, MessageType> simulator) {
+      logger = ((DirectTransportLayer<Identifier, MessageType>)simulator.getTL(receiver)).getLogger();
+      msg = message;
+      node = receiver;
       this.options = options;
       this.from = from;
-      this.networkSimulator = sim;
-      this.seq = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).allocateNextSequenceNumber();
+      this.networkSimulator = simulator;
+      this.seq = ((DirectTransportLayer<Identifier, MessageType>)simulator.getTL(receiver)).allocateNextSequenceNumber();
 
       // Note: this is done to reduce memory thrashing.  There are a ton of strings created
       // in getLogger(), and this is a really temporary object.
-      logger = ((DirectTransportLayer<Identifier, MessageType>)sim.getTL(to)).getLogger();
+      logger = ((DirectTransportLayer<Identifier, MessageType>)simulator.getTL(receiver)).getLogger();
     }
 
     @Override

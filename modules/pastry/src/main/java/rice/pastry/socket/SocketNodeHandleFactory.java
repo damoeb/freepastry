@@ -97,8 +97,8 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
    * Notify the listeners that this new handle has come along.
    */
   protected void notifyListeners(SocketNodeHandle nodeHandle) {
-    for (NodeHandleFactoryListener<? super SocketNodeHandle> foo : listeners) {
-      foo.nodeHandleFound(nodeHandle);
+    for (NodeHandleFactoryListener<? super SocketNodeHandle> listener : listeners) {
+      listener.nodeHandleFound(nodeHandle);
     }
   }
 

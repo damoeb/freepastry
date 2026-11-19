@@ -104,14 +104,14 @@ public class IPNodeIdFactory implements NodeIdFactory {
       tmp >>= 8;
     }
 
-    byte raw[] = new byte[4];
+    byte bytes[] = new byte[4];
     tmp = nextInstance.incrementAndGet();
     for (int i = 0; i < 4; i++) {
-      raw[i] = (byte) (tmp & 0xff);
+      bytes[i] = (byte) (tmp & 0xff);
       tmp >>= 8;
     }
 
-    Id nodeId = Id.build(HashUtils.hashToIdMaterial(rawIP, rawPort, raw));
+    Id nodeId = Id.build(HashUtils.hashToIdMaterial(rawIP, rawPort, bytes));
 
     return nodeId;
   }

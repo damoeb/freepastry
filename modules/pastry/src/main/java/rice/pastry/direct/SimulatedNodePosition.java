@@ -41,8 +41,8 @@ package rice.pastry.direct;
 
 public interface SimulatedNodePosition {
 
-  float networkDelay(SimulatedNodePosition nrb);
+  float networkDelay(SimulatedNodePosition peerPosition);
 
-  float proximity(SimulatedNodePosition nrb);
+  float proximity(SimulatedNodePosition peerPosition);
 
 }

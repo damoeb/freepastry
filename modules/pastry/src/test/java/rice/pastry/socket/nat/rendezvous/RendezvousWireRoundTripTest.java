@@ -109,10 +109,10 @@ class RendezvousWireRoundTripTest {
   }
 
   private static RawMessage read(byte[] bytes, NodeHandle from) throws IOException {
-    SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-    RawMessage read = transportLayer.deserialize(in, from);
+    SimpleInputBuffer inputBuffer = new SimpleInputBuffer(bytes);
+    RawMessage read = transportLayer.deserialize(inputBuffer, from);
     if (!(read instanceof RouteMessage)) { // a route message keeps the rest of the buffer to unwrap later
-      assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + read);
+      assertEquals(0, inputBuffer.bytesRemaining(), () -> "bytes left after reading " + read);
     }
     return read;
   }
@@ -208,14 +208,14 @@ class RendezvousWireRoundTripTest {
 
   @ParameterizedTest
   @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE})
-  void openChannelMsg(int uid) throws IOException {
-    OpenChannelMessage msg = new OpenChannelMessage(app.getAddress(), direct, firewalled, uid);
+  void openChannelMsg(int uniqueId) throws IOException {
+    OpenChannelMessage msg = new OpenChannelMessage(app.getAddress(), direct, firewalled, uniqueId);
 
     OpenChannelMessage copy = hop(msg, direct);
 
     assertEquals(direct, copy.getRendezvous());
     assertEquals(firewalled, copy.getSource());
-    assertEquals(uid, copy.getUid());
+    assertEquals(uniqueId, copy.getUid());
     assertFalse(copy.getSource().canContactDirect());
   }
 
@@ -307,11 +307,11 @@ class RendezvousWireRoundTripTest {
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(out, nodeHandle);
     byte[] first = out.getBytes();
-    SimpleInputBuffer in = new SimpleInputBuffer(first);
+    SimpleInputBuffer inputBuffer = new SimpleInputBuffer(first);
 
-    var read = serializer.deserialize(in, routeTo(nodeHandle.getAddress()));
+    var read = serializer.deserialize(inputBuffer, routeTo(nodeHandle.getAddress()));
 
-    assertEquals(0, in.bytesRemaining());
+    assertEquals(0, inputBuffer.bytesRemaining());
     RendezvousSocketNodeHandle copy = assertInstanceOf(RendezvousSocketNodeHandle.class, read);
     assertEquals(nodeHandle, copy);
     assertEquals(status, copy.getContactStatus());
@@ -327,11 +327,11 @@ class RendezvousWireRoundTripTest {
     SocketNodeHandleIdentitySerializer serializer = new SocketNodeHandleIdentitySerializer(node, new SocketNodeHandleFactory(node));
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     serializer.serialize(out, nodeHandle);
-    SimpleInputBuffer in = new SimpleInputBuffer(out.getBytes());
+    SimpleInputBuffer inputBuffer = new SimpleInputBuffer(out.getBytes());
 
-    var read = serializer.deserialize(in, routeTo(nodeHandle.getAddress()));
+    var read = serializer.deserialize(inputBuffer, routeTo(nodeHandle.getAddress()));
 
-    assertEquals(0, in.bytesRemaining());
+    assertEquals(0, inputBuffer.bytesRemaining());
     assertEquals(nodeHandle, read);
   }
 }

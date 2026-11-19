@@ -71,9 +71,9 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
   private final RoutingTable routeTable;
 
 
-  public StandardLeafSetProtocol(PastryNode ln, NodeHandle local,
+  public StandardLeafSetProtocol(PastryNode localNode, NodeHandle local,
       LeafSet ls, RoutingTable routingTable) {
-    super(ln, LeafSetProtocolAddress.getCode());
+    super(localNode, LeafSetProtocolAddress.getCode());
     leafSet = ls;
     for (NodeHandle nodeHandle : leafSet.asList()) {
       nodeHandle.addNodeHandleListener(this);
@@ -263,10 +263,10 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
     // cw half
     for (int i = leafSet.clockwiseSize(); i > 0; i--) {
-      NodeHandle nh = leafSet.get(i);
-      if (nh != null && !nh.ping()) {
+      NodeHandle currentHandle = leafSet.get(i);
+      if (currentHandle != null && !currentHandle.ping()) {
         // remove the dead entry
-        leafSet.remove(nh);
+        leafSet.remove(currentHandle);
         lostMembers = true;
       }
     }
@@ -346,9 +346,9 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    */
   @Override
   @SuppressWarnings("ReferenceEquality") // DECLARED_DEAD is a sentinel instance
-  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
+  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle handle, Object arg) {
       if (arg == NodeHandle.DECLARED_DEAD) {
-        leafSet.remove((NodeHandle)o);
+        leafSet.remove((NodeHandle)handle);
       }
   }
 

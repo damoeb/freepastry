@@ -52,7 +52,7 @@ class SocketPastryNodeFactoryTest {
     CompletableFuture<Boolean> readyOnSelector = new CompletableFuture<Boolean>();
     node.addPastryNodeListener(new PastryNodeListener() {
       @Override
-      public void pastryNodeReady(PastryNode n, boolean ready) {
+      public void pastryNodeReady(PastryNode pn, boolean ready) {
         if (ready) readyOnSelector.complete(env.getSelectorManager().isSelectorThread());
       }
     });
@@ -136,7 +136,7 @@ class SocketPastryNodeFactoryTest {
     CompletableFuture<Boolean> ready = new CompletableFuture<Boolean>();
     node.addPastryNodeListener(new PastryNodeListener() {
       @Override
-      public void pastryNodeReady(PastryNode n, boolean isReady) {
+      public void pastryNodeReady(PastryNode pn, boolean isReady) {
         if (isReady) ready.complete(true);
       }
     });
@@ -154,7 +154,7 @@ class SocketPastryNodeFactoryTest {
     CompletableFuture<Boolean> ready = new CompletableFuture<Boolean>();
     node.addPastryNodeListener(new PastryNodeListener() {
       @Override
-      public void pastryNodeReady(PastryNode n, boolean isReady) {
+      public void pastryNodeReady(PastryNode pn, boolean isReady) {
         if (isReady) ready.complete(true);
       }
     });

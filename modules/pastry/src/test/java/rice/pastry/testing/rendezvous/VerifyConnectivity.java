@@ -83,7 +83,7 @@ public class VerifyConnectivity {
         System.out.println("My external address is "+result);
 
         // for some reason, can't do this immediately... don't know why yet
-        Runnable r = () -> {
+        Runnable task = () -> {
           InetSocketAddress[] addrs = new InetSocketAddress[2];
           addrs[0] = new InetSocketAddress(result, externalPort);
           addrs[1] = factory.getNextInetSocketAddress();
@@ -108,7 +108,7 @@ public class VerifyConnectivity {
             }
           });
         };
-        env.getSelectorManager().invoke(r);
+        env.getSelectorManager().invoke(task);
       }
 
       @Override

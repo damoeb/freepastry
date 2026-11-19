@@ -47,11 +47,11 @@ public final class OpenChannelMessage extends PastryRawMessage implements Rendez
   RendezvousSocketNodeHandle source;
   int uid;
 
-  public OpenChannelMessage(int address, RendezvousSocketNodeHandle rendezvous, RendezvousSocketNodeHandle source, int uid) {
+  public OpenChannelMessage(int address, RendezvousSocketNodeHandle rendezvous, RendezvousSocketNodeHandle source, int uniqueId) {
     super(address);
     this.rendezvous = rendezvous;
     this.source = source;
-    this.uid = uid;
+    this.uid = uniqueId;
   }
 
   public RendezvousSocketNodeHandle getRendezvous() {

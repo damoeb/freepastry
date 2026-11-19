@@ -125,12 +125,12 @@ public class HelloWorldApp extends PastryAppl {
    * @param msg Message that's passing through this node.
    * @param key destination
    * @param nextHop next hop
-   * @param opt send options
+   * @param options send options
    * @return true if message needs to be forwarded according to plan.
    */
   @Override
   public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop,
-      SendOptions opt) {
+      SendOptions options) {
     if (logger.isTraceEnabled()) {
       System.out.println("Enroute " + msg + " at " + getNodeId());
     }

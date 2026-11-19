@@ -60,7 +60,7 @@ class DirectPastryNodeFactoryTest {
     CompletableFuture<Boolean> readyOnSelector = new CompletableFuture<Boolean>();
     node.addPastryNodeListener(new PastryNodeListener() {
       @Override
-      public void pastryNodeReady(PastryNode n, boolean ready) {
+      public void pastryNodeReady(PastryNode pn, boolean ready) {
         if (ready) readyOnSelector.complete(env.getSelectorManager().isSelectorThread());
       }
     });

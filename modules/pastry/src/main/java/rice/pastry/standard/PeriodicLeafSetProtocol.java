@@ -130,25 +130,25 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    * Builds a periodic leafset protocol
    *
    */
-  public PeriodicLeafSetProtocol(PastryNode ln, NodeHandle local,
+  public PeriodicLeafSetProtocol(PastryNode node, NodeHandle local,
       LeafSet leafSet, RoutingTable routingTable) {
-    super(ln, null, LeafSetProtocolAddress.getCode(), new PLSPMessageDeserializer(ln));
-    this.localNode = ln;
-    ln.addPastryNodeListener(this); // to call start() if we are the seed node
+    super(node, null, LeafSetProtocolAddress.getCode(), new PLSPMessageDeserializer(node));
+    this.localNode = node;
+    node.addPastryNodeListener(this); // to call start() if we are the seed node
 
-    PeriodicLeafSetConfig config = PeriodicLeafSetConfig.fromParameters(ln.getEnvironment().getParameters());
+    PeriodicLeafSetConfig config = PeriodicLeafSetConfig.fromParameters(node.getEnvironment().getParameters());
     if (config.useOwnRandom()) {
       if (config.randomSeed().isPresent()) {
-        this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), ln.getEnvironment().getLogManager(),
+        this.random = new SimpleRandomSource(config.randomSeed().getAsLong(), node.getEnvironment().getLogManager(),
             "periodic_leaf_set");
       } else {
-        this.random = new SimpleRandomSource(ln.getEnvironment().getLogManager(), "periodic_leaf_set");
+        this.random = new SimpleRandomSource(node.getEnvironment().getLogManager(), "periodic_leaf_set");
       }
     } else {
-      this.random = ln.getEnvironment().getRandomSource();
+      this.random = node.getEnvironment().getRandomSource();
     }
 
-    this.timeSource = ln.getEnvironment().getTimeSource();
+    this.timeSource = node.getEnvironment().getTimeSource();
     this.localHandle = local;
 
     // make sure to register all the existing leafset entries
@@ -158,12 +158,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     }
 
     this.routeTable = routingTable;
-    this.lastTimeReceivedBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
-    this.lastTimeSentBLS = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
+    this.lastTimeReceivedBLS = new TimerWeakHashMap<NodeHandle, Long>(node.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
+    this.lastTimeSentBLS = new TimerWeakHashMap<NodeHandle, Long>(node.getEnvironment().getSelectorManager().getTimer(), BLS_TIME_HARD_LINK_MILLIS);
     PING_NEIGHBOR_PERIOD = config.pingNeighborPeriod();
     LEASE_PERIOD = config.leasePeriod();
     BLS_THROTTLE = config.requestLeaseThrottle();
-    this.lastTimeRenewedLease = new TimerWeakHashMap<NodeHandle, Long>(ln.getEnvironment().getSelectorManager().getTimer(), LEASE_PERIOD*2);
+    this.lastTimeRenewedLease = new TimerWeakHashMap<NodeHandle, Long>(node.getEnvironment().getSelectorManager().getTimer(), LEASE_PERIOD*2);
 
     pingNeighborMessage = localNode.scheduleMessageAtFixedRate(
         new InitiatePingNeighbor(), PING_NEIGHBOR_PERIOD, PING_NEIGHBOR_PERIOD);
@@ -509,9 +509,9 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
    */
   @Override
   @SuppressWarnings("ReferenceEquality") // DECLARED_DEAD is a sentinel instance
-  public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle o, final Object arg) {
+  public void nodeHandleUpdate(final rice.p2p.commonapi.NodeHandle handle, final Object arg) {
     if (destroyed) return;
-    if (o instanceof NodeHandle nodeHandle) {
+    if (handle instanceof NodeHandle nodeHandle) {
       if (arg == NodeHandle.DECLARED_DEAD) {
         removeFromLeafsetIfPossible(nodeHandle);
       }
@@ -540,9 +540,9 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     } else {
       // verify doesn't have a current lease
       long leaseExpiration = l_time.longValue()+LEASE_PERIOD;
-      long now = timeSource.currentTimeMillis();
-      if (leaseExpiration > now) {
-        logger.atInfo().log(() -> "Removing "+nodeHandle+" from leafset later."+(leaseExpiration-now));
+      long nowMillis = timeSource.currentTimeMillis();
+      if (leaseExpiration > nowMillis) {
+        logger.atInfo().log(() -> "Removing "+nodeHandle+" from leafset later."+(leaseExpiration-nowMillis));
         // remove it later when lease expires
         thePastryNode.getEnvironment().getSelectorManager().getTimer().schedule(new TimerTask() {
           @Override
@@ -551,7 +551,7 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
             // do this recursively in case we issue a new lease
             removeFromLeafsetIfPossible(nodeHandle);
           }
-        }, leaseExpiration-now);
+        }, leaseExpiration-nowMillis);
       } else {
         // lease has expired
         leafSet.remove(nodeHandle);

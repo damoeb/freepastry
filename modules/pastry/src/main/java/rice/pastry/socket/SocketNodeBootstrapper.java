@@ -173,7 +173,7 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
     if (bootaddresses_temp == null) {
       bootaddresses = Collections.EMPTY_LIST;
     } else {
-      bootaddresses = bootaddresses_temp.stream().map(a -> mapLoopbackBoot(a, ownAddress)).toList();
+      bootaddresses = bootaddresses_temp.stream().map(address -> mapLoopbackBoot(address, ownAddress)).toList();
     }
 
     final boolean seed = this.seed || bootaddresses.isEmpty() || bootaddresses.stream().anyMatch(a -> isSelf(a, ownAddress));
@@ -260,10 +260,10 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
       new LivenessListener<NodeHandle>() {
         Logger logger = pn.getEnvironment().getLogManager().getLogger(SocketPastryNodeFactory.class, null);
         @Override
-        public void livenessChanged(NodeHandle i2, int val, Map<String, Object> options) {
+        public void livenessChanged(NodeHandle i2, int newValue, Map<String, Object> options) {
           SocketNodeHandle i = (SocketNodeHandle)i2;
-          logger.debug("livenessChanged({},{})", i, val);
-          if (val <= LIVENESS_SUSPECTED && i.getEpoch() != -1L) {
+          logger.debug("livenessChanged({},{})", i, newValue);
+          if (newValue <= LIVENESS_SUSPECTED && i.getEpoch() != -1L) {
             boolean complete = false;
 
             // add the new handle

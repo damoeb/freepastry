@@ -122,7 +122,7 @@ class NotReadyDeliveryTest {
     onSelector(node, () -> {
       node.setReadyStrategy(new ReadyStrategy() {
         @Override
-        public void setReady(boolean r) {}
+        public void setReady(boolean ready) {}
 
         @Override
         public boolean isReady() {

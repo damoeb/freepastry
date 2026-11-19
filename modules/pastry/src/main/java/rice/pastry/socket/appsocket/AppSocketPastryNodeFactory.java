@@ -119,13 +119,13 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     @Override
-    public void acceptMessages(boolean b) {
-      wireTransportLayer.acceptMessages(b);
+    public void acceptMessages(boolean accept) {
+      wireTransportLayer.acceptMessages(accept);
     }
 
     @Override
-    public void acceptSockets(boolean b) {
-      wireTransportLayer.acceptSockets(b);
+    public void acceptSockets(boolean accept) {
+      wireTransportLayer.acceptSockets(accept);
     }
 
     @Override
@@ -153,9 +153,9 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         }
 
         @Override
-        public void receiveException(SocketRequestHandle<InetSocketAddress> s,
+        public void receiveException(SocketRequestHandle<InetSocketAddress> requestHandle,
             Exception ex) {
-          deliverSocketToMe.receiveException(s,ex);
+          deliverSocketToMe.receiveException(requestHandle,ex);
         }
 
       }, options);
@@ -163,10 +163,10 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
     @Override
     public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-        InetSocketAddress i, ByteBuffer m,
+        InetSocketAddress i, ByteBuffer message,
         MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      return wireTransportLayer.sendMessage(i, m, deliverAckToMe, options);
+      return wireTransportLayer.sendMessage(i, message, deliverAckToMe, options);
     }
 
     @Override
@@ -181,15 +181,15 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     @Override
-    public void incomingSocket(P2PSocket<InetSocketAddress> s)
+    public void incomingSocket(P2PSocket<InetSocketAddress> socket)
         throws IOException {
-      callback.incomingSocket(s);
+      callback.incomingSocket(socket);
     }
 
     @Override
-    public void messageReceived(InetSocketAddress i, ByteBuffer m,
+    public void messageReceived(InetSocketAddress i, ByteBuffer message,
         Map<String, Object> options) throws IOException {
-      callback.messageReceived(i, m, options);
+      callback.messageReceived(i, message, options);
     }
 
     @Override
@@ -283,8 +283,8 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
                   P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> result) {
                 // return the socket
                 WireSocket sm = socketTable.remove(myUid);
-                SocketChannel ret = sm.getSocketChannel();
-                continuation.receiveResult(ret);
+                SocketChannel channel = sm.getSocketChannel();
+                continuation.receiveResult(channel);
               }
             }, options);
 
@@ -347,7 +347,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
           @Override
           public void receiveException(
-              SocketRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>> s,
+              SocketRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>> requestHandle,
               Exception ex) {
 
           }

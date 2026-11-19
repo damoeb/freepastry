@@ -80,12 +80,12 @@ public class InitiateJoin extends Message {
 
   @Override
   public String toString() {
-    String s = "IJ{";
+    String description = "IJ{";
     for (int i = 0; i < handle.length; i++) {
-      s+=handle[i]+":"+(handle[i].getLiveness() < NodeHandle.LIVENESS_DEAD);
-      if (i != handle.length-1) s+=",";
+      description+=handle[i]+":"+(handle[i].getLiveness() < NodeHandle.LIVENESS_DEAD);
+      if (i != handle.length-1) description+=",";
     }
-    s+="}";
-    return s;
+    description+="}";
+    return description;
   }
 }

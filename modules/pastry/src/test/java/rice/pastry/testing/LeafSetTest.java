@@ -195,32 +195,32 @@ public class LeafSetTest {
         System.out.println("Testing cumulative ranges with " + nodes
             + " nodes and leafset size of " + size);
 
-        for (int pos = -min(size / 2, nodes / 2); pos <= min(size / 2,
-            nodes / 2); pos++) {
+        for (int position = -min(size / 2, nodes / 2); position <= min(size / 2,
+            nodes / 2); position++) {
 
           for (int q = 0; q < size; q++) {
             IdRange range = null;
             try {
-              range = leafset.range(leafset.get(pos), q);
+              range = leafset.range(leafset.get(position), q);
             } catch (RangeCannotBeDeterminedException rcbde) {
               // range stays null, which the check below handles
             }
-            if ((q < size / 2 - abs(pos)) || (size + 1 > nodes)) {
-              assertTrue("Range of node " + pos + " with q " + q + " nodes "
+            if ((q < size / 2 - abs(position)) || (size + 1 > nodes)) {
+              assertTrue("Range of node " + position + " with q " + q + " nodes "
                   + nodes + " size " + size + " should be defined in leafset "
                   + leafset, range != null);
 
               if (q >= nodes - 1) {
-                assertTrue("Range of node " + pos + " with q " + q + " nodes "
+                assertTrue("Range of node " + position + " with q " + q + " nodes "
                     + nodes + " size " + size + " should be full in leafset "
                     + leafset, range.isFull());
               } else {
-                assertTrue("Range of node " + pos + " with q " + q + " nodes "
+                assertTrue("Range of node " + position + " with q " + q + " nodes "
                     + nodes + " size " + size + " should be full in leafset "
                     + leafset, !range.isFull());
               }
             } else {
-              assertTrue("Range of node " + pos + " with q " + q + " nodes "
+              assertTrue("Range of node " + position + " with q " + q + " nodes "
                   + nodes + " size " + size
                   + " should be not defined in leafset " + leafset,
                   range == null);
@@ -239,33 +239,33 @@ public class LeafSetTest {
         System.out.println("Testing non-cumulative ranges with " + nodes
             + " nodes and leafset size of " + size);
 
-        for (int pos = -min(size / 2, nodes / 2); pos <= min(size / 2,
-            nodes / 2); pos++) {
+        for (int position = -min(size / 2, nodes / 2); position <= min(size / 2,
+            nodes / 2); position++) {
 
           for (int q = 0; q < size; q++) {
             IdRange range = null;
             try {
-              range = leafset.range(leafset.get(pos), q, true);
+              range = leafset.range(leafset.get(position), q, true);
             } catch (RangeCannotBeDeterminedException rcbde) {
               // range stays null, which the check below handles
             }
-            if ((q < size / 2 - abs(pos)) || (size + 1 > nodes)) {
-              assertTrue("Range of node " + pos + " with q " + q + " nodes "
+            if ((q < size / 2 - abs(position)) || (size + 1 > nodes)) {
+              assertTrue("Range of node " + position + " with q " + q + " nodes "
                   + nodes + " size " + size + " should not be null in leafset "
                   + leafset, range != null);
 
               if (q >= nodes) {
-                assertTrue("Range of node " + pos + " with q " + q + " nodes "
+                assertTrue("Range of node " + position + " with q " + q + " nodes "
                     + nodes + " size " + size + " should be empty in leafset "
                     + leafset, range.isEmpty());
               } else {
-                assertTrue("Range of node " + pos + " with q " + q + " nodes "
+                assertTrue("Range of node " + position + " with q " + q + " nodes "
                     + nodes + " size " + size
                     + " should be defined in leafset " + leafset, !range
                     .isEmpty());
               }
             } else {
-              assertTrue("Range of node " + pos + " with q " + q + " nodes "
+              assertTrue("Range of node " + position + " with q " + q + " nodes "
                   + nodes + " size " + size
                   + " should be not defined in leafset " + leafset,
                   range == null);

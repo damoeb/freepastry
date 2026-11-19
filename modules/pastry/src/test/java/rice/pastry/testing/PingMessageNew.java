@@ -71,9 +71,9 @@ public class PingMessageNew extends PastryRawMessage {
 
     @Override
     public String toString() {
-  String s="";
-  s += "ping from " + getSender().getNodeId() + " to " + target;
-  return s;
+  String description="";
+  description += "ping from " + getSender().getNodeId() + " to " + target;
+  return description;
     }
 
     public void incrHops( ){ nHops++; }

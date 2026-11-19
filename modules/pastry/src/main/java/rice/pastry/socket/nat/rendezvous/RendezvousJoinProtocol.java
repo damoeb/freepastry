@@ -94,9 +94,9 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
 
   PilotManager<RendezvousSocketNodeHandle> pilotManager;
 
-  public RendezvousJoinProtocol(PastryNode ln, NodeHandle localHandle, RoutingTable routingTable,
+  public RendezvousJoinProtocol(PastryNode localNode, NodeHandle localHandle, RoutingTable routingTable,
       LeafSet leafSet, ReadyStrategy nextReadyStrategy, PilotManager<RendezvousSocketNodeHandle> pilotManager) {
-    super(ln, localHandle, routingTable, leafSet, nextReadyStrategy, new RCJPDeserializer(ln));
+    super(localNode, localHandle, routingTable, leafSet, nextReadyStrategy, new RCJPDeserializer(localNode));
     this.pilotManager = pilotManager;
   }
 

@@ -125,12 +125,12 @@ public class PartitionChecker {
 
 
 
-    BufferedReader in = new BufferedReader(new FileReader(ringIdString, StandardCharsets.UTF_8));
+    BufferedReader reader = new BufferedReader(new FileReader(ringIdString, StandardCharsets.UTF_8));
 
     String line;
 
-    while(in.ready()) {
-      line = in.readLine();
+    while(reader.ready()) {
+      line = reader.readLine();
       String[] parts = line.split(":");
 
       int port = 10003;
@@ -275,22 +275,22 @@ public class PartitionChecker {
 
     @Override
     public String toString() {
-      String s = nodes.size()+":"+myBootstraps.size()+": boots:";
+      String description = nodes.size()+":"+myBootstraps.size()+": boots:";
       synchronized(myBootstraps) {
         Iterator<InetSocketAddress> i = myBootstraps.iterator();
-        s+=i.next();
+        description+=i.next();
         while(i.hasNext()) {
-          s+=","+i.next();
+          description+=","+i.next();
         }
       }
-      s+=" non-boots:";
+      description+=" non-boots:";
       synchronized(nodes) {
         for (SocketNodeHandle nxt : nodes) {
           if (!bootstraps.contains(nxt.getInetSocketAddress()))
-            s+=","+nxt;
+            description+=","+nxt;
         }
       }
-      return s;
+      return description;
     }
 
     @Override

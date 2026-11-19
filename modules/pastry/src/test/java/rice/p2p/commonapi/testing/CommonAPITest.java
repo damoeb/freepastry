@@ -260,9 +260,9 @@ public abstract class CommonAPITest {
       processNode(i, nodes[i]);
       simulate();
 
-      long now = environment.getTimeSource().currentTimeMillis();
-      System.out.println("Created node " + i + " with id " + nodes[i]+" at "+now+" "+(now-last));
-      last = now;
+      long nowMillis = environment.getTimeSource().currentTimeMillis();
+      System.out.println("Created node " + i + " with id " + nodes[i]+" at "+nowMillis+" "+(nowMillis-last));
+      last = nowMillis;
       if (logger.isDebugEnabled()) logger.debug(((PastryNode)nodes[i]).getLeafSet().toString());
     }
     logger.atInfo().log(() -> ((PastryNode)nodes[0]).getLeafSet().toString());

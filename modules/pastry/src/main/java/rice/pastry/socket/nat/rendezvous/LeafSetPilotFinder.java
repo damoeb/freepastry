@@ -68,8 +68,8 @@ public class LeafSetPilotFinder implements
       // Note: It's important to make sure the intermediates are in dest's leafset, which means that the distance between the indexes must be <= leafSet.maxSize()/2
       if (leafSet.overlaps()) {
         // small ring, any will do
-        for (NodeHandle foo : leafSet) {
-          RendezvousSocketNodeHandle nodeHandle = (RendezvousSocketNodeHandle)foo;
+        for (NodeHandle handle : leafSet) {
+          RendezvousSocketNodeHandle nodeHandle = (RendezvousSocketNodeHandle)handle;
           if (nodeHandle.canContactDirect()) possibleIntermediates.add(nodeHandle);
         }
       } else {
@@ -79,8 +79,8 @@ public class LeafSetPilotFinder implements
         for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
           if (i != 0) { // don't select self
             if (Math.abs(index-i) <= maxDist) {
-              RendezvousSocketNodeHandle nh = (RendezvousSocketNodeHandle)leafSet.get(i);
-              if (nh.canContactDirect()) possibleIntermediates.add(nh);
+              RendezvousSocketNodeHandle currentHandle = (RendezvousSocketNodeHandle)leafSet.get(i);
+              if (currentHandle.canContactDirect()) possibleIntermediates.add(currentHandle);
             }
           }
         }

@@ -73,8 +73,8 @@ class PastryWireRoundTripTest {
     return leafSet;
   }
 
-  private static RouteSet routeSet(int row, int col, NodeHandle... members) {
-    RouteSet routeSet = new RouteSet(ROUTE_SET_SIZE, row, col, local.node);
+  private static RouteSet routeSet(int row, int column, NodeHandle... members) {
+    RouteSet routeSet = new RouteSet(ROUTE_SET_SIZE, row, column, local.node);
     for (NodeHandle nodeHandle : members) {
       routeSet.put(nodeHandle);
     }

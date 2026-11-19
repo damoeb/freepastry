@@ -98,10 +98,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
   /**
    * Copy constructor.
    */
-  public IdRange(IdRange o) {
-    this.empty = o.empty;
-    this.counterClockwiseId = o.counterClockwiseId;
-    this.clockwiseId = o.clockwiseId;
+  public IdRange(IdRange range) {
+    this.empty = range.empty;
+    this.counterClockwiseId = range.counterClockwiseId;
+    this.clockwiseId = range.clockwiseId;
   }
 
   @Override
@@ -120,13 +120,13 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
-    if (!(obj instanceof IdRange o)) return false;
+    if (!(obj instanceof IdRange range)) return false;
 
-    if (empty && o.empty)
+    if (empty && range.empty)
       return true;
-    if (isFull() && o.isFull())
+    if (isFull() && range.isFull())
       return true;
-    if (empty == o.empty && counterClockwiseId.equals(o.counterClockwiseId) && clockwiseId.equals(o.clockwiseId))
+    if (empty == range.empty && counterClockwiseId.equals(range.counterClockwiseId) && clockwiseId.equals(range.clockwiseId))
       return true;
     else
       return false;
@@ -166,12 +166,12 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
   /**
    * test if this range is adjacent to another range
    *
-   * @param o another range
+   * @param range another range
    * @return true if the range is adjacent to o
    */
-  public boolean isAdjacent(IdRange o) {
-    return (counterClockwiseId.equals(o.clockwiseId) || o.counterClockwiseId.equals(clockwiseId)) && !empty && !o.empty
-        && !isFull() && !o.isFull();
+  public boolean isAdjacent(IdRange range) {
+    return (counterClockwiseId.equals(range.clockwiseId) || range.counterClockwiseId.equals(clockwiseId)) && !empty && !range.empty
+        && !isFull() && !range.isFull();
   }
 
   /**
@@ -211,20 +211,20 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * merge two ranges if this and other don't overlap, are not adjacent, and
    * this is not empty, then the result is this
    *
-   * @param o the other range
+   * @param range the other range
    * @return the resulting range
    */
-  public IdRange merge(IdRange o) {
+  public IdRange merge(IdRange range) {
 
-    if (o.empty || (counterClockwiseId.equals(clockwiseId) && !empty))
+    if (range.empty || (counterClockwiseId.equals(clockwiseId) && !empty))
       return this;
-    if (empty || (o.counterClockwiseId.equals(o.clockwiseId) && !o.empty))
-      return o;
+    if (empty || (range.counterClockwiseId.equals(range.clockwiseId) && !range.empty))
+      return range;
 
-    boolean ccwIn = counterClockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId) || counterClockwiseId.equals(o.clockwiseId);
-    boolean cwIn = clockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId);
-    boolean occwIn = o.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId) || o.counterClockwiseId.equals(clockwiseId);
-    boolean ocwIn = o.clockwiseId.isBetween(counterClockwiseId, clockwiseId);
+    boolean ccwIn = counterClockwiseId.isBetween(range.counterClockwiseId, range.clockwiseId) || counterClockwiseId.equals(range.clockwiseId);
+    boolean cwIn = clockwiseId.isBetween(range.counterClockwiseId, range.clockwiseId);
+    boolean occwIn = range.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId) || range.counterClockwiseId.equals(clockwiseId);
+    boolean ocwIn = range.clockwiseId.isBetween(counterClockwiseId, clockwiseId);
 
     if (ccwIn && cwIn && occwIn && ocwIn) {
       // ranges cover entire ring
@@ -233,13 +233,13 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
 
     if (ccwIn) {
       if (cwIn)
-        return o;
+        return range;
       else
-        return new IdRange(o.counterClockwiseId, clockwiseId);
+        return new IdRange(range.counterClockwiseId, clockwiseId);
     }
 
     if (cwIn) {
-      return new IdRange(counterClockwiseId, o.clockwiseId);
+      return new IdRange(counterClockwiseId, range.clockwiseId);
     }
 
     if (occwIn) {
@@ -270,41 +270,41 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * one such range of intersection if one exists the other range of
    * intersection can be computed by invoking o.intersect(this)
    *
-   * @param o the other range
+   * @param range the other range
    * @return the result range
    */
-  public IdRange intersect(IdRange o) {
+  public IdRange intersect(IdRange range) {
 
-    if (empty || o.empty)
+    if (empty || range.empty)
       return new IdRange();
     if (counterClockwiseId.equals(clockwiseId))
-      return o;
-    if (o.counterClockwiseId.equals(o.clockwiseId))
+      return range;
+    if (range.counterClockwiseId.equals(range.clockwiseId))
       return this;
 
-    boolean ccwIn = counterClockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId);
-    boolean cwIn = clockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId) && !clockwiseId.equals(o.counterClockwiseId);
-    boolean occwIn = o.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId);
-    boolean ocwIn = o.clockwiseId.isBetween(counterClockwiseId, clockwiseId) && !o.clockwiseId.equals(counterClockwiseId);
+    boolean ccwIn = counterClockwiseId.isBetween(range.counterClockwiseId, range.clockwiseId);
+    boolean cwIn = clockwiseId.isBetween(range.counterClockwiseId, range.clockwiseId) && !clockwiseId.equals(range.counterClockwiseId);
+    boolean occwIn = range.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId);
+    boolean ocwIn = range.clockwiseId.isBetween(counterClockwiseId, clockwiseId) && !range.clockwiseId.equals(counterClockwiseId);
 
     if (ccwIn && cwIn && occwIn && ocwIn) {
       // ranges intersect in two ranges, return ccw range
-      return new IdRange(counterClockwiseId, o.clockwiseId);
+      return new IdRange(counterClockwiseId, range.clockwiseId);
     }
 
     if (ccwIn) {
       if (cwIn)
         return this;
       else
-        return new IdRange(counterClockwiseId, o.clockwiseId);
+        return new IdRange(counterClockwiseId, range.clockwiseId);
     }
 
     if (cwIn) {
-      return new IdRange(o.counterClockwiseId, clockwiseId);
+      return new IdRange(range.counterClockwiseId, clockwiseId);
     }
 
     if (occwIn) {
-      return o;
+      return range;
     }
 
     // no intersection
@@ -320,13 +320,13 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * such range of difference if one exists the other range of difference can be
    * computed by invoking o.diff(this)
    *
-   * @param o the other range
+   * @param range the other range
    * @return the result range
    */
-  public IdRange diff(IdRange o) {
-    IdRange result = intersect(o.complement());
+  public IdRange diff(IdRange range) {
+    IdRange result = intersect(range.complement());
     if (result.isEmpty())
-      result = complement().intersect(o);
+      result = complement().intersect(range);
     return result;
   }
 
@@ -337,16 +337,16 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * subtracting a range may produce two ranges on the circle; this method
    * produces one such ranges under control of the cwPart parameter
    *
-   * @param o the other range
+   * @param range the other range
    * @param cwPart if true, returns the clockwise part of the range subtraction,
    *          else the counterclockwise part
    * @return the result range
    */
-  public IdRange subtract(IdRange o, boolean cwPart) {
+  public IdRange subtract(IdRange range, boolean cwPart) {
     if (!cwPart)
-      return intersect(o.complement());
+      return intersect(range.complement());
     else
-      return o.complement().intersect(this);
+      return range.complement().intersect(this);
   }
 
   /**

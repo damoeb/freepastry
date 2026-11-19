@@ -218,9 +218,9 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     }
   }
 
-  public ConsistentJoinProtocol(PastryNode ln, NodeHandle localHandle,
+  public ConsistentJoinProtocol(PastryNode localNode, NodeHandle localHandle,
       RoutingTable routingTable, LeafSet leafSet, ReadyStrategy nextReadyStrategy) {
-    this(ln, localHandle, routingTable, leafSet, nextReadyStrategy, null);
+    this(localNode, localHandle, routingTable, leafSet, nextReadyStrategy, null);
   }
 
   /**
@@ -228,43 +228,43 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
    *
    * @param nextReadyStrategy if non-null, will call nextRenderStrategy.start() when complete
    */
-  public ConsistentJoinProtocol(PastryNode ln, NodeHandle localHandle,
+  public ConsistentJoinProtocol(PastryNode localNode, NodeHandle localHandle,
       RoutingTable routingTable, LeafSet leafSet, ReadyStrategy nextReadyStrategy,
       MessageDeserializer deserializer) {
-    this(ln, localHandle, routingTable, leafSet, nextReadyStrategy, deserializer, ConsistentJoinConfig.fromParameters(ln.getEnvironment().getParameters()));
+    this(localNode, localHandle, routingTable, leafSet, nextReadyStrategy, deserializer, ConsistentJoinConfig.fromParameters(localNode.getEnvironment().getParameters()));
   }
 
   /**
    * As above, with the parameters given instead of read from the environment.
    */
-  public ConsistentJoinProtocol(PastryNode ln, NodeHandle lh,
+  public ConsistentJoinProtocol(PastryNode localNode, NodeHandle lh,
       RoutingTable routingTable, LeafSet ls, ReadyStrategy nextReadyStrategy,
       MessageDeserializer deserializer, ConsistentJoinConfig config) {
-    super(ln, null, JoinAddress.getCode(), deserializer != null ? deserializer : new CJPDeserializer(ln));
+    super(localNode, null, JoinAddress.getCode(), deserializer != null ? deserializer : new CJPDeserializer(localNode));
     localHandle = lh;
     routeTable = routingTable;
     leafSet = ls;
-    gotResponse = new TimerWeakHashMap<NodeHandle, Object>(ln.getEnvironment().getSelectorManager().getTimer(), GOT_RESPONSE_HARD_LINK_MILLIS);
+    gotResponse = new TimerWeakHashMap<NodeHandle, Object>(localNode.getEnvironment().getSelectorManager().getTimer(), GOT_RESPONSE_HARD_LINK_MILLIS);
     failed = new HashMap<NodeHandle, FailedTime>();
     observing = new HashSet<NodeHandle>();
     this.nextReadyStrategy = nextReadyStrategy;
     ls.addNodeSetListener(this);
-    ln.addPastryNodeListener(this);
+    localNode.addPastryNodeListener(this);
     MAX_TIME_TO_BE_SCHEDULED = config.maxTimeToBeScheduled();
     RETRY_INTERVAL = config.retryInterval();
     failedNodeExpirationTime = config.failedRetentionTime();
     maxFailedEntries = config.maxFailedToSend();
     int cleanupInterval = config.cleanupInterval();
 
-    ln.getEnvironment().getSelectorManager().addLoopObserver(this);
+    localNode.getEnvironment().getSelectorManager().addLoopObserver(this);
 
     cleanupTask = new TimerTask() {
       @Override
       public void run() {
         logger.debug("CJP: Cleanup task.");
         synchronized(failed) {
-          long now = thePastryNode.getEnvironment().getTimeSource().currentTimeMillis();
-          long expiration = now-failedNodeExpirationTime;
+          long nowMillis = thePastryNode.getEnvironment().getTimeSource().currentTimeMillis();
+          long expiration = nowMillis-failedNodeExpirationTime;
           Iterator<FailedTime> i = failed.values().iterator();
           while(i.hasNext()) {
             FailedTime failedTime = (FailedTime)i.next();
@@ -274,7 +274,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
               failedTime.handle.removeNodeHandleListener(ConsistentJoinProtocol.this);
               observing.remove(failedTime.handle);
             } else {
-              logger.atTrace().log(() -> "CJP: Not Removing "+failedTime.handle+" from failed set until "+(failedTime.time+failedNodeExpirationTime)+" which is another "+(failedTime.time+failedNodeExpirationTime-now)+" millis.");
+              logger.atTrace().log(() -> "CJP: Not Removing "+failedTime.handle+" from failed set until "+(failedTime.time+failedNodeExpirationTime)+" which is another "+(failedTime.time+failedNodeExpirationTime-nowMillis)+" millis.");
             }
           }
         }
@@ -285,7 +285,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
         return "CJP$cleanupTask{"+thePastryNode+"}"+cancelled;
       }
     };
-    ln.getEnvironment().getSelectorManager().schedule(cleanupTask, cleanupInterval, cleanupInterval);
+    localNode.getEnvironment().getSelectorManager().schedule(cleanupTask, cleanupInterval, cleanupInterval);
   }
 
   /**
@@ -357,10 +357,10 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       JoinRequest joinRequest = (JoinRequest) routeMessage.unwrap(deserializer);
 
       Id localId = localHandle.getNodeId();
-      NodeHandle jh = joinRequest.getHandle();
-      Id nodeId = jh.getNodeId();
+      NodeHandle joinHandle = joinRequest.getHandle();
+      Id nodeId = joinHandle.getNodeId();
 
-      if (!jh.equals(localHandle)) {
+      if (!joinHandle.equals(localHandle)) {
         int base = thePastryNode.getRoutingTable().baseBitLength();
 
         int msdd = localId.indexOfMostSignificantDifferingDigit(nodeId, base);
@@ -444,16 +444,16 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
 
   /** called on the joiner */
   private void completeJoin(JoinRequest joinRequest) {
-    NodeHandle jh = joinRequest.getJoinHandle(); // the node we joined to.
+    NodeHandle joinHandle = joinRequest.getJoinHandle(); // the node we joined to.
 
-    if (jh.getId().equals(localHandle.getId()) && !jh.equals(localHandle)) {
-      logger.warn("NodeId collision, unable to join: {}:{}", localHandle, jh);
-    } else if (jh.getLiveness() < NodeHandle.LIVENESS_DEAD) { // the join handle is alive
-      routeTable.put(jh);
+    if (joinHandle.getId().equals(localHandle.getId()) && !joinHandle.equals(localHandle)) {
+      logger.warn("NodeId collision, unable to join: {}:{}", localHandle, joinHandle);
+    } else if (joinHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) { // the join handle is alive
+      routeTable.put(joinHandle);
       // add the num. closest node to the routing table
 
       // now update the local leaf set
-      BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(jh, joinRequest.getLeafSet(),
+      BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(joinHandle, joinRequest.getLeafSet(),
           BroadcastLeafSet.JoinInitial, 0);
       thePastryNode.receiveMessage(broadcastLeafSet);
 
@@ -521,15 +521,15 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       return;
     }
 
-    Collection<NodeHandle> c = whoDoWeNeedAResponseFrom();
-    logger.info("CJP: timeout1, still waiting to hear from {} nodes.", c.size());
+    Collection<NodeHandle> handles = whoDoWeNeedAResponseFrom();
+    logger.info("CJP: timeout1, still waiting to hear from {} nodes.", handles.size());
 
-    for (NodeHandle nodeHandle : c) {
+    for (NodeHandle nodeHandle : handles) {
       logger.debug("CJP: timeout2, still waiting to hear from {}", nodeHandle);
       try {
         sendTheMessage(nodeHandle, false);
       } catch (NullPointerException exception) {
-        logger.warn("npe, nh = {} c:{}", nodeHandle, c);
+        logger.warn("npe, nh = {} c:{}", nodeHandle, handles);
         throw exception;
       }
     }
@@ -645,9 +645,9 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     // getting closer and closer, each time knocking out the next guy
     LeafSet lprime = leafSet.copy();
     for (int i=-joinMessage.ls.counterClockwiseSize(); i<=joinMessage.ls.clockwiseSize(); i++) {
-      NodeHandle nh = joinMessage.ls.get(i);
-      if (!failed.containsKey(nh) && nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-        lprime.put(nh);
+      NodeHandle currentHandle = joinMessage.ls.get(i);
+      if (!failed.containsKey(currentHandle) && currentHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+        lprime.put(currentHandle);
       }
     }
 
@@ -726,8 +726,8 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       } else {
         if (logger.isDebugEnabled()) {
           String toHearFromStr = "";
-          for (NodeHandle nh : toHearFrom) {
-            toHearFromStr+=nh+":"+nh.getLiveness()+",";
+          for (NodeHandle currentHandle : toHearFrom) {
+            toHearFromStr+=currentHandle+":"+currentHandle.getLiveness()+",";
           }
           logger.debug("CJP: still need to hear from:"+toHearFromStr);
         }
@@ -770,11 +770,11 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     if (failed.size() < maxFailedEntries) {
       toSend = new HashSet<NodeHandle>(failed.keySet());
     } else {
-      ArrayList<FailedTime> l = new ArrayList<FailedTime>(failed.values());
-      Collections.sort(l);
+      ArrayList<FailedTime> failedTimes = new ArrayList<FailedTime>(failed.values());
+      Collections.sort(failedTimes);
       toSend = new HashSet<NodeHandle>();
       for (int i = 0; i < maxFailedEntries; i++) {
-        FailedTime failedTime = (FailedTime)l.get(i);
+        FailedTime failedTime = (FailedTime)failedTimes.get(i);
         toSend.add(failedTime.handle);
       }
     }

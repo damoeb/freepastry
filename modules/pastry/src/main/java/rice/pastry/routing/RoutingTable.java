@@ -190,14 +190,14 @@ public class RoutingTable implements NodeSetEventSource {
 
         RouteSet routeSet = getRouteSet(diffDigit, digit);
         for (int k = 0; routeSet != null && k < routeSet.size(); k++) {
-          NodeHandle n = routeSet.get(k);
+          NodeHandle nodeHandle = routeSet.get(k);
 
-          if (n.getLiveness() <= minLiveness /* isAlive() */) {
-            Id.Distance nDist = n.getNodeId().distance(key);
+          if (nodeHandle.getLiveness() <= minLiveness /* isAlive() */) {
+            Id.Distance nDist = nodeHandle.getNodeId().distance(key);
 
             if (bestDistance.compareTo(nDist) > 0) {
               bestDistance = nDist;
-              alt = n;
+              alt = nodeHandle;
             }
           }
         }
@@ -238,13 +238,13 @@ public class RoutingTable implements NodeSetEventSource {
 
         RouteSet routeSet = getRouteSet(diffDigit, digit);
         for (int k = 0; routeSet != null && k < routeSet.size(); k++) {
-          NodeHandle n = routeSet.get(k);
+          NodeHandle nodeHandle = routeSet.get(k);
 
-          if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-            Id.Distance nDist = n.getNodeId().distance(key);
+          if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+            Id.Distance nDist = nodeHandle.getNodeId().distance(key);
 
             if (myDistance.compareTo(nDist) > 0) {
-              set.put(n);
+              set.put(nodeHandle);
               count++;
             }
 
@@ -295,19 +295,19 @@ public class RoutingTable implements NodeSetEventSource {
 
               // start, assume good initialized state
               if (rs != null && k < rs.size()) {
-                NodeHandle n = rs.get(k);
+                NodeHandle nodeHandle = rs.get(k);
 
-                if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-                  Id.Distance nDist = n.getNodeId().distance(key);
+                if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+                  Id.Distance nDist = nodeHandle.getNodeId().distance(key);
 
                   k++;
                   if (myDistance.compareTo(nDist) > 0) {
-                    return n;
+                    return nodeHandle;
                   } else {
                     return findNext();
                   }
                 } else {
-                  RoutingTable.this.remove(n); // should only be called in the simulator, when liveness info isn't properly published
+                  RoutingTable.this.remove(nodeHandle); // should only be called in the simulator, when liveness info isn't properly published
                 }
               } else {
                 k = 0;
@@ -558,23 +558,23 @@ public class RoutingTable implements NodeSetEventSource {
 
   @Override
   public String toString() {
-    String s = "routing table: \n";
+    String description = "routing table: \n";
 
     for (int i = routingTable.length - 1; i >= 0; i--) {
       for (int j = 0; j < routingTable[i].length; j++) {
         if (routingTable[i][j] != null)
-          s += ("" + routingTable[i][j].size() + "\t");
+          description += ("" + routingTable[i][j].size() + "\t");
         else
-          s += ("" + 0 + "\t");
+          description += ("" + 0 + "\t");
       }
-      s += "\n";
+      description += "\n";
     }
 
-    return s;
+    return description;
   }
 
   public String printSelf() {
-    String s = "routing table for "+this.myNodeId+"\n";
+    String description = "routing table for "+this.myNodeId+"\n";
 
     // don't print the bottom rows, they are uninteresting
 
@@ -599,19 +599,19 @@ public class RoutingTable implements NodeSetEventSource {
           nodeHandle = routeSet.get(0);
         }
         if (nodeHandle != null) {
-          s += ("" + nodeHandle.getNodeId().toStringBare());
+          description += ("" + nodeHandle.getNodeId().toStringBare());
           if (nodeHandle.equals(myNodeHandle)) {
-            s += "*";
+            description += "*";
           }
         } else {
-          s += ("" + 0);
+          description += ("" + 0);
         }
-        s+="\t";
+        description+="\t";
       }
-      s += "\n";
+      description += "\n";
     }
 
-    return s;
+    return description;
   }
 
 

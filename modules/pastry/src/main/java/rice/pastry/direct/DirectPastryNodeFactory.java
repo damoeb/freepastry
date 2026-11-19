@@ -195,8 +195,8 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
        * Notify the listeners that this new handle has come along.
        */
       void notifyListeners(NodeHandle nodeHandle) {
-        for (NodeHandleFactoryListener<? super NodeHandle> foo : listeners) {
-          foo.nodeHandleFound(nodeHandle);
+        for (NodeHandleFactoryListener<? super NodeHandle> listener : listeners) {
+          listener.nodeHandleFound(nodeHandle);
         }
       }
 
@@ -217,12 +217,12 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
 
   @Override
   protected NodeHandleAdapter getNodeHandleAdapter(final PastryNode pn, NodeHandleFactory<?> handleFactory, TransportLayerDeserializer deserializer) throws IOException {
-    SimulatedNodePosition nr = (SimulatedNodePosition)recordTable.get(pn.getId());
-    if (nr == null) {
-      nr = simulator.generateNodeRecord();
-      recordTable.put(pn.getNodeId(),nr);
+    SimulatedNodePosition nodePosition = (SimulatedNodePosition)recordTable.get(pn.getId());
+    if (nodePosition == null) {
+      nodePosition = simulator.generateNodeRecord();
+      recordTable.put(pn.getNodeId(),nodePosition);
     }
-    TransportLayer<? extends NodeHandle, RawMessage> transportLayer = getDirectTransportLayer(pn, nr);
+    TransportLayer<? extends NodeHandle, RawMessage> transportLayer = getDirectTransportLayer(pn, nodePosition);
 
     NodeHandleAdapter nodeHandleAdapter = new NodeHandleAdapter(transportLayer,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){
       @Override
@@ -254,27 +254,27 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   /**
    * Override me
    */
-  protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, SimulatedNodePosition nr) {
+  protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, SimulatedNodePosition nodePosition) {
     DirectNodeHandle local = (DirectNodeHandle)pn.getLocalHandle();
     DirectTransportLayer<DirectNodeHandle, RawMessage> transportLayer = new DirectTransportLayer<DirectNodeHandle, RawMessage>(
         local, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment()) {
       @Override
-      public void incomingMessage(DirectNodeHandle i, RawMessage m, @Nullable Map<String, Object> options) throws IOException {
+      public void incomingMessage(DirectNodeHandle i, RawMessage message, @Nullable Map<String, Object> options) throws IOException {
         // the simulator passes the sender's object, not bytes, so the wire constructor that records the hop never
         // runs; record it here, as a message that came over a socket has it
-        if (m instanceof RouteMessage routeMessage) {
+        if (message instanceof RouteMessage routeMessage) {
           routeMessage.setReceivedFrom(i);
         }
-        super.incomingMessage(i, m, options);
+        super.incomingMessage(i, message, options);
       }
     };
-    simulator.registerNode(local, transportLayer, nr);
+    simulator.registerNode(local, transportLayer, nodePosition);
 
     return transportLayer;
   }
 
   @Override
-  protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector neighborSelector) {
+  protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter nodeHandleAdapter, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector neighborSelector) {
     // boot() may be called on any thread, but PNS, the join and the readiness change belong on the selector
     return bootaddresses -> {
       Runnable boot = () -> neighborSelector.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {

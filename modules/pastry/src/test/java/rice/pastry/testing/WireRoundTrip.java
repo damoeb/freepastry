@@ -105,10 +105,10 @@ public final class WireRoundTrip {
   }
 
   private static <T> T readAll(byte[] bytes, Reader<T> reader, Object value) throws IOException {
-    SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-    T read = reader.read(in);
+    SimpleInputBuffer inputBuffer = new SimpleInputBuffer(bytes);
+    T read = reader.read(inputBuffer);
     assertNotNull(read, () -> "read " + value);
-    assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + value);
+    assertEquals(0, inputBuffer.bytesRemaining(), () -> "bytes left after reading " + value);
     return read;
   }
 
@@ -169,10 +169,10 @@ public final class WireRoundTrip {
 
     /** Reads a message from the bytes of {@link #wire(RawMessage)}, as the node does when it arrives. */
     public RawMessage read(byte[] bytes, NodeHandle from) throws IOException {
-      SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-      RawMessage read = transportLayer[0].deserialize(in, from);
+      SimpleInputBuffer inputBuffer = new SimpleInputBuffer(bytes);
+      RawMessage read = transportLayer[0].deserialize(inputBuffer, from);
       if (!(read instanceof RouteMessage)) { // a route message keeps the rest of the buffer to unwrap later
-        assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + read);
+        assertEquals(0, inputBuffer.bytesRemaining(), () -> "bytes left after reading " + read);
       }
       return read;
     }

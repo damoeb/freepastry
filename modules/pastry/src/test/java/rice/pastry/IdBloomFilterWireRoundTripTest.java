@@ -34,9 +34,9 @@ class IdBloomFilterWireRoundTripTest {
 
     IdBloomFilter copy = WireRoundTrip.roundTrip(filter, IdBloomFilter::serialize, IdBloomFilter::new);
 
-    java.util.Iterator<rice.p2p.commonapi.Id> it = set.getIterator();
-    while (it.hasNext()) {
-      assertTrue(copy.check((Id) it.next()), "an id of the set is found");
+    java.util.Iterator<rice.p2p.commonapi.Id> iterator = set.getIterator();
+    while (iterator.hasNext()) {
+      assertTrue(copy.check((Id) iterator.next()), "an id of the set is found");
     }
     Random probes = new Random(~count);
     for (int i = 0; i < 500; i++) {

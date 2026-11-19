@@ -210,8 +210,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
 
   @Override
-  protected TransportLayer<InetSocketAddress, ByteBuffer> getIpServiceTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> wtl, PastryNode pn) throws IOException {
-    TransportLayer<InetSocketAddress, ByteBuffer> mtl = super.getIpServiceTransportLayer(wtl, pn);
+  protected TransportLayer<InetSocketAddress, ByteBuffer> getIpServiceTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer, PastryNode pn) throws IOException {
+    TransportLayer<InetSocketAddress, ByteBuffer> mtl = super.getIpServiceTransportLayer(wireTransportLayer, pn);
 
     if (pn.getLocalHandle() == null) return mtl;
 
@@ -249,7 +249,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   @Override
   protected NextHopStrategy<MultiInetSocketAddress> getNextHopStrategy(
-      TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> ltl,
+      TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> livenessTransportLayer,
       LivenessProvider<SourceRoute<MultiInetSocketAddress>> livenessProvider,
       Pinger<SourceRoute<MultiInetSocketAddress>> pinger,
       PastryNode pn,
@@ -295,8 +295,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       }
 
       @Override
-      public RendezvousSocketNodeHandle deserialize(InputBuffer sib) throws IOException {
-        return (RendezvousSocketNodeHandle)pn.readNodeHandle(sib);
+      public RendezvousSocketNodeHandle deserialize(InputBuffer inputBuffer) throws IOException {
+        return (RendezvousSocketNodeHandle)pn.readNodeHandle(inputBuffer);
       }
 
       @Override
@@ -313,9 +313,9 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       @Override
       public ByteBuffer serialize(RendezvousSocketNodeHandle i)
           throws IOException {
-        SimpleOutputBuffer sob = new SimpleOutputBuffer();
-        serialize(i,sob);
-        return sob.getByteBuffer();
+        SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+        serialize(i,outputBuffer);
+        return outputBuffer.getByteBuffer();
       }
 
     };
@@ -449,13 +449,13 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   @Override
   @SuppressWarnings("unchecked")
   protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn,
-      NodeHandleAdapter tl,
+      NodeHandleAdapter nodeHandleAdapter,
       NodeHandleFactory<?> handleFactory,
       ProximityNeighborSelector neighborSelector) {
     final PilotManager<RendezvousSocketNodeHandle> manager = (PilotManager<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_TL);
 
     // only do the special step if we're NATted
-    if (((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) return super.getBootstrapper(pn, tl, handleFactory, neighborSelector);
+    if (((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) return super.getBootstrapper(pn, nodeHandleAdapter, handleFactory, neighborSelector);
 
     // set the contents true when booted
     final boolean[] booted = new boolean[1];
@@ -479,7 +479,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     };
     pn.addPastryNodeListener(listener);
 
-    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, neighborSelector,
+    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nodeHandleAdapter.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, neighborSelector,
         socketConfig.seed(), environment.getSelectorManager()) {
 
       @Override

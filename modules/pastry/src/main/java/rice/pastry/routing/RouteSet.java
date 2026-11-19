@@ -80,34 +80,34 @@ public class RouteSet implements PastryNodeHandleSet,
    * @param maxSize the maximum number of nodes that fit in this set.
    */
 
-  public RouteSet(int maxSize, int row, int col, PastryNode local, NodeHandle initialVal) {
-    this(maxSize, row, col, local);
+  public RouteSet(int maxSize, int row, int column, PastryNode local, NodeHandle initialVal) {
+    this(maxSize, row, column, local);
     nodes[theSize++] = initialVal;
     closest = 0;
   }
 
-  public RouteSet(int maxSize, int row, int col, PastryNode local) {
+  public RouteSet(int maxSize, int row, int column, PastryNode local) {
     this.localNode = local;
     nodes = new NodeHandle[maxSize];
     theSize = 0;
     closest = -1;
     this.row = row;
-    this.col = col;
+    this.col = column;
   }
 
   @Override
   public String toString() {
 
-    String s = "RS";
+    String description = "RS";
     if (col >= 0) {
-      s+="("+row+","+Id.tran[col]+"):";
+      description+="("+row+","+Id.tran[col]+"):";
     } else {
-      s+=":";
+      description+=":";
     }
     for (NodeHandle node : nodes) {
-      s+=node+",";
+      description+=node+",";
     }
-    return s;
+    return description;
   }
 
   /**
@@ -147,9 +147,9 @@ public class RouteSet implements PastryNodeHandleSet,
       }
 
       // find entry with worst proximity
-      int p = localNode.proximity(nodes[i]);
-      if (p >= worstProximity) {
-        worstProximity = p;
+      int proximity = localNode.proximity(nodes[i]);
+      if (proximity >= worstProximity) {
+        worstProximity = proximity;
         worstIndex = i;
       }
     }
@@ -196,17 +196,17 @@ public class RouteSet implements PastryNodeHandleSet,
    * Is called whenever the liveness or proximity of a
    * registered node handle is changed.
    *
-   * @param o The node handle
+   * @param handle The node handle
    * @param arg the event type (PROXIMITY_CHANGE, DECLARED_LIVE, DECLARED_DEAD)
    */
   @Override
-  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle o, Object arg) {
+  public void nodeHandleUpdate(rice.p2p.commonapi.NodeHandle handle, Object arg) {
     // if the proximity is initialized for the time, insert the handle
     if (NodeHandle.PROXIMITY_CHANGED.equals(arg)) {
-      put((NodeHandle) o);
+      put((NodeHandle) handle);
     } else if (NodeHandle.DECLARED_DEAD.equals(arg)) {
       // changed to remove dead handles - AM
-      remove((NodeHandle) o);
+      remove((NodeHandle) handle);
     }
   }
 
@@ -324,9 +324,9 @@ public class RouteSet implements PastryNodeHandleSet,
       if (nodes[i].getLiveness() > minLiveness)
         continue;
 
-      int p = localNode.proximity(nodes[i]);
-      if (p <= bestProximity) {
-        bestProximity = p;
+      int proximity = localNode.proximity(nodes[i]);
+      if (proximity <= bestProximity) {
+        bestProximity = proximity;
         bestNode = nodes[i];
         closest = i;
       }

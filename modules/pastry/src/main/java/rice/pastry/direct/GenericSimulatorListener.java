@@ -40,20 +40,20 @@ public interface GenericSimulatorListener<Identifier, MessageType> {
   /**
    * Called for every message sent over the network.
    *
-   * @param m the Message that was sent.
+   * @param message the Message that was sent.
    * @param from the source.
-   * @param to the destination
+   * @param receiver the destination
    * @param delay when the message will be delivered (in millis)
    */
-  public void messageSent(MessageType m, Identifier from, Identifier to, int delay);
+  public void messageSent(MessageType message, Identifier from, Identifier receiver, int delay);
 
   /**
    * Called for every message received over the network.
    *
-   * @param m the Message that was sent.
+   * @param message the Message that was sent.
    * @param from the source.
-   * @param to the destination
+   * @param receiver the destination
    */
-  public void messageReceived(MessageType m, Identifier from, Identifier to);
+  public void messageReceived(MessageType message, Identifier from, Identifier receiver);
 
 }

@@ -187,11 +187,11 @@ public class NodeSet implements PastryNodeHandleSet {
 
   @Override
   public String toString() {
-    String s = "NodeSet: ";
+    String description = "NodeSet: ";
     for (int i = 0; i < size(); i++)
-      s = s + get(i).getNodeId();
+      description = description + get(i).getNodeId();
 
-    return s;
+    return description;
   }
 
   // Common API Support

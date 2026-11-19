@@ -317,9 +317,9 @@ public class InternetPastryNodeFactory extends
         // pull non-internet routable addresses
         Iterator<InetSocketAddress> i = myProbeAddresses.iterator();
         while (i.hasNext()) {
-          InetSocketAddress foo = i.next();
-          if (!isInternetRoutablePrefix(foo.getAddress())) {
-            nonInternetRoutable.add(foo);
+          InetSocketAddress address = i.next();
+          if (!isInternetRoutablePrefix(address.getAddress())) {
+            nonInternetRoutable.add(address);
             i.remove();
           }
         }

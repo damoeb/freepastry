@@ -45,15 +45,15 @@ public class DirectTimerTask extends TimerTask {
 
   MessageDelivery<?, ?> md;
 
-  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime, int period, boolean fixed) {
-    this.md = md;
+  DirectTimerTask(MessageDelivery<?, ?> delivery, long nextExecutionTime, int period, boolean fixed) {
+    this.md = delivery;
     setNextExecutionTime(nextExecutionTime);
     this.period = period;
     this.fixedRate = fixed;
   }
 
-  DirectTimerTask(MessageDelivery<?, ?> md, long nextExecutionTime, int period) {
-    this(md,nextExecutionTime,period,false);
+  DirectTimerTask(MessageDelivery<?, ?> delivery, long nextExecutionTime, int period) {
+    this(delivery,nextExecutionTime,period,false);
   }
 
   @Override

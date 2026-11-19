@@ -77,11 +77,11 @@ public class DirectPastryPingTest {
 
       for (i = 0; i < 8; i++) {
         n = k = (i + 1) * 1000;
-        PingTestRecord tr = new PingTestRecord(n, k, environment.getParameters().getInt("pastry_rtBaseBitLength"));
-        spt = new SinglePingTest(tr, environment);
+        PingTestRecord testRecord = new PingTestRecord(n, k, environment.getParameters().getInt("pastry_rtBaseBitLength"));
+        spt = new SinglePingTest(testRecord, environment);
         spt.test();
-        System.out.println(tr.getNodeNumber() + "\t" + tr.getAveHops() + "\t"
-            + tr.getAveDistance());
+        System.out.println(testRecord.getNodeNumber() + "\t" + testRecord.getAveHops() + "\t"
+            + testRecord.getAveDistance());
       }
     }
     return false;

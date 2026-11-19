@@ -66,12 +66,12 @@ public class RendezvousContactDirectStrategy implements ContactDirectStrategy<Re
   public boolean canContactDirect(RendezvousSocketNodeHandle remoteNode) {
     if (remoteNode.canContactDirect()) return true;
 
-    MultiInetSocketAddress a = remoteNode.getAddress();
-    if (a.getNumAddresses() == 1) {
+    MultiInetSocketAddress address = remoteNode.getAddress();
+    if (address.getNumAddresses() == 1) {
       // they're on the same physical node
-      return a.getInnermostAddress().getAddress().equals(localAddr.getInnermostAddress().getAddress());
+      return address.getInnermostAddress().getAddress().equals(localAddr.getInnermostAddress().getAddress());
     } else {
-      boolean result = addressStrategy.getAddress(localAddr, a).equals(a.getInnermostAddress());
+      boolean result = addressStrategy.getAddress(localAddr, address).equals(address.getInnermostAddress());
       if (result && logger.isDebugEnabled()) logger.debug("rendezvous contacting direct:"+remoteNode);
       return result;
     }

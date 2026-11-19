@@ -271,7 +271,7 @@ public class PastryNode implements
    *
    * @param newLocalHandle
    *          Node handle corresponding to this node.
-   * @param md
+   * @param messageDispatch
    *          Message dispatcher.
    * @param ls
    *          Leaf set.
@@ -280,9 +280,9 @@ public class PastryNode implements
    * @param router
    *          Router.
    */
-  public void setElements(NodeHandle newLocalHandle, MessageDispatch md, LeafSet ls, RoutingTable routingTable, Router router) {
+  public void setElements(NodeHandle newLocalHandle, MessageDispatch messageDispatch, LeafSet ls, RoutingTable routingTable, Router router) {
     localhandle = newLocalHandle;
-    setMessageDispatch(md);
+    setMessageDispatch(messageDispatch);
     leafSet = ls;
     routeSet = routingTable;
     this.router = router;
@@ -331,14 +331,14 @@ public class PastryNode implements
     return myMessageDispatch;
   }
 
-  public void setMessageDispatch(MessageDispatch md) {
-    myMessageDispatch = md;
+  public void setMessageDispatch(MessageDispatch messageDispatch) {
+    myMessageDispatch = messageDispatch;
     addDestructable(myMessageDispatch);
   }
 
-  public Destructible addDestructable(Destructible d) {
-    destructables.add(d);
-    return d;
+  public Destructible addDestructable(Destructible destructible) {
+    destructables.add(destructible);
+    return destructible;
   }
 
   /**
@@ -470,12 +470,12 @@ public class PastryNode implements
    * @param event Boolean (ready) or JoinFailedException
    */
   private void notifyPastryNodeListeners(Object event) {
-    PastryNodeListener[] l = pastryNodeListeners.toArray(new PastryNodeListener[0]);
-    for (int i = l.length-1; i >= 0; i--) {
+    PastryNodeListener[] listeners = pastryNodeListeners.toArray(new PastryNodeListener[0]);
+    for (int i = listeners.length-1; i >= 0; i--) {
       if (event instanceof Boolean b) {
-        l[i].pastryNodeReady(this, b.booleanValue());
+        listeners[i].pastryNodeReady(this, b.booleanValue());
       } else if (event instanceof JoinFailedException joinFailedException) {
-        l[i].pastryNodeJoinFailed(this, joinFailedException);
+        listeners[i].pastryNodeJoinFailed(this, joinFailedException);
       }
     }
   }
@@ -536,7 +536,7 @@ public class PastryNode implements
       }
 
       @Override
-      public void receiveException(SocketRequestHandle<NodeHandle> s, Exception ex) {
+      public void receiveException(SocketRequestHandle<NodeHandle> requestHandle, Exception ex) {
         logger.debug("probe of {} failed", handle, ex);
         onDone.accept(Boolean.FALSE);
       }
@@ -653,9 +653,9 @@ public class PastryNode implements
     if (isDestroyed) return;
     logger.info("Destroying {}", this);
     isDestroyed = true;
-    for (Destructible d : destructables) {
-      logger.info("Destroying {}", d);
-      d.destroy();
+    for (Destructible destructible : destructables) {
+      logger.info("Destroying {}", destructible);
+      destructible.destroy();
     }
     getEnvironment().removeDestructable(this);
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
@@ -682,14 +682,14 @@ public class PastryNode implements
 
     final SocketRequestHandleImpl<NodeHandle> handle = new SocketRequestHandleImpl<NodeHandle>(i, null, logger);
 
-    Runnable r = new Runnable() {
+    Runnable task = new Runnable() {
       @Override
       public void run() {
 
         // use the proper application address
-        final ByteBuffer b = ByteBuffer.allocate(4);
-        b.asIntBuffer().put(appl.getAddress());
-        b.clear();
+        final ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.asIntBuffer().put(appl.getAddress());
+        buffer.clear();
 
 
         handle.setSubCancellable(transportLayer.openSocket(i,
@@ -709,13 +709,13 @@ public class PastryNode implements
                   if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
 
                   // write the appId
-                  if (socket.write(b) == -1) {
+                  if (socket.write(buffer) == -1) {
                     deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
                     return;
                   }
 
                   // keep working or pass up the new socket
-                  if (b.hasRemaining()) {
+                  if (buffer.hasRemaining()) {
                     // keep writing
                     socket.register(false, true, this);
                   } else {
@@ -772,7 +772,7 @@ public class PastryNode implements
             }
 
             @Override
-            public void receiveException(SocketRequestHandle<NodeHandle> s, Exception ex) {
+            public void receiveException(SocketRequestHandle<NodeHandle> requestHandle, Exception ex) {
               // TODO: return something with a proper toString()
               deliverSocketToMe.receiveException(null, ex);
             }
@@ -781,9 +781,9 @@ public class PastryNode implements
       }
     };
     if (myEnvironment.getSelectorManager().isSelectorThread()) {
-      r.run();
+      task.run();
     } else {
-      myEnvironment.getSelectorManager().invoke(r);
+      myEnvironment.getSelectorManager().invoke(task);
     }
 
 
@@ -1106,7 +1106,7 @@ public class PastryNode implements
 
     final PastryRawMessage rm = msg;
 
-    final DefaultPastryMessageReceipt ret = new DefaultPastryMessageReceipt(msg, options);
+    final DefaultPastryMessageReceipt receipt = new DefaultPastryMessageReceipt(msg, options);
     final MessageCallback<NodeHandle, RawMessage> callback;
     if (deliverAckToMe == null) {
       callback = null;
@@ -1114,27 +1114,27 @@ public class PastryNode implements
       callback = new MessageCallback<NodeHandle, RawMessage>(){
         @Override
         public void ack(MessageRequestHandle<NodeHandle, RawMessage> msg) {
-          if (ret.getInternal() == null) ret.setInternal(msg);
-          deliverAckToMe.sent(ret);
+          if (receipt.getInternal() == null) receipt.setInternal(msg);
+          deliverAckToMe.sent(receipt);
         }
         @Override
         public void sendFailed(MessageRequestHandle<NodeHandle, RawMessage> msg, Exception reason) {
-          if (ret.getInternal() == null) ret.setInternal(msg);
-          deliverAckToMe.sendFailed(ret, reason);
+          if (receipt.getInternal() == null) receipt.setInternal(msg);
+          deliverAckToMe.sendFailed(receipt, reason);
         }
       };
     }
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
-      ret.setInternal(transportLayer.sendMessage(handle, rm, callback, options));
+      receipt.setInternal(transportLayer.sendMessage(handle, rm, callback, options));
     } else {
-      getEnvironment().getSelectorManager().invoke(() -> ret.setInternal(transportLayer.sendMessage(handle, rm, callback, options)));
+      getEnvironment().getSelectorManager().invoke(() -> receipt.setInternal(transportLayer.sendMessage(handle, rm, callback, options)));
     }
-    return ret;
+    return receipt;
   }
 
   @Override
-  public void messageReceived(NodeHandle i, RawMessage m, Map<String, Object> options) throws IOException {
-    receiveMessage((Message)m);
+  public void messageReceived(NodeHandle i, RawMessage message, Map<String, Object> options) throws IOException {
+    receiveMessage((Message)message);
   }
 
 
@@ -1200,16 +1200,16 @@ public class PastryNode implements
   }
 
   @Override
-  public void livenessChanged(NodeHandle i, int val, Map<String, Object> options) {
-    if (val == LIVENESS_ALIVE) {
+  public void livenessChanged(NodeHandle i, int newValue, Map<String, Object> options) {
+    if (newValue == LIVENESS_ALIVE) {
       i.update(NodeHandle.DECLARED_LIVE);
     } else {
-      if (val >= LIVENESS_DEAD) {
+      if (newValue >= LIVENESS_DEAD) {
         i.update(NodeHandle.DECLARED_DEAD);
       }
     }
 
-    notifyLivenessListeners((NodeHandle)i, val, options);
+    notifyLivenessListeners((NodeHandle)i, newValue, options);
   }
 
   final Collection<LivenessListener<NodeHandle>> livenessListeners = new CopyOnWriteArrayList<LivenessListener<NodeHandle>>();
@@ -1223,10 +1223,10 @@ public class PastryNode implements
     return livenessListeners.remove(name);
   }
 
-  protected void notifyLivenessListeners(NodeHandle i, int val, Map<String, Object> options) {
-    logger.debug("notifyLivenessListeners({},{})", i, val);
+  protected void notifyLivenessListeners(NodeHandle i, int newValue, Map<String, Object> options) {
+    logger.debug("notifyLivenessListeners({},{})", i, newValue);
     for (LivenessListener<NodeHandle> ll : livenessListeners) {
-      ll.livenessChanged(i, val, options);
+      ll.livenessChanged(i, newValue, options);
     }
   }
 
@@ -1246,7 +1246,7 @@ public class PastryNode implements
 
 
   @Override
-  public void proximityChanged(NodeHandle handle, int val, Map<String, Object> options) {
+  public void proximityChanged(NodeHandle handle, int newValue, Map<String, Object> options) {
     handle.update(NodeHandle.PROXIMITY_CHANGED);
   }
 

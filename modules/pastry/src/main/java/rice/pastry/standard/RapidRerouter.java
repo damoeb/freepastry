@@ -131,12 +131,12 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   private void addToPending(RouterNotification notifyMe, NodeHandle handle) {
     logger.debug("addToPending({} to:{})", notifyMe, handle);
     synchronized(pending) {
-      Collection<RouterNotification> c = pending.get(handle);
-      if (c == null) {
-        c = new HashSet<RouterNotification>();
-        pending.put(handle, c);
+      Collection<RouterNotification> notifications = pending.get(handle);
+      if (notifications == null) {
+        notifications = new HashSet<RouterNotification>();
+        pending.put(handle, notifications);
       }
-      c.add(notifyMe);
+      notifications.add(notifyMe);
     }
   }
 
@@ -147,13 +147,13 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
    */
   private boolean removeFromPending(RouterNotification notifyMe, NodeHandle handle) {
     synchronized(pending) {
-      Collection<RouterNotification> c = pending.get(handle);
-      if (c == null) {
+      Collection<RouterNotification> notifications = pending.get(handle);
+      if (notifications == null) {
         logger.debug("removeFromPending({},{}) had no pending messages for handle.", notifyMe, handle);
         return false;
       }
-      boolean result = c.remove(notifyMe);
-      if (c.isEmpty()) {
+      boolean result = notifications.remove(notifyMe);
+      if (notifications.isEmpty()) {
         pending.remove(handle);
       }
       if (!result) {
@@ -164,8 +164,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
   }
 
   @Override
-  public void livenessChanged(NodeHandle i, int val, Map<String, Object> options) {
-    if (val >= LIVENESS_SUSPECTED) {
+  public void livenessChanged(NodeHandle i, int newValue, Map<String, Object> options) {
+    if (newValue >= LIVENESS_SUSPECTED) {
       Collection<RouterNotification> rerouteMe;
       synchronized(pending) {
         rerouteMe = pending.remove(i);

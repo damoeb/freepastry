@@ -86,9 +86,9 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
 
     @Override
     public float networkDelay(SimulatedNodePosition that) {
-      EuclideanNodeRecord nr = (EuclideanNodeRecord)that;
-      int dx = x - nr.x;
-      int dy = y - nr.y;
+      EuclideanNodeRecord nodeRecord = (EuclideanNodeRecord)that;
+      int dx = x - nodeRecord.x;
+      int dy = y - nodeRecord.y;
 
       float result = (float)Math.sqrt(dx * dx + dy * dy);
       if ((result < 2.0) && !this.equals(that)) return (float)2.0;

@@ -116,8 +116,8 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
     @Override
     public float networkDelay(SimulatedNodePosition that) {
-      GNNodeRecord nr = (GNNodeRecord)that;
-      float result = distance[index][nr.index];
+      GNNodeRecord nodeRecord = (GNNodeRecord)that;
+      float result = distance[index][nodeRecord.index];
       if (result < 0)
         return Float.MAX_VALUE;
 
@@ -143,8 +143,8 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
     int lineCount = 0;
     String line = null;
-    try (BufferedReader in = new BufferedReader(new InputStreamReader(fr, StandardCharsets.UTF_8))) {
-      while ((line = in.readLine()) != null) {
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(fr, StandardCharsets.UTF_8))) {
+      while ((line = reader.readLine()) != null) {
         String[] words;
         words = line.split("[ \t]+");
         if (distance == null) {

@@ -67,10 +67,10 @@ public class IdDerivationTest {
   public void idSetFingerprintIsAFullSha256() {
     IdSet set = new IdSet();
     set.addId(Id.build(sha256("x")));
-    byte[] raw = new byte[Id.IdBitLength / 8];
-    Id.build(sha256("x")).blit(raw);
+    byte[] bytes = new byte[Id.IdBitLength / 8];
+    Id.build(sha256("x")).blit(bytes);
     assertEquals(32, set.hash().length);
-    assertEquals(Arrays.toString(HashUtils.hash(raw)), Arrays.toString(set.hash()));
+    assertEquals(Arrays.toString(HashUtils.hash(bytes)), Arrays.toString(set.hash()));
   }
 
   @Test

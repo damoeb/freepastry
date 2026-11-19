@@ -74,7 +74,7 @@ public class ConnectivityVerifier {
   protected Cancellable getInetSocketAddressLookup(final InetSocketAddress bindAddress, final Continuation<InetSocketAddressLookup, IOException> deliverResultToMe) {
     final AttachableCancellable result = new AttachableCancellable();
 
-    Runnable r = () -> {
+    Runnable task = () -> {
       if (result.isCancelled()) return;
       PastryNode pn = new PastryNode(Id.build(), spnf.getEnvironment());
 
@@ -87,9 +87,9 @@ public class ConnectivityVerifier {
     };
     // only do this on the selector thread, b/c binding on the non-selector makes java cranky on some versions of linux
     if (spnf.getEnvironment().getSelectorManager().isSelectorThread()) {
-      r.run();
+      task.run();
     } else {
-      spnf.getEnvironment().getSelectorManager().invoke(r);
+      spnf.getEnvironment().getSelectorManager().invoke(task);
     }
     return result;
   }
@@ -131,7 +131,7 @@ public class ConnectivityVerifier {
    * Called recursively.
    *
    */
-  public void findExternalNodesHelper(final InetSocketAddressLookup lookup, final AttachableCancellable ret, final InetSocketAddress local,
+  public void findExternalNodesHelper(final InetSocketAddressLookup lookup, final AttachableCancellable cancellable, final InetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final Continuation<Collection<InetSocketAddress>, IOException> deliverResultToMe) {
     logger.trace("findExternalNodesHelper({},{},{})", lookup, local, probeList);
@@ -139,13 +139,13 @@ public class ConnectivityVerifier {
     // pull a random node off the list, and try it, we do this so the recursion works
     InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size()));
 
-    ret.attach(lookup.getExternalNodes(target, new Continuation<Collection<InetSocketAddress>, IOException>() {
+    cancellable.attach(lookup.getExternalNodes(target, new Continuation<Collection<InetSocketAddress>, IOException>() {
       @Override
       public void receiveResult(final Collection<InetSocketAddress> result) {
         logger.info("findExternalNodesHelper({},{},{}).success:{}", lookup, local, probeList, result);
 
         // success!
-        ret.cancel(); // kill any recursive tries
+        cancellable.cancel(); // kill any recursive tries
         lookup.destroy();
 
         // lookup.destroy() uses an invoke
@@ -166,7 +166,7 @@ public class ConnectivityVerifier {
         }
 
         // retry (recursive)
-        findExternalNodesHelper(lookup, ret, local, probeList, deliverResultToMe);
+        findExternalNodesHelper(lookup, cancellable, local, probeList, deliverResultToMe);
       }
     }, null));
   }
@@ -208,7 +208,7 @@ public class ConnectivityVerifier {
    * Called recursively.
    *
    */
-  public void findExternalAddressHelper(final InetSocketAddressLookup lookup, final AttachableCancellable ret, final InetSocketAddress local,
+  public void findExternalAddressHelper(final InetSocketAddressLookup lookup, final AttachableCancellable cancellable, final InetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final Continuation<InetAddress, IOException> deliverResultToMe) {
     logger.trace("findExternalAddressHelper({},{},{})", lookup, local, probeList);
@@ -216,13 +216,13 @@ public class ConnectivityVerifier {
     // pull a random node off the list, and try it, we do this so the recursion works
     InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size()));
 
-    ret.attach(lookup.requestExternalAddress(target, new Continuation<InetSocketAddress, IOException>() {
+    cancellable.attach(lookup.requestExternalAddress(target, new Continuation<InetSocketAddress, IOException>() {
       @Override
       public void receiveResult(final InetSocketAddress result) {
         logger.info("findExternalAddressHelper({},{},{}).success:{}", lookup, local, probeList, result);
 
         // success!
-        ret.cancel(); // kill any recursive tries
+        cancellable.cancel(); // kill any recursive tries
         lookup.destroy();
 
         // lookup.destroy() uses an invoke
@@ -243,7 +243,7 @@ public class ConnectivityVerifier {
         }
 
         // retry (recursive)
-        findExternalAddressHelper(lookup, ret, local, probeList, deliverResultToMe);
+        findExternalAddressHelper(lookup, cancellable, local, probeList, deliverResultToMe);
       }
     }, null));
   }

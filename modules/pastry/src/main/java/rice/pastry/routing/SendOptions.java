@@ -74,8 +74,8 @@ public class SendOptions {
     return allowMultipleHops;
   }
 
-  public void setMultipleHopsAllowed(boolean b) {
-    allowMultipleHops = b;
+  public void setMultipleHopsAllowed(boolean multipleHopsAllowed) {
+    allowMultipleHops = multipleHopsAllowed;
   }
 
   public boolean rerouteIfSuspected() {

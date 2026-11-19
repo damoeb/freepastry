@@ -104,12 +104,12 @@ public class RendezvousPNSApplication extends ProximityNeighborSelectionApplicat
     ArrayList<NodeHandle> contactDirect = new ArrayList<NodeHandle>();
     ArrayList<NodeHandle> notContactDirect = new ArrayList<NodeHandle>();
 
-    for (NodeHandle foo : handles) {
-      RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)foo;
+    for (NodeHandle handle : handles) {
+      RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)handle;
       if (rsnh.canContactDirect()) {
-        contactDirect.add(foo);
+        contactDirect.add(handle);
       } else {
-        notContactDirect.add(foo);
+        notContactDirect.add(handle);
       }
     }
     if (contactDirect.isEmpty()) return notContactDirect;

@@ -40,7 +40,7 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 public interface ReadyStrategy {
-  public void setReady(boolean r);
+  public void setReady(boolean ready);
   public boolean isReady();
   /**
    * Called when it is time to take over as the ReadyStrategy.

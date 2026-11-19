@@ -173,8 +173,8 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
     return prevNode;
   }
 
-  public void setPrevNode(NodeHandle n) {
-    prevNode = n;
+  public void setPrevNode(NodeHandle nodeHandle) {
+    prevNode = nodeHandle;
   }
 
   /**
@@ -400,10 +400,10 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
       buf.writeShort(internalType);
 
       // optimize this, possibly by extending InternalBuffer interface to access the raw underlieing bytes
-      byte[] raw = new byte[serializedMsg.bytesRemaining()];
-      serializedMsg.read(raw);
-      buf.write(raw,0,raw.length);
-      serializedMsg = new SimpleInputBuffer(raw);
+      byte[] bytes = new byte[serializedMsg.bytesRemaining()];
+      serializedMsg.read(bytes);
+      buf.write(bytes,0,bytes.length);
+      serializedMsg = new SimpleInputBuffer(bytes);
     } else {
 //    address was already peeled off as the auxAddress
 //    different wire to deserialize the Address and eliminate unneeded junk
@@ -475,7 +475,7 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
     // the deserializers build the message at its default priority; forwarding must keep the one it was sent with
     internalMsg.setPriority(internalPriority);
     // serialize() writes the message from here on, when it is routed on to the next hop
-    rawInternalMsg = internalMsg instanceof PastryRawMessage raw ? raw : null;
+    rawInternalMsg = internalMsg instanceof PastryRawMessage rawMessage ? rawMessage : null;
 
     // the serializedMsg is now dirty, because the unwrapper may change the internal message
     serializedMsg = null;
@@ -531,8 +531,8 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
   // synchronization problem...
   // This is so the RouteMessage can be cancelled
   Cancellable tlCancellable;
-  public void setTransportLayerCancellable(Cancellable c) {
-    tlCancellable = c;
+  public void setTransportLayerCancellable(Cancellable cancellable) {
+    tlCancellable = cancellable;
   }
 
   public boolean cancel() {

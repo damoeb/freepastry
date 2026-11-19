@@ -69,10 +69,10 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
   /**
    * Creates a set whose members are the keys of the given map; the set is a view of the map.
    *
-   * @param s the map whose keys are the members
+   * @param sortedMap the map whose keys are the members
    */
-  public IdSet(SortedMap<rice.p2p.commonapi.Id, ?> s) {
-    super(s);
+  public IdSet(SortedMap<rice.p2p.commonapi.Id, ?> sortedMap) {
+    super(sortedMap);
   }
 
   @Override
@@ -103,18 +103,18 @@ public final class IdSet extends SortedMapIdSet<IdSet> {
     if (cachedHash != null) return cachedHash.clone();
 
     // recompute the hash
-    MessageDigest md = HashUtils.newDigest();
+    MessageDigest digest = HashUtils.newDigest();
 
-    Iterator<rice.p2p.commonapi.Id> it = getIterator();
+    Iterator<rice.p2p.commonapi.Id> iterator = getIterator();
 
-    byte[] raw = new byte[Id.IdBitLength / 8];
+    byte[] bytes = new byte[Id.IdBitLength / 8];
 
-    while (it.hasNext()) {
-      ((Id) it.next()).blit(raw);
-      md.update(raw);
+    while (iterator.hasNext()) {
+      ((Id) iterator.next()).blit(bytes);
+      digest.update(bytes);
     }
 
-    cachedHash = md.digest();
+    cachedHash = digest.digest();
 
     return cachedHash.clone();
   }
