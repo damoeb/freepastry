@@ -249,7 +249,7 @@ public class MyApp implements Application {
 
         // Send the message
         System.out.println("Sending "+sendMe);
-        sender.sendMsg(sendMe, (byte)1, null);
+        sender.sendMessage(sendMe, (byte)1, null);
 
         try {
           // get the file

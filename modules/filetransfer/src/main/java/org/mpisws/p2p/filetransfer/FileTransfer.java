@@ -45,7 +45,7 @@ import rice.Continuation;
 public interface FileTransfer {
   public FileReceipt sendFile(Path f, ByteBuffer metadata, byte priority, Continuation<FileReceipt, Exception> c) throws IOException;
 
-  public BBReceipt sendMsg(ByteBuffer bb, byte priority, Continuation<BBReceipt, Exception> c);
+  public BBReceipt sendMessage(ByteBuffer bb, byte priority, Continuation<BBReceipt, Exception> c);
   public void addListener(FileTransferListener listener);
   public void removeListener(FileTransferListener listener);
 }

@@ -236,7 +236,7 @@ class FileTransferWireRoundTripTest {
     Pair pair = pair(CHUNK, CHUNK);
     CompletableFuture<BBReceipt> sent = new CompletableFuture<>();
 
-    pair.sender.sendMsg(ByteBuffer.wrap(payload(size, 3)), (byte) 0, into(sent));
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(size, 3)), (byte) 0, into(sent));
 
     assertArrayEquals(payload(size, 3), (byte[]) pair.inbox.next());
     sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -247,7 +247,7 @@ class FileTransferWireRoundTripTest {
   void emptyMessageArrives() throws Exception {
     Pair pair = pair(CHUNK, CHUNK);
 
-    pair.sender.sendMsg(ByteBuffer.allocate(0), (byte) 0, null);
+    pair.sender.sendMessage(ByteBuffer.allocate(0), (byte) 0, null);
 
     assertArrayEquals(new byte[0], (byte[]) pair.inbox.next());
   }
@@ -259,7 +259,7 @@ class FileTransferWireRoundTripTest {
     int[] sizes = {50, 1, CHUNK, 3 * CHUNK, 2};
 
     for (int i = 0; i < sizes.length; i++) {
-      pair.sender.sendMsg(ByteBuffer.wrap(payload(sizes[i], i)), (byte) 0, null);
+      pair.sender.sendMessage(ByteBuffer.wrap(payload(sizes[i], i)), (byte) 0, null);
     }
 
     Object[] received = new Object[sizes.length];
@@ -277,7 +277,7 @@ class FileTransferWireRoundTripTest {
   void messageWithALargerSenderChunk(int senderChunk) throws Exception {
     Pair pair = pair(senderChunk, CHUNK);
 
-    pair.sender.sendMsg(ByteBuffer.wrap(payload(5000, 1)), (byte) 0, null);
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(5000, 1)), (byte) 0, null);
 
     assertArrayEquals(payload(5000, 1), (byte[]) pair.inbox.next());
   }
@@ -356,9 +356,9 @@ class FileTransferWireRoundTripTest {
   @DisplayName("Messages and files sent together all arrive intact")
   void messagesAndFilesTogether() throws Exception {
     Pair pair = pair(CHUNK, CHUNK);
-    pair.sender.sendMsg(ByteBuffer.wrap(payload(40, 1)), (byte) 0, null);
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(40, 1)), (byte) 0, null);
     pair.sender.sendFile(file("f1", payload(100, 2)), ByteBuffer.wrap(new byte[] {1}), (byte) 0, null);
-    pair.sender.sendMsg(ByteBuffer.wrap(payload(3, 3)), (byte) 0, null);
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(3, 3)), (byte) 0, null);
     pair.sender.sendFile(file("f2", payload(17, 4)), ByteBuffer.wrap(new byte[] {2}), (byte) 0, null);
 
     List<byte[]> messages = new ArrayList<>();

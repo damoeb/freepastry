@@ -367,7 +367,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   }
 
   @Override
-  public BBReceipt sendMsg(ByteBuffer bb, byte priority,
+  public BBReceipt sendMessage(ByteBuffer bb, byte priority,
       Continuation<BBReceipt, Exception> c) {
     if (bb == null) throw new IllegalArgumentException("ByteBuffer bb must be non-null");
     BBReceiptImpl ret = new BBReceiptImpl(bb,priority,allocateTransferUid(),c);
@@ -407,7 +407,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
 
     @Override
-    public int getUID() {
+    public int getUid() {
       return uid;
     }
 
@@ -949,7 +949,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
 
     @Override
     public int getUid() {
-      return receipt.getUID();
+      return receipt.getUid();
     }
   }
 
@@ -1349,7 +1349,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
 
     @Override
-    public int getUID() {
+    public int getUid() {
       return uid;
     }
 
@@ -1517,7 +1517,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
 
     @Override
-    public int getUID() {
+    public int getUid() {
       return uid;
     }
 

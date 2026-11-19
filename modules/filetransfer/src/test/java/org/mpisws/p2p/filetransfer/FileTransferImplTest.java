@@ -122,7 +122,7 @@ class FileTransferImplTest {
     FileTransferImpl transfer = new FileTransferImpl(socket, null, null, env, null, CHUNK_SIZE, CHUNKS_TO_WRITE);
     CompletableFuture<BBReceipt> sent = new CompletableFuture<BBReceipt>();
 
-    BBReceipt receipt = transfer.sendMsg(msg, (byte) 0, new Continuation<BBReceipt, Exception>() {
+    BBReceipt receipt = transfer.sendMessage(msg, (byte) 0, new Continuation<BBReceipt, Exception>() {
       @Override
       public void receiveResult(BBReceipt result) {
         sent.complete(result);
@@ -174,7 +174,7 @@ class FileTransferImplTest {
     for (int i = 0; i <= cap + 1; i++) {
       final int index = i;
       byte priority = (byte) (i == cap + 1 ? 0 : 1);
-      transfer.sendMsg(ByteBuffer.allocate(1), priority, new Continuation<BBReceipt, Exception>() {
+      transfer.sendMessage(ByteBuffer.allocate(1), priority, new Continuation<BBReceipt, Exception>() {
         @Override
         public void receiveResult(BBReceipt result) {
         }
