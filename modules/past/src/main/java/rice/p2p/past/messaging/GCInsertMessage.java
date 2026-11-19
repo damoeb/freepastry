@@ -107,7 +107,7 @@ public final class GCInsertMessage extends InsertMessage {
     buf.writeLong(expiration);
   }
 
-  public static GCInsertMessage buildGC(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  public static GCInsertMessage readFrom(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:

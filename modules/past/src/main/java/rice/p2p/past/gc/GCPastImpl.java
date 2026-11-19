@@ -112,7 +112,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
     protected Message deserializeGC(InputBuffer buf, PastMessageType type) throws IOException {
       try {
         return switch (type) {
-          case GC_INSERT -> GCInsertMessage.buildGC(buf, getEndpoint(), contentDeserializer);
+          case GC_INSERT -> GCInsertMessage.readFrom(buf, getEndpoint(), contentDeserializer);
           case GC_LOOKUP_HANDLES -> GCLookupHandlesMessage.buildGC(buf, getEndpoint());
           case GC_REFRESH -> GCRefreshMessage.build(buf, getEndpoint());
           default -> throw unknownType(type.id());
