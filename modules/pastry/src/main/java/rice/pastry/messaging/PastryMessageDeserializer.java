@@ -34,28 +34,36 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
+package rice.pastry.messaging;
 
-package rice.pastry;
+import java.io.IOException;
 
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
 
 /**
- * An interface to a generic set of nodes.
+ * A {@link MessageDeserializer} for the Pastry protocol messages: the subclass deserializes with the
+ * rice.pastry {@link Message} and {@link NodeHandle} types instead of the rice.p2p.commonapi ones, and
+ * returns null for a type it does not know, which is reported as an {@link IOException}.
  *
- * @version $Id: NodeSetI.java 3613 2007-02-15 14:45:14Z jstewart $
- *
- * @author Andrew Ladd
+ * @author Jeff Hoye
  */
+public abstract class PastryMessageDeserializer implements MessageDeserializer {
 
-public interface NodeSetI extends rice.p2p.commonapi.NodeHandleSet
-{
+  protected PastryNode pn;
 
+  public PastryMessageDeserializer(PastryNode pn) {
+    this.pn = pn;
+  }
 
-    /**
-     * Gets the size of the set.
-     *
-     * @return the size.
-     */
+  public abstract Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException;
 
-    @Override
-    public int size();
+  @Override
+  public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
+    rice.p2p.commonapi.Message ret = deserialize(buf, type, priority, (NodeHandle)sender);
+    if (ret == null) throw new IOException("Unknown message type " + type + " for " + getClass().getName());
+    return ret;
+  }
 }

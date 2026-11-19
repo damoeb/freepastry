@@ -56,7 +56,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.pastry.transport.BogusNodeHandle;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 
 /**
  * @author Jeff Hoye
@@ -197,7 +197,7 @@ public class SplitStreamDistTest {
 
     // construct a node; if no bootstrap node is alive, boot() makes it start its own ring
     final PastryNode node = factory.newNode();
-    node.boot(bootHandle == null ? null : ((BogusNodeHandle) bootHandle).getAddress());
+    node.boot(bootHandle == null ? null : ((BootstrapAddressNodeHandle) bootHandle).getAddress());
     System.out.println("Node "+node+" created.");
 
     Runtime.getRuntime().addShutdownHook(new Thread() {

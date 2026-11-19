@@ -43,7 +43,7 @@ import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeHandle;
 import rice.pastry.messaging.Message;
 
-public class PMessageReceiptImpl implements PMessageReceipt {
+public class DefaultPastryMessageReceipt implements PastryMessageReceipt {
   // written under the lock, read by any thread
   private volatile MessageRequestHandle<NodeHandle, RawMessage> internal;
   Message message;
@@ -53,7 +53,7 @@ public class PMessageReceiptImpl implements PMessageReceipt {
   // a private lock, so that code holding a reference to this object can't contend for it
   private final Object lock = new Object();
 
-  public PMessageReceiptImpl(Message msg, Map<String, Object> options) {
+  public DefaultPastryMessageReceipt(Message msg, Map<String, Object> options) {
     this.message = msg;
     this.options = options;
   }

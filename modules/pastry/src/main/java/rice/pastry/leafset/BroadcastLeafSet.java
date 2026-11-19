@@ -42,7 +42,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * Broadcast a leaf set to another node.
@@ -52,7 +52,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class BroadcastLeafSet extends PRawMessage {
+public class BroadcastLeafSet extends PastryRawMessage {
   public static final int Update = 0;
 
   public static final int JoinInitial = 1;

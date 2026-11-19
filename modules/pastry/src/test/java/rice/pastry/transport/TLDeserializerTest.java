@@ -27,7 +27,7 @@ class TLDeserializerTest {
 
   @Test
   void aDeserializerReturningNullRejectsTheMessage() throws IOException {
-    TLDeserializer target = new TLDeserializer(null, env);
+    TransportLayerDeserializer target = new TransportLayerDeserializer(null, env);
     target.setDeserializer(ADDRESS, (buf, type, priority, sender) -> null);
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     out.writeInt(ADDRESS);

@@ -53,7 +53,7 @@ import rice.p2p.util.rawserialization.WireLengths;
  * @author Peter Druschel
  */
 
-public class NodeSet implements NodeSetI {
+public class NodeSet implements PastryNodeHandleSet {
 
   /**
    * of NodeHandle

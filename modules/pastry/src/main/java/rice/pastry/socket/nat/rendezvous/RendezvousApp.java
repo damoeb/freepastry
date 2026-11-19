@@ -63,8 +63,8 @@ import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 import rice.selector.SelectorLoop;
 
 
@@ -251,13 +251,13 @@ public class RendezvousApp extends PastryAppl implements RendezvousStrategy<Rend
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);
       final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret =
         new MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer>(i,m,options);
-      ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMsg(getAddress(),msg,i), new PMessageNotification(){
+      ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMsg(getAddress(),msg,i), new PastryMessageSendListener(){
         @Override
-        public void sent(PMessageReceipt msg) {
+        public void sent(PastryMessageReceipt msg) {
           if (deliverAckToMe != null) deliverAckToMe.ack(ret);
         }
         @Override
-        public void sendFailed(PMessageReceipt msg, Exception reason) {
+        public void sendFailed(PastryMessageReceipt msg, Exception reason) {
           if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, reason);
         }
       }, null));

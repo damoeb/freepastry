@@ -26,10 +26,10 @@ import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryEndpoint;
 import rice.pastry.commonapi.PastryEndpointMessage;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportLayerDeserializer;
 
 /**
  * Sends values and messages through the bytes a socket would carry, without a socket: the direct simulator hands
@@ -115,9 +115,9 @@ public final class WireRoundTrip {
   /** A socket node that is never booted: its handles and ids read and write the way they do on a socket ring. */
   public static final class SocketNode {
     public final PastryNode node;
-    private final TLDeserializer[] tl;
+    private final TransportLayerDeserializer[] tl;
 
-    private SocketNode(PastryNode node, TLDeserializer[] tl) {
+    private SocketNode(PastryNode node, TransportLayerDeserializer[] tl) {
       this.node = node;
       this.tl = tl;
     }
@@ -126,14 +126,14 @@ public final class WireRoundTrip {
      * Builds a node with the given hex id on a free loopback port.
      */
     public static SocketNode create(Environment env, String id) throws IOException {
-      TLDeserializer[] tl = new TLDeserializer[1];
+      TransportLayerDeserializer[] tl = new TransportLayerDeserializer[1];
       int port;
       try (java.net.ServerSocket probe = new java.net.ServerSocket(0, 1, LOOPBACK)) {
         port = probe.getLocalPort();
       }
       PastryNode node = new SocketPastryNodeFactory(() -> Id.build(id), LOOPBACK, port, env) {
         @Override
-        protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+        protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
           tl[0] = super.getTransportLayerDeserializer(handleFactory, pn);
           return tl[0];
         }
@@ -184,7 +184,7 @@ public final class WireRoundTrip {
      * @return the copy read at the second hop
      */
     @SuppressWarnings("unchecked")
-    public <M extends PRawMessage> M hop(M message, NodeHandle from) throws IOException {
+    public <M extends PastryRawMessage> M hop(M message, NodeHandle from) throws IOException {
       byte[] first = wire(message);
       RawMessage copy = read(first, from);
       assertEquals(message.getClass(), copy.getClass());

@@ -34,12 +34,21 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
+package rice.pastry.transport;
 
-package rice.pastry.pns.messages;
+import java.util.Map;
 
-/**
- * The messages of rice.pastry.pns.PNSApplication. The family is closed, so the application
- * switches over it without a default.
- */
-public sealed interface PNSMessage permits LeafSetRequest, LeafSetResponse, RouteRowRequest, RouteRowResponse {
+import org.mpisws.p2p.transport.MessageRequestHandle;
+import rice.pastry.NodeHandle;
+import rice.pastry.messaging.Message;
+
+public interface PastryMessageReceipt extends MessageRequestHandle<NodeHandle, Message> {
+  @Override
+  public NodeHandle getIdentifier();
+
+  @Override
+  public Message getMessage();
+
+  @Override
+  public Map<String, Object> getOptions();
 }

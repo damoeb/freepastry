@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import rice.pastry.PastryNode;
 import rice.pastry.join.JoinRequest;
 import rice.pastry.testing.SocketRing;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 
 /**
  * Requests a remote peer can send to a node of a plain socket ring, which must cost the peer its request, not the
@@ -70,14 +70,14 @@ class SocketRingBadInputTest {
       forged.acceptJoin(attacker.getLocalHandle(), attacker.getLeafSet());
       CompletableFuture<Void> sent = new CompletableFuture<>();
       attacker.getEnvironment().getSelectorManager().invoke(() -> attacker.send(victim.getLocalHandle(), forged,
-          new PMessageNotification() {
+          new PastryMessageSendListener() {
             @Override
-            public void sent(PMessageReceipt msg) {
+            public void sent(PastryMessageReceipt msg) {
               sent.complete(null);
             }
 
             @Override
-            public void sendFailed(PMessageReceipt msg, Exception reason) {
+            public void sendFailed(PastryMessageReceipt msg, Exception reason) {
               sent.completeExceptionally(reason);
             }
           }, null));

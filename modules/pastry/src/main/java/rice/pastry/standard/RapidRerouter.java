@@ -51,8 +51,8 @@ import rice.pastry.messaging.MessageDispatch;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouterStrategy;
 import rice.pastry.routing.SendOptions;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED;
 
@@ -108,7 +108,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       // TODO: notify an error handler, not just the message's own callback
       boolean dontPrint = false;
       if (ioe == null) {
-        dontPrint = rm.sendFailed(new TooManyRouteAttempts(rm, MAX_RETRIES));
+        dontPrint = rm.sendFailed(new TooManyRouteAttemptsException(rm, MAX_RETRIES));
       } else {
         dontPrint = rm.sendFailed(ioe);
       }
@@ -186,10 +186,10 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     thePastryNode.removeLivenessListener(this);
   }
 
-  class RouterNotification implements Cancellable, PMessageNotification {
+  class RouterNotification implements Cancellable, PastryMessageSendListener {
     RouteMessage rm;
     NodeHandle dest;
-    PMessageReceipt cancellable;
+    PastryMessageReceipt cancellable;
 
     public RouterNotification(RouteMessage rm, NodeHandle handle) {
       this.rm = rm;
@@ -197,14 +197,14 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
       logger.debug("RN.ctor() {} to:{}", rm, dest);
     }
 
-    public void setCancellable(PMessageReceipt receipt) {
+    public void setCancellable(PastryMessageReceipt receipt) {
       if (receipt == null) logger.warn("{}.setCancellable(null)", this, new Exception("Stack Trace"));
 
       this.cancellable = receipt;
     }
 
     @Override
-    public void sendFailed(PMessageReceipt msg, Exception reason) {
+    public void sendFailed(PastryMessageReceipt msg, Exception reason) {
       // what to do..., rapidly reroute?
       failed = true;
       cancellable = null;
@@ -253,7 +253,7 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     boolean cancelled = false;
 
     @Override
-    public void sent(PMessageReceipt msg) {
+    public void sent(PastryMessageReceipt msg) {
       logger.debug("Send success {} to:{} {}", rm, dest, msg);
       sent = true;
       cancellable = null;

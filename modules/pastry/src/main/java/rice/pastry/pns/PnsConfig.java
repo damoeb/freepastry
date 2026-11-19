@@ -41,7 +41,7 @@ import java.util.OptionalInt;
 import rice.environment.params.Parameters;
 
 /**
- * The parameters of a {@link PNSApplication}.
+ * The parameters of a {@link ProximityNeighborSelectionApplication}.
  *
  * @param numRowsToUse {@code pns_num_rows_to_use}: how many routing table rows, counted from the top,
  *        the proximity search walks through; empty for {@code all}

@@ -16,7 +16,7 @@ import rice.pastry.direct.DirectNodeHandle;
 import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.NetworkSimulator;
-import rice.pastry.transport.BogusNodeHandle;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,9 +43,9 @@ class PartitionHandlerTest {
     Bootstrapper<InetSocketAddress> recorder = booted::add;
     local.setJoinProtocols(recorder, null, null, null);
     InetSocketAddress address = InetSocketAddress.createUnresolved("bootstrap.example", 9001);
-    PartitionHandler handler = new PartitionHandler(local, null, new InetSocketAddress[0]);
+    PartitionHealer handler = new PartitionHealer(local, null, new InetSocketAddress[0]);
 
-    handler.rejoin(new BogusNodeHandle(address));
+    handler.rejoin(new BootstrapAddressNodeHandle(address));
 
     assertEquals(List.of(List.of(address)), booted);
   }

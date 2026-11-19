@@ -72,8 +72,8 @@ import rice.pastry.routing.RoutingTable;
 public class LeafSet implements Iterable<NodeHandle> {
   private Id baseId;
   private NodeHandle baseHandle;
-  private SimilarSet cwSet;
-  private SimilarSet ccwSet;
+  private LeafSetHalf cwSet;
+  private LeafSetHalf ccwSet;
 
   boolean observe = true;
   private int theSize;
@@ -116,8 +116,8 @@ public class LeafSet implements Iterable<NodeHandle> {
     baseId = localNode.getNodeId();
     theSize = size;
 
-    cwSet = new SimilarSet(this, localNode, size/2, true);
-    ccwSet = new SimilarSet(this, localNode, size/2, false);
+    cwSet = new LeafSetHalf(this, localNode, size/2, true);
+    ccwSet = new LeafSetHalf(this, localNode, size/2, false);
   }
 
   /**
@@ -266,7 +266,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     cwSet.remove(nh);
     ccwSet.remove(nh);
 
-    // don't do this inside SimilarSet.remove() otherwise you may get an
+    // don't do this inside LeafSetHalf.remove() otherwise you may get an
     // add notification before a removal
     cwSet.findMoreEntriesFromRoutingTable();
     ccwSet.findMoreEntriesFromRoutingTable();
@@ -521,7 +521,7 @@ public class LeafSet implements Iterable<NodeHandle> {
   public IdRange range(NodeHandle n, int r) {
    // first, we check the arguments
    if (r < 0) throw new IllegalArgumentException("Range must be greater than or equal to zero. Attempted "+r);
-   if (! (member(n) || baseHandle.equals(n))) throw new LSRangeCannotBeDeterminedException("Node "+n+" is not in this leafset.",r,Integer.MIN_VALUE, getUniqueCount(), n, this);
+   if (! (member(n) || baseHandle.equals(n))) throw new LeafSetRangeCannotBeDeterminedException("Node "+n+" is not in this leafset.",r,Integer.MIN_VALUE, getUniqueCount(), n, this);
 
    // get the position of the node and the number of nodes in the network
    int pos = getIndex(n);
@@ -559,7 +559,7 @@ public class LeafSet implements Iterable<NodeHandle> {
 
    // if either of it's pair nodes are null, then we cannot determine the range
    if ((ccw == null) || (cw == null)) {
-     throw new LSRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.",r,pos, getUniqueCount(), n, this);
+     throw new LeafSetRangeCannotBeDeterminedException("This leafset doesn't have enough information to provide the correct range.",r,pos, getUniqueCount(), n, this);
    }
 
    // otherwise, we then construct the ranges which comprise the main range, and finally
@@ -587,7 +587,7 @@ public class LeafSet implements Iterable<NodeHandle> {
     IdRange rprev = null;
     try {
       rprev = range(n, r-1);
-    } catch (LSRangeCannotBeDeterminedException ignored) {
+    } catch (LeafSetRangeCannotBeDeterminedException ignored) {
       // keeps previous functionality now that we are throwing rcbde rather than returning null
     }
     if (rr == null || rprev == null) return rr;
@@ -840,8 +840,8 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   @SuppressWarnings("ReferenceEquality") // the same instance is meant
-  protected boolean testOtherSet(SimilarSet set, NodeHandle handle) {
-    SimilarSet otherSet = ccwSet;
+  protected boolean testOtherSet(LeafSetHalf set, NodeHandle handle) {
+    LeafSetHalf otherSet = ccwSet;
     if (otherSet == set) {
       otherSet = cwSet;
     }
@@ -933,8 +933,8 @@ public class LeafSet implements Iterable<NodeHandle> {
     baseId = localNode.getNodeId();
     theSize = size;
 
-    cwSet = new SimilarSet(this, localNode, size/2, true, cwTable);
-    ccwSet = new SimilarSet(this, localNode, size/2, false, ccwTable);
+    cwSet = new LeafSetHalf(this, localNode, size/2, true, cwTable);
+    ccwSet = new LeafSetHalf(this, localNode, size/2, false, ccwTable);
   }
 
   /**

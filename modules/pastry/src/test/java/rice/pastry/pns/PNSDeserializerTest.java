@@ -19,12 +19,12 @@ class PNSDeserializerTest {
   private static final short UNKNOWN_TYPE = 12345;
 
   private Environment env;
-  private PNSApplication app;
+  private ProximityNeighborSelectionApplication app;
 
   @BeforeEach
   void setUp() throws Exception {
     env = Environment.directEnvironment(1);
-    app = new PNSApplication(new DirectPastryNodeFactory(new RandomNodeIdFactory(env),
+    app = new ProximityNeighborSelectionApplication(new DirectPastryNodeFactory(new RandomNodeIdFactory(env),
         new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env).newNode());
   }
 
@@ -35,7 +35,7 @@ class PNSDeserializerTest {
 
   @Test
   void rejectsAnUnknownTypeNamingTheTypeId() {
-    PNSApplication.PNSDeserializer target = app.new PNSDeserializer();
+    ProximityNeighborSelectionApplication.PNSDeserializer target = app.new PNSDeserializer();
 
     IOException actual = assertThrows(IOException.class,
         () -> target.deserialize(new SimpleInputBuffer(new byte[0]), UNKNOWN_TYPE, 0, null));

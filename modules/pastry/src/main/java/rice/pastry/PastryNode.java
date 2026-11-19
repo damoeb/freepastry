@@ -88,14 +88,14 @@ import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.messaging.Message;
 import rice.pastry.messaging.MessageDispatch;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.InitiateRouteSetMaintenance;
 import rice.pastry.routing.RouteSetProtocol;
 import rice.pastry.routing.Router;
 import rice.pastry.routing.RoutingTable;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
-import rice.pastry.transport.PMessageReceiptImpl;
+import rice.pastry.transport.DefaultPastryMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 import rice.pastry.transport.SocketAdapter;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
@@ -1053,9 +1053,9 @@ public class PastryNode implements
    * @param tempOptions transport options for this message, may be null
    * @return a receipt for the message
    */
-  public PMessageReceipt send(final NodeHandle handle,
-      final PRawMessage msg,
-      final PMessageNotification deliverAckToMe,
+  public PastryMessageReceipt send(final NodeHandle handle,
+      final PastryRawMessage msg,
+      final PastryMessageSendListener deliverAckToMe,
       Map<String, Object> tempOptions) {
 
     // set up the priority field in the options
@@ -1074,7 +1074,7 @@ public class PastryNode implements
 
     if (handle.equals(localhandle)) {
       receiveMessage(msg);
-      PMessageReceipt ret = new PMessageReceipt() {
+      PastryMessageReceipt ret = new PastryMessageReceipt() {
 
         @Override
         public boolean cancel() {
@@ -1104,9 +1104,9 @@ public class PastryNode implements
       return ret;
     }
 
-    final PRawMessage rm = msg;
+    final PastryRawMessage rm = msg;
 
-    final PMessageReceiptImpl ret = new PMessageReceiptImpl(msg, options);
+    final DefaultPastryMessageReceipt ret = new DefaultPastryMessageReceipt(msg, options);
     final MessageCallback<NodeHandle, RawMessage> callback;
     if (deliverAckToMe == null) {
       callback = null;

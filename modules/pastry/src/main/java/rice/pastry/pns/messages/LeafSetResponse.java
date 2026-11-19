@@ -42,9 +42,9 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-public final class LeafSetResponse extends PRawMessage implements PNSMessage {
+public final class LeafSetResponse extends PastryRawMessage implements ProximityNeighborSelectionMessage {
   private final LeafSet leafset;
 
   public LeafSetResponse(LeafSet leafset, int dest) {

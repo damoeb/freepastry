@@ -42,7 +42,7 @@ import static rice.environment.params.ConfigChecks.requirePositive;
 import rice.environment.params.Parameters;
 
 /**
- * The parameters of a {@link PartitionHandler}. All times are in milliseconds.
+ * The parameters of a {@link PartitionHealer}. All times are in milliseconds.
  *
  * @param maxHistorySize {@code partition_handler_max_history_size}: the most departed nodes remembered
  *        as rejoin candidates

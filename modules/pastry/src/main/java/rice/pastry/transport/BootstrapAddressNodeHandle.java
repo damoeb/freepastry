@@ -34,22 +34,73 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Aug 16, 2005
- */
-package rice.pastry.leafset;
+package rice.pastry.transport;
 
-import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.RangeCannotBeDeterminedException;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
-/**
- * @author Jeff Hoye
- */
-public class LSRangeCannotBeDeterminedException extends RangeCannotBeDeterminedException {
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.socket.TransportLayerNodeHandle;
+
+public class BootstrapAddressNodeHandle extends TransportLayerNodeHandle<Collection<InetSocketAddress>> {
+  private final Collection<InetSocketAddress> addresses;
+
+  public BootstrapAddressNodeHandle(InetSocketAddress address) {
+    addresses = Collections.singletonList(address);
+  }
+
+  public BootstrapAddressNodeHandle(InetSocketAddress[] bootstraps) {
+    addresses = Arrays.asList(bootstraps);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public int getLiveness() {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public Id getNodeId() {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public String toString() {
+    return "BootstrapAddressNodeHandle "+addresses;
+  }
 
 
-  public LSRangeCannotBeDeterminedException(String string, int r, int pos, int uniqueNodes, NodeHandle nh, LeafSet ls) {
-    super(string+" replication factor:"+r+" nh position:"+pos+" handle:"+nh+" ls.uniqueNodes():"+uniqueNodes+" "+ls.toString());
+  @Override
+  public int hashCode() {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public boolean ping() {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public void serialize(OutputBuffer buf) throws IOException {
+    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
+  }
+
+  @Override
+  public Collection<InetSocketAddress> getAddress() {
+    return addresses;
+  }
+
+  @Override
+  public long getEpoch() {
+    return 0;
   }
 
 }

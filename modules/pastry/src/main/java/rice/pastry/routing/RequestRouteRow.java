@@ -41,7 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * Request a row from the routing table from another node.
@@ -51,7 +51,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public final class RequestRouteRow extends PRawMessage implements RouteSetProtocolMessage {
+public final class RequestRouteRow extends PastryRawMessage implements RouteSetProtocolMessage {
   private short row;
 
 

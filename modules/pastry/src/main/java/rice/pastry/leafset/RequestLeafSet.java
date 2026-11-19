@@ -41,7 +41,7 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * Request a leaf set from another node.
@@ -51,7 +51,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class RequestLeafSet extends PRawMessage {
+public class RequestLeafSet extends PastryRawMessage {
   long timeStamp;
 
 

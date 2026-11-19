@@ -35,14 +35,21 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /*
- * Created on Nov 8, 2005
+ * Created on Aug 16, 2005
  */
-package rice.pastry.direct;
+package rice.pastry.leafset;
 
-public interface NodeRecord {
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RangeCannotBeDeterminedException;
 
-  float networkDelay(NodeRecord nrb);
+/**
+ * @author Jeff Hoye
+ */
+public class LeafSetRangeCannotBeDeterminedException extends RangeCannotBeDeterminedException {
 
-  float proximity(NodeRecord nrb);
+
+  public LeafSetRangeCannotBeDeterminedException(String string, int r, int pos, int uniqueNodes, NodeHandle nh, LeafSet ls) {
+    super(string+" replication factor:"+r+" nh position:"+pos+" handle:"+nh+" ls.uniqueNodes():"+uniqueNodes+" "+ls.toString());
+  }
 
 }

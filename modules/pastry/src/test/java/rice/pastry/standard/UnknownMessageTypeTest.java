@@ -15,7 +15,7 @@ import rice.pastry.PastryNode;
 import rice.pastry.direct.DirectNodeHandle;
 import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
-import rice.pastry.messaging.PMessageDeserializer;
+import rice.pastry.messaging.PastryMessageDeserializer;
 
 class UnknownMessageTypeTest {
   private static final short UNKNOWN_TYPE = 12345;
@@ -36,7 +36,7 @@ class UnknownMessageTypeTest {
   }
 
   /** Calls the pastry-typed overload, which is the one subclasses implement. */
-  private static void assertRejected(PMessageDeserializer target) {
+  private static void assertRejected(PastryMessageDeserializer target) {
     IOException actual = assertThrows(IOException.class,
         () -> target.deserialize(new SimpleInputBuffer(new byte[0]), UNKNOWN_TYPE, 0, (NodeHandle) null));
 

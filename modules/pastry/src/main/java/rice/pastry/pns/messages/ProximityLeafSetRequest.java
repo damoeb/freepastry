@@ -34,80 +34,38 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Apr 13, 2005
- */
-package rice.pastry.standard;
+package rice.pastry.pns.messages;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.NodeHandleFactory;
-import rice.pastry.join.JoinAddress;
-import rice.pastry.join.JoinMessageType;
-import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-/**
- * @author Jeff Hoye
- */
-public class ConsistentJoinMsg extends PRawMessage {
-  LeafSet ls;
-  boolean request;
-  Set<NodeHandle> failed;
-
-  /**
-   *
-   */
-  public ConsistentJoinMsg(LeafSet ls, Set<NodeHandle> failed, boolean request) {
-    super(JoinAddress.getCode());
-    this.ls = ls;
-    this.request = request;
-    this.failed = failed;
+public final class ProximityLeafSetRequest extends PastryRawMessage implements ProximityNeighborSelectionMessage {
+  public ProximityLeafSetRequest(NodeHandle nodeHandle, int dest) {
+    super(dest);
+    if (nodeHandle == null) throw new IllegalArgumentException("nodeHandle == null!");
+    setSender(nodeHandle);
+    setPriority(HIGH_PRIORITY);
   }
 
-  @Override
-  public String toString() {
-    return "ConsistentJoinMsg "+ls+" request:"+request;
+  public static ProximityLeafSetRequest build(InputBuffer buf, NodeHandle sender, int dest) throws IOException {
+    byte version = buf.readByte();
+    if (version == 0)
+      return new ProximityLeafSetRequest(sender, dest);
+    throw new IOException("Unknown version: "+version);
   }
 
-  /***************** Raw Serialization ***************************************/
   @Override
   public short getType() {
-    return JoinMessageType.CONSISTENT_JOIN.id();
+    return PNSMessageType.LEAF_SET_REQUEST.id();
   }
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte)0); // version
-    ls.serialize(buf);
-    buf.writeBoolean(request);
-    buf.writeInt(failed.size());
-    for (NodeHandle h : failed) {
-      h.serialize(buf);
-    }
   }
 
-  public ConsistentJoinMsg(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender) throws IOException {
-    super(JoinAddress.getCode());
-    byte version = buf.readByte();
-    switch(version) {
-      case 0:
-        setSender(sender);
-        ls = LeafSet.build(buf, nhf);
-        request = buf.readBoolean();
-        failed = new HashSet<NodeHandle>();
-        int numInSet = buf.readInt();
-        for (int i = 0; i < numInSet; i++) {
-          failed.add(nhf.readNodeHandle(buf));
-        }
-        break;
-      default:
-        throw new IOException("Unknown Version: "+version);
-    }
-  }
 }

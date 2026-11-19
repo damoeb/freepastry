@@ -45,7 +45,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteSet;
 
 /**
@@ -58,7 +58,7 @@ import rice.pastry.routing.RouteSet;
  *
  * @author Jeff Hoye, Andrew Ladd
  */
-public class JoinRequest extends PRawMessage {
+public class JoinRequest extends PastryRawMessage {
 
   private final NodeHandle handle;
 

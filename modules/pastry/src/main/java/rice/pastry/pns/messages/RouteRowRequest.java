@@ -41,9 +41,9 @@ import java.io.IOException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-public final class RouteRowRequest extends PRawMessage implements PNSMessage {
+public final class RouteRowRequest extends PastryRawMessage implements ProximityNeighborSelectionMessage {
   private final short index;
 
   public RouteRowRequest(NodeHandle nodeHandle, short index, int dest) {

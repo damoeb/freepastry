@@ -61,8 +61,8 @@ import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.Router;
 import rice.pastry.routing.RouterAddress;
 import rice.pastry.routing.RouterStrategy;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 
 /**
  * An implementation of the standard Pastry routing algorithm.
@@ -195,13 +195,13 @@ public class StandardRouter extends PastryAppl implements Router {
 
   protected void sendTheMessage(final RouteMessage rm, final NodeHandle handle) {
     logger.trace("sendTheMessage({},{})", rm, handle);
-    rm.setTransportLayerCancellable(thePastryNode.send(handle, rm, new PMessageNotification(){
+    rm.setTransportLayerCancellable(thePastryNode.send(handle, rm, new PastryMessageSendListener(){
       @Override
-      public void sent(PMessageReceipt msg) {
+      public void sent(PastryMessageReceipt msg) {
         rm.sendSuccess(handle);
       }
       @Override
-      public void sendFailed(PMessageReceipt msg, Exception reason) {
+      public void sendFailed(PastryMessageReceipt msg, Exception reason) {
         if (rm.sendFailed(reason)) {
           logger.info("sendFailed({})=>{}", rm, handle, reason);
         } else {

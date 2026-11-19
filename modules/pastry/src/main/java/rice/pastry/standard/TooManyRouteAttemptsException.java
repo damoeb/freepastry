@@ -34,23 +34,16 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Feb 17, 2006
- */
-package rice.pastry.messaging;
+package rice.pastry.standard;
 
+import java.io.IOException;
 
-import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.pastry.routing.RouteMessage;
 
-/**
- * Adapts Message to a RawMessage
- *
- * Adds the "sender" to the RawMessage
- * @author Jeff Hoye
- */
-public abstract class PRawMessage extends Message implements RawMessage {
+public class TooManyRouteAttemptsException extends IOException {
 
-  public PRawMessage(int address) {
-    super(address);
+  public TooManyRouteAttemptsException(RouteMessage rm, int max_retries) {
+    super("Too many attempts to route the message "+rm);
   }
+
 }

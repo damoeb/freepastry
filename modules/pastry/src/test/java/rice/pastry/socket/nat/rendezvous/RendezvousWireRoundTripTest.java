@@ -32,7 +32,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.socket.SPNFIdentitySerializer;
@@ -41,7 +41,7 @@ import rice.pastry.socket.SocketNodeHandleFactory;
 import rice.pastry.socket.nat.probe.ProbeApp;
 import rice.pastry.socket.nat.probe.ProbeRequestMessage;
 import rice.pastry.testing.WireRoundTrip;
-import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportLayerDeserializer;
 
 /**
  * The rendezvous layer's messages, node handles and identity serializers through the bytes a socket ring carries:
@@ -54,7 +54,7 @@ class RendezvousWireRoundTripTest {
 
   private static Environment env;
   private static PastryNode node;
-  private static TLDeserializer tl;
+  private static TransportLayerDeserializer tl;
   private static RendezvousApp app;
   private static RendezvousSocketNodeHandle direct;
   private static RendezvousSocketNodeHandle firewalled;
@@ -66,11 +66,11 @@ class RendezvousWireRoundTripTest {
     try (ServerSocket probe = new ServerSocket(0, 1, LOOPBACK)) {
       port = probe.getLocalPort();
     }
-    TLDeserializer[] tls = new TLDeserializer[1];
+    TransportLayerDeserializer[] tls = new TransportLayerDeserializer[1];
     RendezvousApp[] apps = new RendezvousApp[1];
     node = new RendezvousSocketPastryNodeFactory(() -> Id.build("4000"), LOOPBACK, port, env, false) {
       @Override
-      protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+      protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
         tls[0] = super.getTransportLayerDeserializer(handleFactory, pn);
         return tls[0];
       }
@@ -126,7 +126,7 @@ class RendezvousWireRoundTripTest {
 
   /** Sends a message to the node through the transport's bytes, reads it, sends the copy on, reads that. */
   @SuppressWarnings("unchecked")
-  private static <M extends PRawMessage> M hop(M message, NodeHandle from) throws IOException {
+  private static <M extends PastryRawMessage> M hop(M message, NodeHandle from) throws IOException {
     byte[] first = wire(message);
     RawMessage copy = read(first, from);
     assertEquals(message.getClass(), copy.getClass());

@@ -48,8 +48,8 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
-import rice.pastry.NodeSetI;
 import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeHandleSet;
 
 /**
  * A set of nodes typically stored in the routing table. The set contains a
@@ -62,7 +62,7 @@ import rice.pastry.PastryNode;
  * @author Peter Druschel
  */
 
-public class RouteSet implements NodeSetI,
+public class RouteSet implements PastryNodeHandleSet,
     NodeHandleListener, Iterable<NodeHandle> {
   private NodeHandle[] nodes;
 

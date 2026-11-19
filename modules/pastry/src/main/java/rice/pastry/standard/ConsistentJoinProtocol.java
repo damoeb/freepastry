@@ -70,14 +70,14 @@ import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PMessageDeserializer;
+import rice.pastry.messaging.PastryMessageDeserializer;
 import rice.pastry.routing.BroadcastRouteRow;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteMessageNotification;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 import rice.selector.LoopObserver;
 import rice.selector.TimerTask;
 
@@ -193,7 +193,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   HashSet<NodeHandle> observing;
 
   /**
-   * Will retry sending ConsistentJoinMsg to all neighbors who have not responded
+   * Will retry sending ConsistentJoinMessage to all neighbors who have not responded
    * on this interval.  Only necessary if somehow the message was dropped.
    */
   public final int RETRY_INTERVAL;
@@ -201,7 +201,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   /**
    * Reads the messages of the join protocol. A subclass with message types of its own extends it.
    */
-  public static class CJPDeserializer extends PMessageDeserializer {
+  public static class CJPDeserializer extends PastryMessageDeserializer {
     public CJPDeserializer(PastryNode pn) {
       super(pn);
     }
@@ -210,7 +210,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       return switch (JoinMessageType.find(type)) {
         case JOIN_REQUEST -> new JoinRequest(buf,pn, (NodeHandle)sender, pn);
-        case CONSISTENT_JOIN -> new ConsistentJoinMsg(buf,pn,(NodeHandle)sender);
+        case CONSISTENT_JOIN -> new ConsistentJoinMessage(buf,pn,(NodeHandle)sender);
         // read by the subclass's deserializer
         case RENDEZVOUS_JOIN_REQUEST -> null;
         case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
@@ -413,13 +413,13 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     if (thePastryNode.isReady()) {
       logger.info("acceptJoin {}", jr);
       jr.acceptJoin(localHandle, leafSet);
-      thePastryNode.send(joiner,jr,new PMessageNotification(){
+      thePastryNode.send(joiner,jr,new PastryMessageSendListener(){
         @Override
-        public void sent(PMessageReceipt msg) {
+        public void sent(PastryMessageReceipt msg) {
           logger.info("acceptJoin.sent({}):{}", msg, jr);
         }
         @Override
-        public void sendFailed(PMessageReceipt msg, Exception reason2) {
+        public void sendFailed(PastryMessageReceipt msg, Exception reason2) {
           Throwable reason = reason2;
           if (logger.isInfoEnabled()) {
             logger.info("acceptJoin.sendFailed("+msg+"):"+jr, reason);
@@ -589,7 +589,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   public void receiveMessage(Message msg) {
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "join messages are received on the selector thread";
     logger.trace("CJP: receiveMessage({})", msg);
-    if (msg instanceof ConsistentJoinMsg cjm) {
+    if (msg instanceof ConsistentJoinMessage cjm) {
       handleConsistentJoinMsg(cjm);
     } else if (msg instanceof RequestFromEveryoneMsg) {
       requestFromEveryoneWeHaventHeardFrom();
@@ -605,7 +605,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   /**
    * Handle the CJM as in the MSR-TR
    */
-  private void handleConsistentJoinMsg(ConsistentJoinMsg cjm) {
+  private void handleConsistentJoinMsg(ConsistentJoinMessage cjm) {
     // identify node j, the sender of the message
     NodeHandle j = cjm.ls.get(0);
 
@@ -778,7 +778,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
         toSend.add(tf.handle);
       }
     }
-    thePastryNode.send(nh,new ConsistentJoinMsg(leafSet,toSend,!reply),null,options);
+    thePastryNode.send(nh,new ConsistentJoinMessage(leafSet,toSend,!reply),null,options);
   }
 
   @Override

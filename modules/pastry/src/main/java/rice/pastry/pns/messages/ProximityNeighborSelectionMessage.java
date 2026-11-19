@@ -34,11 +34,12 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.transport;
 
-public interface PMessageNotification {
+package rice.pastry.pns.messages;
 
-  public void sendFailed(PMessageReceipt msg, Exception reason);
-
-  public void sent(PMessageReceipt msg);
+/**
+ * The messages of rice.pastry.pns.ProximityNeighborSelectionApplication. The family is closed, so the application
+ * switches over it without a default.
+ */
+public sealed interface ProximityNeighborSelectionMessage permits ProximityLeafSetRequest, LeafSetResponse, RouteRowRequest, RouteRowResponse {
 }

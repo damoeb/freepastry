@@ -41,10 +41,10 @@ import rice.p2p.commonapi.rawserialization.MessageTypeId;
 import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 
 /**
- * The type ids of the proximity neighbor selection messages, read by the deserializer of rice.pastry.pns.PNSApplication.
+ * The type ids of the proximity neighbor selection messages, read by the deserializer of rice.pastry.pns.ProximityNeighborSelectionApplication.
  */
 public enum PNSMessageType implements MessageTypeId {
-  /** {@link LeafSetRequest} */
+  /** {@link ProximityLeafSetRequest} */
   LEAF_SET_REQUEST(1),
   /** {@link LeafSetResponse} */
   LEAF_SET_RESPONSE(2),

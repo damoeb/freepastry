@@ -33,7 +33,7 @@ class PNSApplicationTest {
   private static final long CANCELLED_WAIT_MILLIS = 500;
 
   private Environment env;
-  private final Map<PastryNode, PNSApplication> pnsOf = new ConcurrentHashMap<>();
+  private final Map<PastryNode, ProximityNeighborSelectionApplication> pnsOf = new ConcurrentHashMap<>();
   private PastryNode first;
   private PastryNode second;
 
@@ -106,7 +106,7 @@ class PNSApplicationTest {
       @Override
       protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
         ProximityNeighborSelector ret = super.getProximityNeighborSelector(pn);
-        pnsOf.put(pn, (PNSApplication) ret);
+        pnsOf.put(pn, (ProximityNeighborSelectionApplication) ret);
         return ret;
       }
     }.newNode();

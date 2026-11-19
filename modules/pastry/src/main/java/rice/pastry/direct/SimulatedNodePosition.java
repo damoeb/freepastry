@@ -34,47 +34,15 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.transport;
+/*
+ * Created on Nov 8, 2005
+ */
+package rice.pastry.direct;
 
-import java.util.Collection;
-import java.util.HashSet;
+public interface SimulatedNodePosition {
 
-import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
-import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
-import rice.pastry.leafset.LeafSet;
-import rice.pastry.socket.SocketNodeHandle;
+  float networkDelay(SimulatedNodePosition nrb);
 
-public class LeafSetNHStrategy implements NextHopStrategy<MultiInetSocketAddress>{
-  LeafSet ls;
+  float proximity(SimulatedNodePosition nrb);
 
-  public LeafSetNHStrategy(LeafSet leafSet) {
-    this.ls = leafSet;
-  }
-
-  @Override
-  public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
-    if (ls == null) return null;
-
-    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
-
-    return ret;
-  }
-
-  private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
-    Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
-    LeafSet leafset = ls;
-    for (int i = 1; i < leafset.maxSize()/2; i++) {
-      SocketNodeHandle snh = (SocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.getAddress().equals(destination)) {
-        result.add(snh.getAddress());
-        if (result.size() >= numRequested) return result;
-      }
-      snh = (SocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.getAddress().equals(destination)) {
-        result.add(snh.getAddress());
-        if (result.size() >= numRequested) return result;
-      }
-    }
-    return result;
-  }
 }

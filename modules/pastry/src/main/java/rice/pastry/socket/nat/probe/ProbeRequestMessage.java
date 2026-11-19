@@ -41,9 +41,9 @@ import java.io.IOException;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-public class ProbeRequestMessage extends PRawMessage {
+public class ProbeRequestMessage extends PastryRawMessage {
 
   MultiInetSocketAddress probeRequestor;
   long uid;

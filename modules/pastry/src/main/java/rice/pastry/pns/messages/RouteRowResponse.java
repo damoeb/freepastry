@@ -42,11 +42,11 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteSet;
 import rice.p2p.util.rawserialization.WireLengths;
 
-public final class RouteRowResponse extends PRawMessage implements PNSMessage {
+public final class RouteRowResponse extends PastryRawMessage implements ProximityNeighborSelectionMessage {
 
   private final short index;
   private final RouteSet[] row;

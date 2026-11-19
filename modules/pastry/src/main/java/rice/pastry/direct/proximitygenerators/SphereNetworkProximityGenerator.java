@@ -39,8 +39,8 @@ package rice.pastry.direct.proximitygenerators;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.pastry.direct.NetworkSimulatorConfig;
-import rice.pastry.direct.NodeRecord;
 import rice.pastry.direct.ProximityGenerator;
+import rice.pastry.direct.SimulatedNodePosition;
 
 public class SphereNetworkProximityGenerator implements ProximityGenerator {
   int maxDiameter;
@@ -52,17 +52,17 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
 
 
   @Override
-  public NodeRecord generateNodeRecord() {
+  public SimulatedNodePosition generateNodeRecord() {
     return new SphereNodeRecord();
   }
 
   /**
-   * Initialize a random Sphere NodeRecord
+   * Initialize a random Sphere SimulatedNodePosition
    *
    * @version $Id: SphereNetwork.java 3613 2007-02-15 14:45:14Z jstewart $
    * @author amislove
    */
-  private class SphereNodeRecord implements NodeRecord {
+  private class SphereNodeRecord implements SimulatedNodePosition {
     /**
      * Position on the sphere, in radians.
      */
@@ -90,12 +90,12 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
      * @return the proximity
      */
     @Override
-    public float proximity(NodeRecord that) {
+    public float proximity(SimulatedNodePosition that) {
       return (float)Math.round(networkDelay(that)*2.0);
     }
 
     @Override
-    public float networkDelay(NodeRecord that) {
+    public float networkDelay(SimulatedNodePosition that) {
       SphereNodeRecord nr = (SphereNodeRecord)that;
       double ret = (radius * Math.acos(Math.cos(phi - nr.phi) * Math.cos(theta) * Math.cos(nr.theta) +
         Math.sin(theta) * Math.sin(nr.theta)));

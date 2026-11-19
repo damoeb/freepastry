@@ -52,8 +52,8 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryEndpointMessage;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PMessageDeserializer;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryMessageDeserializer;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * A route message contains a pastry message that has been wrapped to be sent to
@@ -64,7 +64,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Andrew Ladd
  */
 
-public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.RouteMessage {
+public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi.RouteMessage {
   private Id target;
   private NodeHandle destinationHandle;
   private byte version;
@@ -82,7 +82,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
 
   private Message internalMsg;
   // optimization to not use instanceof in the normal new case
-  private PRawMessage rawInternalMsg = null;
+  private PastryRawMessage rawInternalMsg = null;
   private InputBuffer serializedMsg;
   private PastryNode pn;
 
@@ -105,7 +105,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * @param serializeVersion the serialization version of the message
    */
 
-  public RouteMessage(Id target, PRawMessage msg, byte serializeVersion) {
+  public RouteMessage(Id target, PastryRawMessage msg, byte serializeVersion) {
     this(target, msg, null, null, serializeVersion);
   }
 
@@ -117,7 +117,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * @param opts the send options for the message.
    */
 
-  public RouteMessage(Id target, PRawMessage msg, SendOptions opts, byte serializeVersion) {
+  public RouteMessage(Id target, PastryRawMessage msg, SendOptions opts, byte serializeVersion) {
     this(target, msg, null, opts, serializeVersion);
   }
 
@@ -129,7 +129,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * @param firstHop the nodeHandle of the first hop destination
    * @param serializeVersion the serialization version of the message
    */
-  public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, byte serializeVersion) {
+  public RouteMessage(Id target, PastryRawMessage msg, NodeHandle firstHop, byte serializeVersion) {
     this(target, msg, firstHop, null, serializeVersion);
   }
 
@@ -142,7 +142,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
    * @param opts the send options for the message.
    * @param serializeVersion the serialization version of the message
    */
-  public RouteMessage(Id target, PRawMessage msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
+  public RouteMessage(Id target, PastryRawMessage msg, NodeHandle firstHop, SendOptions opts, byte serializeVersion) {
     super(RouterAddress.getCode());
     this.version = serializeVersion;
     this.target = (Id) target;
@@ -363,7 +363,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
   }
 
   public RouteMessage(Id target, int auxAddress, NodeHandle prev, InputBuffer buf, byte priority, PastryNode pn, NodeHandle destinationHandle, byte serializeVersion) throws IOException {
-    this(target, (PRawMessage) null, null, null, serializeVersion);
+    this(target, (PastryRawMessage) null, null, null, serializeVersion);
     hasSender = buf.readBoolean();
     internalPriority = priority;
     internalType = buf.readShort();
@@ -475,7 +475,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     // the deserializers build the message at its default priority; forwarding must keep the one it was sent with
     internalMsg.setPriority(internalPriority);
     // serialize() writes the message from here on, when it is routed on to the next hop
-    rawInternalMsg = internalMsg instanceof PRawMessage raw ? raw : null;
+    rawInternalMsg = internalMsg instanceof PastryRawMessage raw ? raw : null;
 
     // the serializedMsg is now dirty, because the unwrapper may change the internal message
     serializedMsg = null;
@@ -489,7 +489,7 @@ public class RouteMessage extends PRawMessage implements rice.p2p.commonapi.Rout
     return RouterMessageType.ROUTE.id();
   }
 
-  class RMDeserializer extends PMessageDeserializer {
+  class RMDeserializer extends PastryMessageDeserializer {
     MessageDeserializer sub;
 
     public RMDeserializer() {

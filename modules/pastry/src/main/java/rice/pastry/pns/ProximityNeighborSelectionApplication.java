@@ -62,16 +62,16 @@ import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.pns.messages.LeafSetRequest;
 import rice.pastry.pns.messages.LeafSetResponse;
-import rice.pastry.pns.messages.PNSMessage;
 import rice.pastry.pns.messages.PNSMessageType;
+import rice.pastry.pns.messages.ProximityLeafSetRequest;
+import rice.pastry.pns.messages.ProximityNeighborSelectionMessage;
 import rice.pastry.pns.messages.RouteRowRequest;
 import rice.pastry.pns.messages.RouteRowResponse;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.standard.ProximityNeighborSelector;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 import rice.selector.TimerTask;
 
 /**
@@ -88,7 +88,7 @@ import rice.selector.TimerTask;
  * @author Jeff Hoye
  *
  */
-public class PNSApplication extends PastryAppl implements ProximityNeighborSelector, ProximityListener<NodeHandle> {
+public class ProximityNeighborSelectionApplication extends PastryAppl implements ProximityNeighborSelector, ProximityListener<NodeHandle> {
   public static final int DEFAULT_PROXIMITY = ProximityProvider.DEFAULT_PROXIMITY;
 
   /**
@@ -108,11 +108,11 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
    */
   private final OptionalInt numRowsToUse;
 
-  public PNSApplication(PastryNode pn) {
-    this(pn, pn.getEnvironment().getLogManager().getLogger(PNSApplication.class, null));
+  public ProximityNeighborSelectionApplication(PastryNode pn) {
+    this(pn, pn.getEnvironment().getLogManager().getLogger(ProximityNeighborSelectionApplication.class, null));
   }
 
-  public PNSApplication(PastryNode pn, Logger logger) {
+  public ProximityNeighborSelectionApplication(PastryNode pn, Logger logger) {
     super(pn, null, 0, null, logger);
     setDeserializer(new PNSDeserializer());
     this.environment = pn.getEnvironment();
@@ -133,12 +133,12 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
   public void messageForApplication(Message msg) {
     logger.trace("messageForAppl({})", msg);
 
-    if (!(msg instanceof PNSMessage pnsMessage)) {
+    if (!(msg instanceof ProximityNeighborSelectionMessage pnsMessage)) {
       logger.warn("unrecognized message in messageForAppl({})", msg);
       return;
     }
     switch (pnsMessage) {
-      case LeafSetRequest req -> {
+      case ProximityLeafSetRequest req -> {
         thePastryNode.send(req.getSender(), new LeafSetResponse(thePastryNode.getLeafSet(), getAddress()), null, null);
       }
 
@@ -219,7 +219,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
             }
 
             void finish() {
-              thePastryNode.removeProximityListener(PNSApplication.this);
+              thePastryNode.removeProximityListener(ProximityNeighborSelectionApplication.this);
               List<NodeHandle> ret = sortedProximityCache();
               purgeProximityCache();
               logger.info("getNearHandles({}):{}{}", bootHandles, ret.size(), ret);
@@ -286,12 +286,12 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     waitingForLeafSet.add(handle, c, task);
     cancellable.attach(task);
 
-    cancellable.attach(thePastryNode.send(handle, new LeafSetRequest(this.getNodeHandle(), this.getAddress()), new PMessageNotification() {
+    cancellable.attach(thePastryNode.send(handle, new ProximityLeafSetRequest(this.getNodeHandle(), this.getAddress()), new PastryMessageSendListener() {
       @Override
-      public void sent(PMessageReceipt msg) {
+      public void sent(PastryMessageReceipt msg) {
       }
       @Override
-      public void sendFailed(PMessageReceipt msg, Exception reason) {
+      public void sendFailed(PastryMessageReceipt msg, Exception reason) {
         cancellable.cancel();
         c.receiveException(reason);
       }
@@ -334,12 +334,12 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     waitingForRouteRow.add(new RouteRowKey(handle, row), c, task);
     cancellable.attach(task);
 
-    cancellable.attach(thePastryNode.send(handle, new RouteRowRequest(this.getNodeHandle(), row, this.getAddress()), new PMessageNotification() {
+    cancellable.attach(thePastryNode.send(handle, new RouteRowRequest(this.getNodeHandle(), row, this.getAddress()), new PastryMessageSendListener() {
       @Override
-      public void sent(PMessageReceipt msg) {
+      public void sent(PastryMessageReceipt msg) {
       }
       @Override
-      public void sendFailed(PMessageReceipt msg, Exception reason) {
+      public void sendFailed(PastryMessageReceipt msg, Exception reason) {
         cancellable.cancel();
         c.receiveException(reason);
       }
@@ -704,7 +704,7 @@ public class PNSApplication extends PastryAppl implements ProximityNeighborSelec
     @Override
     public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
       return switch (PNSMessageType.find(type)) {
-        case LEAF_SET_REQUEST -> LeafSetRequest.build(buf, (NodeHandle)sender, getAddress());
+        case LEAF_SET_REQUEST -> ProximityLeafSetRequest.build(buf, (NodeHandle)sender, getAddress());
         case LEAF_SET_RESPONSE -> LeafSetResponse.build(buf, thePastryNode, getAddress());
         case ROUTE_ROW_REQUEST -> RouteRowRequest.build(buf, (NodeHandle)sender, getAddress());
         case ROUTE_ROW_RESPONSE -> new RouteRowResponse(buf, thePastryNode, (NodeHandle)sender, getAddress());

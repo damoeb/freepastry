@@ -73,6 +73,7 @@ import rice.pastry.direct.SphereNetwork;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 import rice.selector.SelectorLoop;
 
 /**
@@ -318,7 +319,7 @@ public abstract class CommonAPITest {
       throw new RuntimeException(ioe);
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
-    if (bootstrap instanceof rice.pastry.transport.BogusNodeHandle bogusNodeHandle) {
+    if (bootstrap instanceof BootstrapAddressNodeHandle bogusNodeHandle) {
       ret.boot(bogusNodeHandle.getAddress());
     } else {
       ret.boot((Object) bootstrap);

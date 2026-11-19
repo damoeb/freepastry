@@ -120,10 +120,10 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.nat.probe.ProbeApp;
 import rice.pastry.standard.ProximityNeighborSelector;
-import rice.pastry.transport.BogusNodeHandle;
-import rice.pastry.transport.LeafSetNHStrategy;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
+import rice.pastry.transport.LeafSetNodeHandleStrategy;
 import rice.pastry.transport.NodeHandleAdapter;
-import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportLayerDeserializer;
 import rice.pastry.transport.TransportPastryNodeFactory;
 
 /**
@@ -322,7 +322,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   public NodeHandleAdapter getNodeHandleAdapter(
       final PastryNode pn,
       NodeHandleFactory<?> handleFactory2,
-      TLDeserializer deserializer) throws IOException {
+      TransportLayerDeserializer deserializer) throws IOException {
 
 
     SocketNodeHandle localhandle = (SocketNodeHandle)pn.getLocalHandle();
@@ -655,7 +655,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       MultiInetSocketAddress proxyAddress,
       MultiAddressSourceRouteFactory esrFactory) throws IOException {
 
-    return new LeafSetNHStrategy(pn.getLeafSet());
+    return new LeafSetNodeHandleStrategy(pn.getLeafSet());
   }
 
   protected PriorityTransportLayer<MultiInetSocketAddress> getPriorityTransportLayer(TransportLayer<MultiInetSocketAddress, ByteBuffer> trans, LivenessProvider<MultiInetSocketAddress> liveness, ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
@@ -705,7 +705,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
 
   protected TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> getCommonAPITransportLayer(
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> upperIdentity,
-      PastryNode pn, TLDeserializer deserializer) {
+      PastryNode pn, TransportLayerDeserializer deserializer) {
     final Environment environment = pn.getEnvironment();
     IdFactory idFactory = new IdFactory(){
       @Override
@@ -801,7 +801,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   public NodeHandle getNodeHandle(InetSocketAddress bootstrap) {
-    return new BogusNodeHandle(bootstrap);
+    return new BootstrapAddressNodeHandle(bootstrap);
   }
 
   public void getNodeHandle(InetSocketAddress[] bootstraps, Continuation<NodeHandle, Exception> c) {
@@ -809,7 +809,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   public NodeHandle getNodeHandle(InetSocketAddress[] bootstraps, int int1) {
-    return new BogusNodeHandle(bootstraps);
+    return new BootstrapAddressNodeHandle(bootstraps);
   }
 
 

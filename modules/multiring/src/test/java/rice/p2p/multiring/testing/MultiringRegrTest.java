@@ -70,7 +70,7 @@ import rice.pastry.direct.SphereNetwork;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.pastry.transport.BogusNodeHandle;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 
 /**
  * Provides regression testing setup for applications written on top of the
@@ -342,7 +342,7 @@ public class MultiringRegrTest {
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
-    if (bootstrap instanceof BogusNodeHandle bogusNodeHandle) {
+    if (bootstrap instanceof BootstrapAddressNodeHandle bogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
       pn.boot(bogusNodeHandle.getAddress());
     } else {

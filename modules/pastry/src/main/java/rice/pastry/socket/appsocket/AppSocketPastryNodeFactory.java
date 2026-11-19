@@ -78,7 +78,7 @@ import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.socket.TransportLayerNodeHandle;
 import rice.pastry.transport.NodeHandleAdapter;
 import rice.pastry.transport.SocketAdapter;
-import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportLayerDeserializer;
 
 
 /**
@@ -233,7 +233,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
     pn.setLocalHandle(localhandle);
 
-    TLDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
+    TransportLayerDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
 
     final NodeHandleAdapter nha = getNodeHandleAdapter(pn, handleFactory, deserializer);
 

@@ -49,7 +49,7 @@ import rice.pastry.join.JoinProtocol;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.LeafSetProtocol;
 import rice.pastry.messaging.MessageDispatch;
-import rice.pastry.pns.PNSApplication;
+import rice.pastry.pns.ProximityNeighborSelectionApplication;
 import rice.pastry.routing.RouteSetProtocol;
 import rice.pastry.routing.RouterStrategy;
 import rice.pastry.routing.RoutingTable;
@@ -94,7 +94,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     NodeHandleFactory<?> handleFactory = getNodeHandleFactory(pn);
     NodeHandle localhandle = getLocalHandle(pn, handleFactory);
 
-    TLDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
+    TransportLayerDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
 
     MessageDispatch msgDisp = new MessageDispatch(pn, deserializer);
     RoutingTable routeTable = new RoutingTable(localhandle, rtMax, rtBase,
@@ -169,8 +169,8 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     return ConsistentJoinConfig.fromParameters(pn.getEnvironment().getParameters());
   }
 
-  protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
-    TLDeserializer deserializer = new TLDeserializer(handleFactory, pn.getEnvironment());
+  protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+    TransportLayerDeserializer deserializer = new TransportLayerDeserializer(handleFactory, pn.getEnvironment());
     return deserializer;
   }
 
@@ -179,7 +179,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
    */
   protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
     if (factoryConfig.usePns()) {
-      PNSApplication pns = new PNSApplication(pn);
+      ProximityNeighborSelectionApplication pns = new ProximityNeighborSelectionApplication(pn);
       pns.register();
       return pns;
     }
@@ -194,7 +194,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   protected abstract NodeHandle getLocalHandle(PastryNode pn,
       NodeHandleFactory<?> handleFactory) throws IOException;
   protected abstract NodeHandleAdapter getNodeHandleAdapter(PastryNode pn,
-      NodeHandleFactory<?> handleFactory, TLDeserializer deserializer) throws IOException;
+      NodeHandleFactory<?> handleFactory, TransportLayerDeserializer deserializer) throws IOException;
   protected abstract NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) throws IOException;
   protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn,
       NodeHandleAdapter tl,

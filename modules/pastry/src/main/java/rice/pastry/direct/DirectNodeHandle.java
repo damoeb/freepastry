@@ -57,7 +57,7 @@ import rice.pastry.socket.TransportLayerNodeHandle;
  * @author Rongmei Zhang/Y. Charlie Hu
  */
 
-public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> implements PastryNodeListener {
+public class DirectNodeHandle extends TransportLayerNodeHandle<SimulatedNodePosition> implements PastryNodeListener {
   private final NetworkSimulator<DirectNodeHandle, RawMessage> simulator;
 
   /**
@@ -192,7 +192,7 @@ public class DirectNodeHandle extends TransportLayerNodeHandle<NodeRecord> imple
   }
 
   @Override
-  public NodeRecord getAddress() {
+  public SimulatedNodePosition getAddress() {
     return simulator.getNodeRecord(this);
   }
 

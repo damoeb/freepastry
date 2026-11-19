@@ -47,7 +47,7 @@ import rice.p2p.commonapi.Cancellable;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.pns.PNSApplication;
+import rice.pastry.pns.ProximityNeighborSelectionApplication;
 import rice.pastry.routing.RouteSet;
 
 /**
@@ -59,7 +59,7 @@ import rice.pastry.routing.RouteSet;
  * @author Jeff Hoye
  *
  */
-public class RendezvousPNSApplication extends PNSApplication {
+public class RendezvousPNSApplication extends ProximityNeighborSelectionApplication {
 
   ContactDirectStrategy<RendezvousSocketNodeHandle> contactDirectStrategy;
 

@@ -62,9 +62,9 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     GenericNetworkSimulator<Identifier, MessageType> {
   static class Tupel<Identifier, MessageType> {
     DirectTransportLayer<Identifier, MessageType> tl;
-    NodeRecord record;
+    SimulatedNodePosition record;
 
-    public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> tl, NodeRecord record) {
+    public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> tl, SimulatedNodePosition record) {
       super();
       this.tl = tl;
       this.record = record;
@@ -130,7 +130,7 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   }
 
 
-  public void registerIdentifier(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord record) {
+  public void registerIdentifier(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, SimulatedNodePosition record) {
     nodes.put(i, new Tupel<>(i, dtl, record));
   }
 
@@ -177,8 +177,8 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
       throw new RuntimeException("asking about node proximity for unknown node "+b);
     }
 
-    NodeRecord nra = ta.record;
-    NodeRecord nrb = tb.record;
+    SimulatedNodePosition nra = ta.record;
+    SimulatedNodePosition nrb = tb.record;
 
     return nra.networkDelay(nrb);
   }
@@ -201,13 +201,13 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
       throw new RuntimeException("asking about node proximity for unknown node "+b+" "+a);
     }
 
-    NodeRecord nra = ta.record;
-    NodeRecord nrb = tb.record;
+    SimulatedNodePosition nra = ta.record;
+    SimulatedNodePosition nrb = tb.record;
 
     return nra.proximity(nrb);
   }
 
-  public NodeRecord getNodeRecord(DirectNodeHandle handle) {
+  public SimulatedNodePosition getNodeRecord(DirectNodeHandle handle) {
     Tupel<Identifier, MessageType> t = nodes.get(handle);
     if (t == null) return null;
     return t.record;

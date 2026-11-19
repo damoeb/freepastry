@@ -34,21 +34,23 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.transport;
+/*
+ * Created on Feb 17, 2006
+ */
+package rice.pastry.messaging;
 
-import java.util.Map;
 
-import org.mpisws.p2p.transport.MessageRequestHandle;
-import rice.pastry.NodeHandle;
-import rice.pastry.messaging.Message;
+import rice.p2p.commonapi.rawserialization.RawMessage;
 
-public interface PMessageReceipt extends MessageRequestHandle<NodeHandle, Message> {
-  @Override
-  public NodeHandle getIdentifier();
+/**
+ * Adapts Message to a RawMessage
+ *
+ * Adds the "sender" to the RawMessage
+ * @author Jeff Hoye
+ */
+public abstract class PastryRawMessage extends Message implements RawMessage {
 
-  @Override
-  public Message getMessage();
-
-  @Override
-  public Map<String, Object> getOptions();
+  public PastryRawMessage(int address) {
+    super(address);
+  }
 }

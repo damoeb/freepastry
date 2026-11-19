@@ -55,8 +55,8 @@ import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.nat.rendezvous.RendezvousSocketNodeHandle;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 
 public class ProbeApp extends PastryAppl implements ProbeStrategy {
   Prober prober;
@@ -134,13 +134,13 @@ public class ProbeApp extends PastryAppl implements ProbeStrategy {
 
     // Step 3: send the probeRequest
     ProbeRequestMessage prm = new ProbeRequestMessage(addr, uid, getAddress());
-    return thePastryNode.send(handle, prm, new PMessageNotification() {
+    return thePastryNode.send(handle, prm, new PastryMessageSendListener() {
       @Override
-      public void sent(PMessageReceipt msg) {
+      public void sent(PastryMessageReceipt msg) {
         deliverResultToMe.receiveResult(true);
       }
       @Override
-      public void sendFailed(PMessageReceipt msg, Exception reason) {
+      public void sendFailed(PastryMessageReceipt msg, Exception reason) {
         deliverResultToMe.receiveResult(false);
       }
     }, null);

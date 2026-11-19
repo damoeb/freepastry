@@ -39,7 +39,7 @@ advised of the possibility of such damage.
  * {@link rice.pastry.transport.TransportPastryNodeFactory} is the template both node factories extend:
  * it creates the routing table, leaf set, router and the join, leaf set and route set protocols, and
  * asks the subclass for the transport stack as a {@link rice.pastry.transport.NodeHandleAdapter}.
- * {@link rice.pastry.transport.TLDeserializer} serializes messages as application address, priority,
+ * {@link rice.pastry.transport.TransportLayerDeserializer} serializes messages as application address, priority,
  * type and payload.
  */
 package rice.pastry.transport;

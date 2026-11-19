@@ -43,7 +43,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.PastryNode;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.p2p.util.rawserialization.WireLengths;
 
 /**
@@ -54,7 +54,7 @@ import rice.p2p.util.rawserialization.WireLengths;
  * @author Andrew Ladd
  */
 
-public final class BroadcastRouteRow extends PRawMessage implements RouteSetProtocolMessage {
+public final class BroadcastRouteRow extends PastryRawMessage implements RouteSetProtocolMessage {
 
 
   private NodeHandle fromNode;

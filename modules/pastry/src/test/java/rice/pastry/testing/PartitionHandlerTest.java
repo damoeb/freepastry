@@ -42,7 +42,7 @@ import java.net.InetSocketAddress;
 import rice.environment.Environment;
 import rice.pastry.PastryNode;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.standard.PartitionHandler;
+import rice.pastry.standard.PartitionHealer;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 public class PartitionHandlerTest {
@@ -61,8 +61,8 @@ public class PartitionHandlerTest {
     PastryNode b = factoryB.newNode();
     b.boot(new InetSocketAddress("localhost", PORT_B));
 
-    PartitionHandler handlerA = new PartitionHandler(a, factoryA, null);
-    new PartitionHandler(b, factoryB, null); // the constructor registers the handler with b
+    PartitionHealer handlerA = new PartitionHealer(a, factoryA, null);
+    new PartitionHealer(b, factoryB, null); // the constructor registers the handler with b
 
     // wait for a to boot
     // wait for b to boot

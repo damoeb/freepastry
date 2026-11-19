@@ -21,9 +21,9 @@ import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.BroadcastLeafSet;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.leafset.RequestLeafSet;
-import rice.pastry.pns.PNSApplication;
-import rice.pastry.pns.messages.LeafSetRequest;
+import rice.pastry.pns.ProximityNeighborSelectionApplication;
 import rice.pastry.pns.messages.LeafSetResponse;
+import rice.pastry.pns.messages.ProximityLeafSetRequest;
 import rice.pastry.pns.messages.RouteRowRequest;
 import rice.pastry.pns.messages.RouteRowResponse;
 import rice.pastry.routing.BroadcastRouteRow;
@@ -31,7 +31,7 @@ import rice.pastry.routing.RequestRouteRow;
 import rice.pastry.messaging.Message;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
-import rice.pastry.standard.ConsistentJoinMsg;
+import rice.pastry.standard.ConsistentJoinMessage;
 import rice.pastry.standard.StandardAddress;
 import rice.pastry.testing.WireRoundTrip;
 import rice.pastry.testing.WireRoundTrip.SocketNode;
@@ -209,15 +209,15 @@ class PastryWireRoundTripTest {
   void consistentJoin() throws IOException {
     Set<NodeHandle> failed = new HashSet<>(List.of(b, c));
 
-    local.hop(new ConsistentJoinMsg(leafSet(a, b), failed, true), a);
-    local.hop(new ConsistentJoinMsg(leafSet(), new HashSet<>(), false), a);
+    local.hop(new ConsistentJoinMessage(leafSet(a, b), failed, true), a);
+    local.hop(new ConsistentJoinMessage(leafSet(), new HashSet<>(), false), a);
   }
 
   @Test
   void pnsMessages() throws IOException {
-    int pns = StandardAddress.getAddress(PNSApplication.class, null, env);
+    int pns = StandardAddress.getAddress(ProximityNeighborSelectionApplication.class, null, env);
 
-    local.hop(new LeafSetRequest(a, pns), a);
+    local.hop(new ProximityLeafSetRequest(a, pns), a);
     assertEquals(4, local.hop(new LeafSetResponse(leafSet(a, b, c), pns), a).getLeafSet().getUniqueCount());
     assertEquals(5, local.hop(new RouteRowRequest(a, (short) 5, pns), a).getIndex());
     RouteRowResponse copy = local.hop(new RouteRowResponse(a, (short) 1, row(1), pns), a);

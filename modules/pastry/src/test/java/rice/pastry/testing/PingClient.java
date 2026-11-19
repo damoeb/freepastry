@@ -45,7 +45,7 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.SendOptions;
 
 /**
@@ -138,7 +138,7 @@ public class PingClient extends PastryAppl {
  * DO NOT declare this inside PingClient; see HelloWorldApp for details.
  */
 
-class PingMessage extends PRawMessage {
+class PingMessage extends PastryRawMessage {
   static final short TYPE = 1;
 
   private Id source;

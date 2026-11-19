@@ -41,7 +41,7 @@ import java.nio.ByteBuffer;
 
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * Used to hold a UDP message (usually liveness) when delivering to a firewalled node via Routing.
@@ -49,7 +49,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Jeff Hoye
  *
  */
-public final class ByteBufferMsg extends PRawMessage implements RendezvousMessage {
+public final class ByteBufferMsg extends PastryRawMessage implements RendezvousMessage {
   NodeHandle originalSender;
   ByteBuffer buffer;
 

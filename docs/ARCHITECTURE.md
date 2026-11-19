@@ -197,7 +197,7 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 | 9 | source route manager (`getSourceRouteManagerLayer`) | `sourceroute.manager.SourceRouteManager` | `MultiInetSocketAddress` | Uses the direct route while it is alive, otherwise tries relay routes from a `SourceRouteStrategy`. Provides liveness and proximity per address. |
 | 10 | priority (`getPriorityTransportLayer`) | `priority.PriorityTransportLayer` | same | See below. |
 | 11 | upper identity (`getUpperIdentityLayer`) | `identity.IdentityImpl` (upper half) | `TransportLayerNodeHandle<MultiInetSocketAddress>` | Cancels pending traffic and reports "dead forever" when the node behind an address changes. |
-| 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayer` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TLDeserializer`. |
+| 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayer` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TransportLayerDeserializer`. |
 | — | adapter | `rice.pastry.transport.NodeHandleAdapter` | `NodeHandle` | Combines the top layer with its liveness and proximity providers and hands them to `PastryNode.setSocketElements()`. |
 
 The priority layer (`PriorityTransportLayer`) works like this:
@@ -229,10 +229,10 @@ flowchart BT
 The class hierarchy is `rice.pastry.PastryNodeFactory` (reads `pastry_rtMax`, `pastry_rtBaseBitLength`, `pastry_lSetSize`), then `rice.pastry.transport.TransportPastryNodeFactory`, then `SocketPastryNodeFactory` or `DirectPastryNodeFactory`. `TransportPastryNodeFactory.nodeHandleHelper(PastryNode)` is a template method that runs these steps in order:
 
 1. `getNodeHandleFactory()` and `getLocalHandle()` (abstract; the subclasses create `SocketNodeHandle`s or `DirectNodeHandle`s);
-2. a `TLDeserializer` and a `MessageDispatch`;
+2. a `TransportLayerDeserializer` and a `MessageDispatch`;
 3. `new RoutingTable(...)`, `new LeafSet(...)` and `new RapidRerouter(...)` (the router), followed by `pn.setElements(...)`;
 4. `getNodeHandleAdapter()` (abstract), which builds the transport stack, followed by `pn.setSocketElements(leafSetMaintFreq, routeSetMaintFreq, nha, nha, nha, handleFactory)`. This installs the node as the stack's callback and as a liveness and proximity listener;
-5. `router.register()`, then `registerApps()`. This creates the proximity neighbor selector (`PNSApplication` if `transport_use_pns`), the bootstrapper (abstract), `StandardRouteSetProtocol`, `PeriodicLeafSetProtocol` and `ConsistentJoinProtocol`. The leaf set protocol doubles as the node's `ReadyStrategy`. `SocketPastryNodeFactory.registerApps()` also registers a `ProbeApp`.
+5. `router.register()`, then `registerApps()`. This creates the proximity neighbor selector (`ProximityNeighborSelectionApplication` if `transport_use_pns`), the bootstrapper (abstract), `StandardRouteSetProtocol`, `PeriodicLeafSetProtocol` and `ConsistentJoinProtocol`. The leaf set protocol doubles as the node's `ReadyStrategy`. `SocketPastryNodeFactory.registerApps()` also registers a `ProbeApp`.
 
 The two concrete factories differ like this:
 
@@ -297,9 +297,9 @@ Continuations are normally called back on the selector thread, but not always as
 
 ## Serialization
 
-Everything on the wire is raw-serialized; there is no Java serialization. The envelope is written by `rice.pastry.transport.TLDeserializer`: `int` application address, `byte` priority, `short` type, then the payload.
+Everything on the wire is raw-serialized; there is no Java serialization. The envelope is written by `rice.pastry.transport.TransportLayerDeserializer`: `int` application address, `byte` priority, `short` type, then the payload.
 
-- A message implements `rice.p2p.commonapi.rawserialization.RawMessage`, with `getType()` (non-zero; zero is reserved) and `serialize(OutputBuffer)`. `Endpoint.route()` accepts only `RawMessage`s. The application registers a `MessageDeserializer` with `endpoint.setDeserializer()`; it switches on the type and rebuilds the message from an `InputBuffer`. Until it does, the endpoint has `MessageDeserializer.NONE`, which rejects every message. Pastry's own protocol messages extend `rice.pastry.messaging.PRawMessage` and are read by subclasses of `PMessageDeserializer`. Messages that only go to the local node, such as the ones scheduled with `scheduleMessage()`, may be plain `Message`s.
+- A message implements `rice.p2p.commonapi.rawserialization.RawMessage`, with `getType()` (non-zero; zero is reserved) and `serialize(OutputBuffer)`. `Endpoint.route()` accepts only `RawMessage`s. The application registers a `MessageDeserializer` with `endpoint.setDeserializer()`; it switches on the type and rebuilds the message from an `InputBuffer`. Until it does, the endpoint has `MessageDeserializer.NONE`, which rejects every message. Pastry's own protocol messages extend `rice.pastry.messaging.PastryRawMessage` and are read by subclasses of `PastryMessageDeserializer`. Messages that only go to the local node, such as the ones scheduled with `scheduleMessage()`, may be plain `Message`s.
 - Content is raw in the same way: `PastContent`, `PastContentHandle` and `ScribeContent` declare `getType()` and `serialize(OutputBuffer)` and are read back by the application's `PastContentDeserializer`, `PastContentHandleDeserializer` and `ScribeContentDeserializer`. PAST starts with `PastContentDeserializer.NONE` and `PastContentHandleDeserializer.CONTENT_HASH`.
 - A PAST response that a `ContinuationMessage` subclass cannot write raw is an error. An exception travels as its class name and message and arrives as a `rice.p2p.past.PastRemoteException`.
 

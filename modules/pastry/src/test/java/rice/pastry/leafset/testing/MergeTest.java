@@ -60,10 +60,10 @@ import rice.pastry.boot.Bootstrapper;
 import rice.pastry.client.PastryAppl;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RoutingTable;
-import rice.pastry.transport.PMessageNotification;
-import rice.pastry.transport.PMessageReceipt;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
 
 public class MergeTest {
 
@@ -143,7 +143,7 @@ public class MergeTest {
       }
 
       @Override
-      public PMessageReceipt send(NodeHandle handle, PRawMessage message, PMessageNotification deliverAckToMe, Map<String, Object> options) {
+      public PastryMessageReceipt send(NodeHandle handle, PastryRawMessage message, PastryMessageSendListener deliverAckToMe, Map<String, Object> options) {
         return null;
       }
 

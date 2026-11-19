@@ -34,38 +34,47 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.pns.messages;
+package rice.pastry.transport;
 
-import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
 
-import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
+import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.socket.SocketNodeHandle;
 
-public final class LeafSetRequest extends PRawMessage implements PNSMessage {
-  public LeafSetRequest(NodeHandle nodeHandle, int dest) {
-    super(dest);
-    if (nodeHandle == null) throw new IllegalArgumentException("nodeHandle == null!");
-    setSender(nodeHandle);
-    setPriority(HIGH_PRIORITY);
-  }
+public class LeafSetNodeHandleStrategy implements NextHopStrategy<MultiInetSocketAddress>{
+  LeafSet ls;
 
-  public static LeafSetRequest build(InputBuffer buf, NodeHandle sender, int dest) throws IOException {
-    byte version = buf.readByte();
-    if (version == 0)
-      return new LeafSetRequest(sender, dest);
-    throw new IOException("Unknown version: "+version);
+  public LeafSetNodeHandleStrategy(LeafSet leafSet) {
+    this.ls = leafSet;
   }
 
   @Override
-  public short getType() {
-    return PNSMessageType.LEAF_SET_REQUEST.id();
+  public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
+    if (ls == null) return null;
+
+    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
+
+    return ret;
   }
 
-  @Override
-  public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+  private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
+    Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
+    LeafSet leafset = ls;
+    for (int i = 1; i < leafset.maxSize()/2; i++) {
+      SocketNodeHandle snh = (SocketNodeHandle)leafset.get(-i);
+      if (snh != null && !snh.getAddress().equals(destination)) {
+        result.add(snh.getAddress());
+        if (result.size() >= numRequested) return result;
+      }
+      snh = (SocketNodeHandle)leafset.get(i);
+      if (snh != null && !snh.getAddress().equals(destination)) {
+        result.add(snh.getAddress());
+        if (result.size() >= numRequested) return result;
+      }
+    }
+    return result;
   }
-
 }

@@ -10,12 +10,12 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.pastry.transport.TransportLayerDeserializer;
 import rice.testing.fuzz.FuzzSupport;
 import rice.pastry.Id;
 import rice.pastry.IdRange;
 import rice.pastry.NodeSet;
 import rice.pastry.leafset.LeafSet;
-import rice.pastry.pns.PNSApplication;
 import java.net.InetSocketAddress;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
@@ -35,14 +35,14 @@ import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.join.JoinAddress;
 import rice.pastry.leafset.LeafSetProtocolAddress;
+import rice.pastry.pns.ProximityNeighborSelectionApplication;
 import rice.pastry.routing.RouteProtocolAddress;
 import rice.pastry.routing.RouterAddress;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.pastry.transport.TLDeserializer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 
 /**
- * Fuzzes the Pastry wire entry point, the {@link TLDeserializer}: an address, a priority and a type, then the body
+ * Fuzzes the Pastry wire entry point, the {@link TransportLayerDeserializer}: an address, a priority and a type, then the body
  * that the registered protocol applications (join, route set, leaf set, router, proximity neighbor selection) read.
  * The invariant: a value or an {@link IOException}, nothing else.
  */
@@ -55,7 +55,7 @@ class PastryWireFuzzTest {
 
   private static Environment env;
   private static PastryNode node;
-  private static TLDeserializer target;
+  private static TransportLayerDeserializer target;
   private static MessageDeserializer pns;
   private static MessageDeserializer rendezvous;
   private static MessageDeserializer probe;
@@ -64,7 +64,7 @@ class PastryWireFuzzTest {
   static void setUp() throws IOException {
     env = Environment.directEnvironment(1);
     node = newNode(env);
-    pns = new PNSApplication(node).getDeserializer();
+    pns = new ProximityNeighborSelectionApplication(node).getDeserializer();
     rendezvous = new RendezvousApp(node).getDeserializer();
     probe = new ProbeApp(node, null, null).getDeserializer();
   }
@@ -74,7 +74,7 @@ class PastryWireFuzzTest {
     env.destroy();
   }
 
-  /** The simulator node of {@code StubHandleNodes}, which also hands out its {@link TLDeserializer}. */
+  /** The simulator node of {@code StubHandleNodes}, which also hands out its {@link TransportLayerDeserializer}. */
   private static PastryNode newNode(Environment env) throws IOException {
     return new DirectPastryNodeFactory(new RandomNodeIdFactory(env),
         new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env) {
@@ -103,7 +103,7 @@ class PastryWireFuzzTest {
       }
 
       @Override
-      protected TLDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
+      protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
         target = super.getTransportLayerDeserializer(handleFactory, pn);
         return target;
       }

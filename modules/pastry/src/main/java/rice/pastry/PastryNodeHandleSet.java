@@ -34,16 +34,28 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.standard;
 
-import java.io.IOException;
+package rice.pastry;
 
-import rice.pastry.routing.RouteMessage;
 
-public class TooManyRouteAttempts extends IOException {
+/**
+ * An interface to a generic set of nodes.
+ *
+ * @version $Id: PastryNodeHandleSet.java 3613 2007-02-15 14:45:14Z jstewart $
+ *
+ * @author Andrew Ladd
+ */
 
-  public TooManyRouteAttempts(RouteMessage rm, int max_retries) {
-    super("Too many attempts to route the message "+rm);
-  }
+public interface PastryNodeHandleSet extends rice.p2p.commonapi.NodeHandleSet
+{
 
+
+    /**
+     * Gets the size of the set.
+     *
+     * @return the size.
+     */
+
+    @Override
+    public int size();
 }

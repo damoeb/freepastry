@@ -51,7 +51,7 @@ import rice.pastry.NodeSetListener;
 import rice.pastry.PastryNode;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.Message;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.routing.SendOptions;
@@ -262,7 +262,7 @@ public abstract class PastryAppl
    * @param msg the message to deliver.
    * @param opt send options that describe how the message is to be routed.
    */
-  public void routeMessage(Id key, PRawMessage msg, SendOptions opt) {
+  public void routeMessage(Id key, PastryRawMessage msg, SendOptions opt) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
     RouteMessage rm = new RouteMessage(key, msg, opt,
         thePastryNode.getConfig().routeMsgVersion());

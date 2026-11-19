@@ -34,36 +34,80 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package rice.pastry.messaging;
+/*
+ * Created on Apr 13, 2005
+ */
+package rice.pastry.standard;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
-import rice.pastry.PastryNode;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.join.JoinAddress;
+import rice.pastry.join.JoinMessageType;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
- * A {@link MessageDeserializer} for the Pastry protocol messages: the subclass deserializes with the
- * rice.pastry {@link Message} and {@link NodeHandle} types instead of the rice.p2p.commonapi ones, and
- * returns null for a type it does not know, which is reported as an {@link IOException}.
- *
  * @author Jeff Hoye
  */
-public abstract class PMessageDeserializer implements MessageDeserializer {
+public class ConsistentJoinMessage extends PastryRawMessage {
+  LeafSet ls;
+  boolean request;
+  Set<NodeHandle> failed;
 
-  protected PastryNode pn;
-
-  public PMessageDeserializer(PastryNode pn) {
-    this.pn = pn;
+  /**
+   *
+   */
+  public ConsistentJoinMessage(LeafSet ls, Set<NodeHandle> failed, boolean request) {
+    super(JoinAddress.getCode());
+    this.ls = ls;
+    this.request = request;
+    this.failed = failed;
   }
 
-  public abstract Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException;
+  @Override
+  public String toString() {
+    return "ConsistentJoinMessage "+ls+" request:"+request;
+  }
+
+  /***************** Raw Serialization ***************************************/
+  @Override
+  public short getType() {
+    return JoinMessageType.CONSISTENT_JOIN.id();
+  }
 
   @Override
-  public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-    rice.p2p.commonapi.Message ret = deserialize(buf, type, priority, (NodeHandle)sender);
-    if (ret == null) throw new IOException("Unknown message type " + type + " for " + getClass().getName());
-    return ret;
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeByte((byte)0); // version
+    ls.serialize(buf);
+    buf.writeBoolean(request);
+    buf.writeInt(failed.size());
+    for (NodeHandle h : failed) {
+      h.serialize(buf);
+    }
+  }
+
+  public ConsistentJoinMessage(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender) throws IOException {
+    super(JoinAddress.getCode());
+    byte version = buf.readByte();
+    switch(version) {
+      case 0:
+        setSender(sender);
+        ls = LeafSet.build(buf, nhf);
+        request = buf.readBoolean();
+        failed = new HashSet<NodeHandle>();
+        int numInSet = buf.readInt();
+        for (int i = 0; i < numInSet; i++) {
+          failed.add(nhf.readNodeHandle(buf));
+        }
+        break;
+      default:
+        throw new IOException("Unknown Version: "+version);
+    }
   }
 }

@@ -46,7 +46,7 @@ import rice.p2p.commonapi.rawserialization.MessageTypeIndex;
 public enum JoinMessageType implements MessageTypeId {
   /** {@link JoinRequest} */
   JOIN_REQUEST(1),
-  /** {@link rice.pastry.standard.ConsistentJoinMsg} */
+  /** {@link rice.pastry.standard.ConsistentJoinMessage} */
   CONSISTENT_JOIN(2),
   /** {@link rice.pastry.socket.nat.rendezvous.RendezvousJoinRequest} */
   RENDEZVOUS_JOIN_REQUEST(4);

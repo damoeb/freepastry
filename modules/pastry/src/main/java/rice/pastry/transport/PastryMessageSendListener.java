@@ -36,71 +36,9 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.transport;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+public interface PastryMessageSendListener {
 
-import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.Id;
-import rice.pastry.socket.TransportLayerNodeHandle;
+  public void sendFailed(PastryMessageReceipt msg, Exception reason);
 
-public class BogusNodeHandle extends TransportLayerNodeHandle<Collection<InetSocketAddress>> {
-  private final Collection<InetSocketAddress> addresses;
-
-  public BogusNodeHandle(InetSocketAddress address) {
-    addresses = Collections.singletonList(address);
-  }
-
-  public BogusNodeHandle(InetSocketAddress[] bootstraps) {
-    addresses = Arrays.asList(bootstraps);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public int getLiveness() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public Id getNodeId() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public String toString() {
-    return "BogusNodeHandle "+addresses;
-  }
-
-
-  @Override
-  public int hashCode() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public boolean ping() {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public void serialize(OutputBuffer buf) throws IOException {
-    throw new IllegalStateException("This NodeHandle is Bogus, don't use it.");
-  }
-
-  @Override
-  public Collection<InetSocketAddress> getAddress() {
-    return addresses;
-  }
-
-  @Override
-  public long getEpoch() {
-    return 0;
-  }
-
+  public void sent(PastryMessageReceipt msg);
 }

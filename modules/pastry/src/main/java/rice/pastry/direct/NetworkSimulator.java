@@ -186,7 +186,7 @@ public class NetworkSimulator<Identifier, MessageType> {
    * Generates a random node record
    *
    */
-  public NodeRecord generateNodeRecord() {
+  public SimulatedNodePosition generateNodeRecord() {
     return generator.generateNodeRecord();
   }
 
@@ -235,7 +235,7 @@ public class NetworkSimulator<Identifier, MessageType> {
     return simulator.proximity(a, b);
   }
 
-  public NodeRecord getNodeRecord(DirectNodeHandle handle) {
+  public SimulatedNodePosition getNodeRecord(DirectNodeHandle handle) {
     return simulator.getNodeRecord(handle);
   }
 
@@ -247,7 +247,7 @@ public class NetworkSimulator<Identifier, MessageType> {
     return simulator;
   }
 
-  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, NodeRecord nr) {
+  public void registerNode(Identifier i, DirectTransportLayer<Identifier, MessageType> dtl, SimulatedNodePosition nr) {
     simulator.registerIdentifier(i, dtl, nr);
   }
 }

@@ -55,11 +55,11 @@ import rice.pastry.routing.RouteMessage;
 import rice.pastry.routing.RouteSet;
 import rice.pastry.routing.RoutingTable;
 import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.transport.BogusNodeHandle;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 import rice.selector.TimerTask;
 
 /**
- * The PartitionHandler does two things:  it collects a list of candidate nodes
+ * The PartitionHealer does two things:  it collects a list of candidate nodes
  * that may be in another partition, and it periodically tries to reach these
  * nodes to heal a partition.  I can refactor the code to expose a method that
  * heals a partition tomorrow for you, but I'll paste the code below for the
@@ -78,13 +78,13 @@ import rice.selector.TimerTask;
  * those nodes dead due to losing connectivity to them but at some later point
  * we again may be able to contact them.
  *
- * The reason that we make the PartitionHandler a periodic process is that in
+ * The reason that we make the PartitionHealer a periodic process is that in
  * general you can't tell that a partition has happened.
  *
  * @author jstewart
  *
  */
-public class PartitionHandler extends TimerTask implements NodeSetListener {
+public class PartitionHealer extends TimerTask implements NodeSetListener {
 
   private final PastryNode pastryNode;
 
@@ -107,7 +107,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
   private final Environment env;
 
   /**
-   * Constructs a PartitionHandler.  This will register the handler with the
+   * Constructs a PartitionHealer.  This will register the handler with the
    * pastry node to begin collecting candidates nodes that may be in a
    * partition, but it will not initiate probing.  You must call the start()
    * method to do that.
@@ -115,13 +115,13 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    * @param pn the local pastry node
    * @param factory the SocketPastryNodeFactory
    */
-  public PartitionHandler(PastryNode pn, SocketPastryNodeFactory factory, InetSocketAddress[] bootstraps) {
+  public PartitionHealer(PastryNode pn, SocketPastryNodeFactory factory, InetSocketAddress[] bootstraps) {
     pastryNode = pn;
     this.factory = factory;
     this.bootstraps = bootstraps;
     env = pastryNode.getEnvironment();
     gone = new HashMap<rice.p2p.commonapi.Id, GoneSetEntry>();
-    this.logger = pn.getEnvironment().getLogManager().getLogger(PartitionHandler.class,"");
+    this.logger = pn.getEnvironment().getLogManager().getLogger(PartitionHealer.class,"");
 
     config = PartitionHandlerConfig.fromParameters(env.getParameters());
     maxGoneSize = config.maxHistorySize();
@@ -137,7 +137,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
       Iterator<GoneSetEntry> it = gone.values().iterator();
       long now = env.getTimeSource().currentTimeMillis();
 
-      logger.debug("Doing maintenance in PartitionHandler {}", now);
+      logger.debug("Doing maintenance in PartitionHealer {}", now);
 
       logger.trace("gone size 1 is {} of {}", gone.size(), maxGoneSize);
 
@@ -263,7 +263,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
       @Override
       public void receiveException(Exception result) {
         // oh well
-        logger.info("exception in PartitionHandler", result);
+        logger.info("exception in PartitionHealer", result);
       }
 
     });
@@ -282,11 +282,11 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
       synchronized (goneLock) {
         if (handle.getLiveness() == NodeHandle.LIVENESS_DEAD) {
           if (gone.containsKey(handle.getId())) {
-            logger.trace("PartitionHandler updating node {}", handle);
+            logger.trace("PartitionHealer updating node {}", handle);
             ((GoneSetEntry)gone.get(handle.getId())).nh = handle;
           } else {
             GoneSetEntry g = new GoneSetEntry(handle, env.getTimeSource().currentTimeMillis());
-            logger.atTrace().log(() -> "PartitionHandler adding node "+g);
+            logger.atTrace().log(() -> "PartitionHealer adding node "+g);
             gone.put(handle.getId(),g);
           }
         }
@@ -328,7 +328,7 @@ public class PartitionHandler extends TimerTask implements NodeSetListener {
    * @param target the node to rejoin through
    */
   public void rejoin(NodeHandle target) {
-    if (target instanceof BogusNodeHandle bogus) {
+    if (target instanceof BootstrapAddressNodeHandle bogus) {
       // a bogus handle only carries addresses and cannot be coalesced or sent to; boot through those addresses instead
       pastryNode.<InetSocketAddress>getBootstrapper().boot(bogus.getAddress());
       return;

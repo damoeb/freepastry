@@ -70,7 +70,7 @@ import rice.pastry.standard.ConsistentJoinConfig;
 import rice.pastry.standard.ProximityNeighborSelector;
 import rice.pastry.standard.StandardLeafSetProtocol;
 import rice.pastry.transport.NodeHandleAdapter;
-import rice.pastry.transport.TLDeserializer;
+import rice.pastry.transport.TransportLayerDeserializer;
 import rice.pastry.transport.TransportPastryNodeFactory;
 import rice.selector.SelectorLoop;
 
@@ -138,7 +138,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     return newNode(nidFactory.generateNodeId());
   }
 
-  HashMap<Id, NodeRecord> recordTable = new HashMap<Id, NodeRecord>();
+  HashMap<Id, SimulatedNodePosition> recordTable = new HashMap<Id, SimulatedNodePosition>();
 
   /**
    * Manufacture a new Pastry node.
@@ -216,8 +216,8 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   @Override
-  protected NodeHandleAdapter getNodeHandleAdapter(final PastryNode pn, NodeHandleFactory<?> handleFactory, TLDeserializer deserializer) throws IOException {
-    NodeRecord nr = (NodeRecord)recordTable.get(pn.getId());
+  protected NodeHandleAdapter getNodeHandleAdapter(final PastryNode pn, NodeHandleFactory<?> handleFactory, TransportLayerDeserializer deserializer) throws IOException {
+    SimulatedNodePosition nr = (SimulatedNodePosition)recordTable.get(pn.getId());
     if (nr == null) {
       nr = simulator.generateNodeRecord();
       recordTable.put(pn.getNodeId(),nr);
@@ -254,7 +254,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   /**
    * Override me
    */
-  protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, NodeRecord nr) {
+  protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, SimulatedNodePosition nr) {
     DirectNodeHandle local = (DirectNodeHandle)pn.getLocalHandle();
     DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>(
         local, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment()) {

@@ -63,7 +63,7 @@ import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.ScribePolicy;
 import rice.p2p.scribe.Topic;
 import rice.pastry.PastryNode;
-import rice.pastry.transport.BogusNodeHandle;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
 
 /**
  * Provides regression testing for the Scribe service using distributed
@@ -189,7 +189,7 @@ public class ScribeRegrTest extends CommonAPITest {
       throw new RuntimeException(ioe);
     }
     rice.pastry.NodeHandle bootstrap = getBootstrap();
-    if (bootstrap instanceof BogusNodeHandle bogusNodeHandle) {
+    if (bootstrap instanceof BootstrapAddressNodeHandle bogusNodeHandle) {
       // socket: the bootstrapper expects the addresses
       pn.boot(bogusNodeHandle.getAddress());
     } else {

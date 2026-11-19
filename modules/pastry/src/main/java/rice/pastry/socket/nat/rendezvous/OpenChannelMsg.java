@@ -39,9 +39,9 @@ package rice.pastry.socket.nat.rendezvous;
 import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-public final class OpenChannelMsg extends PRawMessage implements RendezvousMessage {
+public final class OpenChannelMsg extends PastryRawMessage implements RendezvousMessage {
 
   RendezvousSocketNodeHandle rendezvous;
   RendezvousSocketNodeHandle source;

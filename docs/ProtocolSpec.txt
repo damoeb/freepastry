@@ -305,7 +305,7 @@ Leafset
     specifies their locations. We do this because
     a NodeHandle takes up a lot more space than the index in the leafset, and 
     it may be in the leafset 1 or 2 times.    
-    A leafset consists of a clockwise and counterclockwise "SimilarSet"  If the ring is very small,
+    A leafset consists of a clockwise and counterclockwise "LeafSetHalf"  If the ring is very small,
     these values will overlap.
     
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -335,8 +335,8 @@ Leafset
 
   byte theSize // the total capacity of the leafset, not including the baseHandle  (usually 24)
   byte numUniqueHandles // the number of NodeHandles to read (in the next step, does not include the baseHandle)
-  byte cwSize // the number of elements of the clockwise SimilarSet
-  byte ccwSize // the number of elements of the counterclockwise SimilarSet    
+  byte cwSize // the number of elements of the clockwise LeafSetHalf
+  byte ccwSize // the number of elements of the counterclockwise LeafSetHalf    
   NodeHandle baseHandle
   // iterate numUniqueHandles times
     NodeHandle handle
@@ -556,7 +556,7 @@ LeafSetRequestMessage:
 
 LeafSetResponseMessage:
   type: 5
-  use: respond to a LeafSetRequest
+  use: respond to a ProximityLeafSetRequest
   format:
     byte version (0)
     LeafSet leafset

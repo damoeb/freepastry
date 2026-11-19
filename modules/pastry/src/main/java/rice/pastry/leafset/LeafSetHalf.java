@@ -51,13 +51,13 @@ import rice.pastry.routing.RoutingTable;
  * A set of nodes, ordered by numerical distance of their Id from the local
  * Id
  *
- * @version $Id: SimilarSet.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: LeafSetHalf.java 4654 2009-01-08 16:33:07Z jeffh $
  *
  * @author Andrew Ladd
  * @author Peter Druschel
  */
 
-public class SimilarSet implements NodeSetEventSource {
+public class LeafSetHalf implements NodeSetEventSource {
 
   private NodeHandle ln;
 
@@ -69,7 +69,7 @@ public class SimilarSet implements NodeSetEventSource {
 
   private LeafSet leafSet;
 
-  private SimilarSet(SimilarSet that, LeafSet ls) {
+  private LeafSetHalf(LeafSetHalf that, LeafSet ls) {
     this.ln = that.ln;
     this.clockwise = that.clockwise;
     this.nodes = new NodeHandle[that.nodes.length];
@@ -99,7 +99,7 @@ public class SimilarSet implements NodeSetEventSource {
    * @param cw true if this is the clockwise leafset half
    */
 
-  public SimilarSet(LeafSet leafSet, NodeHandle localNode, int size, boolean cw) {
+  public LeafSetHalf(LeafSet leafSet, NodeHandle localNode, int size, boolean cw) {
     this.leafSet = leafSet;
     ln = localNode;
     clockwise = cw;
@@ -107,7 +107,7 @@ public class SimilarSet implements NodeSetEventSource {
     nodes = new NodeHandle[size];
   }
 
-  public SimilarSet(LeafSet leafSet, NodeHandle localNode, int size, boolean cw, NodeHandle[] handles) {
+  public LeafSetHalf(LeafSet leafSet, NodeHandle localNode, int size, boolean cw, NodeHandle[] handles) {
     this.leafSet = leafSet;
     ln = localNode;
     clockwise = cw;
@@ -487,8 +487,8 @@ public class SimilarSet implements NodeSetEventSource {
 
   // Common API Support
 
-  SimilarSet copy(LeafSet newLeafSet) {
-    return new SimilarSet(this, newLeafSet);
+  LeafSetHalf copy(LeafSet newLeafSet) {
+    return new LeafSetHalf(this, newLeafSet);
   }
 
   /**
@@ -509,7 +509,7 @@ public class SimilarSet implements NodeSetEventSource {
 
   @Override
   public String toString() {
-    return "SimilarSet{"+ln+"}";
+    return "LeafSetHalf{"+ln+"}";
   }
 
 }

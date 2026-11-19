@@ -47,13 +47,13 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * @author Jeff Hoye
  *
  */
-public class HelloMsg extends PRawMessage {
+public class HelloMsg extends PastryRawMessage {
   public static final short TYPE = 1;
 
   public Id target;

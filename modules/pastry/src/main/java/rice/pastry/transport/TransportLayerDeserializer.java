@@ -50,18 +50,18 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeHandleFactory;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
-public class TLDeserializer implements RawMessageDeserializer, Deserializer {
+public class TransportLayerDeserializer implements RawMessageDeserializer, Deserializer {
   Map<Integer, MessageDeserializer> deserializers;
 
   private final Environment environment;
   private final Logger logger;
 
-  public TLDeserializer(NodeHandleFactory<?> nodeHandleFactory, Environment env) {
+  public TransportLayerDeserializer(NodeHandleFactory<?> nodeHandleFactory, Environment env) {
     this.environment = env;
     this.deserializers = new HashMap<Integer, MessageDeserializer>();
-    this.logger = environment.getLogManager().getLogger(TLDeserializer.class, null);
+    this.logger = environment.getLogManager().getLogger(TransportLayerDeserializer.class, null);
   }
 
   @Override
@@ -87,7 +87,7 @@ public class TLDeserializer implements RawMessageDeserializer, Deserializer {
 
   @Override
   public void serialize(RawMessage m, OutputBuffer o) throws IOException {
-    PRawMessage msg = (PRawMessage)m;
+    PastryRawMessage msg = (PastryRawMessage)m;
     int address = msg.getDestination();
     o.writeInt(address);
 

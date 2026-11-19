@@ -48,8 +48,8 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
-import rice.pastry.direct.NodeRecord;
 import rice.pastry.direct.ProximityGenerator;
+import rice.pastry.direct.SimulatedNodePosition;
 
 public class GenericProximityGenerator implements ProximityGenerator {
   private RandomSource random;
@@ -92,11 +92,11 @@ public class GenericProximityGenerator implements ProximityGenerator {
 
 
   @Override
-  public NodeRecord generateNodeRecord() {
+  public SimulatedNodePosition generateNodeRecord() {
     return new GNNodeRecord();
   }
 
-  public class GNNodeRecord implements NodeRecord {
+  public class GNNodeRecord implements SimulatedNodePosition {
     private int index; // index in the symmetric inter-host latency matrix
 
     public GNNodeRecord() {
@@ -110,12 +110,12 @@ public class GenericProximityGenerator implements ProximityGenerator {
     }
 
     @Override
-    public float proximity(NodeRecord that) {
+    public float proximity(SimulatedNodePosition that) {
       return Math.round(networkDelay(that)+that.networkDelay(this));
     }
 
     @Override
-    public float networkDelay(NodeRecord that) {
+    public float networkDelay(SimulatedNodePosition that) {
       GNNodeRecord nr = (GNNodeRecord)that;
       float res = distance[index][nr.index];
       if (res < 0)

@@ -43,7 +43,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * PingMessageNew
@@ -55,7 +55,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Rongmei Zhang
  */
 
-public class PingMessageNew extends PRawMessage {
+public class PingMessageNew extends PastryRawMessage {
     public static final short TYPE = 1;
 
     private Id target;

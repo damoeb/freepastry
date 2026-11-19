@@ -45,7 +45,7 @@ import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.NodeHandle;
-import rice.pastry.messaging.PRawMessage;
+import rice.pastry.messaging.PastryRawMessage;
 
 /**
  * This class is an internal message to the commonapi gluecode.
@@ -55,7 +55,7 @@ import rice.pastry.messaging.PRawMessage;
  * @author Alan Mislove
  * @author Peter Druschel
  */
-public class PastryEndpointMessage extends PRawMessage {
+public class PastryEndpointMessage extends PastryRawMessage {
 
   /**
    * The application's message: a {@link RawMessage} when it is routed, any {@link Message} when it is only

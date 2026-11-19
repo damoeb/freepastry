@@ -37,8 +37,8 @@ advised of the possibility of such damage.
 package rice.pastry.direct.proximitygenerators;
 
 import rice.environment.random.RandomSource;
-import rice.pastry.direct.NodeRecord;
 import rice.pastry.direct.ProximityGenerator;
+import rice.pastry.direct.SimulatedNodePosition;
 
 public class EuclideanProximityGenerator implements ProximityGenerator{
   int side;
@@ -52,17 +52,17 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
   }
 
   @Override
-  public NodeRecord generateNodeRecord() {
+  public SimulatedNodePosition generateNodeRecord() {
     return new EuclideanNodeRecord();
   }
 
   /**
-   * Initialize a random Euclidean NodeRecord
+   * Initialize a random Euclidean SimulatedNodePosition
    *
    * @version $Id: EuclideanNetwork.java 3613 2007-02-15 14:45:14Z jstewart $
    * @author amislove
    */
-  private class EuclideanNodeRecord implements NodeRecord {
+  private class EuclideanNodeRecord implements SimulatedNodePosition {
     /**
      * The euclidean position.
      */
@@ -70,7 +70,7 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
 
 
     /**
-     * Constructor for NodeRecord.
+     * Constructor for SimulatedNodePosition.
      *
      */
     EuclideanNodeRecord() {
@@ -80,12 +80,12 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
     }
 
     @Override
-    public float proximity(NodeRecord that) {
+    public float proximity(SimulatedNodePosition that) {
       return Math.round((networkDelay(that)*2.0));
     }
 
     @Override
-    public float networkDelay(NodeRecord that) {
+    public float networkDelay(SimulatedNodePosition that) {
       EuclideanNodeRecord nr = (EuclideanNodeRecord)that;
       int dx = x - nr.x;
       int dy = y - nr.y;
