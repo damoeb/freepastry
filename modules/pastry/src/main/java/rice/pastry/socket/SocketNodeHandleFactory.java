@@ -80,8 +80,8 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   }
 
   @Override
-  public SocketNodeHandle coalesce(SocketNodeHandle h) {
-    SocketNodeHandle handle = (SocketNodeHandle)h;
+  public SocketNodeHandle coalesce(SocketNodeHandle nodeHandle) {
+    SocketNodeHandle handle = (SocketNodeHandle)nodeHandle;
     if (handleSet.containsKey(handle)) {
       return handleSet.get(handle);
     }
@@ -96,9 +96,9 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   /**
    * Notify the listeners that this new handle has come along.
    */
-  protected void notifyListeners(SocketNodeHandle nh) {
+  protected void notifyListeners(SocketNodeHandle nodeHandle) {
     for (NodeHandleFactoryListener<? super SocketNodeHandle> foo : listeners) {
-      foo.nodeHandleFound(nh);
+      foo.nodeHandleFound(nodeHandle);
     }
   }
 

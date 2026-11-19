@@ -64,12 +64,12 @@ public record GenericProximityConfig(
   /**
    * @throws IllegalArgumentException if maxOverlaySize or nodesPerStub is not positive
    */
-  public static GenericProximityConfig fromParameters(Parameters p) {
+  public static GenericProximityConfig fromParameters(Parameters parameters) {
     return new GenericProximityConfig(
-      requirePositive("pastry_direct_gtitm_max_overlay_size", p.getInt("pastry_direct_gtitm_max_overlay_size")),
-      p.getFloat("pastry_direct_min_delay"),
-      p.getFloat("pastry_direct_gtitm_delay_factor"),
-      p.getString("pastry_direct_gtitm_matrix_file"),
-      requirePositive("pastry_direct_gtitm_nodes_per_stub", p.getInt("pastry_direct_gtitm_nodes_per_stub")));
+      requirePositive("pastry_direct_gtitm_max_overlay_size", parameters.getInt("pastry_direct_gtitm_max_overlay_size")),
+      parameters.getFloat("pastry_direct_min_delay"),
+      parameters.getFloat("pastry_direct_gtitm_delay_factor"),
+      parameters.getString("pastry_direct_gtitm_matrix_file"),
+      requirePositive("pastry_direct_gtitm_nodes_per_stub", parameters.getInt("pastry_direct_gtitm_nodes_per_stub")));
   }
 }

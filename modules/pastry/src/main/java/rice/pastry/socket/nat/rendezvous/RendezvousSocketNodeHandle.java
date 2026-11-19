@@ -83,9 +83,9 @@ public class RendezvousSocketNodeHandle extends SocketNodeHandle implements Rend
   static SocketNodeHandle build(InputBuffer buf, PastryNode local) throws IOException {
     MultiInetSocketAddress eaddr = MultiInetSocketAddress.build(buf);
     long epoch = buf.readLong();
-    Id nid = Id.build(buf);
+    Id nodeId = Id.build(buf);
     byte contactStatus = buf.readByte();
-    return new RendezvousSocketNodeHandle(eaddr, epoch, nid, local, contactStatus);
+    return new RendezvousSocketNodeHandle(eaddr, epoch, nodeId, local, contactStatus);
   }
 
   public byte getContactStatus() {

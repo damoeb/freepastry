@@ -84,19 +84,19 @@ public record SocketFactoryConfig(
    * @throws IllegalArgumentException if findPortMaxTries is negative or maxOpenSockets is not positive
    * @throws UnknownHostException as {@link Parameters#getInetSocketAddress(String)} does
    */
-  public static SocketFactoryConfig fromParameters(Parameters p) throws UnknownHostException {
-    boolean hasExternalAddress = p.contains("external_address");
+  public static SocketFactoryConfig fromParameters(Parameters parameters) throws UnknownHostException {
+    boolean hasExternalAddress = parameters.contains("external_address");
     return new SocketFactoryConfig(
-      requireNonNegative("nat_find_port_max_tries", p.getInt("nat_find_port_max_tries")),
-      p.getString("nat_app_name"),
-      p.contains("socket_bindAddress") ? p.getString("socket_bindAddress") : null,
-      p.getBoolean("pastry_socket_allow_loopback"),
-      p.getString("pastry_socket_known_network_address"),
-      p.getInt("pastry_socket_known_network_address_port"),
-      requirePositive("pastry_socket_scm_max_open_sockets", p.getInt("pastry_socket_scm_max_open_sockets")),
-      p.getBoolean("rice_socket_seed"),
-      p.getBoolean("pastry_socket_increment_port_after_construction"),
+      requireNonNegative("nat_find_port_max_tries", parameters.getInt("nat_find_port_max_tries")),
+      parameters.getString("nat_app_name"),
+      parameters.contains("socket_bindAddress") ? parameters.getString("socket_bindAddress") : null,
+      parameters.getBoolean("pastry_socket_allow_loopback"),
+      parameters.getString("pastry_socket_known_network_address"),
+      parameters.getInt("pastry_socket_known_network_address_port"),
+      requirePositive("pastry_socket_scm_max_open_sockets", parameters.getInt("pastry_socket_scm_max_open_sockets")),
+      parameters.getBoolean("rice_socket_seed"),
+      parameters.getBoolean("pastry_socket_increment_port_after_construction"),
       hasExternalAddress,
-      hasExternalAddress ? p.getInetSocketAddress("external_address") : null);
+      hasExternalAddress ? parameters.getInetSocketAddress("external_address") : null);
   }
 }

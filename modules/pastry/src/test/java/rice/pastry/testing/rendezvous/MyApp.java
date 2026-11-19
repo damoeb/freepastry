@@ -91,10 +91,10 @@ public class MyApp implements Application {
   /**
    * Called to directly send a message to the nh
    */
-  public void routeMyMsgDirect(NodeHandle nh) {
-    System.out.println(this+" sending direct to "+nh);
-    MyMsg msg = new MyMsg(endpoint.getId(), nh.getId());
-    endpoint.route(null, msg, nh);
+  public void routeMyMsgDirect(NodeHandle nodeHandle) {
+    System.out.println(this+" sending direct to "+nodeHandle);
+    MyMsg msg = new MyMsg(endpoint.getId(), nodeHandle.getId());
+    endpoint.route(null, msg, nodeHandle);
   }
 
   /**

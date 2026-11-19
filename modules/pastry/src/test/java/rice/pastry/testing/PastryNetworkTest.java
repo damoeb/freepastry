@@ -90,7 +90,7 @@ public class PastryNetworkTest {
     final HashMap<NodeHandle, LeafSet> leafsets = new HashMap<NodeHandle, LeafSet>();
     final HashSet<NodeHandle> unseen = new HashSet<NodeHandle>();
 
-    final PrintStream ps = new PrintStream(new FileOutputStream("response.txt"));
+    final PrintStream printStream = new PrintStream(new FileOutputStream("response.txt"));
 
     unseen.add(factory.getNodeHandle(bootstrap));
 
@@ -112,23 +112,23 @@ public class PastryNetworkTest {
             public void run() {
               boolean gotResponse = false;
               try {
-                LeafSet ls = null; // TODO: fix this, old code: factory.getLeafSet(handle);
+                LeafSet leafSet = null; // TODO: fix this, old code: factory.getLeafSet(handle);
                 if (false) throw new IOException(); // just to fool the catches later on
 
-                System.out.println("Response:"+handle+" "+ls);
+                System.out.println("Response:"+handle+" "+leafSet);
                 gotResponse = true;
-                ps.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
+                printStream.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
                     handle.getInetSocketAddress().getPort());
 
-                leafsets.put(handle, ls);
+                leafsets.put(handle, leafSet);
 
-                NodeSet ns = ls.neighborSet(Integer.MAX_VALUE);
+                NodeSet ns = leafSet.neighborSet(Integer.MAX_VALUE);
 
                 if (! ns.get(0).equals(handle)) {
                   dead.add(handle);
                   nodes.remove(handle);
                   leafsets.remove(handle);
-                  leafsets.put(ns.get(0), ls);
+                  leafsets.put(ns.get(0), leafSet);
                 }
 
                 for (int i=1; i<ns.size(); i++)
@@ -215,12 +215,12 @@ public class PastryNetworkTest {
     Map<NodeHandle, Object> routerows = fetchRouteRow(row);
 
     for (NodeHandle node : nodes) {
-      RoutingTable rt = new RoutingTable(node, 1, (byte)environment.getParameters().getInt("pastry_rtBaseBitLength"), ((SocketNodeHandle)node).getLocalNode());
+      RoutingTable routingTable = new RoutingTable(node, 1, (byte)environment.getParameters().getInt("pastry_rtBaseBitLength"), ((SocketNodeHandle)node).getLocalNode());
 
       for (NodeHandle nodeHandle : nodes)
-        rt.put(nodeHandle);
+        routingTable.put(nodeHandle);
 
-      RouteSet[] ideal = (RouteSet[]) rt.getRow(row);
+      RouteSet[] ideal = (RouteSet[]) routingTable.getRow(row);
       RouteSet[] actual = (RouteSet[]) routerows.get(node);
 
       for (int k=0; k<ideal.length; k++) {

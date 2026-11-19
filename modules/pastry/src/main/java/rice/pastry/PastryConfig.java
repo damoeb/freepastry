@@ -55,11 +55,11 @@ public record PastryConfig(byte rtMax, byte rtBaseBitLength, byte lSetSize, byte
   /**
    * @throws IllegalArgumentException if rtMax, rtBaseBitLength or lSetSize is not positive
    */
-  public static PastryConfig fromParameters(Parameters p) {
+  public static PastryConfig fromParameters(Parameters parameters) {
     return new PastryConfig(
-      (byte)requirePositive("pastry_rtMax", p.getInt("pastry_rtMax")),
-      (byte)requirePositive("pastry_rtBaseBitLength", p.getInt("pastry_rtBaseBitLength")),
-      (byte)requirePositive("pastry_lSetSize", p.getInt("pastry_lSetSize")),
-      (byte)p.getInt("pastry_protocol_router_routeMsgVersion"));
+      (byte)requirePositive("pastry_rtMax", parameters.getInt("pastry_rtMax")),
+      (byte)requirePositive("pastry_rtBaseBitLength", parameters.getInt("pastry_rtBaseBitLength")),
+      (byte)requirePositive("pastry_lSetSize", parameters.getInt("pastry_lSetSize")),
+      (byte)parameters.getInt("pastry_protocol_router_routeMsgVersion"));
   }
 }

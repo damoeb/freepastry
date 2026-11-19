@@ -119,8 +119,8 @@ public abstract class PastryAppl
     register();
   }
 
-  public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer md) {
-    this(pn, instance, address, md, null);
+  public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer deserializer) {
+    this(pn, instance, address, deserializer, null);
   }
 
   public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer md, Logger logger) {
@@ -197,17 +197,17 @@ public abstract class PastryAppl
   public void receiveMessage(Message msg) {
 
     logger.trace("[{}] recv {}", thePastryNode, msg);
-    if (msg instanceof RouteMessage rm) {
+    if (msg instanceof RouteMessage routeMessage) {
 
         // if the message has a destinationHandle, it should be for me, and it should always be delivered
-        NodeHandle destinationHandle = rm.getDestinationHandle();
+        NodeHandle destinationHandle = routeMessage.getDestinationHandle();
         if (deliverWhenNotReady() ||
             thePastryNode.isReady() ||
-            rm.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
+            routeMessage.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
             (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
           // continue to enrouteMessage()
         } else {
-          if (rm.sendFailed(new NodeIsNotReadyException(thePastryNode.getLocalHandle()))) {
+          if (routeMessage.sendFailed(new NodeIsNotReadyException(thePastryNode.getLocalHandle()))) {
             logger.info("Dropping {} because node is not ready.", msg);
           } else {
             logger.warn("Dropping {} because node is not ready.", msg);
@@ -218,16 +218,16 @@ public abstract class PastryAppl
         }
 
       try {
-        Message innerMessage = rm.unwrap(deserializer);
-        if (enrouteMessage(innerMessage, rm.getTarget(), rm.getNextHop(), rm.getOptions())) {
-          if (rm.getDestinationHandle() == thePastryNode.getLocalHandle()) {
+        Message innerMessage = routeMessage.unwrap(deserializer);
+        if (enrouteMessage(innerMessage, routeMessage.getTarget(), routeMessage.getNextHop(), routeMessage.getOptions())) {
+          if (routeMessage.getDestinationHandle() == thePastryNode.getLocalHandle()) {
             messageForApplication(innerMessage);
           } else {
-            thePastryNode.getRouter().route(rm);
+            thePastryNode.getRouter().route(routeMessage);
           }
         }
       } catch (IOException ioe) {
-        throw new RuntimeException("Error deserializing message "+rm,ioe);
+        throw new RuntimeException("Error deserializing message "+routeMessage,ioe);
       }
     } else {
       messageForApplication(msg);
@@ -264,10 +264,10 @@ public abstract class PastryAppl
    */
   public void routeMessage(Id key, PastryRawMessage msg, SendOptions opt) {
     logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
-    RouteMessage rm = new RouteMessage(key, msg, opt,
+    RouteMessage routeMessage = new RouteMessage(key, msg, opt,
         thePastryNode.getConfig().routeMsgVersion());
-    rm.setTransportLayerOptions(options);
-    thePastryNode.getRouter().route(rm);
+    routeMessage.setTransportLayerOptions(options);
+    thePastryNode.getRouter().route(routeMessage);
   }
 
   /**
@@ -325,18 +325,18 @@ public abstract class PastryAppl
   /**
    * Called by pastry when the leaf set changes.
    *
-   * @param nh the handle of the node that was added or removed.
+   * @param nodeHandle the handle of the node that was added or removed.
    * @param wasAdded true if the node was added, false if the node was removed.
    */
-  public void leafSetChange(NodeHandle nh, boolean wasAdded) {}
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {}
 
   /**
    * Called by pastry when the route set changes.
    *
-   * @param nh the handle of the node that was added or removed.
+   * @param nodeHandle the handle of the node that was added or removed.
    * @param wasAdded true if the node was added, false if the node was removed.
    */
-  public void routeSetChange(NodeHandle nh, boolean wasAdded) {}
+  public void routeSetChange(NodeHandle nodeHandle, boolean wasAdded) {}
 
   /**
    * Invoked when the Pastry node has joined the overlay network and

@@ -37,10 +37,10 @@ class ConsistentJoinProtocolForgedJoinTest {
     NodeHandle acceptor = local.handle("8000");
     ConsistentJoinProtocol protocol = new ConsistentJoinProtocol(local.node, local.local(), local.node.getRoutingTable(),
         local.node.getLeafSet(), null);
-    JoinRequest jr = new JoinRequest(local.local(), (byte) 4, 1L);
-    jr.pushRow(null);
-    jr.acceptJoin(acceptor, local.node.getLeafSet());
+    JoinRequest joinRequest = new JoinRequest(local.local(), (byte) 4, 1L);
+    joinRequest.pushRow(null);
+    joinRequest.acceptJoin(acceptor, local.node.getLeafSet());
 
-    assertDoesNotThrow(() -> protocol.broadcastRows(jr));
+    assertDoesNotThrow(() -> protocol.broadcastRows(joinRequest));
   }
 }

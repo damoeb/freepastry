@@ -54,23 +54,23 @@ public class RendezvousLeafSetNodeHandleStrategy implements NextHopStrategy<Mult
   public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
     if (ls == null) return null;
 
-    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
+    Collection<MultiInetSocketAddress> result = walkLeafSet(destination, 8);
 
-    return ret;
+    return result;
   }
 
   private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
     Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
     LeafSet leafset = ls;
     for (int i = 1; i < leafset.maxSize()/2; i++) {
-      RendezvousSocketNodeHandle snh = (RendezvousSocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
-        result.add(snh.getAddress());
+      RendezvousSocketNodeHandle socketNodeHandle = (RendezvousSocketNodeHandle)leafset.get(-i);
+      if (socketNodeHandle != null && !socketNodeHandle.getAddress().equals(destination) && socketNodeHandle.canContactDirect()) {
+        result.add(socketNodeHandle.getAddress());
         if (result.size() >= numRequested) return result;
       }
-      snh = (RendezvousSocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.getAddress().equals(destination) && snh.canContactDirect()) {
-        result.add(snh.getAddress());
+      socketNodeHandle = (RendezvousSocketNodeHandle)leafset.get(i);
+      if (socketNodeHandle != null && !socketNodeHandle.getAddress().equals(destination) && socketNodeHandle.canContactDirect()) {
+        result.add(socketNodeHandle.getAddress());
         if (result.size() >= numRequested) return result;
       }
     }

@@ -66,8 +66,8 @@ public class NodeHandleAdapter implements
    * The layers may be typed by a NodeHandle subclass; the adapter only ever hands them back
    * handles that they produced, so they are viewed as NodeHandle layers here.
    */
-  public NodeHandleAdapter(TransportLayer<? extends NodeHandle, RawMessage> tl, LivenessProvider<? extends NodeHandle> livenessProvider, ProximityProvider<? extends NodeHandle> proxProvider) {
-    this.tl = (TransportLayer<NodeHandle, RawMessage>)tl;
+  public NodeHandleAdapter(TransportLayer<? extends NodeHandle, RawMessage> transportLayer, LivenessProvider<? extends NodeHandle> livenessProvider, ProximityProvider<? extends NodeHandle> proxProvider) {
+    this.tl = (TransportLayer<NodeHandle, RawMessage>)transportLayer;
     this.livenessProvider = (LivenessProvider<NodeHandle>)livenessProvider;
     this.proxProvider = (ProximityProvider<NodeHandle>)proxProvider;
   }

@@ -74,7 +74,7 @@ final class NodeEnvironments {
   }
 
   Environment cloneEnvironment(Environment rootEnvironment, Id nodeId) {
-    Environment ret = rootEnvironment;
+    Environment result = rootEnvironment;
     if (config.multipleNodes()) {
 
       // new logManager
@@ -90,13 +90,13 @@ final class NodeEnvironments {
       RandomSource rand = randomSources.create(rootEnvironment, nodeId, lman);
 
       // build the environment
-      ret = new Environment(sman, proc, rand, rootEnvironment.getTimeSource(), lman,
+      result = new Environment(sman, proc, rand, rootEnvironment.getTimeSource(), lman,
           rootEnvironment.getParameters(), rootEnvironment.getExceptionStrategy());
 
       // gain shared fate with the rootEnvironment
-      rootEnvironment.addDestructable(ret);
+      rootEnvironment.addDestructable(result);
     }
-    return ret;
+    return result;
   }
 
   /**

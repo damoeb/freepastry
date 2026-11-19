@@ -72,10 +72,10 @@ public class LivenessSourceRouteForwardStrategy<Identifier> implements
     if (!socket)
       return true;
     SourceRoute<Identifier> i = factory.getSourceRoute(nextHop);
-    boolean ret = (liveness.getLiveness(i, options) < LivenessTypes.LIVENESS_DEAD);
-    if (!ret)
+    boolean result = (liveness.getLiveness(i, options) < LivenessTypes.LIVENESS_DEAD);
+    if (!result)
       logger.warn("Not forwarding socket to {} sr:{} because I believe it is dead.", nextHop, sr);
-    return ret;
+    return result;
   }
 
 }

@@ -63,9 +63,9 @@ public class ConsistentJoinMessage extends PastryRawMessage {
   /**
    *
    */
-  public ConsistentJoinMessage(LeafSet ls, Set<NodeHandle> failed, boolean request) {
+  public ConsistentJoinMessage(LeafSet leafSet, Set<NodeHandle> failed, boolean request) {
     super(JoinAddress.getCode());
-    this.ls = ls;
+    this.ls = leafSet;
     this.request = request;
     this.failed = failed;
   }
@@ -87,23 +87,23 @@ public class ConsistentJoinMessage extends PastryRawMessage {
     ls.serialize(buf);
     buf.writeBoolean(request);
     buf.writeInt(failed.size());
-    for (NodeHandle h : failed) {
-      h.serialize(buf);
+    for (NodeHandle nodeHandle : failed) {
+      nodeHandle.serialize(buf);
     }
   }
 
-  public ConsistentJoinMessage(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender) throws IOException {
+  public ConsistentJoinMessage(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, NodeHandle sender) throws IOException {
     super(JoinAddress.getCode());
     byte version = buf.readByte();
     switch(version) {
       case 0:
         setSender(sender);
-        ls = LeafSet.build(buf, nhf);
+        ls = LeafSet.build(buf, nodeHandleFactory);
         request = buf.readBoolean();
         failed = new HashSet<NodeHandle>();
         int numInSet = buf.readInt();
         for (int i = 0; i < numInSet; i++) {
-          failed.add(nhf.readNodeHandle(buf));
+          failed.add(nodeHandleFactory.readNodeHandle(buf));
         }
         break;
       default:

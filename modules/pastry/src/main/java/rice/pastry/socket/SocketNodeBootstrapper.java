@@ -73,9 +73,9 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
   private static final int BOOT_HANDLE_WAIT_MILLIS = 20000;
 
   protected PastryNode pn;
-  private final TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl;
+  private final TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> transportLayer;
   private final SocketNodeHandleFactory handleFactory;
-  private final ProximityNeighborSelector pns;
+  private final ProximityNeighborSelector neighborSelector;
   /** {@code socket_seed}: the node may start a new ring even when it was given boot addresses */
   private final boolean seed;
   /** the selector of the factory's environment, which runs the boot timeout */
@@ -90,14 +90,14 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
    * @param factorySelector the selector of the factory's environment, which runs the boot timeout
    */
   public SocketNodeBootstrapper(PastryNode pn,
-      TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> tl,
+      TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> transportLayer,
       SocketNodeHandleFactory handleFactory,
-      ProximityNeighborSelector pns, boolean seed, SelectorLoop factorySelector) {
+      ProximityNeighborSelector neighborSelector, boolean seed, SelectorLoop factorySelector) {
     this.logger = pn.getEnvironment().getLogManager().getLogger(SocketNodeBootstrapper.class, null);
     this.pn = pn;
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     this.handleFactory = handleFactory;
-    this.pns = pns;
+    this.neighborSelector = neighborSelector;
     this.seed = seed;
     this.factorySelector = factorySelector;
   }
@@ -192,7 +192,7 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
     final Collection<rice.pastry.NodeHandle> bootHandles =
       new HashSet<rice.pastry.NodeHandle>();
 
-    TransportLayerNodeHandle<MultiInetSocketAddress> local = tl.getLocalIdentifier();
+    TransportLayerNodeHandle<MultiInetSocketAddress> local = transportLayer.getLocalIdentifier();
     InetSocketAddress localAddr = local.getAddress().getInnermostAddress();
 
     // fill in tempBootHandles
@@ -229,7 +229,7 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
         pn.getLivenessProvider().removeLivenessListener(listener.get(0));
 
         // do proximity neighbor selection
-        pns.getNearHandles(initialSet, new Continuation<Collection<NodeHandle>, Exception>(){
+        neighborSelector.getNearHandles(initialSet, new Continuation<Collection<NodeHandle>, Exception>(){
 
           @Override
           public void receiveResult(Collection<NodeHandle> result) {
@@ -286,8 +286,8 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
 
     logger.debug("boot() checking liveness");
     // check liveness on the bogus nodes
-    for (SocketNodeHandle h : tempBootHandles) {
-      checkLiveness(h, null);
+    for (SocketNodeHandle nodeHandle : tempBootHandles) {
+      checkLiveness(nodeHandle, null);
     }
 
     // need to synchronize, because this can be called on any thread
@@ -325,7 +325,7 @@ public class SocketNodeBootstrapper implements Bootstrapper<InetSocketAddress> {
 
 
 
-  protected void checkLiveness(SocketNodeHandle h, Map<String, Object> options) {
-    pn.getLivenessProvider().checkLiveness(h, null);
+  protected void checkLiveness(SocketNodeHandle nodeHandle, Map<String, Object> options) {
+    pn.getLivenessProvider().checkLiveness(nodeHandle, null);
   }
 }

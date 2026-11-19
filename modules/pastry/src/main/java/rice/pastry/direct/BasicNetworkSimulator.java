@@ -64,9 +64,9 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     DirectTransportLayer<Identifier, MessageType> tl;
     SimulatedNodePosition record;
 
-    public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> tl, SimulatedNodePosition record) {
+    public Tupel(Identifier i, DirectTransportLayer<Identifier, MessageType> transportLayer, SimulatedNodePosition record) {
       super();
-      this.tl = tl;
+      this.tl = transportLayer;
       this.record = record;
     }
   }
@@ -89,18 +89,18 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
     start();
   }
 
-  private void addTask(TimerTask dtt) {
-    logger.debug("addTask({})", dtt);
-    manager.getTimer().schedule(dtt);
+  private void addTask(TimerTask timerTask) {
+    logger.debug("addTask({})", timerTask);
+    manager.getTimer().schedule(timerTask);
   }
 
   @Override
   public CancellableTask enqueueDelivery(Delivery d, int delay) {
     long time = timeSource.currentTimeMillis()+delay;
     logger.debug("BNS: enqueueDelivery {}:{}", d, time);
-    DeliveryTimerTask dtt = new DeliveryTimerTask(d, time, d.getSeq());
-    addTask(dtt);
-    return dtt;
+    DeliveryTimerTask timerTask = new DeliveryTimerTask(d, time, d.getSeq());
+    addTask(timerTask);
+    return timerTask;
   }
 
   @Override
@@ -119,14 +119,14 @@ public class BasicNetworkSimulator<Identifier, MessageType> extends EventSimulat
   public Cancellable deliverMessage(MessageType msg, Identifier node, Identifier from, int delay, int period) {
     logger.debug("BNS: deliver {} to {}", msg, node);
 
-    DirectTimerTask dtt = null;
+    DirectTimerTask timerTask = null;
 
     if (from == null || isAlive(from)) {
       MessageDelivery<Identifier, MessageType> md = new MessageDelivery<Identifier, MessageType>(msg, node, from, null, this);
-      dtt = new DirectTimerTask(md, timeSource.currentTimeMillis()+ delay,period);
-      addTask(dtt);
+      timerTask = new DirectTimerTask(md, timeSource.currentTimeMillis()+ delay,period);
+      addTask(timerTask);
     }
-    return dtt;
+    return timerTask;
   }
 
 

@@ -134,12 +134,12 @@ public class PastryEndpointMessage extends PastryRawMessage {
     raw.serialize(buf);
   }
 
-  public PastryEndpointMessage(int address, InputBuffer buf, MessageDeserializer md, short type, int priority, NodeHandle sender) throws IOException {
+  public PastryEndpointMessage(int address, InputBuffer buf, MessageDeserializer deserializer, short type, int priority, NodeHandle sender) throws IOException {
     super(address);
 
     setSender(sender);
-    message = md.deserialize(buf, type, priority, sender);
-    if (message == null) throw new IOException("PEM.deserialize() message = null type:"+type+" md:"+md);
+    message = deserializer.deserialize(buf, type, priority, sender);
+    if (message == null) throw new IOException("PEM.deserialize() message = null type:"+type+" md:"+deserializer);
   }
 
 }

@@ -156,9 +156,9 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 
 
 
-    boolean ret = (epoch == other.epoch && other.getNodeId().equals(getNodeId()) && other.eaddress.equals(eaddress));
+    boolean result = (epoch == other.epoch && other.getNodeId().equals(getNodeId()) && other.eaddress.equals(eaddress));
 
-    return ret;
+    return result;
   }
 
   /**
@@ -209,8 +209,8 @@ public class SocketNodeHandle extends DistNodeHandle<MultiInetSocketAddress> {
 //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     MultiInetSocketAddress eaddr = MultiInetSocketAddress.build(buf);
     long epoch = buf.readLong();
-    Id nid = Id.build(buf);
-    return new SocketNodeHandle(eaddr, epoch, nid, local);
+    Id nodeId = Id.build(buf);
+    return new SocketNodeHandle(eaddr, epoch, nodeId, local);
   }
 
   @Override

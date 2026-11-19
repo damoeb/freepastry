@@ -135,8 +135,8 @@ public class ClosestRegrTest {
       System.out.println("CREATED NODE " + i + " " + node.getNodeId());
 
       pastryNodes.add(node);
-      double ave = getAvgNumEntries(pastryNodes);
-      System.out.println("Avg Num Entries:"+ave);
+      double average = getAvgNumEntries(pastryNodes);
+      System.out.println("Avg Num Entries:"+average);
     }
 
     System.out.println("SO FAR: " + incorrect + "/" + NUM_NODES + " PERCENTAGE: " + (sum/incorrect));

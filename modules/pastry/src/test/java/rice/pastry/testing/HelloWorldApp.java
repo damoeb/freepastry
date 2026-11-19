@@ -83,10 +83,10 @@ public class HelloWorldApp extends PastryAppl {
   /**
    * Sends a message to a randomly chosen node. Yeah, for fun.
    *
-   * @param rng Randon number generator.
+   * @param random Randon number generator.
    */
-  public void sendRndMsg(RandomSource rng) {
-    Id rndid = Id.makeRandomId(rng);
+  public void sendRndMsg(RandomSource random) {
+    Id rndid = Id.makeRandomId(random);
     if (logger.isDebugEnabled()) {
       System.out.println("Sending message from " + getNodeId() + " to random dest " + rndid);
     }
@@ -140,13 +140,13 @@ public class HelloWorldApp extends PastryAppl {
   /**
    * Invoked upon change to leafset.
    *
-   * @param nh node handle that got added/removed
+   * @param nodeHandle node handle that got added/removed
    * @param wasAdded added (true) or removed (false)
    */
   @Override
-  public void leafSetChange(NodeHandle nh, boolean wasAdded) {
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {
     if (logger.isTraceEnabled()) {
-      String s = "In " + getNodeId() + "'s leaf set, " + "node " + nh.getNodeId()
+      String s = "In " + getNodeId() + "'s leaf set, " + "node " + nodeHandle.getNodeId()
           + " was ";
       if (wasAdded)
         s += "added";
@@ -160,14 +160,14 @@ public class HelloWorldApp extends PastryAppl {
   /**
    * Invoked upon change to routing table.
    *
-   * @param nh node handle that got added/removed
+   * @param nodeHandle node handle that got added/removed
    * @param wasAdded added (true) or removed (false)
    */
   @Override
-  public void routeSetChange(NodeHandle nh, boolean wasAdded) {
+  public void routeSetChange(NodeHandle nodeHandle, boolean wasAdded) {
     if (logger.isTraceEnabled()) {
       String s = "In " + getNodeId() + "'s route set, " + "node "
-          + nh.getNodeId() + " was ";
+          + nodeHandle.getNodeId() + " was ";
       if (wasAdded)
         s += "added";
       else

@@ -65,12 +65,12 @@ public record ConsistentJoinConfig(
   /**
    * @throws IllegalArgumentException if an interval is not positive, or maxFailedToSend is negative
    */
-  public static ConsistentJoinConfig fromParameters(Parameters p) {
+  public static ConsistentJoinConfig fromParameters(Parameters parameters) {
     return new ConsistentJoinConfig(
-      p.getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"),
-      requirePositive("pastry_protocol_consistentJoin_retry_interval", p.getInt("pastry_protocol_consistentJoin_retry_interval")),
-      p.getInt("pastry_protocol_consistentJoin_failedRetentionTime"),
-      requireNonNegative("pastry_protocol_consistentJoin_maxFailedToSend", p.getInt("pastry_protocol_consistentJoin_maxFailedToSend")),
-      requirePositive("pastry_protocol_consistentJoin_cleanup_interval", p.getInt("pastry_protocol_consistentJoin_cleanup_interval")));
+      parameters.getInt("pastry_protocol_consistentJoin_max_time_to_be_scheduled"),
+      requirePositive("pastry_protocol_consistentJoin_retry_interval", parameters.getInt("pastry_protocol_consistentJoin_retry_interval")),
+      parameters.getInt("pastry_protocol_consistentJoin_failedRetentionTime"),
+      requireNonNegative("pastry_protocol_consistentJoin_maxFailedToSend", parameters.getInt("pastry_protocol_consistentJoin_maxFailedToSend")),
+      requirePositive("pastry_protocol_consistentJoin_cleanup_interval", parameters.getInt("pastry_protocol_consistentJoin_cleanup_interval")));
   }
 }

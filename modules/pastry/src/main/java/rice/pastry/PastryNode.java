@@ -170,7 +170,7 @@ public class PastryNode implements
   /**
    * The top level transport layer.
    */
-  private TransportLayer<NodeHandle, RawMessage> tl;
+  private TransportLayer<NodeHandle, RawMessage> transportLayer;
 
   private ProximityProvider<NodeHandle> proxProvider;
 
@@ -269,22 +269,22 @@ public class PastryNode implements
    * The transport elements are assigned via {@link #setSocketElements}, called by
    * {@link rice.pastry.transport.TransportPastryNodeFactory}.
    *
-   * @param lh
+   * @param newLocalHandle
    *          Node handle corresponding to this node.
    * @param md
    *          Message dispatcher.
    * @param ls
    *          Leaf set.
-   * @param rt
+   * @param routingTable
    *          Routing table.
    * @param router
    *          Router.
    */
-  public void setElements(NodeHandle lh, MessageDispatch md, LeafSet ls, RoutingTable rt, Router router) {
-    localhandle = lh;
+  public void setElements(NodeHandle newLocalHandle, MessageDispatch md, LeafSet ls, RoutingTable routingTable, Router router) {
+    localhandle = newLocalHandle;
     setMessageDispatch(md);
     leafSet = ls;
-    routeSet = rt;
+    routeSet = routingTable;
     this.router = router;
   }
 
@@ -498,16 +498,16 @@ public class PastryNode implements
    *
    * @return false if the message was dropped because a bound is reached
    */
-  public boolean deferUntilAuthenticated(NodeHandle hop, Runnable delivery) {
-    return deferred.defer(hop.getNodeId(), delivery);
+  public boolean deferUntilAuthenticated(NodeHandle nextHop, Runnable delivery) {
+    return deferred.defer(nextHop.getNodeId(), delivery);
   }
 
   /**
    * @return true while messages from this node wait for the check of its id; a later message must queue behind
    *     them even if the id has been authenticated meanwhile, so that they stay in order
    */
-  public boolean isAwaitingAuthentication(NodeHandle hop) {
-    return deferred.isWaiting(hop.getNodeId());
+  public boolean isAwaitingAuthentication(NodeHandle nextHop) {
+    return deferred.isWaiting(nextHop.getNodeId());
   }
 
   /** Certified mode: the check of the id ended; delivers the messages that waited for it, or drops them. */
@@ -528,7 +528,7 @@ public class PastryNode implements
    *     was accepted) and with false if it was not
    */
   public void probe(NodeHandle handle, Consumer<Boolean> onDone) {
-    tl.openSocket(handle, new SocketCallback<NodeHandle>() {
+    transportLayer.openSocket(handle, new SocketCallback<NodeHandle>() {
       @Override
       public void receiveResult(SocketRequestHandle<NodeHandle> cancellable, P2PSocket<NodeHandle> sock) {
         sock.close();
@@ -570,14 +570,14 @@ public class PastryNode implements
   /**
    * Registers an application with this pastry node.
    *
-   * @param app
+   * @param application
    *          the application
    */
 
-  public void registerApp(PastryAppl app) {
+  public void registerApp(PastryAppl application) {
     if (isReady())
-      app.notifyReady();
-    apps.add(app);
+      application.notifyReady();
+    apps.add(application);
   }
 
   @Override
@@ -659,10 +659,10 @@ public class PastryNode implements
     }
     getEnvironment().removeDestructable(this);
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
-      if (tl != null) tl.destroy();
+      if (transportLayer != null) transportLayer.destroy();
     } else {
       getEnvironment().getSelectorManager().invoke(() -> {
-        if (tl != null) tl.destroy();
+        if (transportLayer != null) transportLayer.destroy();
       });
     }
   }
@@ -692,7 +692,7 @@ public class PastryNode implements
         b.clear();
 
 
-        handle.setSubCancellable(tl.openSocket(i,
+        handle.setSubCancellable(transportLayer.openSocket(i,
           new SocketCallback<NodeHandle>(){
             @Override
             @SuppressWarnings("ReferenceEquality") // the same instance is meant
@@ -793,12 +793,12 @@ public class PastryNode implements
 
 
   private JoinFailedException joinFailedReason;
-  public void joinFailed(JoinFailedException cje) {
-    logger.atWarn().log(() -> "joinFailed("+cje+")");
-    joinFailedReason = cje;
+  public void joinFailed(JoinFailedException exception) {
+    logger.atWarn().log(() -> "joinFailed("+exception+")");
+    joinFailedReason = exception;
     joinFailed = true;
     signalReadyOrJoinFailed();
-    notifyPastryNodeListeners(cje);
+    notifyPastryNodeListeners(exception);
   }
 
   private void signalReadyOrJoinFailed() {
@@ -850,9 +850,9 @@ public class PastryNode implements
 
   @Override
   public String printRouteState() {
-    String ret = leafSet.toString()+"\n";
-    ret+=routeSet.toString();
-    return ret;
+    String result = leafSet.toString()+"\n";
+    result+=routeSet.toString();
+    return result;
   }
 
   // from TLPastryNode
@@ -865,7 +865,7 @@ public class PastryNode implements
   private LivenessProvider<NodeHandle> livenessProvider;
 
   public void setSocketElements(int lsmf, int rsmf,
-      TransportLayer<NodeHandle, RawMessage> tl,
+      TransportLayer<NodeHandle, RawMessage> transportLayer,
       LivenessProvider<NodeHandle> livenessProvider,
       ProximityProvider<NodeHandle> proxProvider,
       NodeHandleFactory<? extends NodeHandle> handleFactory) {
@@ -875,9 +875,9 @@ public class PastryNode implements
     this.proxProvider = proxProvider;
     proxProvider.addProximityListener(this);
 
-    this.tl = tl;
+    this.transportLayer = transportLayer;
     this.livenessProvider = livenessProvider;
-    tl.setCallback(this);
+    transportLayer.setCallback(this);
     livenessProvider.addLivenessListener(this);
   }
 
@@ -983,13 +983,13 @@ public class PastryNode implements
    * The proximity of the node handle.
    *
    */
-  public int proximity(NodeHandle nh) {
-    return proximity(nh, null);
+  public int proximity(NodeHandle nodeHandle) {
+    return proximity(nodeHandle, null);
   }
 
   @Override
-  public int proximity(NodeHandle nh, Map<String, Object> options) {
-    return proxProvider.proximity(nh, options);
+  public int proximity(NodeHandle nodeHandle, Map<String, Object> options) {
+    return proxProvider.proximity(nodeHandle, options);
   }
 
   /**
@@ -1002,9 +1002,9 @@ public class PastryNode implements
    * @return the scheduled event object; can be used to cancel the message
    */
   public ScheduledMessage scheduleMessage(Message msg, long delay) {
-    ScheduledMessage sm = new ScheduledMessage(this, msg);
-    getEnvironment().getSelectorManager().getTimer().schedule(sm, delay);
-    return sm;
+    ScheduledMessage scheduledMessage = new ScheduledMessage(this, msg);
+    getEnvironment().getSelectorManager().getTimer().schedule(scheduledMessage, delay);
+    return scheduledMessage;
   }
 
 
@@ -1021,9 +1021,9 @@ public class PastryNode implements
    * @return the scheduled event object; can be used to cancel the message
    */
   public ScheduledMessage scheduleMessage(Message msg, long delay, long period) {
-    ScheduledMessage sm = new ScheduledMessage(this, msg);
-    getEnvironment().getSelectorManager().getTimer().schedule(sm, delay, period);
-    return sm;
+    ScheduledMessage scheduledMessage = new ScheduledMessage(this, msg);
+    getEnvironment().getSelectorManager().getTimer().schedule(scheduledMessage, delay, period);
+    return scheduledMessage;
   }
 
   /**
@@ -1039,9 +1039,9 @@ public class PastryNode implements
    * @return the scheduled event object; can be used to cancel the message
    */
   public ScheduledMessage scheduleMessageAtFixedRate(Message msg, long delay, long period) {
-    ScheduledMessage sm = new ScheduledMessage(this, msg);
-    getEnvironment().getSelectorManager().getTimer().scheduleAtFixedRate(sm, delay, period);
-    return sm;
+    ScheduledMessage scheduledMessage = new ScheduledMessage(this, msg);
+    getEnvironment().getSelectorManager().getTimer().scheduleAtFixedRate(scheduledMessage, delay, period);
+    return scheduledMessage;
   }
 
   /**
@@ -1074,7 +1074,7 @@ public class PastryNode implements
 
     if (handle.equals(localhandle)) {
       receiveMessage(msg);
-      PastryMessageReceipt ret = new PastryMessageReceipt() {
+      PastryMessageReceipt result = new PastryMessageReceipt() {
 
         @Override
         public boolean cancel() {
@@ -1100,8 +1100,8 @@ public class PastryNode implements
           return "TLPN$PMsgRecpt{"+msg+","+localhandle+"}";
         }
       };
-      if (deliverAckToMe != null) deliverAckToMe.sent(ret);
-      return ret;
+      if (deliverAckToMe != null) deliverAckToMe.sent(result);
+      return result;
     }
 
     final PastryRawMessage rm = msg;
@@ -1125,9 +1125,9 @@ public class PastryNode implements
       };
     }
     if (getEnvironment().getSelectorManager().isSelectorThread()) {
-      ret.setInternal(tl.sendMessage(handle, rm, callback, options));
+      ret.setInternal(transportLayer.sendMessage(handle, rm, callback, options));
     } else {
-      getEnvironment().getSelectorManager().invoke(() -> ret.setInternal(tl.sendMessage(handle, rm, callback, options)));
+      getEnvironment().getSelectorManager().invoke(() -> ret.setInternal(transportLayer.sendMessage(handle, rm, callback, options)));
     }
     return ret;
   }
@@ -1286,7 +1286,7 @@ public class PastryNode implements
     this.nodeHandleFetcher = nodeHandleFetcher;
   }
 
-  public void getNodeHandle(Object o, Continuation<NodeHandle, Exception> c) {
-    nodeHandleFetcher.getNodeHandle(o, c);
+  public void getNodeHandle(Object o, Continuation<NodeHandle, Exception> continuation) {
+    nodeHandleFetcher.getNodeHandle(o, continuation);
   }
 }

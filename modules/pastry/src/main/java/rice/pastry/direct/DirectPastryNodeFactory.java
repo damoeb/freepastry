@@ -99,13 +99,13 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
   /**
    * Main constructor.
    *
-   * @param nf the NodeIdFactory
+   * @param nodeIdFactory the NodeIdFactory
    * @param sim the NetworkSimulator
    * @param env the Environment
    */
-  public DirectPastryNodeFactory(NodeIdFactory nf, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {
+  public DirectPastryNodeFactory(NodeIdFactory nodeIdFactory, NetworkSimulator<DirectNodeHandle,RawMessage> sim, Environment env) {
     super(env);
-    nidFactory = nf;
+    nidFactory = nodeIdFactory;
     simulator = sim;
     simulatorConfig = NetworkSimulatorConfig.fromParameters(env.getParameters());
   }
@@ -127,9 +127,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
     if (simulatorConfig.guaranteeConsistency()) {
       return super.getLeafSetProtocol(pn, leafSet, routeTable);
     } else {
-      StandardLeafSetProtocol ret = new StandardLeafSetProtocol(pn,pn.getLocalHandle(),leafSet, routeTable);
-      ret.register();
-      return ret;
+      StandardLeafSetProtocol result = new StandardLeafSetProtocol(pn,pn.getLocalHandle(),leafSet, routeTable);
+      result.register();
+      return result;
     }
   }
 
@@ -194,9 +194,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       /**
        * Notify the listeners that this new handle has come along.
        */
-      void notifyListeners(NodeHandle nh) {
+      void notifyListeners(NodeHandle nodeHandle) {
         for (NodeHandleFactoryListener<? super NodeHandle> foo : listeners) {
-          foo.nodeHandleFound(nh);
+          foo.nodeHandleFound(nodeHandle);
         }
       }
 
@@ -222,9 +222,9 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       nr = simulator.generateNodeRecord();
       recordTable.put(pn.getNodeId(),nr);
     }
-    TransportLayer<? extends NodeHandle, RawMessage> tl = getDirectTransportLayer(pn, nr);
+    TransportLayer<? extends NodeHandle, RawMessage> transportLayer = getDirectTransportLayer(pn, nr);
 
-    NodeHandleAdapter nha = new NodeHandleAdapter(tl,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){
+    NodeHandleAdapter nodeHandleAdapter = new NodeHandleAdapter(transportLayer,simulator.getLivenessProvider(),new ProximityProvider<NodeHandle>(){
       @Override
       public int proximity(NodeHandle i, Map<String, Object> options) {
         return (int)simulator.proximity((DirectNodeHandle)pn.getLocalHandle(), (DirectNodeHandle)i);
@@ -248,7 +248,7 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
       }
     });
 
-    return nha;
+    return nodeHandleAdapter;
   }
 
   /**
@@ -256,28 +256,28 @@ public class DirectPastryNodeFactory extends TransportPastryNodeFactory {
    */
   protected TransportLayer<? extends NodeHandle, RawMessage> getDirectTransportLayer(PastryNode pn, SimulatedNodePosition nr) {
     DirectNodeHandle local = (DirectNodeHandle)pn.getLocalHandle();
-    DirectTransportLayer<DirectNodeHandle, RawMessage> tl = new DirectTransportLayer<DirectNodeHandle, RawMessage>(
+    DirectTransportLayer<DirectNodeHandle, RawMessage> transportLayer = new DirectTransportLayer<DirectNodeHandle, RawMessage>(
         local, simulator.getGenericSimulator(), simulator.getLivenessProvider(), pn.getEnvironment()) {
       @Override
       public void incomingMessage(DirectNodeHandle i, RawMessage m, @Nullable Map<String, Object> options) throws IOException {
         // the simulator passes the sender's object, not bytes, so the wire constructor that records the hop never
         // runs; record it here, as a message that came over a socket has it
-        if (m instanceof RouteMessage rm) {
-          rm.setReceivedFrom(i);
+        if (m instanceof RouteMessage routeMessage) {
+          routeMessage.setReceivedFrom(i);
         }
         super.incomingMessage(i, m, options);
       }
     };
-    simulator.registerNode(local, tl, nr);
+    simulator.registerNode(local, transportLayer, nr);
 
-    return tl;
+    return transportLayer;
   }
 
   @Override
-  protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector pns) {
+  protected Bootstrapper<NodeHandle> getBootstrapper(final PastryNode pn, NodeHandleAdapter tl, NodeHandleFactory<?> handleFactory, final ProximityNeighborSelector neighborSelector) {
     // boot() may be called on any thread, but PNS, the join and the readiness change belong on the selector
     return bootaddresses -> {
-      Runnable boot = () -> pns.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
+      Runnable boot = () -> neighborSelector.getNearHandles(bootaddresses, new Continuation<Collection<NodeHandle>, Exception>() {
         @Override
         public void receiveResult(Collection<NodeHandle> result) {
           logger.info("boot() calling pn.doneNode({})", result);

@@ -97,12 +97,12 @@ public class SphereNetworkProximityGenerator implements ProximityGenerator {
     @Override
     public float networkDelay(SimulatedNodePosition that) {
       SphereNodeRecord nr = (SphereNodeRecord)that;
-      double ret = (radius * Math.acos(Math.cos(phi - nr.phi) * Math.cos(theta) * Math.cos(nr.theta) +
+      double result = (radius * Math.acos(Math.cos(phi - nr.phi) * Math.cos(theta) * Math.cos(nr.theta) +
         Math.sin(theta) * Math.sin(nr.theta)));
 
-      if ((ret < 2.0) && !this.equals(that)) return (float)2.0;
+      if ((result < 2.0) && !this.equals(that)) return (float)2.0;
 
-      return (float)ret;
+      return (float)result;
     }
   }
 

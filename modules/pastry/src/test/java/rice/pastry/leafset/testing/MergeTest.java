@@ -83,14 +83,14 @@ public class MergeTest {
     String s_cw = b[1];
     String s_base = b[0]; //<0xEA5EAF..>
 
-    NodeHandle[] ccw = getHandles(s_ccw);
-    flip(ccw);
+    NodeHandle[] counterClockwiseHandles = getHandles(s_ccw);
+    flip(counterClockwiseHandles);
     NodeHandle base = getHandles(s_base)[0];
-    NodeHandle[] cw = getHandles(s_cw);
+    NodeHandle[] clockwiseHandles = getHandles(s_cw);
 
-    LeafSet ls = new LeafSet(base,24,true,cw,ccw);
+    LeafSet leafSet = new LeafSet(base,24,true,clockwiseHandles,counterClockwiseHandles);
 
-    return ls;
+    return leafSet;
   }
 
   public static void flip(NodeHandle[] nds) {
@@ -110,13 +110,13 @@ public class MergeTest {
   public static NodeHandle[] getHandles(String str) {
     ArrayList<NodeHandle> list = new ArrayList<NodeHandle>();
     String a[] = str.split("[< ]");
-    for (int ctr = 0; ctr < a.length; ctr++) {
-      if (a[ctr].length() > 3) {
-        assert a[ctr].substring(0,2).equals("0x");
-        assert a[ctr].substring(a[ctr].length()-3,a[ctr].length()).equals("..>");
-        a[ctr] = a[ctr].substring(2,a[ctr].length()-3);
+    for (int counter = 0; counter < a.length; counter++) {
+      if (a[counter].length() > 3) {
+        assert a[counter].substring(0,2).equals("0x");
+        assert a[counter].substring(a[counter].length()-3,a[counter].length()).equals("..>");
+        a[counter] = a[counter].substring(2,a[counter].length()-3);
 
-        list.add(new TestNodeHandle(Id.build(a[ctr])));
+        list.add(new TestNodeHandle(Id.build(a[counter])));
 
       }
     }
@@ -129,13 +129,13 @@ public class MergeTest {
 //  leafset:  [ <0xEA1020..> ]  complete:false size:0 s2:false.merge(leafset: <0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..> complete:true size:24 s1:false s2:false,[SNH: <0xEA5EAF..>//128.59.20.228:21854 [-7262332366877176307]],...,false,null)
     String s_ls1 = "<0xD74D4F..><0xD7B075..><0xD98A9D..><0xDAC7F0..><0xDB39A6..><0xDD5A73..><0xE050B3..><0xE0B735..><0xE33A04..><0xE48D40..><0xE678CB..><0xE73F09..> [ <0xEA5EAF..> ] <0xEBC2BB..><0xEBD2CB..><0xEF7F43..><0xF09044..><0xF10B96..><0xF33C36..><0xF64DA9..><0xF66CD9..><0xF9E251..><0xFB7F46..><0xFC1B02..><0xFC4718..>";
 
-    LeafSet ls1 = getLeafSet(s_ls1);
+    LeafSet firstLeafSet = getLeafSet(s_ls1);
 
     String s_ls2 = " [ <0xEA1020..> ] ";
 
-    LeafSet ls2 = getLeafSet(s_ls2);
+    LeafSet secondLeafSet = getLeafSet(s_ls2);
 
-    PastryNode pn = new PastryNode((rice.pastry.Id)ls2.get(0).getId(),env){
+    PastryNode pn = new PastryNode((rice.pastry.Id)secondLeafSet.get(0).getId(),env){
 
       @Override
       public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
@@ -163,12 +163,12 @@ public class MergeTest {
       }
 
       @Override
-      public int proximity(NodeHandle nh) {
+      public int proximity(NodeHandle nodeHandle) {
         return 0;
       }
 
       @Override
-      public int proximity(NodeHandle nh, Map<String, Object> options) {
+      public int proximity(NodeHandle nodeHandle, Map<String, Object> options) {
         return 0;
       }
 
@@ -229,9 +229,9 @@ public class MergeTest {
       }
     };
 
-    RoutingTable rt = new RoutingTable(ls2.get(0),1,(byte)4,pn);
+    RoutingTable routingTable = new RoutingTable(secondLeafSet.get(0),1,(byte)4,pn);
 
-    ls2.addNodeSetListener(new NodeSetListener() {
+    secondLeafSet.addNodeSetListener(new NodeSetListener() {
 
       @Override
       public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource,
@@ -241,7 +241,7 @@ public class MergeTest {
       }
     });
 
-    ls2.merge(ls1,ls1.get(0),rt,false, null);
+    secondLeafSet.merge(firstLeafSet,firstLeafSet.get(0),routingTable,false, null);
 
 
     env.destroy();

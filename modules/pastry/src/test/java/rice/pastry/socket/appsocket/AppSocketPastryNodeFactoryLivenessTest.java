@@ -32,9 +32,9 @@ class AppSocketPastryNodeFactoryLivenessTest {
       super(() -> Id.build("1"), 0, env);
     }
 
-    Liveness livenessOf(PastryNode pn, TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl) {
-      TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer> ret = getLivenessTransportLayer(tl, pn);
-      return new Liveness(ret.getTransportLayer(), ret.getLivenessProvider(), ret.getOverrideLiveness(), ret.getPinger());
+    Liveness livenessOf(PastryNode pn, TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> transportLayer) {
+      TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer> result = getLivenessTransportLayer(transportLayer, pn);
+      return new Liveness(result.getTransportLayer(), result.getLivenessProvider(), result.getOverrideLiveness(), result.getPinger());
     }
   }
 
@@ -59,12 +59,12 @@ class AppSocketPastryNodeFactoryLivenessTest {
   void theLivenessOfASocketOnlyNodeDoesNothing() {
     PastryNode remote = factory.new BogusTLPastryNode(Id.build("2"), env);
     @SuppressWarnings("unchecked") // a proxy of the raw interface, never called
-    TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl = (TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>)
+    TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> transportLayer = (TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer>)
         Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> null);
 
-    Liveness actual = factory.livenessOf(remote, tl);
+    Liveness actual = factory.livenessOf(remote, transportLayer);
 
-    assertSame(tl, actual.transportLayer());
+    assertSame(transportLayer, actual.transportLayer());
     assertEquals(LivenessTypes.LIVENESS_ALIVE, actual.livenessProvider().getLiveness(null, null));
     assertFalse(actual.livenessProvider().checkLiveness(null, null));
     assertFalse(actual.livenessProvider().removeLivenessListener(null));

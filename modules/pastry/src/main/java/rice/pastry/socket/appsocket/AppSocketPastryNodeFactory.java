@@ -96,9 +96,9 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   private final Map<Integer, WireSocket> socketTable = new HashMap<Integer, WireSocket>();
 
-  public AppSocketPastryNodeFactory(NodeIdFactory nf, int startPort,
+  public AppSocketPastryNodeFactory(NodeIdFactory nodeIdFactory, int startPort,
       Environment env) throws IOException {
-    super(nf, startPort, env);
+    super(nodeIdFactory, startPort, env);
   }
 
   public static final String STORE_SOCKET = "store_socket";
@@ -107,30 +107,30 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer>,
     TransportLayerCallback<InetSocketAddress, ByteBuffer> {
 
-    private final WireTransportLayer wtl;
+    private final WireTransportLayer wireTransportLayer;
     /**
      * Indexed by the option "STORE_SOCKET"
      */
     private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
 
-    public AppSocketFactoryLayer(WireTransportLayer wtl) {
-      this.wtl = wtl;
-      this.wtl.setCallback(this);
+    public AppSocketFactoryLayer(WireTransportLayer wireTransportLayer) {
+      this.wireTransportLayer = wireTransportLayer;
+      this.wireTransportLayer.setCallback(this);
     }
 
     @Override
     public void acceptMessages(boolean b) {
-      wtl.acceptMessages(b);
+      wireTransportLayer.acceptMessages(b);
     }
 
     @Override
     public void acceptSockets(boolean b) {
-      wtl.acceptSockets(b);
+      wireTransportLayer.acceptSockets(b);
     }
 
     @Override
     public InetSocketAddress getLocalIdentifier() {
-      return wtl.getLocalIdentifier();
+      return wireTransportLayer.getLocalIdentifier();
     }
 
     @Override
@@ -139,7 +139,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         final SocketCallback<InetSocketAddress> deliverSocketToMe,
         final Map<String, Object> options) {
 
-      return wtl.openSocket(i, new SocketCallback<InetSocketAddress>() {
+      return wireTransportLayer.openSocket(i, new SocketCallback<InetSocketAddress>() {
 
         @Override
         public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
@@ -166,7 +166,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         InetSocketAddress i, ByteBuffer m,
         MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
         Map<String, Object> options) {
-      return wtl.sendMessage(i, m, deliverAckToMe, options);
+      return wireTransportLayer.sendMessage(i, m, deliverAckToMe, options);
     }
 
     @Override
@@ -206,8 +206,8 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
     }
 
     public TransportLayer<InetSocketAddress, ByteBuffer> getWireTransportLayer(
-        WireTransportLayer wtl) {
-      return new AppSocketFactoryLayer(wtl);
+        WireTransportLayer wireTransportLayer) {
+      return new AppSocketFactoryLayer(wireTransportLayer);
     }
 
     public void setLocalHandle(NodeHandle localhandle) {
@@ -235,30 +235,30 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
     TransportLayerDeserializer deserializer = getTransportLayerDeserializer(handleFactory,pn);
 
-    final NodeHandleAdapter nha = getNodeHandleAdapter(pn, handleFactory, deserializer);
+    final NodeHandleAdapter nodeHandleAdapter = getNodeHandleAdapter(pn, handleFactory, deserializer);
 
     sf = new SocketFactory() {
       int uid = Integer.MIN_VALUE;
       @Override
-      public Cancellable getAppSocket(InetSocketAddress addr, int appid, final Continuation<AppSocket, Exception> c, Map<String, Object> options) {
+      public Cancellable getAppSocket(InetSocketAddress addr, int appid, final Continuation<AppSocket, Exception> continuation, Map<String, Object> options) {
         return getSocket(addr, appid,
             new Continuation<P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>>, Exception>(){
 
               @Override
               public void receiveException(Exception exception) {
-                c.receiveException(exception);
+                continuation.receiveException(exception);
               }
 
               @Override
               public void receiveResult(
                   P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> result) {
-                c.receiveResult(new SocketAdapter<TransportLayerNodeHandle<MultiInetSocketAddress>>(result, environment));
+                continuation.receiveResult(new SocketAdapter<TransportLayerNodeHandle<MultiInetSocketAddress>>(result, environment));
               }
             }, options);
       }
 
       @Override
-      public Cancellable getSocketChannel(InetSocketAddress addr, int appid, final Continuation<SocketChannel, Exception> c, Map<String, Object> options) {
+      public Cancellable getSocketChannel(InetSocketAddress addr, int appid, final Continuation<SocketChannel, Exception> continuation, Map<String, Object> options) {
         // increment the uid
         final int myUid;
         synchronized(this) {
@@ -275,7 +275,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
               @Override
               public void receiveException(Exception exception) {
-                c.receiveException(exception);
+                continuation.receiveException(exception);
               }
 
               @Override
@@ -284,28 +284,28 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
                 // return the socket
                 WireSocket sm = socketTable.remove(myUid);
                 SocketChannel ret = sm.getSocketChannel();
-                c.receiveResult(ret);
+                continuation.receiveResult(ret);
               }
             }, options);
 
       }
 
 
-      Cancellable getSocket(InetSocketAddress addr, final int appid, final Continuation<P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>>, Exception> c, Map<String, Object> options) {
+      Cancellable getSocket(InetSocketAddress addr, final int appid, final Continuation<P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>>, Exception> continuation, Map<String, Object> options) {
         TransportLayerNodeHandle<MultiInetSocketAddress> handle = getHandle(addr);
-        final SocketRequestHandleImpl<TransportLayerNodeHandle<MultiInetSocketAddress>> ret =
+        final SocketRequestHandleImpl<TransportLayerNodeHandle<MultiInetSocketAddress>> result =
           new SocketRequestHandleImpl<TransportLayerNodeHandle<MultiInetSocketAddress>>(handle, options, logger);
 
         options = OptionsFactory.addOption(options, IdentityLayerCore.DONT_VERIFY, true);
         // open the socket
         // send the id
-        ret.setSubCancellable(getTL().openSocket(handle, new SocketCallback<TransportLayerNodeHandle<MultiInetSocketAddress>>() {
+        result.setSubCancellable(getTL().openSocket(handle, new SocketCallback<TransportLayerNodeHandle<MultiInetSocketAddress>>() {
 
           @Override
           public void receiveResult(
               SocketRequestHandle<TransportLayerNodeHandle<MultiInetSocketAddress>> cancellable,
               final P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> sock) {
-            ret.setSubCancellable(() -> {
+            result.setSubCancellable(() -> {
               sock.close();
               return true;
             });
@@ -324,24 +324,24 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
                     boolean canRead, boolean canWrite) throws IOException {
                   // send the id
                   if (socket.write(buf) < 0) {
-                    c.receiveException(new ClosedChannelException("Socket was closed by remote host. "+socket));
+                    continuation.receiveException(new ClosedChannelException("Socket was closed by remote host. "+socket));
                     return;
                   }
                   if (buf.hasRemaining()) {
                     socket.register(false, true, this);
                     return;
                   }
-                  c.receiveResult(socket);
+                  continuation.receiveResult(socket);
                 }
                 @Override
                 public void receiveException(
                     P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> socket,
                     Exception ioe) {
-                  c.receiveException(ioe);
+                  continuation.receiveException(ioe);
                 }
               }.receiveSelectResult(sock, false, true);
             } catch (IOException ioe) {
-              c.receiveException(ioe);
+              continuation.receiveException(ioe);
             }
           }
 
@@ -353,7 +353,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
           }
 
         }, options));
-        return ret;
+        return result;
       }
 
       TransportLayerNodeHandle<MultiInetSocketAddress> getHandle(InetSocketAddress addr) {
@@ -361,7 +361,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
       }
 
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage> getTL() {
-        return (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nha.getTransportLayer();
+        return (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nodeHandleAdapter.getTransportLayer();
       }
 
     };
@@ -374,13 +374,13 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
   @Override
   protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
-    WireTransportLayer wtl = new WireTransportLayer(innermostAddress,environment, null, !(pn instanceof BogusTLPastryNode));
+    WireTransportLayer wireTransportLayer = new WireTransportLayer(innermostAddress,environment, null, !(pn instanceof BogusTLPastryNode));
 
     if (pn instanceof BogusTLPastryNode bogusTlPastryNode) {
-      return bogusTlPastryNode.getWireTransportLayer(wtl);
+      return bogusTlPastryNode.getWireTransportLayer(wireTransportLayer);
     }
 
-    return wtl;
+    return wireTransportLayer;
   }
 
   /**
@@ -388,14 +388,14 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   @Override
   protected TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getLivenessTransportLayer(
-      final TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> tl,
+      final TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> transportLayer,
       PastryNode pn) {
     if (pn instanceof BogusTLPastryNode) {
       final NoOpLiveness<SourceRoute<MultiInetSocketAddress>> noOp = new NoOpLiveness<>();
       return new TransLiveness<SourceRoute<MultiInetSocketAddress>, ByteBuffer>(){
         @Override
         public TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getTransportLayer() {
-          return tl;
+          return transportLayer;
         }
         @Override
         public LivenessProvider<SourceRoute<MultiInetSocketAddress>> getLivenessProvider() {
@@ -412,6 +412,6 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
       };
     }
 
-    return super.getLivenessTransportLayer(tl, pn);
+    return super.getLivenessTransportLayer(transportLayer, pn);
   }
 }

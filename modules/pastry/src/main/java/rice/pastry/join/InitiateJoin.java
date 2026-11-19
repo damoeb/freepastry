@@ -56,12 +56,12 @@ public class InitiateJoin extends Message {
   /**
    * Constructor.
    *
-   * @param nh the node handles that the join will begin from.
+   * @param handles the node handles that the join will begin from.
    */
 
-  public InitiateJoin(Collection<NodeHandle> nh) {
+  public InitiateJoin(Collection<NodeHandle> handles) {
     super(JoinAddress.getCode());
-    handle = nh.toArray(new NodeHandle[1]);
+    handle = handles.toArray(new NodeHandle[1]);
   }
 
   /**

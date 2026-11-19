@@ -69,8 +69,8 @@ public class LeafSetPilotFinder implements
       if (leafSet.overlaps()) {
         // small ring, any will do
         for (NodeHandle foo : leafSet) {
-          RendezvousSocketNodeHandle nh = (RendezvousSocketNodeHandle)foo;
-          if (nh.canContactDirect()) possibleIntermediates.add(nh);
+          RendezvousSocketNodeHandle nodeHandle = (RendezvousSocketNodeHandle)foo;
+          if (nodeHandle.canContactDirect()) possibleIntermediates.add(nodeHandle);
         }
       } else {
         int index = leafSet.getIndex(dest);

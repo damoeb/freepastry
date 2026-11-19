@@ -79,10 +79,10 @@ import org.slf4j.Logger;
     public void deliver() {
       logger.debug("MD: deliver {} to {}", msg, node);
       try {
-        DirectTransportLayer<Identifier, MessageType> tl = networkSimulator.getTL(node);
-        if (tl != null) {
+        DirectTransportLayer<Identifier, MessageType> transportLayer = networkSimulator.getTL(node);
+        if (transportLayer != null) {
           networkSimulator.notifySimulatorListenersReceived(msg, from, node);
-          tl.incomingMessage(from, msg, options);
+          transportLayer.incomingMessage(from, msg, options);
         } else {
           logger.warn("Message {} dropped because destination {} is dead.", msg, node);
           // Notify sender? tough decision, this would be lost in the network, but over tcp, this would be noticed

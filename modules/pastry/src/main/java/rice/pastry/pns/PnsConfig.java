@@ -48,10 +48,10 @@ import rice.environment.params.Parameters;
  */
 public record PnsConfig(OptionalInt numRowsToUse) {
 
-  public static PnsConfig fromParameters(Parameters p) {
-    if (p.getString("pns_num_rows_to_use").equalsIgnoreCase("all")) {
+  public static PnsConfig fromParameters(Parameters parameters) {
+    if (parameters.getString("pns_num_rows_to_use").equalsIgnoreCase("all")) {
       return new PnsConfig(OptionalInt.empty());
     }
-    return new PnsConfig(OptionalInt.of(p.getInt("pns_num_rows_to_use")));
+    return new PnsConfig(OptionalInt.of(parameters.getInt("pns_num_rows_to_use")));
   }
 }

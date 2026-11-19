@@ -55,23 +55,23 @@ public class LeafSetNodeHandleStrategy implements NextHopStrategy<MultiInetSocke
   public Collection<MultiInetSocketAddress> getNextHops(MultiInetSocketAddress destination) {
     if (ls == null) return null;
 
-    Collection<MultiInetSocketAddress> ret = walkLeafSet(destination, 8);
+    Collection<MultiInetSocketAddress> result = walkLeafSet(destination, 8);
 
-    return ret;
+    return result;
   }
 
   private Collection<MultiInetSocketAddress> walkLeafSet(MultiInetSocketAddress destination, int numRequested) {
     Collection<MultiInetSocketAddress> result = new HashSet<MultiInetSocketAddress>();
     LeafSet leafset = ls;
     for (int i = 1; i < leafset.maxSize()/2; i++) {
-      SocketNodeHandle snh = (SocketNodeHandle)leafset.get(-i);
-      if (snh != null && !snh.getAddress().equals(destination)) {
-        result.add(snh.getAddress());
+      SocketNodeHandle socketNodeHandle = (SocketNodeHandle)leafset.get(-i);
+      if (socketNodeHandle != null && !socketNodeHandle.getAddress().equals(destination)) {
+        result.add(socketNodeHandle.getAddress());
         if (result.size() >= numRequested) return result;
       }
-      snh = (SocketNodeHandle)leafset.get(i);
-      if (snh != null && !snh.getAddress().equals(destination)) {
-        result.add(snh.getAddress());
+      socketNodeHandle = (SocketNodeHandle)leafset.get(i);
+      if (socketNodeHandle != null && !socketNodeHandle.getAddress().equals(destination)) {
+        result.add(socketNodeHandle.getAddress());
         if (result.size() >= numRequested) return result;
       }
     }

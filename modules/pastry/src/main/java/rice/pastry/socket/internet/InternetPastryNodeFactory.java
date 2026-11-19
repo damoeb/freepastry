@@ -120,7 +120,7 @@ public class InternetPastryNodeFactory extends
   /**
    * May block for more than a second to determine network information.
    *
-   * @param nf can be null, but must call newNode() with a NodeId of the new PastryNode
+   * @param nodeIdFactory can be null, but must call newNode() with a NodeId of the new PastryNode
    * @param bindAddress the NIC to use (null will choose one that can access the Internet)
    * @param startPort the port of the first created node, will be incremented for additional nodes,
    *   can be specified on a per-Node basis by calling newNode() with a MultiInetSocketAddress
@@ -132,10 +132,10 @@ public class InternetPastryNodeFactory extends
    * @param externalAddresses ordered addresses of the nat propagation from most external to most internal,
    *   null will use natHandler and probeAddresses to determine this
    */
-  public InternetPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress,
+  public InternetPastryNodeFactory(NodeIdFactory nodeIdFactory, InetAddress bindAddress,
       int startPort, Environment env, FirewallPortOpener handler, Collection<InetSocketAddress> probeAddresses, InetAddress[] externalAddresses)
       throws IOException {
-    super(nf, bindAddress, startPort, env, false);
+    super(nodeIdFactory, bindAddress, startPort, env, false);
 
     natConfig = NatConfig.fromParameters(env.getParameters());
     // get a natHandler

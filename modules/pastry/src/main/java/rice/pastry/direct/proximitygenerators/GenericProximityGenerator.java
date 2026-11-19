@@ -117,13 +117,13 @@ public class GenericProximityGenerator implements ProximityGenerator {
     @Override
     public float networkDelay(SimulatedNodePosition that) {
       GNNodeRecord nr = (GNNodeRecord)that;
-      float res = distance[index][nr.index];
-      if (res < 0)
+      float result = distance[index][nr.index];
+      if (result < 0)
         return Float.MAX_VALUE;
 
-      if ((res < MIN_DIST) && !this.equals(that)) return MIN_DIST;
+      if ((result < MIN_DIST) && !this.equals(that)) return MIN_DIST;
 
-      return res;
+      return result;
     }
   }
 

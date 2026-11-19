@@ -64,13 +64,13 @@ public class DirectPastryNode {
    * @return the previous current node
    */
   public static PastryNode setCurrentNode(PastryNode dpn) {
-    PastryNode ret = currentNode.get();
+    PastryNode result = currentNode.get();
     if (dpn == null) {
       currentNode.remove();
     } else {
       currentNode.set(dpn);
     }
-    return ret;
+    return result;
   }
 
   public static PastryNode getCurrentNode() {

@@ -48,8 +48,8 @@ import rice.p2p.commonapi.RangeCannotBeDeterminedException;
 public class LeafSetRangeCannotBeDeterminedException extends RangeCannotBeDeterminedException {
 
 
-  public LeafSetRangeCannotBeDeterminedException(String string, int r, int pos, int uniqueNodes, NodeHandle nh, LeafSet ls) {
-    super(string+" replication factor:"+r+" nh position:"+pos+" handle:"+nh+" ls.uniqueNodes():"+uniqueNodes+" "+ls.toString());
+  public LeafSetRangeCannotBeDeterminedException(String string, int r, int pos, int uniqueNodes, NodeHandle nodeHandle, LeafSet leafSet) {
+    super(string+" replication factor:"+r+" nh position:"+pos+" handle:"+nodeHandle+" ls.uniqueNodes():"+uniqueNodes+" "+leafSet.toString());
   }
 
 }

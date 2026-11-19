@@ -103,10 +103,10 @@ public abstract class Message implements rice.p2p.commonapi.Message {
    * Set sender Id. Called by NodeHandle just before dispatch, so that this Id
    * is guaranteed to belong to the immediate sender.
    *
-   * @param nh the immediate sender's handle.
+   * @param nodeHandle the immediate sender's handle.
    */
-  public void setSender(NodeHandle nh) {
-    sender = nh;
+  public void setSender(NodeHandle nodeHandle) {
+    sender = nodeHandle;
   }
 
   /**

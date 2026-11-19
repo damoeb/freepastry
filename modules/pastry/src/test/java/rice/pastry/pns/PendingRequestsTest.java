@@ -43,24 +43,24 @@ class PendingRequestsTest {
 
   @Test
   void aRemovedWaiterIsNotAnsweredAndItsTimeoutIsCancelled() {
-    FutureContinuation<Integer, Exception> c = new FutureContinuation<>();
+    FutureContinuation<Integer, Exception> continuation = new FutureContinuation<>();
     Timeout timeout = new Timeout();
-    target.add("a", c, timeout);
+    target.add("a", continuation, timeout);
 
-    assertTrue(target.remove("a", c));
+    assertTrue(target.remove("a", continuation));
     target.complete("a", 7);
 
-    assertFalse(c.future().isDone());
+    assertFalse(continuation.future().isDone());
     assertTrue(timeout.cancelled.get());
   }
 
   @Test
   void removingAWaiterThatIsNotWaitingReportsFalse() {
-    FutureContinuation<Integer, Exception> c = new FutureContinuation<>();
-    target.add("a", c, new Timeout());
+    FutureContinuation<Integer, Exception> continuation = new FutureContinuation<>();
+    target.add("a", continuation, new Timeout());
     target.complete("a", 7);
 
-    assertFalse(target.remove("a", c));
-    assertFalse(target.remove("b", c));
+    assertFalse(target.remove("a", continuation));
+    assertFalse(target.remove("b", continuation));
   }
 }

@@ -64,11 +64,11 @@ public final class LeafSetResponse extends PastryRawMessage implements Proximity
     leafset.serialize(buf);
   }
 
-  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory<?> nhf, int dest) throws IOException {
+  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, int dest) throws IOException {
     byte version = buf.readByte();
     switch(version) {
     case 0:
-      return new LeafSetResponse(LeafSet.build(buf, nhf), dest);
+      return new LeafSetResponse(LeafSet.build(buf, nodeHandleFactory), dest);
     }
     throw new IOException("Unknown version: "+version);
   }

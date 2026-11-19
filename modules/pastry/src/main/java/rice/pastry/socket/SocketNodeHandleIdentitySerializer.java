@@ -67,9 +67,9 @@ public class SocketNodeHandleIdentitySerializer implements
       TransportLayerNodeHandle<MultiInetSocketAddress> i)
       throws IOException {
     long epoch = i.getEpoch();
-    Id nid = (rice.pastry.Id) i.getId();
+    Id nodeId = (rice.pastry.Id) i.getId();
     buf.writeLong(epoch);
-    nid.serialize(buf);
+    nodeId.serialize(buf);
   }
 
   /**
@@ -80,14 +80,14 @@ public class SocketNodeHandleIdentitySerializer implements
       InputBuffer buf, SourceRoute<MultiInetSocketAddress> i)
       throws IOException {
     long epoch = buf.readLong();
-    Id nid = Id.build(buf);
+    Id nodeId = Id.build(buf);
 
-    SocketNodeHandle ret = buildSocketNodeHandle(buf, i.getLastHop(), epoch, nid);
-    return (TransportLayerNodeHandle<MultiInetSocketAddress>) factory.coalesce(ret);
+    SocketNodeHandle result = buildSocketNodeHandle(buf, i.getLastHop(), epoch, nodeId);
+    return (TransportLayerNodeHandle<MultiInetSocketAddress>) factory.coalesce(result);
   }
 
-  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
-    return new SocketNodeHandle(i, epoch, nid, pn);
+  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nodeId) throws IOException {
+    return new SocketNodeHandle(i, epoch, nodeId, pn);
   }
 
   @Override

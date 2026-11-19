@@ -73,11 +73,11 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     logger.trace("Routing {}(0) {}:{}", msg, best, bestRating);
     if (bestRating == 0) return best;
 
-    int ctr = 1;
+    int counter = 1;
     while (i.hasNext()) {
       NodeHandle next = i.next();
       int nextRating = routingQuality(next);
-      if (logger.isTraceEnabled()) logger.trace("Routing "+msg+"(" + ctr++ + ") "+next+":"+nextRating);
+      if (logger.isTraceEnabled()) logger.trace("Routing "+msg+"(" + counter++ + ") "+next+":"+nextRating);
 
       // found a perfect node?
       if (nextRating == 0) return next;
@@ -114,28 +114,28 @@ public class RendezvousRouterStrategy implements RouterStrategy {
    * 10 if faulty
    *
    */
-  protected int routingQuality(NodeHandle nh) {
-    RendezvousSocketNodeHandle rnh = (RendezvousSocketNodeHandle)nh;
-    if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
+  protected int routingQuality(NodeHandle nodeHandle) {
+    RendezvousSocketNodeHandle rnh = (RendezvousSocketNodeHandle)nodeHandle;
+    if (nodeHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
       return QUALITY_DEAD;
     }
     int connectionStatus = priority.connectionStatus(rnh.getAddress());
-    int liveness = nh.getLiveness();
+    int liveness = nodeHandle.getLiveness();
     boolean contactDirect = rnh.canContactDirect();
 
     if (contactDirect) {
       // this code biases connected nodes
-      int ret = 2;
+      int result = 2;
 
       // a point for being not suspected
-      if (liveness == NodeHandle.LIVENESS_ALIVE) ret--;
+      if (liveness == NodeHandle.LIVENESS_ALIVE) result--;
       // a point for being connected
       if (connectionStatus == PriorityTransportLayer.STATUS_CONNECTED) {
-        ret--;
+        result--;
       } else {
         priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // TODO: make proper options
       }
-      return ret;
+      return result;
 
     }
 
@@ -154,8 +154,8 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     return QUALITY_NOT_CONTACTABLE;
   }
 
-  protected Map<String, Object> getOptions(NodeHandle nh) {
-    return OptionsFactory.addOption(null, IdentityLayerCore.NODE_HANDLE_FROM_INDEX, nh);
+  protected Map<String, Object> getOptions(NodeHandle nodeHandle) {
+    return OptionsFactory.addOption(null, IdentityLayerCore.NODE_HANDLE_FROM_INDEX, nodeHandle);
   }
 
 }

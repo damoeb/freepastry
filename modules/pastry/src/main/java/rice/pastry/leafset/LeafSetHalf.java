@@ -69,13 +69,13 @@ public class LeafSetHalf implements NodeSetEventSource {
 
   private LeafSet leafSet;
 
-  private LeafSetHalf(LeafSetHalf that, LeafSet ls) {
+  private LeafSetHalf(LeafSetHalf that, LeafSet leafSet) {
     this.ln = that.ln;
     this.clockwise = that.clockwise;
     this.nodes = new NodeHandle[that.nodes.length];
     System.arraycopy(that.nodes, 0, nodes, 0, nodes.length);
     this.theSize = that.theSize;
-    this.leafSet = ls;
+    this.leafSet = leafSet;
   }
 
   /**
@@ -125,23 +125,23 @@ public class LeafSetHalf implements NodeSetEventSource {
    */
 
   public boolean test(NodeHandle handle) {
-    Id nid = handle.getNodeId();
+    Id nodeId = handle.getNodeId();
 
-    if (nid.equals(ln.getNodeId()))
+    if (nodeId.equals(ln.getNodeId()))
       return false;
 
     for (int i = 0; i < theSize; i++)
-      if (nid.equals(nodes[i].getNodeId()))
+      if (nodeId.equals(nodes[i].getNodeId()))
         return false;
 
     if (theSize < nodes.length)
       return true;
 
     if (clockwise) {
-      if (!nid.isBetween(ln.getNodeId(), nodes[theSize - 1].getNodeId()))
+      if (!nodeId.isBetween(ln.getNodeId(), nodes[theSize - 1].getNodeId()))
         return false;
     } else {
-      if (!nid.isBetween(nodes[theSize - 1].getNodeId(), ln.getNodeId()))
+      if (!nodeId.isBetween(nodes[theSize - 1].getNodeId(), ln.getNodeId()))
         return false;
     }
 
@@ -160,7 +160,7 @@ public class LeafSetHalf implements NodeSetEventSource {
   }
 
   public boolean put(NodeHandle handle, boolean suppressNotify) {
-    Id nid = handle.getNodeId();
+    Id nodeId = handle.getNodeId();
 
     if (!test(handle))
       return false;
@@ -185,13 +185,13 @@ public class LeafSetHalf implements NodeSetEventSource {
     // bubble the new node into the correct position
     if (clockwise) {
       for (int i = theSize - 1; i > 0; i--)
-        if (nid.isBetween(ln.getNodeId(), nodes[i - 1].getNodeId()))
+        if (nodeId.isBetween(ln.getNodeId(), nodes[i - 1].getNodeId()))
           swap(i, i - 1);
         else
           break;
     } else {
       for (int i = theSize - 1; i > 0; i--)
-        if (nid.isBetween(nodes[i - 1].getNodeId(), ln.getNodeId()))
+        if (nodeId.isBetween(nodes[i - 1].getNodeId(), ln.getNodeId()))
           swap(i, i - 1);
         else
           break;
@@ -250,12 +250,12 @@ public class LeafSetHalf implements NodeSetEventSource {
   /**
    * Verifies if the set contains this particular id.
    *
-   * @param nid a node id.
+   * @param nodeHandle a node id.
    * @return true if that node id is in the set, false otherwise.
    */
-  public boolean member(NodeHandle nid) {
+  public boolean member(NodeHandle nodeHandle) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].equals(nid))
+      if (nodes[i].equals(nodeHandle))
         return true;
 
     return false;
@@ -264,17 +264,17 @@ public class LeafSetHalf implements NodeSetEventSource {
   /**
    *
    */
-  public boolean member(Id nid) {
+  public boolean member(Id nodeId) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].getId().equals(nid))
+      if (nodes[i].getId().equals(nodeId))
         return true;
 
     return false;
   }
 
-  public NodeHandle remove(NodeHandle nh) {
+  public NodeHandle remove(NodeHandle nodeHandle) {
       for (int i = 0; i < theSize; i++) {
-        if (nodes[i].equals(nh)) {
+        if (nodes[i].equals(nodeHandle)) {
           return remove(i);
         }
       }
@@ -343,14 +343,14 @@ public class LeafSetHalf implements NodeSetEventSource {
   /**
    * Return true if done
    */
-  private boolean addNextEntry(RouteSet rs) {
-    if (rs == null) return false;
+  private boolean addNextEntry(RouteSet routeSet) {
+    if (routeSet == null) return false;
 
     // the fast case
-    if (rs.size() == 1) {
-      NodeHandle nh = rs.get(0);
-      if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-        if (put(nh)) {
+    if (routeSet.size() == 1) {
+      NodeHandle nodeHandle = routeSet.get(0);
+      if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+        if (put(nodeHandle)) {
         }
       }
       return theSize == nodes.length;
@@ -358,8 +358,8 @@ public class LeafSetHalf implements NodeSetEventSource {
 
     // the complicated case: we have to sort the live entries
     ArrayList<NodeHandle> toUse = new ArrayList<NodeHandle>();
-    for (int index = 0; index < rs.size(); index++) {
-      NodeHandle nh = rs.get(index);
+    for (int index = 0; index < routeSet.size(); index++) {
+      NodeHandle nh = routeSet.get(index);
       if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
         toUse.add(nh);
     }
@@ -418,21 +418,21 @@ public class LeafSetHalf implements NodeSetEventSource {
   /**
    * Gets the index of the element with the given node id.
    *
-   * @param nid the node id.
+   * @param nodeId the node id.
    * @return the index or -1 if the element does not exist.
    */
 
-  public int getIndex(Id nid) {
+  public int getIndex(Id nodeId) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].getNodeId().equals(nid))
+      if (nodes[i].getNodeId().equals(nodeId))
         return i;
 
     return -1;
   }
 
-  public int getIndex(NodeHandle nh) {
+  public int getIndex(NodeHandle nodeHandle) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].equals(nh))
+      if (nodes[i].equals(nodeHandle))
         return i;
 
     return -1;
@@ -456,21 +456,21 @@ public class LeafSetHalf implements NodeSetEventSource {
    * Numerically closest node to a given a node. Returns -1 if the local Id
    * is the most similar and returns an index otherwise.
    *
-   * @param nid a node id.
+   * @param nodeId a node id.
    *
    * @return -1 if the local Id is most similar, else the index of the most
    *         similar node.
    */
-  public int mostSimilar(Id nid) {
+  public int mostSimilar(Id nodeId) {
     if (theSize == 0)
       return -1;
 
     Id.Distance other = d;
-    Id.Distance minDist = ln.getNodeId().distance(nid, d1);
+    Id.Distance minDist = ln.getNodeId().distance(nodeId, d1);
     int min = -1;
 
     for (int i = 0; i < theSize; i++) {
-      other = nodes[i].getNodeId().distance(nid, other);
+      other = nodes[i].getNodeId().distance(nodeId, other);
       int cmp = other.compareTo(minDist);
       if ((!clockwise && cmp < 0) || (clockwise && cmp <= 0)) {
         // swap buffers
@@ -499,9 +499,9 @@ public class LeafSetHalf implements NodeSetEventSource {
   public Collection<NodeHandle> getCollection() {
     ArrayList<NodeHandle> al = new ArrayList<NodeHandle>();
     for (int i = 0; i < theSize; i++) {
-      NodeHandle nh = nodes[i];
-      if (nh != null) {
-        al.add(nh);
+      NodeHandle nodeHandle = nodes[i];
+      if (nodeHandle != null) {
+        al.add(nodeHandle);
       }
     }
     return al;

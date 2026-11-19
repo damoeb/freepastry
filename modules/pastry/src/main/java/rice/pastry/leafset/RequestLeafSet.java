@@ -58,12 +58,12 @@ public class RequestLeafSet extends PastryRawMessage {
   /**
    * Constructor.
    *
-   * @param nh the return handle
+   * @param nodeHandle the return handle
    */
 
-  public RequestLeafSet(NodeHandle nh, long timeStamp) {
+  public RequestLeafSet(NodeHandle nodeHandle, long timeStamp) {
     super(LeafSetProtocolAddress.getCode());
-    setSender(nh);
+    setSender(nodeHandle);
     this.timeStamp = timeStamp;
     setPriority(MAX_PRIORITY);
   }

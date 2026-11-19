@@ -62,8 +62,8 @@ public abstract class PastryMessageDeserializer implements MessageDeserializer {
 
   @Override
   public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
-    rice.p2p.commonapi.Message ret = deserialize(buf, type, priority, (NodeHandle)sender);
-    if (ret == null) throw new IOException("Unknown message type " + type + " for " + getClass().getName());
-    return ret;
+    rice.p2p.commonapi.Message result = deserialize(buf, type, priority, (NodeHandle)sender);
+    if (result == null) throw new IOException("Unknown message type " + type + " for " + getClass().getName());
+    return result;
   }
 }

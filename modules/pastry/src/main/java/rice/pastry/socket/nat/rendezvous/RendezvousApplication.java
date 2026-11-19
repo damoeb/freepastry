@@ -74,7 +74,7 @@ import rice.selector.SelectorLoop;
  */
 public class RendezvousApplication extends PastryAppl implements RendezvousStrategy<RendezvousSocketNodeHandle> {
   private final SelectorLoop selectorManager;
-  private RendezvousTransportLayer<RendezvousSocketNodeHandle> tl;
+  private RendezvousTransportLayer<RendezvousSocketNodeHandle> transportLayer;
 
   private static RendezvousSocketNodeHandle readRendezvousHandle(PastryNode pn, InputBuffer buf) throws IOException {
     NodeHandle handle = pn.readNodeHandle(buf);
@@ -138,18 +138,18 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
       case ByteBufferMessage bbm -> {
         logger.debug("messageForAppl({})", bbm);
         try {
-          tl.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
+          transportLayer.messageReceivedFromOverlay((RendezvousSocketNodeHandle)bbm.getOriginalSender(), bbm.buffer, null);
         } catch (IOException ioe) {
           logger.warn("dropping {}", bbm, ioe);
         }
       }
-      case PilotForwardMessage pfm -> {
-        logger.trace("Forwarding message {}", pfm);
-        thePastryNode.send(pfm.getTarget(), pfm.getByteBufferMessage(), null, null);
+      case PilotForwardMessage forwardMessage -> {
+        logger.trace("Forwarding message {}", forwardMessage);
+        thePastryNode.send(forwardMessage.getTarget(), forwardMessage.getByteBufferMessage(), null, null);
       }
-      case OpenChannelMessage ocm -> {
+      case OpenChannelMessage openChannelMessage -> {
         // we're a NATted node who needs to open a channel
-        tl.openChannel(ocm.getSource(),  ocm.getRendezvous(), ocm.getUid());
+        transportLayer.openChannel(openChannelMessage.getSource(),  openChannelMessage.getRendezvous(), openChannelMessage.getUid());
       }
     }
   }
@@ -183,31 +183,31 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
     // we don't want state changing, so this can only be called on the selector
     if (!selectorManager.isSelectorThread()) {
-      final AttachableCancellable ret = new AttachableCancellable();
-      selectorManager.invoke(() -> ret.attach(openChannel(target, rendezvous, source, uid, deliverAckToMe, options)));
-      return ret;
+      final AttachableCancellable result = new AttachableCancellable();
+      selectorManager.invoke(() -> result.attach(openChannel(target, rendezvous, source, uid, deliverAckToMe, options)));
+      return result;
     }
 
     OpenChannelMessage msg = new OpenChannelMessage(getAddress(), rendezvous, source, uid);
     logger.debug("routing {} to {}", msg, target);
-    final RouteMessage rm =
+    final RouteMessage routeMessage =
       new RouteMessage(
           target.getNodeId(),
           msg,
         thePastryNode.getConfig().routeMsgVersion());
-    rm.setDestinationHandle(target);
+    routeMessage.setDestinationHandle(target);
 
-    logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+rm);
+    logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
     // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
     final Cancellable ret = () -> {
       logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").cancel()");
-      return rm.cancel();
+      return routeMessage.cancel();
     };
 
     // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
     if ((deliverAckToMe != null) || logger.isInfoEnabled()) {
-      rm.setRouteMessageNotification(new RouteMessageNotification() {
+      routeMessage.setRouteMessageNotification(new RouteMessageNotification() {
         @Override
         public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
           logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uid+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
@@ -221,9 +221,9 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
       });
     }
 
-    rm.setTransportLayerOptions(options);
+    routeMessage.setTransportLayerOptions(options);
 
-    thePastryNode.getRouter().route(rm);
+    thePastryNode.getRouter().route(routeMessage);
 
     return ret;
   }
@@ -249,31 +249,31 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
     if (options.containsKey(RendezvousTransportLayerImpl.OPTION_USE_PILOT)) {
       RendezvousSocketNodeHandle pilot = (RendezvousSocketNodeHandle)options.get(RendezvousTransportLayerImpl.OPTION_USE_PILOT);
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+pilot);
-      final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> ret =
+      final MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer> result =
         new MessageRequestHandleImpl<RendezvousSocketNodeHandle, ByteBuffer>(i,m,options);
-      ret.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMessage(getAddress(),msg,i), new PastryMessageSendListener(){
+      result.setSubCancellable(thePastryNode.send(pilot, new PilotForwardMessage(getAddress(),msg,i), new PastryMessageSendListener(){
         @Override
         public void sent(PastryMessageReceipt msg) {
-          if (deliverAckToMe != null) deliverAckToMe.ack(ret);
+          if (deliverAckToMe != null) deliverAckToMe.ack(result);
         }
         @Override
         public void sendFailed(PastryMessageReceipt msg, Exception reason) {
-          if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, reason);
+          if (deliverAckToMe != null) deliverAckToMe.sendFailed(result, reason);
         }
       }, null));
-      return ret;
+      return result;
     } else {
 
-      final RouteMessage rm =
+      final RouteMessage routeMessage =
         new RouteMessage(
             i.getNodeId(),
             msg,
           thePastryNode.getConfig().routeMsgVersion());
-      rm.setDestinationHandle(i);
+      routeMessage.setDestinationHandle(i);
 
-      rm.setTransportLayerOptions(options);
+      routeMessage.setTransportLayerOptions(options);
 
-      logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+rm);
+      logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
       // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
       final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> ret = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
@@ -281,7 +281,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
         @Override
         public boolean cancel() {
           logger.debug("sendMessage({},{},{},{}).cancel()", i, m, deliverAckToMe, options);
-          return rm.cancel();
+          return routeMessage.cancel();
         }
 
         @Override
@@ -302,7 +302,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
       // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
       if ((deliverAckToMe != null) || logger.isDebugEnabled()) {
-        rm.setRouteMessageNotification(new RouteMessageNotification() {
+        routeMessage.setRouteMessageNotification(new RouteMessageNotification() {
           @Override
           public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
             logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+").sendSuccess():"+nextHop);
@@ -316,9 +316,9 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
         });
       }
 
-      rm.setTransportLayerOptions(options);
+      routeMessage.setTransportLayerOptions(options);
 
-      thePastryNode.getRouter().route(rm);
+      thePastryNode.getRouter().route(routeMessage);
 
       return ret;
     }
@@ -331,8 +331,8 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
   @Override
   public void setTransportLayer(
-      RendezvousTransportLayer<RendezvousSocketNodeHandle> tl) {
-    this.tl = tl;
+      RendezvousTransportLayer<RendezvousSocketNodeHandle> transportLayer) {
+    this.transportLayer = transportLayer;
   }
 
 

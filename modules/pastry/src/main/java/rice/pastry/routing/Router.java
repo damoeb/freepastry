@@ -52,7 +52,7 @@ public interface Router {
   /**
    * Send the RouteMessage based on the Pastry Algorithm
    */
-  void route(RouteMessage rm);
+  void route(RouteMessage routeMessage);
 
   /**
    * Returns an ordered list of the best candidates for the next to the key.  Always starts with

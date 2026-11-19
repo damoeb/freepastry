@@ -58,12 +58,12 @@ public final class RequestRouteRow extends PastryRawMessage implements RouteSetP
   /**
    * Constructor.
    *
-   * @param nh the return handle
+   * @param nodeHandle the return handle
    * @param r which row
    */
-  public RequestRouteRow(NodeHandle nh, short r) {
+  public RequestRouteRow(NodeHandle nodeHandle, short r) {
     super(RouteProtocolAddress.getCode());
-    setSender(nh);
+    setSender(nodeHandle);
     row = r;
     setPriority(MAX_PRIORITY);
   }

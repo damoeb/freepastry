@@ -141,7 +141,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
   }
 
   /** a signature made with the private key must verify with the certificate's public key */
-  private static void requireKeyPair(PrivateKey key, PublicKey pub) throws GeneralSecurityException {
+  private static void requireKeyPair(PrivateKey key, PublicKey publicKey) throws GeneralSecurityException {
     String algorithm = switch (key.getAlgorithm()) {
       case "RSA" -> "SHA256withRSA";
       case "EC" -> "SHA256withECDSA";
@@ -153,7 +153,7 @@ public class CertifiedNodeIdFactory implements NodeIdFactory {
     signer.update(challenge);
     byte[] signature = signer.sign();
     Signature verifier = Signature.getInstance(algorithm);
-    verifier.initVerify(pub);
+    verifier.initVerify(publicKey);
     verifier.update(challenge);
     if (!verifier.verify(signature)) {
       throw new CertificateException("The node's private key does not belong to its certificate");

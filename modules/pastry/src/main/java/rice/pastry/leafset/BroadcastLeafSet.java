@@ -138,14 +138,14 @@ public class BroadcastLeafSet extends PastryRawMessage {
     buf.writeLong(requestTimeStamp);
   }
 
-  public BroadcastLeafSet(InputBuffer buf, NodeHandleFactory<?> nhf) throws IOException {
+  public BroadcastLeafSet(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory) throws IOException {
     super(LeafSetProtocolAddress.getCode());
 
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        fromNode = nhf.readNodeHandle(buf);
-        theLeafSet = LeafSet.build(buf, nhf);
+        fromNode = nodeHandleFactory.readNodeHandle(buf);
+        theLeafSet = LeafSet.build(buf, nodeHandleFactory);
         theType = buf.readByte();
         requestTimeStamp = buf.readLong();
         break;

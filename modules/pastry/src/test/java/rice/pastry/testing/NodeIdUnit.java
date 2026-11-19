@@ -51,12 +51,12 @@ import rice.pastry.Id;
 public class NodeIdUnit {
   private Id nid;
 
-  private RandomSource rng;
+  private RandomSource random;
 
   public Id createNodeId() {
     byte raw[] = new byte[Id.IdBitLength >> 3];
 
-    rng.nextBytes(raw);
+    random.nextBytes(raw);
 
     Id nodeId = Id.build(raw);
 
@@ -314,7 +314,7 @@ public class NodeIdUnit {
 
   public NodeIdUnit() {
     Environment env = new Environment();
-    rng = env.getRandomSource();
+    random = env.getRandomSource();
 
     System.out.println("Creating nid");
     nid = createNodeId();

@@ -105,9 +105,9 @@ class PNSApplicationTest {
     return new SocketPastryNodeFactory(() -> Id.build(id), address, port, env) {
       @Override
       protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
-        ProximityNeighborSelector ret = super.getProximityNeighborSelector(pn);
-        pnsOf.put(pn, (ProximityNeighborSelectionApplication) ret);
-        return ret;
+        ProximityNeighborSelector result = super.getProximityNeighborSelector(pn);
+        pnsOf.put(pn, (ProximityNeighborSelectionApplication) result);
+        return result;
       }
     }.newNode();
   }
@@ -122,11 +122,11 @@ class PNSApplicationTest {
   }
 
   private static String[] handles(RouteSet[] row) {
-    String[] ret = new String[row.length];
+    String[] result = new String[row.length];
     for (int i = 0; i < row.length; i++) {
-      ret[i] = row[i] == null ? null : row[i].closestNode() == null ? null : String.valueOf(row[i].closestNode().getNodeId());
+      result[i] = row[i] == null ? null : row[i].closestNode() == null ? null : String.valueOf(row[i].closestNode().getNodeId());
     }
-    return ret;
+    return result;
   }
 
   private static int freePort(InetAddress address) throws IOException {

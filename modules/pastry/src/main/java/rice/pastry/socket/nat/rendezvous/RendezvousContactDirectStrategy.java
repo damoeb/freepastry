@@ -71,9 +71,9 @@ public class RendezvousContactDirectStrategy implements ContactDirectStrategy<Re
       // they're on the same physical node
       return a.getInnermostAddress().getAddress().equals(localAddr.getInnermostAddress().getAddress());
     } else {
-      boolean ret = addressStrategy.getAddress(localAddr, a).equals(a.getInnermostAddress());
-      if (ret && logger.isDebugEnabled()) logger.debug("rendezvous contacting direct:"+remoteNode);
-      return ret;
+      boolean result = addressStrategy.getAddress(localAddr, a).equals(a.getInnermostAddress());
+      if (result && logger.isDebugEnabled()) logger.debug("rendezvous contacting direct:"+remoteNode);
+      return result;
     }
   }
 }

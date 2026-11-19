@@ -133,17 +133,17 @@ public final class BroadcastRouteRow extends PastryRawMessage implements RouteSe
     }
   }
 
-  public BroadcastRouteRow(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode localNode) throws IOException {
+  public BroadcastRouteRow(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, PastryNode localNode) throws IOException {
     super(RouteProtocolAddress.getCode());
 
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        fromNode = nhf.readNodeHandle(buf);
+        fromNode = nodeHandleFactory.readNodeHandle(buf);
         row = new RouteSet[WireLengths.readShort(buf, 1)];
         for (int i=0; i<row.length; i++)
           if (buf.readBoolean()) {
-            row[i] = new RouteSet(buf, nhf, localNode);
+            row[i] = new RouteSet(buf, nodeHandleFactory, localNode);
           }
         break;
       default:

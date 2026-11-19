@@ -50,17 +50,17 @@ import rice.pastry.IdRange;
  */
 
 public class IdRangeUnit {
-  private RandomSource rng;
+  private RandomSource random;
 
   public IdRange createRandomIdRange() {
     IdRange r;
-    r = new IdRange(Id.makeRandomId(rng), Id.makeRandomId(rng));
+    r = new IdRange(Id.makeRandomId(random), Id.makeRandomId(random));
     return r;
   }
 
   public IdRange createFullIdRange() {
     IdRange r;
-    Id id = Id.makeRandomId(rng);
+    Id id = Id.makeRandomId(random);
     r = new IdRange(id, id);
     return r;
   }
@@ -71,15 +71,15 @@ public class IdRangeUnit {
     return r;
   }
 
-  public IdRange createIdRangeStartingWith(Id ccw) {
+  public IdRange createIdRangeStartingWith(Id counterClockwiseId) {
     IdRange r;
-    r = new IdRange(ccw, Id.makeRandomId(rng));
+    r = new IdRange(counterClockwiseId, Id.makeRandomId(random));
     return r;
   }
 
-  public IdRange createIdRangeEndingIn(Id cw) {
+  public IdRange createIdRangeEndingIn(Id clockwiseId) {
     IdRange r;
-    r = new IdRange(Id.makeRandomId(rng), cw);
+    r = new IdRange(Id.makeRandomId(random), clockwiseId);
     return r;
   }
 
@@ -92,14 +92,14 @@ public class IdRangeUnit {
 
   public void halfTest() {
     IdRange r = createFullIdRange();
-    IdRange ccw = r.counterClockwiseHalf();
-    IdRange cw = r.clockwiseHalf();
+    IdRange counterClockwiseRange = r.counterClockwiseHalf();
+    IdRange clockwiseRange = r.clockwiseHalf();
 
-    if (!cw.getClockwiseBound().distance(cw.getCounterClockwiseBound()).equals(cw.getClockwiseBound().longDistance(cw.getCounterClockwiseBound()))) {
+    if (!clockwiseRange.getClockwiseBound().distance(clockwiseRange.getCounterClockwiseBound()).equals(clockwiseRange.getClockwiseBound().longDistance(clockwiseRange.getCounterClockwiseBound()))) {
       System.out.println("ALERT: cw long distance not equal");
     }
 
-    if (!ccw.getClockwiseBound().distance(ccw.getCounterClockwiseBound()).equals(ccw.getClockwiseBound().longDistance(ccw.getCounterClockwiseBound()))) {
+    if (!counterClockwiseRange.getClockwiseBound().distance(counterClockwiseRange.getCounterClockwiseBound()).equals(counterClockwiseRange.getClockwiseBound().longDistance(counterClockwiseRange.getCounterClockwiseBound()))) {
       System.out.println("ALERT: ccw long distance not equal");
     }
   }
@@ -291,26 +291,26 @@ public class IdRangeUnit {
 
   public void mergeTest(IdRange r1, IdRange r2) {
 
-    IdRange ccw = r1.counterClockwiseHalf();
-    IdRange cw = r1.clockwiseHalf();
+    IdRange counterClockwiseRange = r1.counterClockwiseHalf();
+    IdRange clockwiseRange = r1.clockwiseHalf();
 
-    if (!ccw.intersect(cw).isEmpty())
-      System.out.println("ALERT: ccw and cw halves intersect." + r1 + ccw + cw);
-    if (!r1.equals(ccw.merge(cw)))
-      System.out.println("ALERT: merge cw/ccw failure." + r1 + ccw + cw);
+    if (!counterClockwiseRange.intersect(clockwiseRange).isEmpty())
+      System.out.println("ALERT: ccw and cw halves intersect." + r1 + counterClockwiseRange + clockwiseRange);
+    if (!r1.equals(counterClockwiseRange.merge(clockwiseRange)))
+      System.out.println("ALERT: merge cw/ccw failure." + r1 + counterClockwiseRange + clockwiseRange);
 
-    ccw = r2.counterClockwiseHalf();
-    cw = r2.clockwiseHalf();
+    counterClockwiseRange = r2.counterClockwiseHalf();
+    clockwiseRange = r2.clockwiseHalf();
 
-    if (!ccw.intersect(cw).isEmpty())
-      System.out.println("ALERT: ccw and cw halves intersect." + r2 + ccw + cw);
-    if (!r2.equals(ccw.merge(cw)))
-      System.out.println("ALERT: merge cw/ccw failure." + r2 + ccw + cw);
+    if (!counterClockwiseRange.intersect(clockwiseRange).isEmpty())
+      System.out.println("ALERT: ccw and cw halves intersect." + r2 + counterClockwiseRange + clockwiseRange);
+    if (!r2.equals(counterClockwiseRange.merge(clockwiseRange)))
+      System.out.println("ALERT: merge cw/ccw failure." + r2 + counterClockwiseRange + clockwiseRange);
 
   }
 
   public IdRangeUnit() {
-    rng = new SimpleRandomSource(null);
+    random = new SimpleRandomSource(null);
 
     System.out.println("IdRangeUnit test starting...");
 

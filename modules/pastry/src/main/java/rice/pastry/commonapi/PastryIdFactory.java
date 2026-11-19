@@ -104,17 +104,17 @@ public class PastryIdFactory implements IdFactory {
   /**
    * Builds a random protocol-specific Id.
    *
-   * @param rng A random number generator
+   * @param random A random number generator
    * @return The built Id.
    */
   @Override
-  public rice.p2p.commonapi.Id buildRandomId(Random rng) {
-    return rice.pastry.Id.makeRandomId(rng);
+  public rice.p2p.commonapi.Id buildRandomId(Random random) {
+    return rice.pastry.Id.makeRandomId(random);
   }
 
   @Override
-  public rice.p2p.commonapi.Id buildRandomId(RandomSource rng) {
-    return rice.pastry.Id.makeRandomId(rng);
+  public rice.p2p.commonapi.Id buildRandomId(RandomSource random) {
+    return rice.pastry.Id.makeRandomId(random);
   }
 
   /**
@@ -188,13 +188,13 @@ public class PastryIdFactory implements IdFactory {
    * caller: the counterclockwise end first, then the clockwise end (the IdFactory interface names them the other way
    * round).
    *
-   * @param ccw The counterclockwise Id, the inclusive start of the range
-   * @param cw The clockwise Id, the exclusive end of the range
+   * @param counterClockwiseId The counterclockwise Id, the inclusive start of the range
+   * @param clockwiseId The clockwise Id, the exclusive end of the range
    * @return An IdRange with the appropriate delimiters.
    */
   @Override
-  public IdRange buildIdRange(Id ccw, Id cw) {
-    return new rice.pastry.IdRange((rice.pastry.Id) ccw, (rice.pastry.Id) cw);
+  public IdRange buildIdRange(Id counterClockwiseId, Id clockwiseId) {
+    return new rice.pastry.IdRange((rice.pastry.Id) counterClockwiseId, (rice.pastry.Id) clockwiseId);
   }
 
   /**

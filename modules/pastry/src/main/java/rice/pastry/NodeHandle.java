@@ -158,13 +158,13 @@ public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implement
   @Override
   public boolean removeNodeHandleListener(NodeHandleListener listener) {
     logger.trace("{}.removeNodeHandleListener({})", this, listener);
-    boolean ret = super.removeNodeHandleListener(listener);
-    if (ret) {
+    boolean result = super.removeNodeHandleListener(listener);
+    if (result) {
       logger.trace("{}.removeNodeHandleListener({}):success", this, listener);
     } else {
       logger.info("{}.removeNodeHandleListener({}):failure {} was not a listener.", this, listener, listener);
     }
-    return ret;
+    return result;
   }
 
   @Override

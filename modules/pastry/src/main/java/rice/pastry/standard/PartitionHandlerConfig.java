@@ -57,11 +57,11 @@ public record PartitionHandlerConfig(int maxHistorySize, int maxHistoryAge, doub
   /**
    * @throws IllegalArgumentException if the history size is negative or the interval is not positive
    */
-  public static PartitionHandlerConfig fromParameters(Parameters p) {
+  public static PartitionHandlerConfig fromParameters(Parameters parameters) {
     return new PartitionHandlerConfig(
-      requireNonNegative("partition_handler_max_history_size", p.getInt("partition_handler_max_history_size")),
-      p.getInt("partition_handler_max_history_age"),
-      p.getDouble("partition_handler_bootstrap_check_rate"),
-      requirePositive("partition_handler_check_interval", p.getInt("partition_handler_check_interval")));
+      requireNonNegative("partition_handler_max_history_size", parameters.getInt("partition_handler_max_history_size")),
+      parameters.getInt("partition_handler_max_history_age"),
+      parameters.getDouble("partition_handler_bootstrap_check_rate"),
+      requirePositive("partition_handler_check_interval", parameters.getInt("partition_handler_check_interval")));
   }
 }

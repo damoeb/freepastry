@@ -128,10 +128,10 @@ public class DistTutorial {
       for (int i=-leafSet.counterClockwiseSize(); i<=leafSet.clockwiseSize(); i++) {
         if (i != 0) { // don't send to self
           // select the item
-          NodeHandle nh = leafSet.get(i);
+          NodeHandle nodeHandle = leafSet.get(i);
 
           // send the message directly to the node
-          app.routeMyMsgDirect(nh);
+          app.routeMyMsgDirect(nodeHandle);
 
           // wait a sec
           env.getTimeSource().sleep(1000);

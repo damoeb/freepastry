@@ -131,8 +131,8 @@ public class LeafSetTest {
   static class MyObserver implements NodeSetListener {
     LeafSet ls;
 
-    public MyObserver(LeafSet ls) {
-      this.ls = ls;
+    public MyObserver(LeafSet leafSet) {
+      this.ls = leafSet;
     }
 
     @Override

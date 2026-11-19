@@ -194,18 +194,18 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
    * of bytes to build it from (the direct simulator): there the same object travels from hop to hop, so each
    * receipt overwrites the hop of the one before.
    *
-   * @param hop the node the message was received from
+   * @param nextHop the node the message was received from
    */
-  public void setReceivedFrom(NodeHandle hop) {
-    receivedFrom = hop;
+  public void setReceivedFrom(NodeHandle nextHop) {
+    receivedFrom = nextHop;
   }
 
   public NodeHandle getNextHop() {
     return nextHop;
   }
 
-  public void setNextHop(NodeHandle nh) {
-    nextHop = nh;
+  public void setNextHop(NodeHandle nodeHandle) {
+    nextHop = nodeHandle;
   }
 
   /**
@@ -257,8 +257,8 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
   }
 
   @Override
-  public rice.p2p.commonapi.Message getMessage(MessageDeserializer md) throws IOException {
-    endpointDeserializer.setSubDeserializer(md);
+  public rice.p2p.commonapi.Message getMessage(MessageDeserializer deserializer) throws IOException {
+    endpointDeserializer.setSubDeserializer(deserializer);
     return ((PastryEndpointMessage) unwrap(endpointDeserializer)).getMessage();
   }
 
@@ -445,7 +445,7 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
     }
   }
 
-  public Message unwrap(MessageDeserializer md) throws IOException {
+  public Message unwrap(MessageDeserializer deserializer) throws IOException {
     if (internalMsg != null) {
       return internalMsg;
     }
@@ -471,7 +471,7 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
       internalSender = pn.readNodeHandle(serializedMsg);
     }
 
-    internalMsg = (Message)md.deserialize(serializedMsg, internalType, internalPriority, internalSender);
+    internalMsg = (Message)deserializer.deserialize(serializedMsg, internalType, internalPriority, internalSender);
     // the deserializers build the message at its default priority; forwarding must keep the one it was sent with
     internalMsg.setPriority(internalPriority);
     // serialize() writes the message from here on, when it is routed on to the next hop
@@ -496,8 +496,8 @@ public class RouteMessage extends PastryRawMessage implements rice.p2p.commonapi
       super(null);
     }
 
-    public void setSubDeserializer(MessageDeserializer md) {
-      sub = md;
+    public void setSubDeserializer(MessageDeserializer deserializer) {
+      sub = deserializer;
     }
 
     @Override

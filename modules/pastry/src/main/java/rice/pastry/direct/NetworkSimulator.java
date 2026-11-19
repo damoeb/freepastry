@@ -193,22 +193,22 @@ public class NetworkSimulator<Identifier, MessageType> {
   /**
    * Returns the closest Node in proximity.
    *
-   * @param nh the node to find the closest node to
+   * @param nodeHandle the node to find the closest node to
    * @return the closest live, ready node
    */
-  public DirectNodeHandle getClosest(DirectNodeHandle nh) {
+  public DirectNodeHandle getClosest(DirectNodeHandle nodeHandle) {
     return null;
   }
 
   /**
    * Checks to see if a node id is alive.
    *
-   * @param nh a node.
+   * @param identifier a node.
    *
    * @return true if alive, false otherwise.
    */
-  public boolean isAlive(Identifier nh) {
-    return simulator.isAlive(nh);
+  public boolean isAlive(Identifier identifier) {
+    return simulator.isAlive(identifier);
   }
 
   /**

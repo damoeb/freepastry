@@ -43,26 +43,26 @@ class ConsistentJoinProtocolTest {
 
   @Test
   void whoDoWeNeedAResponseFromCoversTheLargerClockwiseHalf() throws Exception {
-    NodeHandle[] cw = { handle(), handle(), handle() };
-    NodeHandle[] ccw = { handle() };
+    NodeHandle[] clockwiseHandles = { handle(), handle(), handle() };
+    NodeHandle[] counterClockwiseHandles = { handle() };
 
-    Collection<NodeHandle> actual = protocolFor(cw, ccw).whoDoWeNeedAResponseFrom();
+    Collection<NodeHandle> actual = protocolFor(clockwiseHandles, counterClockwiseHandles).whoDoWeNeedAResponseFrom();
 
-    assertEquals(new HashSet<NodeHandle>(List.of(cw[0], cw[1], cw[2], ccw[0])), new HashSet<NodeHandle>(actual));
+    assertEquals(new HashSet<NodeHandle>(List.of(clockwiseHandles[0], clockwiseHandles[1], clockwiseHandles[2], counterClockwiseHandles[0])), new HashSet<NodeHandle>(actual));
   }
 
   @Test
   void whoDoWeNeedAResponseFromStopsAtTheSmallerClockwiseHalf() throws Exception {
-    NodeHandle[] cw = { handle() };
-    NodeHandle[] ccw = { handle(), handle(), handle() };
+    NodeHandle[] clockwiseHandles = { handle() };
+    NodeHandle[] counterClockwiseHandles = { handle(), handle(), handle() };
 
-    Collection<NodeHandle> actual = protocolFor(cw, ccw).whoDoWeNeedAResponseFrom();
+    Collection<NodeHandle> actual = protocolFor(clockwiseHandles, counterClockwiseHandles).whoDoWeNeedAResponseFrom();
 
-    assertEquals(new HashSet<NodeHandle>(List.of(cw[0], ccw[0], ccw[1], ccw[2])), new HashSet<NodeHandle>(actual));
+    assertEquals(new HashSet<NodeHandle>(List.of(clockwiseHandles[0], counterClockwiseHandles[0], counterClockwiseHandles[1], counterClockwiseHandles[2])), new HashSet<NodeHandle>(actual));
   }
 
-  private ConsistentJoinProtocol protocolFor(NodeHandle[] cw, NodeHandle[] ccw) {
-    LeafSet leafSet = new LeafSet(local.getLocalHandle(), LEAF_SET_SIZE, false, cw, ccw);
+  private ConsistentJoinProtocol protocolFor(NodeHandle[] clockwiseHandles, NodeHandle[] counterClockwiseHandles) {
+    LeafSet leafSet = new LeafSet(local.getLocalHandle(), LEAF_SET_SIZE, false, clockwiseHandles, counterClockwiseHandles);
     return new ConsistentJoinProtocol(local, local.getLocalHandle(), local.getRoutingTable(), leafSet, null);
   }
 

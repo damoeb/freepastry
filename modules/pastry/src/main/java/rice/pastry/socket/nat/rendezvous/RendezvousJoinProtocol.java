@@ -94,9 +94,9 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
 
   PilotManager<RendezvousSocketNodeHandle> pilotManager;
 
-  public RendezvousJoinProtocol(PastryNode ln, NodeHandle lh, RoutingTable rt,
-      LeafSet ls, ReadyStrategy nextReadyStrategy, PilotManager<RendezvousSocketNodeHandle> pilotManager) {
-    super(ln, lh, rt, ls, nextReadyStrategy, new RCJPDeserializer(ln));
+  public RendezvousJoinProtocol(PastryNode ln, NodeHandle localHandle, RoutingTable routingTable,
+      LeafSet leafSet, ReadyStrategy nextReadyStrategy, PilotManager<RendezvousSocketNodeHandle> pilotManager) {
+    super(ln, localHandle, routingTable, leafSet, nextReadyStrategy, new RCJPDeserializer(ln));
     this.pilotManager = pilotManager;
   }
 
@@ -104,8 +104,8 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
    * Use RendezvousJoinRequest if local node is NATted
    */
   @Override
-  protected void getJoinRequest(NodeHandle b, final Continuation<JoinRequest, Exception> deliverJRToMe) {
-    final RendezvousSocketNodeHandle bootstrap = (RendezvousSocketNodeHandle)b;
+  protected void getJoinRequest(NodeHandle nodeHandle, final Continuation<JoinRequest, Exception> deliverJRToMe) {
+    final RendezvousSocketNodeHandle bootstrap = (RendezvousSocketNodeHandle)nodeHandle;
 
 
     // if I can be contacted directly by anyone, or I can contact the bootstrap despite the fact that he's firewalled, then call super
@@ -133,9 +133,9 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
       @Override
       public void receiveResult(
           SocketRequestHandle<RendezvousSocketNodeHandle> result) {
-        RendezvousJoinRequest jr = new RendezvousJoinRequest(localHandle, thePastryNode
+        RendezvousJoinRequest joinRequest = new RendezvousJoinRequest(localHandle, thePastryNode
             .getRoutingTable().baseBitLength(), thePastryNode.getEnvironment().getTimeSource().currentTimeMillis(), bootstrap);
-        deliverJRToMe.receiveResult(jr);
+        deliverJRToMe.receiveResult(joinRequest);
       }
     });
   }
@@ -146,9 +146,9 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
    *
    */
   @Override
-  protected Map<String, Object> getOptions(JoinRequest jr, Map<String, Object> existing) {
-    if (jr.accepted()) {
-      if (jr instanceof RendezvousJoinRequest rjr) {
+  protected Map<String, Object> getOptions(JoinRequest joinRequest, Map<String, Object> existing) {
+    if (joinRequest.accepted()) {
+      if (joinRequest instanceof RendezvousJoinRequest rjr) {
         return OptionsFactory.addOption(existing, RendezvousTransportLayerImpl.OPTION_USE_PILOT, rjr.getPilot());
       }
     }

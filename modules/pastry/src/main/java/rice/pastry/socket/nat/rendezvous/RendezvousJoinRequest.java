@@ -58,9 +58,9 @@ public class RendezvousJoinRequest extends JoinRequest {
    */
   private final NodeHandle pilot;
 
-  public RendezvousJoinRequest(NodeHandle nh, byte rtBaseBitLength,
+  public RendezvousJoinRequest(NodeHandle nodeHandle, byte rtBaseBitLength,
       long timestamp, NodeHandle pilot) {
-    super(nh, rtBaseBitLength, timestamp);
+    super(nodeHandle, rtBaseBitLength, timestamp);
     this.pilot = pilot;
   }
 
@@ -82,9 +82,9 @@ public class RendezvousJoinRequest extends JoinRequest {
     pilot.serialize(buf);
   }
 
-  public RendezvousJoinRequest(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender, PastryNode localNode) throws IOException {
-    super(buf, nhf, sender, localNode);
-    pilot = nhf.readNodeHandle(buf);
+  public RendezvousJoinRequest(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, NodeHandle sender, PastryNode localNode) throws IOException {
+    super(buf, nodeHandleFactory, sender, localNode);
+    pilot = nodeHandleFactory.readNodeHandle(buf);
   }
 
   public NodeHandle getPilot() {

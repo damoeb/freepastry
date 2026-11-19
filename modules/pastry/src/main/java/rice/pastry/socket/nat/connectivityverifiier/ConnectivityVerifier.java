@@ -72,10 +72,10 @@ public class ConnectivityVerifier {
    * calls back on the continuation on the selector.
    */
   protected Cancellable getInetSocketAddressLookup(final InetSocketAddress bindAddress, final Continuation<InetSocketAddressLookup, IOException> deliverResultToMe) {
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable result = new AttachableCancellable();
 
     Runnable r = () -> {
-      if (ret.isCancelled()) return;
+      if (result.isCancelled()) return;
       PastryNode pn = new PastryNode(Id.build(), spnf.getEnvironment());
 
       try {
@@ -91,7 +91,7 @@ public class ConnectivityVerifier {
     } else {
       spnf.getEnvironment().getSelectorManager().invoke(r);
     }
-    return ret;
+    return result;
   }
 
   /**
@@ -105,15 +105,15 @@ public class ConnectivityVerifier {
     // TODO: Timeout (can be in parallel, so timeout ~every second, and try the next one, then cancel everything if one comes through)
 
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable result = new AttachableCancellable();
 
     // getInetSocketAddressLookup verifies that we are on the selector
-    ret.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
+    result.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
 
       @Override
       public void receiveResult(InetSocketAddressLookup lookup) {
         // we're on the selector now, and we have our TL
-        findExternalNodesHelper(lookup, ret, local, probeList, deliverResultToMe);
+        findExternalNodesHelper(lookup, result, local, probeList, deliverResultToMe);
       }
 
       @Override
@@ -124,7 +124,7 @@ public class ConnectivityVerifier {
       }
     }));
 
-    return ret;
+    return result;
   }
 
   /**
@@ -182,15 +182,15 @@ public class ConnectivityVerifier {
     // TODO: Timeout (can be in parallel, so timeout ~every second, and try the next one, then cancel everything if one comes through)
 
     final ArrayList<InetSocketAddress> probeList = new ArrayList<InetSocketAddress>(probeAddresses);
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable result = new AttachableCancellable();
 
     // getInetSocketAddressLookup verifies that we are on the selector
-    ret.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
+    result.attach(getInetSocketAddressLookup(local, new Continuation<InetSocketAddressLookup, IOException>() {
 
       @Override
       public void receiveResult(InetSocketAddressLookup lookup) {
         // we're on the selector now, and we have our TL
-        findExternalAddressHelper(lookup, ret, local, probeList, deliverResultToMe);
+        findExternalAddressHelper(lookup, result, local, probeList, deliverResultToMe);
       }
 
       @Override
@@ -201,7 +201,7 @@ public class ConnectivityVerifier {
       }
     }));
 
-    return ret;
+    return result;
   }
 
   /**
@@ -259,8 +259,8 @@ public class ConnectivityVerifier {
     logger.trace("verifyConnectivity({},{})", local, probeAddresses);
 
     // don't probe self
-    for (int ctr = 0; ctr < local.getNumAddresses(); ctr++) {
-      probeList.remove(local.getAddress(ctr));
+    for (int counter = 0; counter < local.getNumAddresses(); counter++) {
+      probeList.remove(local.getAddress(counter));
     }
 
     if (probeList.isEmpty()) {
@@ -269,21 +269,21 @@ public class ConnectivityVerifier {
       return null;
     }
 
-    final AttachableCancellable ret = new AttachableCancellable();
+    final AttachableCancellable result = new AttachableCancellable();
 
     // getInetSocketAddressLookup verifies that we are on the selector
-    ret.attach(getInetSocketAddressLookup(local.getInnermostAddress(), new Continuation<InetSocketAddressLookup, IOException>() {
+    result.attach(getInetSocketAddressLookup(local.getInnermostAddress(), new Continuation<InetSocketAddressLookup, IOException>() {
 
       @Override
       public void receiveResult(final InetSocketAddressLookup lookup) {
         // we're on the selector now, and we have our TL
-        ret.attach(() -> {
+        result.attach(() -> {
           lookup.destroy();
           return true;
         });
 
 
-        verifyConnectivityHelper(lookup, ret, local, probeList, new ConnectivityResult() {
+        verifyConnectivityHelper(lookup, result, local, probeList, new ConnectivityResult() {
           boolean udpSuccess = false;
           boolean tcpSuccess = false;
 
@@ -291,7 +291,7 @@ public class ConnectivityVerifier {
           public void udpSuccess(final InetSocketAddress from, final Map<String, Object> options) {
             udpSuccess = true;
             if (tcpSuccess) {
-              ret.cancel();
+              result.cancel();
               lookup.destroy();
             }
             logger.info("verifyConnectivity({},{}). udpSuccess({})", local, probeAddresses, from);
@@ -304,7 +304,7 @@ public class ConnectivityVerifier {
           public void tcpSuccess(final InetSocketAddress from, final Map<String, Object> options) {
             tcpSuccess = true;
             if (udpSuccess) {
-              ret.cancel();
+              result.cancel();
               lookup.destroy();
             }
             logger.info("verifyConnectivity({},{}). tcpSuccess({})", local, probeAddresses, from);
@@ -328,7 +328,7 @@ public class ConnectivityVerifier {
             }
 
             // retry (recursive)
-            verifyConnectivityHelper(lookup, ret, local, probeList, deliverResultToMe);
+            verifyConnectivityHelper(lookup, result, local, probeList, deliverResultToMe);
           }
         });
       }
@@ -341,10 +341,10 @@ public class ConnectivityVerifier {
       }
     }));
 
-    return ret;
+    return result;
   }
 
-  public void verifyConnectivityHelper(final InetSocketAddressLookup lookup, final AttachableCancellable ret,
+  public void verifyConnectivityHelper(final InetSocketAddressLookup lookup, final AttachableCancellable result,
       final MultiInetSocketAddress local,
       final List<InetSocketAddress> probeList,
       final ConnectivityResult deliverResultToMe) {
@@ -354,7 +354,7 @@ public class ConnectivityVerifier {
       // pull a random node off the list, and try it, we do this so the recursion works
       InetSocketAddress target = probeList.remove(spnf.getEnvironment().getRandomSource().nextInt(probeList.size()));
 
-      ret.attach(lookup.verifyConnectivity(local, target, deliverResultToMe, null));
+      result.attach(lookup.verifyConnectivity(local, target, deliverResultToMe, null));
   }
 
 }

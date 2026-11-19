@@ -144,7 +144,7 @@ public class PartitionChecker {
     }
   }
 
-  protected LeafSet getLeafSet(NodeHandle nh) throws IOException {
+  protected LeafSet getLeafSet(NodeHandle nodeHandle) throws IOException {
     // TODO: implement, need to make this an application and have a message to fetch this info
 
     return null;
@@ -179,13 +179,13 @@ public class PartitionChecker {
               @Override
               public void run() {
                 try {
-                  LeafSet ls = getLeafSet(handle);
+                  LeafSet leafSet = getLeafSet(handle);
 
                   ps.println(handle.getInetSocketAddress().getAddress().getHostAddress()+":"+
                       handle.getInetSocketAddress().getPort());
 
 
-                  NodeSet ns = ls.neighborSet(Integer.MAX_VALUE);
+                  NodeSet ns = leafSet.neighborSet(Integer.MAX_VALUE);
 
                   if (! ns.get(0).equals(handle)) {
                     ring.addFailure(handle, new Exception("Node is now "+ns.get(0)));
@@ -258,9 +258,9 @@ public class PartitionChecker {
     public void addFailure(SocketNodeHandle handle, Exception e) {
     }
 
-    public synchronized void addNode(SocketNodeHandle snh) {
+    public synchronized void addNode(SocketNodeHandle socketNodeHandle) {
 
-      InetSocketAddress newAddr = snh.getInetSocketAddress();
+      InetSocketAddress newAddr = socketNodeHandle.getInetSocketAddress();
       synchronized(unmatchedBootstraps) {
         if (unmatchedBootstraps.contains(newAddr)) {
           unmatchedBootstraps.remove(newAddr);
@@ -270,7 +270,7 @@ public class PartitionChecker {
       if (bootstraps.contains(newAddr)) {
         myBootstraps.add(newAddr);
       }
-      nodes.add(snh);
+      nodes.add(socketNodeHandle);
     }
 
     @Override

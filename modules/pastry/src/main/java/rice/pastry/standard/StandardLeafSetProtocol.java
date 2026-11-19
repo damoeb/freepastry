@@ -72,14 +72,14 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
 
   public StandardLeafSetProtocol(PastryNode ln, NodeHandle local,
-      LeafSet ls, RoutingTable rt) {
+      LeafSet ls, RoutingTable routingTable) {
     super(ln, LeafSetProtocolAddress.getCode());
     leafSet = ls;
-    for (NodeHandle nh : leafSet.asList()) {
-      nh.addNodeHandleListener(this);
+    for (NodeHandle nodeHandle : leafSet.asList()) {
+      nodeHandle.addNodeHandleListener(this);
     }
     cachedSet = new HashSet<NodeHandle>(leafSet.maxSize() * 2);
-    routeTable = rt;
+    routeTable = routingTable;
   }
 
   /**
@@ -89,12 +89,12 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    */
   @Override
   public void messageForApplication(Message msg) {
-    if (msg instanceof BroadcastLeafSet bls) {
+    if (msg instanceof BroadcastLeafSet broadcastLeafSet) {
       // receive a leafset from another node
-      int type = bls.type();
+      int type = broadcastLeafSet.type();
 
-      NodeHandle from = bls.from();
-      LeafSet remotels = bls.leafSet();
+      NodeHandle from = broadcastLeafSet.from();
+      LeafSet remotels = broadcastLeafSet.leafSet();
 
       // first, merge the received leaf set into our own
       boolean changed = mergeLeafSet(remotels, from);
@@ -116,14 +116,14 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       // the same leaf set
       checkLeafSet(remotels, from, true);
 
-    } else if (msg instanceof RequestLeafSet rls) {
+    } else if (msg instanceof RequestLeafSet requestLeafSet) {
       // request for leaf set from a remote node
 
-      NodeHandle returnHandle = rls.returnHandle();
+      NodeHandle returnHandle = requestLeafSet.returnHandle();
 
       if (returnHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
         BroadcastLeafSet bls = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet,
-            BroadcastLeafSet.Update, rls.getTimeStamp());
+            BroadcastLeafSet.Update, requestLeafSet.getTimeStamp());
 
         thePastryNode.send(returnHandle,bls,null,options);
       }
@@ -170,21 +170,21 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     } else
       insertedHandles = null;
 
-    BroadcastLeafSet bl = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet,
+    BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet,
         BroadcastLeafSet.Correction, 0);
     boolean changed = remotels.merge(leafSet, thePastryNode.getLocalHandle(), null,
         true, insertedHandles);
 
     if (changed) {
       // nodes where missing, send update to "from"
-      thePastryNode.send(from,bl, null, options);
+      thePastryNode.send(from,broadcastLeafSet, null, options);
 
       if (notifyMissing) {
         // send leafset to nodes that where missing from remotels
 
-        for (NodeHandle nh : new ArrayList<NodeHandle>(insertedHandles)) {
+        for (NodeHandle nodeHandle : new ArrayList<NodeHandle>(insertedHandles)) {
           // send leafset to missing node
-          thePastryNode.send(nh,bl,null, options);
+          thePastryNode.send(nodeHandle,broadcastLeafSet,null, options);
         }
       }
     }
@@ -219,7 +219,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    */
 
   protected void broadcast(int type) {
-    BroadcastLeafSet bls = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet, type, 0);
+    BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(thePastryNode.getLocalHandle(), leafSet, type, 0);
 
     int cwSize = leafSet.clockwiseSize();
     int ccwSize = leafSet.counterClockwiseSize();
@@ -229,13 +229,13 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       if (i == 0)
         continue;
 
-      NodeHandle nh = leafSet.get(i);
-      if (nh == null || nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
+      NodeHandle nodeHandle = leafSet.get(i);
+      if (nodeHandle == null || nodeHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD)
         continue;
 
-      if (!sent.isMemberId(nh.getNodeId())) {
-        thePastryNode.send(nh,bls,null, options);
-        sent.addId(nh.getNodeId());
+      if (!sent.isMemberId(nodeHandle.getNodeId())) {
+        thePastryNode.send(nodeHandle,broadcastLeafSet,null, options);
+        sent.addId(nodeHandle.getNodeId());
       }
     }
   }
@@ -253,10 +253,10 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     // check leaf set for dead entries
     // ccw half
     for (int i = -leafSet.counterClockwiseSize(); i < 0; i++) {
-      NodeHandle nh = leafSet.get(i);
-      if (nh != null && !nh.ping()) {
+      NodeHandle nodeHandle = leafSet.get(i);
+      if (nodeHandle != null && !nodeHandle.ping()) {
         // remove the dead entry
-        leafSet.remove(nh);
+        leafSet.remove(nodeHandle);
         lostMembers = true;
       }
     }
@@ -287,7 +287,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
 
   private void requestLeafSet() {
 
-    RequestLeafSet rls = new RequestLeafSet(thePastryNode.getLocalHandle(), thePastryNode.getEnvironment().getTimeSource().currentTimeMillis());
+    RequestLeafSet requestLeafSet = new RequestLeafSet(thePastryNode.getLocalHandle(), thePastryNode.getEnvironment().getTimeSource().currentTimeMillis());
     int cwSize = leafSet.clockwiseSize();
     int ccwSize = leafSet.counterClockwiseSize();
     boolean allDead = true;
@@ -296,7 +296,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     for (int i = -ccwSize; i < 0; i++) {
       NodeHandle handle = leafSet.get(i);
       if (handle != null && handle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-        thePastryNode.send(handle,rls,null, options);
+        thePastryNode.send(handle,requestLeafSet,null, options);
         allDead = false;
         break;
       }
@@ -310,7 +310,7 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
     for (int i = cwSize; i > 0; i--) {
       NodeHandle handle = leafSet.get(i);
       if (handle != null && handle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-        thePastryNode.send(handle,rls,null, options);
+        thePastryNode.send(handle,requestLeafSet,null, options);
         allDead = false;
         break;
       }
@@ -332,12 +332,12 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
    * We should be observers on everything in the leafset, and nothing else.
    */
   @Override
-  public void leafSetChange(NodeHandle nh, boolean wasAdded) {
-    super.leafSetChange(nh, wasAdded);
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {
+    super.leafSetChange(nodeHandle, wasAdded);
     if (wasAdded) {
-      nh.addNodeHandleListener(this);
+      nodeHandle.addNodeHandleListener(this);
     } else {
-      nh.removeNodeHandleListener(this);
+      nodeHandle.removeNodeHandleListener(this);
     }
   }
 

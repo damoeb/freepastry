@@ -102,11 +102,11 @@ public class LeafSet implements Iterable<NodeHandle> {
    *
    * @param localNode the local node
    * @param size the size of the leaf set.
-   * @param rt (to fall back on for more entries on delete operations)
+   * @param routingTable (to fall back on for more entries on delete operations)
    */
-  public LeafSet(NodeHandle localNode, int size, RoutingTable rt) {
+  public LeafSet(NodeHandle localNode, int size, RoutingTable routingTable) {
     this(localNode, size, true);
-    this.routingTable = rt;
+    this.routingTable = routingTable;
   }
 
   public LeafSet(NodeHandle localNode, int size, boolean observe) {
@@ -140,14 +140,14 @@ public class LeafSet implements Iterable<NodeHandle> {
 
   public boolean put(NodeHandle handle, boolean suppressNotification)
   {
-    Id nid = handle.getNodeId();
-    if (nid.equals(baseId)) return false;
+    Id nodeId = handle.getNodeId();
+    if (nodeId.equals(baseId)) return false;
     if (member(handle)) return false;
     if (admission != null && !admission.test(handle)) return false;
 
     @SuppressWarnings("ShortCircuitBoolean") // both sets must get the handle
-    boolean res = cwSet.put(handle, suppressNotification) | ccwSet.put(handle, suppressNotification);
-    return res;
+    boolean result = cwSet.put(handle, suppressNotification) | ccwSet.put(handle, suppressNotification);
+    return result;
   }
 
   /**
@@ -158,8 +158,8 @@ public class LeafSet implements Iterable<NodeHandle> {
    */
   public boolean test(NodeHandle handle)
   {
-    Id nid = handle.getNodeId();
-    if (nid.equals(baseId)) return false;
+    Id nodeId = handle.getNodeId();
+    if (nodeId.equals(baseId)) return false;
     if (member(handle)) return false;
 
     return cwSet.test(handle) || ccwSet.test(handle);
@@ -190,12 +190,12 @@ public class LeafSet implements Iterable<NodeHandle> {
    * Note: previous to FP2.1a3, this always returned the cw index if it existed.
    *
    */
-  public int getIndex(NodeHandle nh) throws NoSuchElementException {
+  public int getIndex(NodeHandle nodeHandle) throws NoSuchElementException {
 
-    if (baseId.equals(nh.getId())) return 0;
+    if (baseId.equals(nodeHandle.getId())) return 0;
 
-    int cwIndex = cwSet.getIndex(nh);
-    int ccwIndex = ccwSet.getIndex(nh);
+    int cwIndex = cwSet.getIndex(nodeHandle);
+    int ccwIndex = ccwSet.getIndex(nodeHandle);
     if (cwIndex >= 0 && ccwIndex >= 0) {
       //the ring overlaps
 
@@ -233,38 +233,38 @@ public class LeafSet implements Iterable<NodeHandle> {
   /**
    * Verifies if the set contains this particular handle.
    *
-   * @param nid a NodeHandle.
+   * @param nodeHandle a NodeHandle.
    * @return true if that NodeHandle is in the set, false otherwise.
    */
-  public boolean member(NodeHandle nid) {
-    return cwSet.member(nid) || ccwSet.member(nid);
+  public boolean member(NodeHandle nodeHandle) {
+    return cwSet.member(nodeHandle) || ccwSet.member(nodeHandle);
   }
 
-  public boolean contains(NodeHandle nh) {
-    return member(nh);
+  public boolean contains(NodeHandle nodeHandle) {
+    return member(nodeHandle);
   }
 
   /**
    * Verifies if the set contains this particular id.
    *
-   * @param nid a node id.
+   * @param nodeId a node id.
    * @return true if that node id is in the set, false otherwise.
    */
-  public boolean member(Id nid)
+  public boolean member(Id nodeId)
   {
-    return cwSet.member(nid) || ccwSet.member(nid);
+    return cwSet.member(nodeId) || ccwSet.member(nodeId);
   }
 
 
   /**
    * Removes a node id and its handle from the set.
    *
-   * @param nh the node to remove.
+   * @param nodeHandle the node to remove.
    */
-  public void remove(NodeHandle nh)
+  public void remove(NodeHandle nodeHandle)
   {
-    cwSet.remove(nh);
-    ccwSet.remove(nh);
+    cwSet.remove(nodeHandle);
+    ccwSet.remove(nodeHandle);
 
     // don't do this inside LeafSetHalf.remove() otherwise you may get an
     // add notification before a removal
@@ -312,52 +312,52 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @return the index of the same node in the opposite half of the leafset, or inx if it does not exist there
    */
   private int complement(int inx) {
-    int res;
+    int result;
 
     if (inx == 0) return 0;
     if (inx < 0) {
       if (inx < -counterClockwiseSize()) return inx;
-      res = cwSet.getIndex(ccwSet.get(-inx - 1)) + 1;
+      result = cwSet.getIndex(ccwSet.get(-inx - 1)) + 1;
     }
     else {
       if (inx > clockwiseSize()) return inx;
-      res = -ccwSet.getIndex(cwSet.get(inx - 1)) - 1;
+      result = -ccwSet.getIndex(cwSet.get(inx - 1)) - 1;
     }
 
-    if (res == 0) res = inx;
-    return res;
+    if (result == 0) result = inx;
+    return result;
   }
 
   /**
    * Numerically closest node to a given a node in the leaf set.
    *
-   * @param nid a node id.
+   * @param nodeId a node id.
    * @return the index of the numerically closest node (0 if baseId is the closest).
    */
-  public int mostSimilar(Id nid) {
+  public int mostSimilar(Id nodeId) {
     Id.Distance cwMinDist;
     Id.Distance ccwMinDist;
     int cwMS;
     int ccwMS;
 
-    if (baseId.clockwise(nid)) {
-      cwMS = cwSet.mostSimilar(nid);
+    if (baseId.clockwise(nodeId)) {
+      cwMS = cwSet.mostSimilar(nodeId);
       if (cwMS < cwSet.size()-1)
         return cwMS + 1;
-      ccwMS = ccwSet.mostSimilar(nid);
+      ccwMS = ccwSet.mostSimilar(nodeId);
     }
     else {
-      ccwMS = ccwSet.mostSimilar(nid);
+      ccwMS = ccwSet.mostSimilar(nodeId);
       if (ccwMS < ccwSet.size()-1)
         return -ccwMS - 1;
-      cwMS = cwSet.mostSimilar(nid);
+      cwMS = cwSet.mostSimilar(nodeId);
     }
 
-    cwMinDist = cwSet.get(cwMS).getNodeId().distance(nid);
-    ccwMinDist = ccwSet.get(ccwMS).getNodeId().distance(nid);
+    cwMinDist = cwSet.get(cwMS).getNodeId().distance(nodeId);
+    ccwMinDist = ccwSet.get(ccwMS).getNodeId().distance(nodeId);
 
     int cmp = cwMinDist.compareTo(ccwMinDist);
-    if (cmp < 0 || (cmp == 0 && nid.clockwise(cwSet.get(cwMS).getNodeId())) )
+    if (cmp < 0 || (cmp == 0 && nodeId.clockwise(cwSet.get(cwMS).getNodeId())) )
       return cwMS + 1;
     else
       return -ccwMS - 1;
@@ -592,11 +592,11 @@ public class LeafSet implements Iterable<NodeHandle> {
     }
     if (rr == null || rprev == null) return rr;
 
-    IdRange res;
+    IdRange result;
 
-    if (!cw) res = rr.diff(rprev);
-    else     res = rprev.diff(rr);
-    return res;
+    if (!cw) result = rr.diff(rprev);
+    else     result = rprev.diff(rr);
+    return result;
   }
 
 
@@ -890,7 +890,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *
    */
-  public static LeafSet build(InputBuffer buf, NodeHandleFactory<?> nhf) throws IOException {
+  public static LeafSet build(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory) throws IOException {
     byte theSize = buf.readByte();
     byte numUniqueHandles = buf.readByte();
     byte cwSize = buf.readByte();
@@ -898,10 +898,10 @@ public class LeafSet implements Iterable<NodeHandle> {
     if (theSize < 0 || numUniqueHandles < 0 || cwSize < 0 || ccwSize < 0) {
       throw new IOException("Invalid leafset sizes: " + theSize + "/" + numUniqueHandles + "/" + cwSize + "/" + ccwSize);
     }
-    NodeHandle baseHandle = nhf.readNodeHandle(buf);
+    NodeHandle baseHandle = nodeHandleFactory.readNodeHandle(buf);
     NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
     for (int i = 0; i < numUniqueHandles; i++) {
-      nhTable[i] = nhf.readNodeHandle(buf);
+      nhTable[i] = nodeHandleFactory.readNodeHandle(buf);
     }
 
     NodeHandle[] cwTable = new NodeHandle[cwSize];
@@ -988,8 +988,8 @@ public class LeafSet implements Iterable<NodeHandle> {
 
     baseHandle.serialize(buf);
 
-    for (NodeHandle nh : list) {
-      nh.serialize(buf);
+    for (NodeHandle nodeHandle : list) {
+      nodeHandle.serialize(buf);
     }
 
     for (int i = 0; i < cwSet.size(); i++) {

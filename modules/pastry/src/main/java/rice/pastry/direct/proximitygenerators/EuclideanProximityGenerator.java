@@ -90,10 +90,10 @@ public class EuclideanProximityGenerator implements ProximityGenerator{
       int dx = x - nr.x;
       int dy = y - nr.y;
 
-      float ret = (float)Math.sqrt(dx * dx + dy * dy);
-      if ((ret < 2.0) && !this.equals(that)) return (float)2.0;
+      float result = (float)Math.sqrt(dx * dx + dy * dy);
+      if ((result < 2.0) && !this.equals(that)) return (float)2.0;
 
-      return ret;
+      return result;
     }
 
     @Override

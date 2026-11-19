@@ -124,18 +124,18 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * Creates a random Id. For testing purposed only -- should NOT be used to generate real node or
    * object identifiers (low quality of random material).
    *
-   * @param rng random number generator
+   * @param random random number generator
    * @return a random Id
    */
-  public static Id makeRandomId(Random rng) {
+  public static Id makeRandomId(Random random) {
     byte material[] = new byte[IdBitLength / 8];
-    rng.nextBytes(material);
+    random.nextBytes(material);
     return build(material);
   }
 
-  public static Id makeRandomId(RandomSource rng) {
+  public static Id makeRandomId(RandomSource random) {
     byte material[] = new byte[IdBitLength / 8];
-    rng.nextBytes(material);
+    random.nextBytes(material);
     return build(material);
   }
 
@@ -318,19 +318,19 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
    *
-   * @param ccw the counterclockwise id
-   * @param cw the clockwise id
+   * @param counterClockwiseId the counterclockwise id
+   * @param clockwiseId the clockwise id
    * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
    */
-  public boolean isBetween(Id ccw, Id cw) {
-    if (ccw.equals(cw)) {
+  public boolean isBetween(Id counterClockwiseId, Id clockwiseId) {
+    if (counterClockwiseId.equals(clockwiseId)) {
       return false;
     }
 
-    if (ccw.clockwise(cw)) {
-      return this.clockwise(cw) && !this.clockwise(ccw);
+    if (counterClockwiseId.clockwise(clockwiseId)) {
+      return this.clockwise(clockwiseId) && !this.clockwise(counterClockwiseId);
     } else {
-      return !this.clockwise(ccw) || this.clockwise(cw);
+      return !this.clockwise(counterClockwiseId) || this.clockwise(clockwiseId);
     }
   }
 
@@ -365,14 +365,14 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * @return the resulting Id
    */
   public Id getDomainPrefix(int row, int column, int suffixDigit, int b) {
-    Id res = new Id(Id);
+    Id result = new Id(Id);
 
-    res.setDigit(row, column, b);
+    result.setDigit(row, column, b);
     for (int i = 0; i < row; i++) {
-      res.setDigit(i, suffixDigit, b);
+      result.setDigit(i, suffixDigit, b);
     }
 
-    return build(res.Id);
+    return build(result.Id);
   }
 
 
@@ -392,12 +392,12 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
       return null;
     }
 
-    Id res = new Id(Id);
+    Id result = new Id(Id);
 
-    int digit = res.getDigit(numDigits(b) - 1, b) + ((1 << b) / num) * i;
-    res.setDigit(numDigits(b) - 1, digit, b);
+    int digit = result.getDigit(numDigits(b) - 1, b) + ((1 << b) / num) * i;
+    result.setDigit(numDigits(b) - 1, digit, b);
 
-    return build(res.Id);
+    return build(result.Id);
   }
 
   // ----- COMMON API SUPPORT -----
@@ -405,13 +405,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
    *
-   * @param ccw the counterclockwise id
-   * @param cw the clockwise id
+   * @param counterClockwiseId the counterclockwise id
+   * @param clockwiseId the clockwise id
    * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
    */
   @Override
-  public boolean isBetween(rice.p2p.commonapi.Id ccw, rice.p2p.commonapi.Id cw) {
-    return isBetween((Id) ccw, (Id) cw);
+  public boolean isBetween(rice.p2p.commonapi.Id counterClockwiseId, rice.p2p.commonapi.Id clockwiseId) {
+    return isBetween((Id) counterClockwiseId, (Id) clockwiseId);
   }
 
 
@@ -489,12 +489,12 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    */
   @Override
   public boolean equals(Object obj) {
-    if ((obj == null) || ! (obj instanceof Id nid))
+    if ((obj == null) || ! (obj instanceof Id nodeId))
       return false;
 
 
     for (int i = 0; i < nlen; i++) {
-      if (Id[i] != nid.Id[i]) {
+      if (Id[i] != nodeId.Id[i]) {
         return false;
       }
     }
@@ -609,11 +609,11 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns the shorter numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
-  public Distance distance(Id nid) {
-    int[] dist = absDistance(nid);
+  public Distance distance(Id nodeId) {
+    int[] dist = absDistance(nodeId);
 
     if ((dist[nlen - 1] & 0x80000000) != 0) {
       invert(dist);
@@ -624,9 +624,9 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     return d;
   }
 
-  public Distance distance(Id nid, Distance d) {
+  public Distance distance(Id nodeId, Distance d) {
     int[] dist = d.difference;
-    absDistance(nid, dist);
+    absDistance(nodeId, dist);
 
     if ((dist[nlen - 1] & 0x80000000) != 0) {
       invert(dist);
@@ -638,11 +638,11 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns the longer numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
-  public Distance longDistance(Id nid) {
-    int[] dist = absDistance(nid);
+  public Distance longDistance(Id nodeId) {
+    int[] dist = absDistance(nodeId);
 
     if ((dist[nlen - 1] & 0x80000000) == 0) {
       invert(dist);
@@ -659,20 +659,20 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
    * counter-clockwise from itself.
    *
-   * @param nid The Id we are comparing to
+   * @param nodeId The Id we are comparing to
    * @return true if clockwise, false otherwise.
    */
-  public boolean clockwise(Id nid) {
-    boolean diffMSB = ((Id[nlen - 1] & 0x80000000) != (nid.Id[nlen - 1] & 0x80000000));
+  public boolean clockwise(Id nodeId) {
+    boolean diffMSB = ((Id[nlen - 1] & 0x80000000) != (nodeId.Id[nlen - 1] & 0x80000000));
     int x;
     int y;
     int i;
 
-    if ((x = (Id[nlen - 1] & 0x7fffffff)) != (y = (nid.Id[nlen - 1] & 0x7fffffff))) {
+    if ((x = (Id[nlen - 1] & 0x7fffffff)) != (y = (nodeId.Id[nlen - 1] & 0x7fffffff))) {
       return ((y > x) ^ diffMSB);
     } else {
       for (i = nlen - 2; i >= 0; i--) {
-        if (Id[i] != nid.Id[i]) {
+        if (Id[i] != nodeId.Id[i]) {
           break;
         }
       }
@@ -684,7 +684,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
         long yl;
 
         xl = Id[i] & 0xffffffffL;
-        yl = nid.Id[i] & 0xffffffffL;
+        yl = nodeId.Id[i] & 0xffffffffL;
 
         return ((yl > xl) ^ diffMSB);
       }
@@ -713,13 +713,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns the index of the most significant differing bit (MSDB).
    *
-   * @param nid another node id to compare with.
+   * @param nodeId another node id to compare with.
    * @return the index of the msdb (0 is the least significant) / will return negative if they do
    *      not differ.
    */
-  public int indexOfMostSignificantDifferingBit(Id nid) {
+  public int indexOfMostSignificantDifferingBit(Id nodeId) {
     for (int i = nlen - 1; i >= 0; i--) {
-      int cmp = Id[i] ^ nid.Id[i];
+      int cmp = Id[i] ^ nodeId.Id[i];
 
       if (cmp != 0) {
         int tmp;
@@ -754,13 +754,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns the index of the most significant different digit (MSDD) in a given base.
    *
-   * @param nid another node id to compare with.
+   * @param nodeId another node id to compare with.
    * @param base the base (as a power of two) to compare in.
    * @return the index of the msdd (0 is the least significant) / will return negative if they do
    *      not differ.
    */
-  public int indexOfMostSignificantDifferingDigit(Id nid, int base) {
-    int ind = indexOfMostSignificantDifferingBit(nid);
+  public int indexOfMostSignificantDifferingDigit(Id nodeId, int base) {
+    int ind = indexOfMostSignificantDifferingBit(nodeId);
 
     // ignore trailing LSBs if (IdBitLength % base) > 0
     ind -= IdBitLength % base;
@@ -829,12 +829,12 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
    * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
    * counter-clockwise from itself.
    *
-   * @param nid the other Id (must be a rice.pastry.Id)
+   * @param nodeId the other Id (must be a rice.pastry.Id)
    * @return true if clockwise, false otherwise.
    */
   @Override
-  public boolean clockwise(rice.p2p.commonapi.Id nid) {
-    return clockwise((Id) nid);
+  public boolean clockwise(rice.p2p.commonapi.Id nodeId) {
+    return clockwise((Id) nodeId);
   }
 
   /**
@@ -851,44 +851,44 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
   /**
    * Returns the shorter numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
   @Override
-  public rice.p2p.commonapi.Id.Distance distanceFromId(rice.p2p.commonapi.Id nid) {
-    return distance((Id) nid);
+  public rice.p2p.commonapi.Id.Distance distanceFromId(rice.p2p.commonapi.Id nodeId) {
+    return distance((Id) nodeId);
   }
 
   /**
    * Returns the longer numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
   @Override
-  public rice.p2p.commonapi.Id.Distance longDistanceFromId(rice.p2p.commonapi.Id nid) {
-    return longDistance((Id) nid);
+  public rice.p2p.commonapi.Id.Distance longDistanceFromId(rice.p2p.commonapi.Id nodeId) {
+    return longDistance((Id) nodeId);
   }
 
   /**
    * Returns the absolute numerical distance between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return an int[] containing the distance between this and nid.
    */
-  private int[] absDistance(Id nid) {
-    return absDistance(nid,new int[nlen]);
+  private int[] absDistance(Id nodeId) {
+    return absDistance(nodeId,new int[nlen]);
   }
-  private int[] absDistance(Id nid, int dist[]) {
+  private int[] absDistance(Id nodeId, int dist[]) {
     long x;
     long y;
     long diff;
     int carry = 0;
 
-    if (compareTo(nid) > 0) {
+    if (compareTo(nodeId) > 0) {
       for (int i = 0; i < nlen; i++) {
         x = Id[i] & 0x0ffffffffL;
-        y = nid.Id[i] & 0x0ffffffffL;
+        y = nodeId.Id[i] & 0x0ffffffffL;
 
         diff = x - y - carry;
 
@@ -903,7 +903,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     } else {
       for (int i = 0; i < nlen; i++) {
         x = Id[i] & 0x0ffffffffL;
-        y = nid.Id[i] & 0x0ffffffffL;
+        y = nodeId.Id[i] & 0x0ffffffffL;
 
         diff = y - x - carry;
 
@@ -1053,30 +1053,30 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     /**
      * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
      *
-     * @param cnt the number of bits to shift, negative shifts left, positive shifts right
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
      * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
      * @return this
      */
-    public Distance shift(int cnt, int fill) {
-      return shift(cnt, fill, false);
+    public Distance shift(int count, int fill) {
+      return shift(count, fill, false);
     }
 
 
     /**
      * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
      *
-     * @param cnt the number of bits to shift, negative shifts left, positive shifts right
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
      * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
      * @param roundUp if true, round up the results after right shifting
      * @return this
      */
-    public Distance shift(int cnt, int fill, boolean roundUp) {
+    public Distance shift(int count, int fill, boolean roundUp) {
       int carry;
       int bit = 0;
       int lsb = 0;
 
-      if (cnt > 0) {
-        for (int j = 0; j < cnt; j++) {
+      if (count > 0) {
+        for (int j = 0; j < count; j++) {
           // shift right one bit
           carry = (fill == 0) ? 0 : 0x80000000;
           for (int i = nlen - 1; i >= 0; i--) {
@@ -1094,7 +1094,7 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
           inc();
         }
       } else {
-        for (int j = 0; j < -cnt; j++) {
+        for (int j = 0; j < -count; j++) {
           // shift left one bit
           carry = (fill == 0) ? 0 : 1;
           for (int i = 0; i < nlen; i++) {
@@ -1151,13 +1151,13 @@ public class Id implements rice.p2p.commonapi.Id, RawSerializable {
     /**
      * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
      *
-     * @param cnt the number of bits to shift, negative shifts left, positive shifts right
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
      * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
      * @return this
      */
     @Override
-    public rice.p2p.commonapi.Id.Distance shiftDistance(int cnt, int fill) {
-      return shift(cnt, fill);
+    public rice.p2p.commonapi.Id.Distance shiftDistance(int count, int fill) {
+      return shift(count, fill);
     }
 
     /**

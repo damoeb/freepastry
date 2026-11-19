@@ -79,11 +79,11 @@ public class RendezvousPNSApplication extends ProximityNeighborSelectionApplicat
    *   return true
    *
    */
-  protected boolean ignore(NodeHandle handle, Continuation<?, Exception> c) {
+  protected boolean ignore(NodeHandle handle, Continuation<?, Exception> continuation) {
 
     if (useHandle(handle)) return false;
     logger.debug("PNS not using firewalled node {}", handle);
-    c.receiveException(new NodeIsFirewalledException(handle));
+    continuation.receiveException(new NodeIsFirewalledException(handle));
     return true;
   }
 
@@ -140,8 +140,8 @@ public class RendezvousPNSApplication extends ProximityNeighborSelectionApplicat
 
   @Override
   public Cancellable getLeafSet(final NodeHandle input,
-      final Continuation<LeafSet, Exception> c) {
-    if (ignore(input, c)) return null;
+      final Continuation<LeafSet, Exception> continuation) {
+    if (ignore(input, continuation)) return null;
     return super.getLeafSet(input, new Continuation<LeafSet, Exception>() {
 
       @Override
@@ -152,42 +152,42 @@ public class RendezvousPNSApplication extends ProximityNeighborSelectionApplicat
             result.remove(handle);
           }
         }
-        c.receiveResult(result);
+        continuation.receiveResult(result);
       }
 
       @Override
       public void receiveException(Exception exception) {
-        c.receiveException(exception);
+        continuation.receiveException(exception);
       }
     });
   }
 
   @Override
   public Cancellable getRouteRow(final NodeHandle input, final short row,
-      final Continuation<RouteSet[], Exception> c) {
-    if (ignore(input, c)) return null;
+      final Continuation<RouteSet[], Exception> continuation) {
+    if (ignore(input, continuation)) return null;
     return super.getRouteRow(input, row, new Continuation<RouteSet[], Exception>() {
 
       @Override
       public void receiveResult(RouteSet[] result) {
-        for (int ctr = 0; ctr < result.length; ctr++) {
-          RouteSet rs = result[ctr];
-          if (rs != null) {
-            for (NodeHandle handle : rs) {
+        for (int counter = 0; counter < result.length; counter++) {
+          RouteSet routeSet = result[counter];
+          if (routeSet != null) {
+            for (NodeHandle handle : routeSet) {
               if (handle != null && !useHandle(handle)) {
                 logger.debug("getRouteRow({},{}) Dropping {} because it is FireWalled", input, row, handle);
-                rs.remove(handle);
+                routeSet.remove(handle);
               }
             }
-            if (rs.isEmpty()) result[ctr] = null;
+            if (routeSet.isEmpty()) result[counter] = null;
           }
         }
-        c.receiveResult(result);
+        continuation.receiveResult(result);
       }
 
       @Override
       public void receiveException(Exception exception) {
-        c.receiveException(exception);
+        continuation.receiveException(exception);
       }
 
     });
@@ -203,12 +203,12 @@ public class RendezvousPNSApplication extends ProximityNeighborSelectionApplicat
 
   @Override
   public Cancellable getProximity(NodeHandle handle,
-      Continuation<Integer, IOException> c, int timeout) {
+      Continuation<Integer, IOException> continuation, int timeout) {
     if (!useHandle(handle)) {
-      c.receiveResult(Integer.MAX_VALUE);
+      continuation.receiveResult(Integer.MAX_VALUE);
       return null;
     }
-    return super.getProximity(handle, c, timeout);
+    return super.getProximity(handle, continuation, timeout);
   }
 
 }

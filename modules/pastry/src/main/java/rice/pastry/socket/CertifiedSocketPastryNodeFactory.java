@@ -104,9 +104,9 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
   @Override
   public PastryNode nodeHandleHelper(PastryNode pn) throws IOException {
-    PastryNode ret = super.nodeHandleHelper(pn);
-    ret.setIdentityPolicy(handle -> isAuthenticatedOrVerify(pn, handle));
-    return ret;
+    PastryNode result = super.nodeHandleHelper(pn);
+    result.setIdentityPolicy(handle -> isAuthenticatedOrVerify(pn, handle));
+    return result;
   }
 
   /** @return true if the handle's id is authenticated; otherwise starts verifying it and returns false */

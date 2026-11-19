@@ -57,10 +57,10 @@ public interface SocketFactory {
    *
    * @param addr the location of the freepastry node
    * @param appid the application in the freepastry node see StandardAddress.getAddress()
-   * @param c deliver the socket to this continuation
+   * @param continuation deliver the socket to this continuation
    * @param options use these transport layer specific options when opening the socket
    * @return use this to cancel the call
    */
-  public Cancellable getAppSocket(InetSocketAddress addr, int appid, Continuation<AppSocket, Exception> c, Map<String, Object> options);
-  public Cancellable getSocketChannel(InetSocketAddress addr, int appid, Continuation<SocketChannel, Exception> c, Map<String, Object> options);
+  public Cancellable getAppSocket(InetSocketAddress addr, int appid, Continuation<AppSocket, Exception> continuation, Map<String, Object> options);
+  public Cancellable getSocketChannel(InetSocketAddress addr, int appid, Continuation<SocketChannel, Exception> continuation, Map<String, Object> options);
 }

@@ -63,8 +63,8 @@ public class RendezvousNodeHandleIdentitySerializer extends SocketNodeHandleIden
   }
 
   @Override
-  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nid) throws IOException {
-    return new RendezvousSocketNodeHandle(i, epoch, nid, pn, buf.readByte());
+  protected SocketNodeHandle buildSocketNodeHandle(InputBuffer buf, MultiInetSocketAddress i, long epoch, Id nodeId) throws IOException {
+    return new RendezvousSocketNodeHandle(i, epoch, nodeId, pn, buf.readByte());
   }
 
 

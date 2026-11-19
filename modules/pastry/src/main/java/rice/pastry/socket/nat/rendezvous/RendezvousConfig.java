@@ -65,13 +65,13 @@ public record RendezvousConfig(
     natNetworkPrefixes = List.copyOf(natNetworkPrefixes);
   }
 
-  public static RendezvousConfig fromParameters(Parameters p) {
+  public static RendezvousConfig fromParameters(Parameters parameters) {
     return new RendezvousConfig(
-      p.getBoolean("rendezvous_test_makes_bootstrap"),
-      p.getBoolean("rendezvous_test_firewall"),
-      p.getFloat("rendezvous_test_num_firewalled"),
-      p.contains(RendezvousSocketPastryNodeFactory.SIMULATE_FIREWALL)
-          && p.getBoolean(RendezvousSocketPastryNodeFactory.SIMULATE_FIREWALL),
-      List.of(p.getString("nat_network_prefixes").split(";")));
+      parameters.getBoolean("rendezvous_test_makes_bootstrap"),
+      parameters.getBoolean("rendezvous_test_firewall"),
+      parameters.getFloat("rendezvous_test_num_firewalled"),
+      parameters.contains(RendezvousSocketPastryNodeFactory.SIMULATE_FIREWALL)
+          && parameters.getBoolean(RendezvousSocketPastryNodeFactory.SIMULATE_FIREWALL),
+      List.of(parameters.getString("nat_network_prefixes").split(";")));
   }
 }

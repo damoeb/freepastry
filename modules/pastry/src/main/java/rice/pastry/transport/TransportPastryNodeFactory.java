@@ -104,14 +104,14 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     pn.setElements(localhandle, msgDisp, leafSet, routeTable, router);
 
 
-    NodeHandleAdapter nha = getNodeHandleAdapter(pn, handleFactory, deserializer);
+    NodeHandleAdapter nodeHandleAdapter = getNodeHandleAdapter(pn, handleFactory, deserializer);
 
     pn.setSocketElements(leafSetMaintFreq, routeSetMaintFreq,
-        nha, nha, nha, handleFactory);
+        nodeHandleAdapter, nodeHandleAdapter, nodeHandleAdapter, handleFactory);
 
     router.register();
 
-    registerApps(pn, leafSet, routeTable, nha, handleFactory);
+    registerApps(pn, leafSet, routeTable, nodeHandleAdapter, handleFactory);
 
     return pn;
   }
@@ -120,10 +120,10 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     return null; // use the default one
   }
 
-  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
-    ProximityNeighborSelector pns = getProximityNeighborSelector(pn);
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nodeHandleAdapter, NodeHandleFactory<?> handleFactory) {
+    ProximityNeighborSelector neighborSelector = getProximityNeighborSelector(pn);
 
-    Bootstrapper<?> bootstrapper = getBootstrapper(pn, nha, handleFactory, pns);
+    Bootstrapper<?> bootstrapper = getBootstrapper(pn, nodeHandleAdapter, handleFactory, neighborSelector);
 
     RouteSetProtocol rsProtocol = getRouteSetProtocol(pn, leafSet, routeTable);
 
@@ -199,5 +199,5 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
   protected abstract Bootstrapper<?> getBootstrapper(PastryNode pn,
       NodeHandleAdapter tl,
       NodeHandleFactory<?> handleFactory,
-      ProximityNeighborSelector pns);
+      ProximityNeighborSelector neighborSelector);
 }

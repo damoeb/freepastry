@@ -71,12 +71,12 @@ public class LeafSetPilotStrategy<Identifier extends RendezvousContact> implemen
   @Override
   public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
     logger.trace("nodeSetUpdate({})", handle);
-    Identifier nh = (Identifier)handle;
-    if (nh.canContactDirect()) {
+    Identifier identifier = (Identifier)handle;
+    if (identifier.canContactDirect()) {
       if (added) {
-        manager.openPilot(nh, null);
+        manager.openPilot(identifier, null);
       } else {
-        manager.closePilot(nh);
+        manager.closePilot(identifier);
       }
     }
   }

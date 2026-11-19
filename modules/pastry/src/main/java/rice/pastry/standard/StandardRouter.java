@@ -93,12 +93,12 @@ public class StandardRouter extends PastryAppl implements Router {
         return first;
       }
       while(i.hasNext()) {
-        NodeHandle nh = i.next();
-        if (nh.getLiveness() < NodeHandle.LIVENESS_SUSPECTED) {
-          return nh;
+        NodeHandle nodeHandle = i.next();
+        if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_SUSPECTED) {
+          return nodeHandle;
         }
         // do this in case first is dead, and we find a suspected node to pass it to
-        if (first.getLiveness() > nh.getLiveness()) first = nh;
+        if (first.getLiveness() > nodeHandle.getLiveness()) first = nodeHandle;
       }
       if (first.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
         // drop the message, this would happen if we gave a lease to this node
@@ -112,10 +112,10 @@ public class StandardRouter extends PastryAppl implements Router {
 
   public StandardRouter(final PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
     super(thePastryNode, null, RouterAddress.getCode(), (buf, type, priority, sender) -> {
-      RouteMessage rm;
-      rm = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
+      RouteMessage routeMessage;
+      routeMessage = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
           thePastryNode.getConfig().routeMsgVersion());
-      return rm;
+      return routeMessage;
     });
     this.dispatch = dispatch;
     this.routerStrategy = strategy;
@@ -147,14 +147,14 @@ public class StandardRouter extends PastryAppl implements Router {
   }
 
   @Override
-  public void route(final RouteMessage rm) {
+  public void route(final RouteMessage routeMessage) {
     if (!thePastryNode.getEnvironment().getSelectorManager().isSelectorThread()) {
-      thePastryNode.getEnvironment().getSelectorManager().invoke(() -> route(rm));
+      thePastryNode.getEnvironment().getSelectorManager().invoke(() -> route(routeMessage));
       return;
     }
-    logger.debug("route({})", rm);
-    if (routeMessage(rm) == false)
-      receiveRouteMessage(rm);
+    logger.debug("route({})", routeMessage);
+    if (routeMessage(routeMessage) == false)
+      receiveRouteMessage(routeMessage);
   }
 
   /**
@@ -162,61 +162,61 @@ public class StandardRouter extends PastryAppl implements Router {
    *
    * Note, this once lived in the RouteMessage
    *
-   * @param rm the route message.
+   * @param routeMessage the route message.
    *
    * @return true if the message got routed, false otherwise.
    */
-  public boolean routeMessage(RouteMessage rm) {
-    logger.trace("routeMessage({})", rm);
-    if (rm.getNextHop() == null)
+  public boolean routeMessage(RouteMessage routeMessage) {
+    logger.trace("routeMessage({})", routeMessage);
+    if (routeMessage.getNextHop() == null)
       return false;
-    rm.setSender(thePastryNode.getLocalHandle());
+    routeMessage.setSender(thePastryNode.getLocalHandle());
 
-    NodeHandle handle = rm.getNextHop();
-    rm.setNextHop(null);
-    rm.setPrevNode(thePastryNode.getLocalHandle());
+    NodeHandle handle = routeMessage.getNextHop();
+    routeMessage.setNextHop(null);
+    routeMessage.setPrevNode(thePastryNode.getLocalHandle());
 
     if (thePastryNode.getLocalHandle().equals(handle)) {
       // the local node is the closest node to the id
-      if (rm.getDestinationHandle() != null && !rm.getDestinationHandle().equals(thePastryNode.getLocalHandle())) {
+      if (routeMessage.getDestinationHandle() != null && !routeMessage.getDestinationHandle().equals(thePastryNode.getLocalHandle())) {
         // no idea how to contact the destination, drop
-        logger.debug("Message {} has destination {} but I'm the root of the id.  Dropping.  This could happen if the destination has died while the route message was in transit, or if the local node does not yet have logging state because it is bootstrapping.", rm, rm.getDestinationHandle());
+        logger.debug("Message {} has destination {} but I'm the root of the id.  Dropping.  This could happen if the destination has died while the route message was in transit, or if the local node does not yet have logging state because it is bootstrapping.", routeMessage, routeMessage.getDestinationHandle());
 
-        rm.sendFailed(new NoRouteToHostException(rm.getDestinationHandle().toString()));
+        routeMessage.sendFailed(new NoRouteToHostException(routeMessage.getDestinationHandle().toString()));
         return true;
       }
-      thePastryNode.receiveMessage(rm.getInternalMessage());
-      rm.sendSuccess(thePastryNode.getLocalHandle());
+      thePastryNode.receiveMessage(routeMessage.getInternalMessage());
+      routeMessage.sendSuccess(thePastryNode.getLocalHandle());
     } else {
-      sendTheMessage(rm, handle);
+      sendTheMessage(routeMessage, handle);
     }
     return true;
   }
 
-  protected void sendTheMessage(final RouteMessage rm, final NodeHandle handle) {
-    logger.trace("sendTheMessage({},{})", rm, handle);
-    rm.setTransportLayerCancellable(thePastryNode.send(handle, rm, new PastryMessageSendListener(){
+  protected void sendTheMessage(final RouteMessage routeMessage, final NodeHandle handle) {
+    logger.trace("sendTheMessage({},{})", routeMessage, handle);
+    routeMessage.setTransportLayerCancellable(thePastryNode.send(handle, routeMessage, new PastryMessageSendListener(){
       @Override
       public void sent(PastryMessageReceipt msg) {
-        rm.sendSuccess(handle);
+        routeMessage.sendSuccess(handle);
       }
       @Override
       public void sendFailed(PastryMessageReceipt msg, Exception reason) {
-        if (rm.sendFailed(reason)) {
-          logger.info("sendFailed({})=>{}", rm, handle, reason);
+        if (routeMessage.sendFailed(reason)) {
+          logger.info("sendFailed({})=>{}", routeMessage, handle, reason);
         } else {
           if (logger.isDebugEnabled()) {
-            logger.debug("sendFailed("+rm+")=>"+handle, reason);
+            logger.debug("sendFailed("+routeMessage+")=>"+handle, reason);
           } else {
             if (reason instanceof NodeIsFaultyException) {
-              logger.atInfo().log(() -> "sendFailed("+rm+")=>"+handle+" "+reason);
+              logger.atInfo().log(() -> "sendFailed("+routeMessage+")=>"+handle+" "+reason);
             } else {
-              logger.warn("sendFailed({})=>{}", rm, handle, reason);
+              logger.warn("sendFailed({})=>{}", routeMessage, handle, reason);
             }
           }
         }
       }
-    }, rm.getTransportLayerOptions()));
+    }, routeMessage.getTransportLayerOptions()));
   }
 
 
@@ -318,7 +318,7 @@ public class StandardRouter extends PastryAppl implements Router {
       NodeHandle getNext() {
         // return best candidate first
         if (iterator == null && best != null) {
-          NodeHandle ret = best.get(k);
+          NodeHandle result = best.get(k);
           k++;
           if (k >= best.size()) {
             // done with best, now use the rtIterator
@@ -326,7 +326,7 @@ public class StandardRouter extends PastryAppl implements Router {
             lsCollection = getLeafSetCandidates(lsPos);
             iterator = rtIterator;
           }
-          return ret;
+          return result;
         }
 
         // try the routing table
@@ -358,9 +358,9 @@ public class StandardRouter extends PastryAppl implements Router {
       @Override
       public NodeHandle next() {
         if (hasNext()) {
-          NodeHandle ret = next;
+          NodeHandle result = next;
           next = null;
-          return ret;
+          return result;
         }
         throw new NoSuchElementException();
       }
@@ -425,12 +425,12 @@ public class StandardRouter extends PastryAppl implements Router {
     }
 
     // we don't want to send the repair if they just routed in the leafset
-    LeafSet ls = thePastryNode.getLeafSet();
-    if (ls.overlaps()) return; // small network, don't bother
-    if (ls.member(prevNode)) {
+    LeafSet leafSet = thePastryNode.getLeafSet();
+    if (leafSet.overlaps()) return; // small network, don't bother
+    if (leafSet.member(prevNode)) {
       // ok, it's in my leafset, so I'm in his, but make sure that it's not on the edge
-      int index = ls.getIndex(prevNode);
-      if ((index == ls.clockwiseSize()) || (index == -ls.counterClockwiseSize())) {
+      int index = leafSet.getIndex(prevNode);
+      if ((index == leafSet.clockwiseSize()) || (index == -leafSet.counterClockwiseSize())) {
         // it is the edge... continue with repair
       } else {
         return;
@@ -460,11 +460,11 @@ public class StandardRouter extends PastryAppl implements Router {
       // for now, we send the entire row for simplicity
 
       RouteSet[] row = thePastryNode.getRoutingTable().getRow(diffDigit);
-      BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
+      BroadcastRouteRow broadcastRouteRow = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
 
       if (prevNode.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-        logger.atDebug().log(() -> "Found hole in "+prevNode+"'s routing table. Sending "+brr.toStringFull());
-        thePastryNode.send(prevNode,brr,null,options);
+        logger.atDebug().log(() -> "Found hole in "+prevNode+"'s routing table. Sending "+broadcastRouteRow.toStringFull());
+        thePastryNode.send(prevNode,broadcastRouteRow,null,options);
       }
     }
   }

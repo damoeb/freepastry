@@ -93,17 +93,17 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
    * Constructor.
    *
    * @param ln the local node
-   * @param rt the routing table
+   * @param routingTable the routing table
    */
-  public StandardRouteSetProtocol(PastryNode ln, RoutingTable rt) {
-    this(ln, rt, null);
+  public StandardRouteSetProtocol(PastryNode ln, RoutingTable routingTable) {
+    this(ln, routingTable, null);
   }
 
-  public StandardRouteSetProtocol(PastryNode ln, RoutingTable rt, MessageDeserializer md) {
-    super(ln, null, RouteProtocolAddress.getCode(),  md == null ? new SRSPDeserializer(ln) : md);
+  public StandardRouteSetProtocol(PastryNode ln, RoutingTable routingTable, MessageDeserializer deserializer) {
+    super(ln, null, RouteProtocolAddress.getCode(),  deserializer == null ? new SRSPDeserializer(ln) : deserializer);
     this.environmet = ln.getEnvironment();
-    maxTrials = (1 << rt.baseBitLength()) / 2;
-    routeTable = rt;
+    maxTrials = (1 << routingTable.baseBitLength()) / 2;
+    routeTable = routingTable;
   }
 
   /**
@@ -119,36 +119,36 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
           "StandardRouteSetProtocol: received message is of unknown type");
     }
     switch (routeSetMessage) {
-      case BroadcastRouteRow brr -> {
-        if (logger.isTraceEnabled()) logger.trace("Received "+brr.toStringFull());
+      case BroadcastRouteRow broadcastRouteRow -> {
+        if (logger.isTraceEnabled()) logger.trace("Received "+broadcastRouteRow.toStringFull());
 
-        RouteSet[] row = brr.getRow();
+        RouteSet[] row = broadcastRouteRow.getRow();
 
-        NodeHandle nh = brr.from();
-        if (nh.getLiveness() < NodeHandle.LIVENESS_DEAD)
-          routeTable.put(nh);
+        NodeHandle nodeHandle = broadcastRouteRow.from();
+        if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD)
+          routeTable.put(nodeHandle);
 
         for (RouteSet routeSet : row) {
           RouteSet rs = routeSet;
 
           for (int j = 0; rs != null && j < rs.size(); j++) {
-            nh = rs.get(j);
-            if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD)
+            nodeHandle = rs.get(j);
+            if (nodeHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD)
               continue;
-            routeTable.put(nh);
+            routeTable.put(nodeHandle);
           }
         }
       }
 
       // a remote node request one of our routeTable rows
-      case RequestRouteRow rrr -> {
+      case RequestRouteRow requestRouteRow -> {
 
-        int reqRow = rrr.getRow();
-        NodeHandle nh = rrr.returnHandle();
+        int reqRow = requestRouteRow.getRow();
+        NodeHandle nh = requestRouteRow.returnHandle();
 
         RouteSet row[] = routeTable.getRow(reqRow);
         BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
-        if (logger.isTraceEnabled()) logger.trace("Responding to "+rrr+" with "+brr.toStringFull());
+        if (logger.isTraceEnabled()) logger.trace("Responding to "+requestRouteRow+" with "+brr.toStringFull());
         thePastryNode.send(nh,brr,null,options);
       }
 
@@ -174,8 +174,8 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
     // for each populated row in our routing table
     for (short i = (short)(routeTable.numRows() - 1); i >= 0; i--) {
       RouteSet row[] = routeTable.getRow(i);
-      BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
-      RequestRouteRow rrr = new RequestRouteRow(thePastryNode.getLocalHandle(), i);
+      BroadcastRouteRow broadcastRouteRow = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
+      RequestRouteRow requestRouteRow = new RequestRouteRow(thePastryNode.getLocalHandle(), i);
       int myCol = thePastryNode.getLocalHandle().getNodeId().getDigit(i,
           routeTable.baseBitLength());
       int j;
@@ -187,29 +187,29 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
         if (col == myCol)
           continue;
 
-        RouteSet rs = row[col];
+        RouteSet routeSet = row[col];
 
         // swap row with closest node only
 
-        if (rs != null && rs.size() > 0) {
-          NodeHandle nh;
+        if (routeSet != null && routeSet.size() > 0) {
+          NodeHandle nodeHandle;
 
-          nh = rs.closestNode(10); // any liveness status will work
+          nodeHandle = routeSet.closestNode(10); // any liveness status will work
 
           // this logic is to make this work correctly in the simulator
           // if we find him not alive, then we would have routed to him and the liveness would have failed
           // thus the correct behavior is to break, not continue.  In other words, we waste this cycle
           // finding the node faulty and removing it rather than doing an actual swap
           // - Jeff Hoye,  Aug 9, 2006
-          if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
-            logger.debug("found dead node in table:{}", nh);
-            rs.remove(nh);
+          if (nodeHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
+            logger.debug("found dead node in table:{}", nodeHandle);
+            routeSet.remove(nodeHandle);
             break;
           }
 
-          if (logger.isDebugEnabled()) logger.debug("swapping with "+(i+1)+"/"+routeTable.numRows()+" "+(j+1)+"/"+maxTrials+":"+nh);
-          thePastryNode.send(nh,brr,null,options);
-          thePastryNode.send(nh,rrr,null,options);
+          if (logger.isDebugEnabled()) logger.debug("swapping with "+(i+1)+"/"+routeTable.numRows()+" "+(j+1)+"/"+maxTrials+":"+nodeHandle);
+          thePastryNode.send(nodeHandle,broadcastRouteRow,null,options);
+          thePastryNode.send(nodeHandle,requestRouteRow,null,options);
           break;
         }
       }

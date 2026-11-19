@@ -95,15 +95,15 @@ public class NodeSet implements PastryNodeHandleSet {
    */
 
   public NodeHandle get(int i) {
-    NodeHandle h;
+    NodeHandle nodeHandle;
 
     try {
-      h = (NodeHandle) set.elementAt(i);
+      nodeHandle = (NodeHandle) set.elementAt(i);
     } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
 
-    return h;
+    return nodeHandle;
   }
 
   /**
@@ -120,14 +120,14 @@ public class NodeSet implements PastryNodeHandleSet {
   /**
    * Removes a node id and its handle from the set.
    *
-   * @param nid the node to remove.
+   * @param nodeId the node to remove.
    *
    * @return the node handle removed or null if nothing.
    */
 
-  public NodeHandle remove(Id nid) {
+  public NodeHandle remove(Id nodeId) {
     try {
-      return (NodeHandle) set.remove(getIndex(nid));
+      return (NodeHandle) set.remove(getIndex(nodeId));
     } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
@@ -147,21 +147,21 @@ public class NodeSet implements PastryNodeHandleSet {
   /**
    * Gets the index of the element with the given node id.
    *
-   * @param nid the node id.
+   * @param nodeId the node id.
    * @return the index or -1 if no such element
    */
 
-  public int getIndex(Id nid) {
-    return getIndexId(nid);
+  public int getIndex(Id nodeId) {
+    return getIndexId(nodeId);
   }
 
-  private int getIndexId(rice.p2p.commonapi.Id nid) {
-    NodeHandle h;
+  private int getIndexId(rice.p2p.commonapi.Id nodeId) {
+    NodeHandle nodeHandle;
 
     for (int i = 0; i < set.size(); i++) {
       try {
-        h = (NodeHandle) set.elementAt(i);
-        if (h.getNodeId().equals(nid))
+        nodeHandle = (NodeHandle) set.elementAt(i);
+        if (nodeHandle.getNodeId().equals(nodeId))
           return i;
       } catch (Exception ignored) {
         // an entry that cannot be compared is not a match
@@ -218,8 +218,8 @@ public class NodeSet implements PastryNodeHandleSet {
   @Override
   public rice.p2p.commonapi.NodeHandle getHandle(rice.p2p.commonapi.Id id) {
     synchronized(set) {
-      for (NodeHandle nh : set) {
-        if (nh.getId().equals(id)) return nh;
+      for (NodeHandle nodeHandle : set) {
+        if (nodeHandle.getId().equals(id)) return nodeHandle;
       }
     }
     return null;
@@ -274,20 +274,20 @@ public class NodeSet implements PastryNodeHandleSet {
   }
 
   @SuppressWarnings("JdkObsolete") // set is shared across threads; Vector's synchronization guards it
-  public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nhf) throws IOException {
+  public NodeSet(InputBuffer buf, NodeHandleFactory<? extends NodeHandle> nodeHandleFactory) throws IOException {
     int numNodes = WireLengths.readShort(buf, 1);
     set = new Vector<NodeHandle>(numNodes);
 
     for (int i = 0; i < numNodes; i++) {
-      set.add(nhf.readNodeHandle(buf));
+      set.add(nodeHandleFactory.readNodeHandle(buf));
     }
   }
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeShort((short)set.size());
-    for (NodeHandle nh : set) {
-      nh.serialize(buf);
+    for (NodeHandle nodeHandle : set) {
+      nodeHandle.serialize(buf);
     }
   }
 

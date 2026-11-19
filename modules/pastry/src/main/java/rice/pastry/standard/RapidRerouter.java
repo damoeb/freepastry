@@ -83,39 +83,39 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
 
 
   @Override
-  protected void sendTheMessage(RouteMessage rm, NodeHandle handle) {
-    if (rm.getOptions().areMultipleHopsAllowed() && rm.getOptions().rerouteIfSuspected()) {
+  protected void sendTheMessage(RouteMessage routeMessage, NodeHandle handle) {
+    if (routeMessage.getOptions().areMultipleHopsAllowed() && routeMessage.getOptions().rerouteIfSuspected()) {
       // can be rapidly rerouted
       if (handle.getLiveness() >= LIVENESS_SUSPECTED) {
-        super.sendTheMessage(rm, handle);
+        super.sendTheMessage(routeMessage, handle);
         return;
       }
 
-      RouterNotification notifyMe = new RouterNotification(rm, handle);
+      RouterNotification notifyMe = new RouterNotification(routeMessage, handle);
       addToPending(notifyMe, handle);
-      rm.setTransportLayerCancellable(notifyMe);
-      notifyMe.setCancellable(thePastryNode.send(handle, rm, notifyMe, rm.getTransportLayerOptions()));
+      routeMessage.setTransportLayerCancellable(notifyMe);
+      notifyMe.setCancellable(thePastryNode.send(handle, routeMessage, notifyMe, routeMessage.getTransportLayerOptions()));
     } else {
-      super.sendTheMessage(rm, handle);
+      super.sendTheMessage(routeMessage, handle);
     }
   }
 
-  protected void rerouteMe(final RouteMessage rm, NodeHandle oldDest, Exception ioe) {
-    logger.debug("rerouteMe({} oldDest:{})", rm, oldDest);
+  protected void rerouteMe(final RouteMessage routeMessage, NodeHandle oldDest, Exception ioe) {
+    logger.debug("rerouteMe({} oldDest:{})", routeMessage, oldDest);
 
-    rm.incrementNumRetries();
-    if (rm.getNumRetries() > MAX_RETRIES) {
+    routeMessage.incrementNumRetries();
+    if (routeMessage.getNumRetries() > MAX_RETRIES) {
       // TODO: notify an error handler, not just the message's own callback
       boolean dontPrint = false;
       if (ioe == null) {
-        dontPrint = rm.sendFailed(new TooManyRouteAttemptsException(rm, MAX_RETRIES));
+        dontPrint = routeMessage.sendFailed(new TooManyRouteAttemptsException(routeMessage, MAX_RETRIES));
       } else {
-        dontPrint = rm.sendFailed(ioe);
+        dontPrint = routeMessage.sendFailed(ioe);
       }
       if (dontPrint) {
-        logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.getNumRetries());
+        logger.info("rerouteMe() dropping {} after {} attempts to (re)route.", routeMessage, routeMessage.getNumRetries());
       } else {
-        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", rm, rm.getNumRetries());
+        logger.warn("rerouteMe() dropping {} after {} attempts to (re)route.", routeMessage, routeMessage.getNumRetries());
       }
       return;
     }
@@ -123,8 +123,8 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     // give the selector a chance to do some IO before trying to schedule again
     thePastryNode.getEnvironment().getSelectorManager().invoke(() -> {
       // this is going to make forward() be called again, can prevent this with a check in getPrevNode().equals(localNode)
-      rm.getOptions().setRerouteIfSuspected(SendOptions.defaultRerouteIfSuspected);
-      route(rm);
+      routeMessage.getOptions().setRerouteIfSuspected(SendOptions.defaultRerouteIfSuspected);
+      route(routeMessage);
     });
   }
 
@@ -152,14 +152,14 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
         logger.debug("removeFromPending({},{}) had no pending messages for handle.", notifyMe, handle);
         return false;
       }
-      boolean ret = c.remove(notifyMe);
+      boolean result = c.remove(notifyMe);
       if (c.isEmpty()) {
         pending.remove(handle);
       }
-      if (!ret) {
+      if (!result) {
         logger.debug("removeFromPending({},{}) msg was not there.", notifyMe, handle);
       }
-      return ret;
+      return result;
     }
   }
 
@@ -191,10 +191,10 @@ public class RapidRerouter extends StandardRouter implements LivenessListener<No
     NodeHandle dest;
     PastryMessageReceipt cancellable;
 
-    public RouterNotification(RouteMessage rm, NodeHandle handle) {
-      this.rm = rm;
+    public RouterNotification(RouteMessage routeMessage, NodeHandle handle) {
+      this.rm = routeMessage;
       this.dest = handle;
-      logger.debug("RN.ctor() {} to:{}", rm, dest);
+      logger.debug("RN.ctor() {} to:{}", routeMessage, dest);
     }
 
     public void setCancellable(PastryMessageReceipt receipt) {

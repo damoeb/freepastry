@@ -147,13 +147,13 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
    */
   protected RendezvousConfig rendezvousConfig;
 
-  public RendezvousSocketPastryNodeFactory(NodeIdFactory nf, InetAddress bindAddress, int startPort, Environment env, boolean firewalled) throws IOException {
-    super(nf, bindAddress, startPort, env);
+  public RendezvousSocketPastryNodeFactory(NodeIdFactory nodeIdFactory, InetAddress bindAddress, int startPort, Environment env, boolean firewalled) throws IOException {
+    super(nodeIdFactory, bindAddress, startPort, env);
     init(firewalled);
   }
 
-  public RendezvousSocketPastryNodeFactory(NodeIdFactory nf, int startPort, Environment env, boolean firewalled) throws IOException {
-    super(nf, startPort, env);
+  public RendezvousSocketPastryNodeFactory(NodeIdFactory nodeIdFactory, int startPort, Environment env, boolean firewalled) throws IOException {
+    super(nodeIdFactory, startPort, env);
     init(firewalled);
   }
 
@@ -226,7 +226,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected TransportLayer<InetSocketAddress, ByteBuffer> getRendezvousTransportLayer(
       TransportLayer<InetSocketAddress, ByteBuffer> mtl, PastryNode pn) {
 
-    RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle> ret =
+    RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle> result =
       new RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>(
         mtl,
         IdentityLayerCore.NODE_HANDLE_FROM_INDEX,
@@ -240,11 +240,11 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
         getContactDirectStrategy(pn),
         pn.getEnvironment());
 
-    pn.getAttributes().put(RENDEZVOUS_TL, ret);
-    ((RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY)).setTransportLayer(ret);
+    pn.getAttributes().put(RENDEZVOUS_TL, result);
+    ((RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY)).setTransportLayer(result);
 
-    generatePilotStrategy(pn, ret);
-    return ret;
+    generatePilotStrategy(pn, result);
+    return result;
   }
 
   @Override
@@ -269,10 +269,10 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       adrStrat = new SimpleAddressStrategy();
     }
 
-    ContactDirectStrategy<RendezvousSocketNodeHandle> ret = new RendezvousContactDirectStrategy((RendezvousSocketNodeHandle)pn.getLocalNodeHandle(), adrStrat, pn.getEnvironment());
-    pn.getAttributes().put(RENDEZVOUS_CONTACT_DIRECT_STRATEGY, ret);
+    ContactDirectStrategy<RendezvousSocketNodeHandle> result = new RendezvousContactDirectStrategy((RendezvousSocketNodeHandle)pn.getLocalNodeHandle(), adrStrat, pn.getEnvironment());
+    pn.getAttributes().put(RENDEZVOUS_CONTACT_DIRECT_STRATEGY, result);
 
-    return ret;
+    return result;
 }
 
   protected PilotFinder<RendezvousSocketNodeHandle> getPilotFinder(PastryNode pn) {
@@ -358,8 +358,8 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   }
 
   @Override
-  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nha, NodeHandleFactory<?> handleFactory) {
-    super.registerApps(pn, leafSet, routeTable, nha, handleFactory);
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nodeHandleAdapter, NodeHandleFactory<?> handleFactory) {
+    super.registerApps(pn, leafSet, routeTable, nodeHandleAdapter, handleFactory);
     RendezvousStrategy<RendezvousSocketNodeHandle> app = (RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY);
     if (app instanceof RendezvousApplication rendezvousApp) {
       rendezvousApp.register();
@@ -377,7 +377,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   boolean firstNode = true;
 
   @Override
-  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nhf) {
+  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nodeHandleFactory) {
     byte contactState = localContactState;
 
     if (pn.getAttributes().containsKey(CONTACT_STATE)) {
@@ -395,23 +395,23 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       }
     }
 
-    RendezvousSocketNodeHandleFactory pnhf = (RendezvousSocketNodeHandleFactory)nhf;
+    RendezvousSocketNodeHandleFactory pnhf = (RendezvousSocketNodeHandleFactory)nodeHandleFactory;
     MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getAttributes().get(PROXY_ADDRESS);
-    SocketNodeHandle ret = pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId(), contactState);
+    SocketNodeHandle result = pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId(), contactState);
 
     // this code is for logging
     if (logger.isDebugEnabled() || (contactState != localContactState && logger.isInfoEnabled())) {
       switch(contactState) {
       case RendezvousSocketNodeHandle.CONTACT_DIRECT:
-        logger.info(ret+" is not firewalled.");
+        logger.info(result+" is not firewalled.");
         break;
       case RendezvousSocketNodeHandle.CONTACT_FIREWALLED:
-        logger.info(ret+" is firewalled.");
+        logger.info(result+" is firewalled.");
         break;
       }
     }
 
-    return ret;
+    return result;
   }
 
   /**
@@ -434,9 +434,9 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
       TransportLayer<MultiInetSocketAddress, ByteBuffer> trans,
       LivenessProvider<MultiInetSocketAddress> liveness,
       ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
-    PriorityTransportLayer<MultiInetSocketAddress> ret = super.getPriorityTransportLayer(trans, liveness, prox, pn);
-    ((StandardRouter)pn.getRouter()).setRouterStrategy(new RendezvousRouterStrategy(ret, pn.getEnvironment()));
-    return ret;
+    PriorityTransportLayer<MultiInetSocketAddress> result = super.getPriorityTransportLayer(trans, liveness, prox, pn);
+    ((StandardRouter)pn.getRouter()).setRouterStrategy(new RendezvousRouterStrategy(result, pn.getEnvironment()));
+    return result;
   }
 
   /**
@@ -451,17 +451,17 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
   protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn,
       NodeHandleAdapter tl,
       NodeHandleFactory<?> handleFactory,
-      ProximityNeighborSelector pns) {
+      ProximityNeighborSelector neighborSelector) {
     final PilotManager<RendezvousSocketNodeHandle> manager = (PilotManager<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_TL);
 
     // only do the special step if we're NATted
-    if (((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) return super.getBootstrapper(pn, tl, handleFactory, pns);
+    if (((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) return super.getBootstrapper(pn, tl, handleFactory, neighborSelector);
 
     // set the contents true when booted
     final boolean[] booted = new boolean[1];
     booted[0] = false;
     final ArrayList<RendezvousSocketNodeHandle> closeMeWhenReady = new ArrayList<RendezvousSocketNodeHandle>();
-    PastryNodeListener obs = new PastryNodeListener() {
+    PastryNodeListener listener = new PastryNodeListener() {
       @Override
       public void pastryNodeReady(PastryNode o, boolean ready) {
         if (ready) {
@@ -469,32 +469,32 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
           synchronized(closeMeWhenReady) {
             booted[0] = true;
           }
-          for (RendezvousSocketNodeHandle nh : closeMeWhenReady) {
-            manager.closePilot(nh);
+          for (RendezvousSocketNodeHandle nodeHandle : closeMeWhenReady) {
+            manager.closePilot(nodeHandle);
           }
           closeMeWhenReady.clear();
           o.removePastryNodeListener(this);
         }
       }
     };
-    pn.addPastryNodeListener(obs);
+    pn.addPastryNodeListener(listener);
 
-    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, pns,
+    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)tl.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, neighborSelector,
         socketConfig.seed(), environment.getSelectorManager()) {
 
       @Override
-      protected void checkLiveness(final SocketNodeHandle h, Map<String, Object> options) {
+      protected void checkLiveness(final SocketNodeHandle nodeHandle, Map<String, Object> options) {
         // open pilot first, then call checkliveness, but it's gonna fail the first time, because the NH is bogus.
         // so, open it the first time and watch it fail, then open it again
         ContactDirectStrategy<RendezvousSocketNodeHandle> contactStrat =
           (ContactDirectStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
-        RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)h;
+        RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)nodeHandle;
         if (!rsnh.canContactDirect() && contactStrat.canContactDirect(rsnh)) {
-          super.checkLiveness(h, options);
+          super.checkLiveness(nodeHandle, options);
           return;
         }
 
-        manager.openPilot((RendezvousSocketNodeHandle)h, new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>() {
+        manager.openPilot((RendezvousSocketNodeHandle)nodeHandle, new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>() {
 
           @Override
           public void receiveResult(
@@ -518,12 +518,12 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
             }
 
             // remember to close the pilot once we're joined
-            pn.getLivenessProvider().checkLiveness(h, null);
+            pn.getLivenessProvider().checkLiveness(nodeHandle, null);
           }
 
           @Override
           public void receiveException(Exception exception) {
-            logger.warn("In Rendezvous Bootstrapper.checkLiveness({})", h, exception);
+            logger.warn("In Rendezvous Bootstrapper.checkLiveness({})", nodeHandle, exception);
           }
         });
       }

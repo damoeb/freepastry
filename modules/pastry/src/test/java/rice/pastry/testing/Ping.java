@@ -77,8 +77,8 @@ public class Ping extends PastryAppl {
     return pingAddress;
   }
 
-  public void sendPing(Id nid) {
-    routeMessage(nid, new PingMessageNew(pingAddress, getNodeHandle(), nid),
+  public void sendPing(Id nodeId) {
+    routeMessage(nodeId, new PingMessageNew(pingAddress, getNodeHandle(), nodeId),
         new SendOptions());
   }
 
@@ -121,10 +121,10 @@ public class Ping extends PastryAppl {
   }
 
   @Override
-  public void leafSetChange(NodeHandle nh, boolean wasAdded) {
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {
   }
 
   @Override
-  public void routeSetChange(NodeHandle nh, boolean wasAdded) {
+  public void routeSetChange(NodeHandle nodeHandle, boolean wasAdded) {
   }
 }

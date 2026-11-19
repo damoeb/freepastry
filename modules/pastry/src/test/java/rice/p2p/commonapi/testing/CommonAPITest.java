@@ -312,33 +312,33 @@ public abstract class CommonAPITest {
    */
   protected Node createNode(int num) {
     rice.pastry.NodeHandle bootstrap = (num == 0) ? null : getBootstrap();
-    PastryNode ret;
+    PastryNode result;
     try {
-      ret = factory.newNode();
+      result = factory.newNode();
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
     // the socket factory hands out BogusNodeHandles, which have to be booted from their addresses
     if (bootstrap instanceof BootstrapAddressNodeHandle bogusNodeHandle) {
-      ret.boot(bogusNodeHandle.getAddress());
+      result.boot(bogusNodeHandle.getAddress());
     } else {
-      ret.boot((Object) bootstrap);
+      result.boot((Object) bootstrap);
     }
-    synchronized(ret) {
-      while(!ret.isReady()) {
+    synchronized(result) {
+      while(!result.isReady()) {
         try {
-          ret.wait(1000);
+          result.wait(1000);
         } catch (InterruptedException ie) {
           ie.printStackTrace();
           return null;
         }
-        if (!ret.isReady()) {
-          logger.info("Node {} is not yet ready.", ret);
+        if (!result.isReady()) {
+          logger.info("Node {} is not yet ready.", result);
         }
       }
     }
 
-    return ret;
+    return result;
   }
 
   /**
@@ -353,8 +353,8 @@ public abstract class CommonAPITest {
       try {
         InetSocketAddress address = params.getInetSocketAddress("commonapi_testing_bootstrap");
         return ((SocketPastryNodeFactory) factory).getNodeHandle(address);
-      } catch (UnknownHostException uhe) {
-        throw new RuntimeException(uhe);
+      } catch (UnknownHostException exception) {
+        throw new RuntimeException(exception);
       }
     }
   }

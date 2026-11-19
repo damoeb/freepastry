@@ -65,16 +65,16 @@ public record NatConfig(String natHandlerClass, String natSearchPolicy, String n
   /**
    * @throws IllegalArgumentException if a policy is not one of the known values
    */
-  public static NatConfig fromParameters(Parameters p) {
+  public static NatConfig fromParameters(Parameters parameters) {
     return new NatConfig(
-      p.contains("nat_handler_class") ? p.getString("nat_handler_class") : null,
-      policy(p, "nat_search_policy"),
-      policy(p, "nat_state_policy"),
-      policy(p, "firewall_test_policy"));
+      parameters.contains("nat_handler_class") ? parameters.getString("nat_handler_class") : null,
+      policy(parameters, "nat_search_policy"),
+      policy(parameters, "nat_state_policy"),
+      policy(parameters, "firewall_test_policy"));
   }
 
-  private static String policy(Parameters p, String key) {
-    String value = p.getString(key);
+  private static String policy(Parameters parameters, String key) {
+    String value = parameters.getString(key);
     if (value == null || !POLICIES.contains(value.toLowerCase(Locale.ROOT))) {
       throw new IllegalArgumentException(key + " must be one of " + POLICIES + ", but is " + value);
     }

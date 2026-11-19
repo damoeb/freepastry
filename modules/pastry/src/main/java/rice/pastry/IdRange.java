@@ -56,20 +56,20 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
 
   private boolean empty;
 
-  private Id ccw;
+  private Id counterClockwiseId;
 
-  private Id cw;
+  private Id clockwiseId;
 
   /**
    * Constructor.
    *
-   * @param ccw the id at the counterclockwise edge of the range (inclusive)
-   * @param cw the id at the clockwise edge of the range (exclusive)
+   * @param counterClockwiseId the id at the counterclockwise edge of the range (inclusive)
+   * @param clockwiseId the id at the clockwise edge of the range (exclusive)
    */
-  public IdRange(Id ccw, Id cw) {
+  public IdRange(Id counterClockwiseId, Id clockwiseId) {
     empty = false;
-    this.ccw = ccw;
-    this.cw = cw;
+    this.counterClockwiseId = counterClockwiseId;
+    this.clockwiseId = clockwiseId;
   }
 
   /**
@@ -78,8 +78,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   public IdRange() {
     empty = true;
-    ccw = Id.build();
-    cw = ccw;
+    counterClockwiseId = Id.build();
+    clockwiseId = counterClockwiseId;
   }
 
   /**
@@ -90,8 +90,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   public IdRange(boolean type) {
     empty = type;
-    ccw = Id.build();
-    cw = ccw;
+    counterClockwiseId = Id.build();
+    clockwiseId = counterClockwiseId;
 
   }
 
@@ -100,15 +100,15 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   public IdRange(IdRange o) {
     this.empty = o.empty;
-    this.ccw = o.ccw;
-    this.cw = o.cw;
+    this.counterClockwiseId = o.counterClockwiseId;
+    this.clockwiseId = o.clockwiseId;
   }
 
   @Override
   public int hashCode() {
     if (empty) return 0;
     if (isFull()) return 1;
-    return ccw.hashCode()^cw.hashCode();
+    return counterClockwiseId.hashCode()^clockwiseId.hashCode();
   }
 
   /**
@@ -126,7 +126,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
       return true;
     if (isFull() && o.isFull())
       return true;
-    if (empty == o.empty && ccw.equals(o.ccw) && cw.equals(o.cw))
+    if (empty == o.empty && counterClockwiseId.equals(o.counterClockwiseId) && clockwiseId.equals(o.clockwiseId))
       return true;
     else
       return false;
@@ -138,10 +138,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return the numerical distance of the range
    */
   private Id.Distance size() {
-    if (ccw.clockwise(cw))
-      return ccw.distance(cw);
+    if (counterClockwiseId.clockwise(clockwiseId))
+      return counterClockwiseId.distance(clockwiseId);
     else
-      return ccw.longDistance(cw);
+      return counterClockwiseId.longDistance(clockwiseId);
   }
 
   /**
@@ -160,7 +160,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return true if the range is full circle
    */
   public boolean isFull() {
-    return ccw.equals(cw) && !empty;
+    return counterClockwiseId.equals(clockwiseId) && !empty;
   }
 
   /**
@@ -170,7 +170,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return true if the range is adjacent to o
    */
   public boolean isAdjacent(IdRange o) {
-    return (ccw.equals(o.cw) || o.ccw.equals(cw)) && !empty && !o.empty
+    return (counterClockwiseId.equals(o.clockwiseId) || o.counterClockwiseId.equals(clockwiseId)) && !empty && !o.empty
         && !isFull() && !o.isFull();
   }
 
@@ -181,10 +181,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return true if the key lies within this range, false otherwise
    */
   public boolean contains(Id key) {
-    if (ccw.equals(cw) && !empty)
+    if (counterClockwiseId.equals(clockwiseId) && !empty)
       return true;
     else
-      return key.isBetween(ccw, cw);
+      return key.isBetween(counterClockwiseId, clockwiseId);
   }
 
   /**
@@ -194,7 +194,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   @Override
   public Id getCounterClockwiseBound() {
-    return ccw;
+    return counterClockwiseId;
   }
 
   /**
@@ -204,7 +204,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   @Override
   public Id getClockwiseBound() {
-    return cw;
+    return clockwiseId;
   }
 
   /**
@@ -216,30 +216,30 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    */
   public IdRange merge(IdRange o) {
 
-    if (o.empty || (ccw.equals(cw) && !empty))
+    if (o.empty || (counterClockwiseId.equals(clockwiseId) && !empty))
       return this;
-    if (empty || (o.ccw.equals(o.cw) && !o.empty))
+    if (empty || (o.counterClockwiseId.equals(o.clockwiseId) && !o.empty))
       return o;
 
-    boolean ccwIn = ccw.isBetween(o.ccw, o.cw) || ccw.equals(o.cw);
-    boolean cwIn = cw.isBetween(o.ccw, o.cw);
-    boolean occwIn = o.ccw.isBetween(ccw, cw) || o.ccw.equals(cw);
-    boolean ocwIn = o.cw.isBetween(ccw, cw);
+    boolean ccwIn = counterClockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId) || counterClockwiseId.equals(o.clockwiseId);
+    boolean cwIn = clockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId);
+    boolean occwIn = o.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId) || o.counterClockwiseId.equals(clockwiseId);
+    boolean ocwIn = o.clockwiseId.isBetween(counterClockwiseId, clockwiseId);
 
     if (ccwIn && cwIn && occwIn && ocwIn) {
       // ranges cover entire ring
-      return new IdRange(ccw, ccw);
+      return new IdRange(counterClockwiseId, counterClockwiseId);
     }
 
     if (ccwIn) {
       if (cwIn)
         return o;
       else
-        return new IdRange(o.ccw, cw);
+        return new IdRange(o.counterClockwiseId, clockwiseId);
     }
 
     if (cwIn) {
-      return new IdRange(ccw, o.cw);
+      return new IdRange(counterClockwiseId, o.clockwiseId);
     }
 
     if (occwIn) {
@@ -257,10 +257,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return the complement range
    */
   public IdRange complement() {
-    if (ccw.equals(cw) && !empty)
+    if (counterClockwiseId.equals(clockwiseId) && !empty)
       return new IdRange();
     else
-      return new IdRange(cw, ccw);
+      return new IdRange(clockwiseId, counterClockwiseId);
   }
 
   /**
@@ -277,30 +277,30 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
 
     if (empty || o.empty)
       return new IdRange();
-    if (ccw.equals(cw))
+    if (counterClockwiseId.equals(clockwiseId))
       return o;
-    if (o.ccw.equals(o.cw))
+    if (o.counterClockwiseId.equals(o.clockwiseId))
       return this;
 
-    boolean ccwIn = ccw.isBetween(o.ccw, o.cw);
-    boolean cwIn = cw.isBetween(o.ccw, o.cw) && !cw.equals(o.ccw);
-    boolean occwIn = o.ccw.isBetween(ccw, cw);
-    boolean ocwIn = o.cw.isBetween(ccw, cw) && !o.cw.equals(ccw);
+    boolean ccwIn = counterClockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId);
+    boolean cwIn = clockwiseId.isBetween(o.counterClockwiseId, o.clockwiseId) && !clockwiseId.equals(o.counterClockwiseId);
+    boolean occwIn = o.counterClockwiseId.isBetween(counterClockwiseId, clockwiseId);
+    boolean ocwIn = o.clockwiseId.isBetween(counterClockwiseId, clockwiseId) && !o.clockwiseId.equals(counterClockwiseId);
 
     if (ccwIn && cwIn && occwIn && ocwIn) {
       // ranges intersect in two ranges, return ccw range
-      return new IdRange(ccw, o.cw);
+      return new IdRange(counterClockwiseId, o.clockwiseId);
     }
 
     if (ccwIn) {
       if (cwIn)
         return this;
       else
-        return new IdRange(ccw, o.cw);
+        return new IdRange(counterClockwiseId, o.clockwiseId);
     }
 
     if (cwIn) {
-      return new IdRange(o.ccw, cw);
+      return new IdRange(o.counterClockwiseId, clockwiseId);
     }
 
     if (occwIn) {
@@ -324,10 +324,10 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    * @return the result range
    */
   public IdRange diff(IdRange o) {
-    IdRange res = intersect(o.complement());
-    if (res.isEmpty())
-      res = complement().intersect(o);
-    return res;
+    IdRange result = intersect(o.complement());
+    if (result.isEmpty())
+      result = complement().intersect(o);
+    return result;
   }
 
   /**
@@ -360,8 +360,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     if (isFull())
       return new IdRange(Id.build(Id.Null), Id.build(Id.Half));
 
-    Id newCW = ccw.add(size().shift(1, 0, true));
-    return new IdRange(ccw, newCW);
+    Id newCW = counterClockwiseId.add(size().shift(1, 0, true));
+    return new IdRange(counterClockwiseId, newCW);
   }
 
   /**
@@ -375,8 +375,8 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     if (isFull())
       return new IdRange(Id.build(Id.Half), Id.build(Id.Null));
 
-    Id newCCW = ccw.add(size().shift(1, 0, true));
-    return new IdRange(newCCW, cw);
+    Id newCCW = counterClockwiseId.add(size().shift(1, 0, true));
+    return new IdRange(newCCW, clockwiseId);
   }
 
   /**
@@ -388,7 +388,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
     if (empty)
       return "IdRange: empty";
     else
-      return "IdRange: from:" + ccw + " to:" + cw;
+      return "IdRange: from:" + counterClockwiseId + " to:" + clockwiseId;
   }
 
   // Common API Support
@@ -446,15 +446,15 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
   }
 
   public IdRange(InputBuffer buf) throws IOException {
-    cw = Id.build(buf);
-    ccw = Id.build(buf);
+    clockwiseId = Id.build(buf);
+    counterClockwiseId = Id.build(buf);
     empty = buf.readBoolean();
   }
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    cw.serialize(buf);
-    ccw.serialize(buf);
+    clockwiseId.serialize(buf);
+    counterClockwiseId.serialize(buf);
     buf.writeBoolean(empty);
   }
 }

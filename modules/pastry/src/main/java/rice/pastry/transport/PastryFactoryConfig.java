@@ -66,13 +66,13 @@ public record PastryFactoryConfig(
   /**
    * @throws IllegalArgumentException if a maintenance period is negative
    */
-  public static PastryFactoryConfig fromParameters(Parameters p) {
+  public static PastryFactoryConfig fromParameters(Parameters parameters) {
     return new PastryFactoryConfig(
-      requireNonNegative("pastry_leafSetMaintFreq", p.getInt("pastry_leafSetMaintFreq")),
-      requireNonNegative("pastry_routeSetMaintFreq", p.getInt("pastry_routeSetMaintFreq")),
-      p.getBoolean("transport_use_pns"),
-      p.getBoolean("pastry_factory_multipleNodes"),
-      p.getBoolean("pastry_factory_selectorPerNode"),
-      p.getBoolean("pastry_factory_processorPerNode"));
+      requireNonNegative("pastry_leafSetMaintFreq", parameters.getInt("pastry_leafSetMaintFreq")),
+      requireNonNegative("pastry_routeSetMaintFreq", parameters.getInt("pastry_routeSetMaintFreq")),
+      parameters.getBoolean("transport_use_pns"),
+      parameters.getBoolean("pastry_factory_multipleNodes"),
+      parameters.getBoolean("pastry_factory_selectorPerNode"),
+      parameters.getBoolean("pastry_factory_processorPerNode"));
   }
 }

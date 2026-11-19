@@ -146,7 +146,7 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
         if (now - g.timestamp > maxGoneAge) { // toss if too old
           logger.atTrace().log(() -> "Removing "+g+" from gone due to expiry");
           it.remove();
-        } else if (g.nh.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
+        } else if (g.nodeHandle.getLiveness() > NodeHandle.LIVENESS_DEAD) { // toss if epoch changed
           logger.atTrace().log(() -> "Removing "+g+" from gone due to death");
           it.remove();
         }
@@ -163,18 +163,18 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
   }
 
   private List<NodeHandle> getRoutingTableAsList() {
-    RoutingTable rt = pastryNode.getRoutingTable();
-    List<NodeHandle> rtHandles = new ArrayList<NodeHandle>(rt.numEntries());
+    RoutingTable routingTable = pastryNode.getRoutingTable();
+    List<NodeHandle> rtHandles = new ArrayList<NodeHandle>(routingTable.numEntries());
 
-    for (int r = 0; r < rt.numRows(); r++) {
-      RouteSet[] row = rt.getRow(r);
-      for (int c = 0; c < rt.numColumns(); c++) {
+    for (int r = 0; r < routingTable.numRows(); r++) {
+      RouteSet[] row = routingTable.getRow(r);
+      for (int c = 0; c < routingTable.numColumns(); c++) {
         RouteSet entry = row[c];
         if (entry != null) {
           for (int i = 0; i < entry.size(); i++) {
-            NodeHandle nh = entry.get(i);
-            if (!nh.equals(pastryNode.getLocalHandle())) {
-              rtHandles.add(nh);
+            NodeHandle nodeHandle = entry.get(i);
+            if (!nodeHandle.equals(pastryNode.getLocalHandle())) {
+              rtHandles.add(nodeHandle);
             }
           }
         }
@@ -210,7 +210,7 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
       if (it.hasNext()) {
         // assert which==0;
         logger.trace("getGone chose node from gone {}", which);
-        return ((GoneSetEntry)it.next()).nh;
+        return ((GoneSetEntry)it.next()).nodeHandle;
       }
     }
 
@@ -230,18 +230,18 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
   }
 
   // possibly make this abstract
-  private void getNodeHandleToProbe(Continuation<NodeHandle, Exception> c) {
+  private void getNodeHandleToProbe(Continuation<NodeHandle, Exception> continuation) {
     if (env.getRandomSource().nextDouble() > bootstrapRate) {
-      NodeHandle nh = getCandidateNode();
-      logger.trace("getGone chose {}", nh);
-      if (nh != null) {
-        c.receiveResult(nh);
+      NodeHandle nodeHandle = getCandidateNode();
+      logger.trace("getGone chose {}", nodeHandle);
+      if (nodeHandle != null) {
+        continuation.receiveResult(nodeHandle);
         return;
       }
     }
     logger.trace("getNodeHandleToProbe choosing bootstrap");
 
-    factory.getNodeHandle(bootstraps, c);
+    factory.getNodeHandle(bootstraps, continuation);
   }
 
   @Override
@@ -283,7 +283,7 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
         if (handle.getLiveness() == NodeHandle.LIVENESS_DEAD) {
           if (gone.containsKey(handle.getId())) {
             logger.trace("PartitionHealer updating node {}", handle);
-            ((GoneSetEntry)gone.get(handle.getId())).nh = handle;
+            ((GoneSetEntry)gone.get(handle.getId())).nodeHandle = handle;
           } else {
             GoneSetEntry g = new GoneSetEntry(handle, env.getTimeSource().currentTimeMillis());
             logger.atTrace().log(() -> "PartitionHealer adding node "+g);
@@ -295,28 +295,28 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
   }
 
   static private class GoneSetEntry {
-    private NodeHandle nh;
+    private NodeHandle nodeHandle;
     private final long timestamp;
 
-    GoneSetEntry(NodeHandle nh, long timestamp) {
-      this.nh = nh;
+    GoneSetEntry(NodeHandle nodeHandle, long timestamp) {
+      this.nodeHandle = nodeHandle;
       this.timestamp = timestamp;
     }
 
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof GoneSetEntry other)) return false;
-      return other.nh.getId().equals(nh.getId());
+      return other.nodeHandle.getId().equals(nodeHandle.getId());
     }
 
     @Override
     public int hashCode() {
-      return nh.getId().hashCode();
+      return nodeHandle.getId().hashCode();
     }
 
     @Override
     public String toString() {
-      return nh.toString() + " "+timestamp;
+      return nodeHandle.toString() + " "+timestamp;
     }
   }
 
@@ -333,17 +333,17 @@ public class PartitionHealer extends TimerTask implements NodeSetListener {
       pastryNode.<InetSocketAddress>getBootstrapper().boot(bogus.getAddress());
       return;
     }
-    JoinRequest jr = new JoinRequest(pastryNode.getLocalHandle(), pastryNode
+    JoinRequest joinRequest = new JoinRequest(pastryNode.getLocalHandle(), pastryNode
         .getRoutingTable().baseBitLength());
 
-    RouteMessage rm = new RouteMessage(pastryNode.getLocalHandle().getNodeId(),
-        jr, null, null,
+    RouteMessage routeMessage = new RouteMessage(pastryNode.getLocalHandle().getNodeId(),
+        joinRequest, null, null,
         pastryNode.getConfig().routeMsgVersion());
 
-    rm.setPrevNode(pastryNode.getLocalHandle());
-    rm.getOptions().setRerouteIfSuspected(false);
-    NodeHandle nh = pastryNode.coalesce(target);
-    pastryNode.send(nh, rm, null, null);
+    routeMessage.setPrevNode(pastryNode.getLocalHandle());
+    routeMessage.getOptions().setRerouteIfSuspected(false);
+    NodeHandle nodeHandle = pastryNode.coalesce(target);
+    pastryNode.send(nodeHandle, routeMessage, null, null);
   }
 
 }

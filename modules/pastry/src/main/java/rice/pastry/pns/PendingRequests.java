@@ -58,8 +58,8 @@ final class PendingRequests<K, V> {
   private final Map<K, List<Waiter<V>>> waiting = new HashMap<>();
 
   /** Adds {@code c} to the continuations waiting for {@code key}; {@code timeout} is cancelled when it is answered. */
-  synchronized void add(K key, Continuation<V, Exception> c, Cancellable timeout) {
-    waiting.computeIfAbsent(key, k -> new ArrayList<>()).add(new Waiter<>(c, timeout));
+  synchronized void add(K key, Continuation<V, Exception> continuation, Cancellable timeout) {
+    waiting.computeIfAbsent(key, k -> new ArrayList<>()).add(new Waiter<>(continuation, timeout));
   }
 
   /**
@@ -67,21 +67,21 @@ final class PendingRequests<K, V> {
    *
    * @return true if {@code c} was waiting
    */
-  synchronized boolean remove(K key, Continuation<V, Exception> c) {
+  synchronized boolean remove(K key, Continuation<V, Exception> continuation) {
     List<Waiter<V>> waiters = waiting.get(key);
     if (waiters == null) return false;
-    boolean ret = false;
+    boolean result = false;
     Iterator<Waiter<V>> i = waiters.iterator();
     while (i.hasNext()) {
       Waiter<V> w = i.next();
-      if (w.continuation().equals(c)) {
-        ret = true;
+      if (w.continuation().equals(continuation)) {
+        result = true;
         w.timeout().cancel();
         i.remove();
       }
     }
     if (waiters.isEmpty()) waiting.remove(key);
-    return ret;
+    return result;
   }
 
   /** Answers every continuation waiting for {@code key} with {@code result}, after cancelling its timeout. */

@@ -42,8 +42,8 @@ import rice.pastry.routing.RouteMessage;
 
 public class TooManyRouteAttemptsException extends IOException {
 
-  public TooManyRouteAttemptsException(RouteMessage rm, int max_retries) {
-    super("Too many attempts to route the message "+rm);
+  public TooManyRouteAttemptsException(RouteMessage routeMessage, int max_retries) {
+    super("Too many attempts to route the message "+routeMessage);
   }
 
 }

@@ -213,13 +213,13 @@ public class RouteSet implements PastryNodeHandleSet,
   /**
    * Removes a node from a set.
    *
-   * @param nid the node id to remove.
+   * @param nodeId the node id to remove.
    *
    * @return the removed handle or null.
    */
-  public NodeHandle remove(Id nid) {
+  public NodeHandle remove(Id nodeId) {
     for (int i = 0; i < theSize; i++) {
-      if (nodes[i].getNodeId().equals(nid)) {
+      if (nodes[i].getNodeId().equals(nodeId)) {
         NodeHandle handle = nodes[i];
 
         nodes[i] = nodes[--theSize];
@@ -239,13 +239,13 @@ public class RouteSet implements PastryNodeHandleSet,
   /**
    * Removes a node from a set.
    *
-   * @param nh the node to remove.
+   * @param nodeHandle the node to remove.
    *
    * @return the removed handle or null.
    */
-  public NodeHandle remove(NodeHandle nh) {
+  public NodeHandle remove(NodeHandle nodeHandle) {
     for (int i = 0; i < theSize; i++) {
-      if (nodes[i].equals(nh)) {
+      if (nodes[i].equals(nodeHandle)) {
         NodeHandle handle = nodes[i];
 
         nodes[i] = nodes[--theSize];
@@ -269,20 +269,20 @@ public class RouteSet implements PastryNodeHandleSet,
       observer.nodeSetUpdate(this, handle, added);
   }
 
-  public void setRoutingTable(RoutingTable rt) {
-    observer = rt;
+  public void setRoutingTable(RoutingTable routingTable) {
+    observer = routingTable;
   }
 
   /**
    * Membership test.
    *
-   * @param nid the node id to membership of.
+   * @param nodeId the node id to membership of.
    *
    * @return true if it is a member, false otherwise.
    */
-  public boolean contains(Id nid) {
+  public boolean contains(Id nodeId) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].getNodeId().equals(nid))
+      if (nodes[i].getNodeId().equals(nodeId))
         return true;
 
     return false;
@@ -356,9 +356,9 @@ public class RouteSet implements PastryNodeHandleSet,
    *
    * @return the node.
    */
-  public int getIndex(Id nid) {
+  public int getIndex(Id nodeId) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].getNodeId().equals(nid))
+      if (nodes[i].getNodeId().equals(nodeId))
         return i;
 
     return -1;
@@ -369,9 +369,9 @@ public class RouteSet implements PastryNodeHandleSet,
    *
    * @return the node.
    */
-  public int getIndex(NodeHandle nh) {
+  public int getIndex(NodeHandle nodeHandle) {
     for (int i = 0; i < theSize; i++)
-      if (nodes[i].equals(nh))
+      if (nodes[i].equals(nodeHandle))
         return i;
 
     return -1;
@@ -484,7 +484,7 @@ public class RouteSet implements PastryNodeHandleSet,
     }
   }
 
-  public RouteSet(InputBuffer buf, NodeHandleFactory<?> nhf, PastryNode local) throws IOException {
+  public RouteSet(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, PastryNode local) throws IOException {
     this.localNode = local;
     byte maxSize = buf.readByte();
     theSize = buf.readByte();
@@ -494,7 +494,7 @@ public class RouteSet implements PastryNodeHandleSet,
     }
     nodes = new NodeHandle[maxSize];
     for (int i = 0; i < theSize; i++) {
-      nodes[i] = nhf.readNodeHandle(buf);
+      nodes[i] = nodeHandleFactory.readNodeHandle(buf);
     }
     row = -1;
     col = -1;

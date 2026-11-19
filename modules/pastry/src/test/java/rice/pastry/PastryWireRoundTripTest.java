@@ -48,7 +48,7 @@ class PastryWireRoundTripTest {
   private static Environment env;
   private static SocketNode local;
   private static NodeHandle a;
-  private static NodeHandle b;
+  private static NodeHandle nodeHandle;
   private static NodeHandle c;
 
   @BeforeAll
@@ -56,7 +56,7 @@ class PastryWireRoundTripTest {
     env = new Environment();
     local = SocketNode.create(env, "4000");
     a = local.handle("1000");
-    b = local.handle("8000");
+    nodeHandle = local.handle("8000");
     c = local.handle("C000");
   }
 
@@ -66,25 +66,25 @@ class PastryWireRoundTripTest {
   }
 
   private static LeafSet leafSet(NodeHandle... members) {
-    LeafSet ls = new LeafSet(local.local(), LEAF_SET_SIZE, false);
-    for (NodeHandle h : members) {
-      ls.put(h);
+    LeafSet leafSet = new LeafSet(local.local(), LEAF_SET_SIZE, false);
+    for (NodeHandle nodeHandle : members) {
+      leafSet.put(nodeHandle);
     }
-    return ls;
+    return leafSet;
   }
 
   private static RouteSet routeSet(int row, int col, NodeHandle... members) {
-    RouteSet rs = new RouteSet(ROUTE_SET_SIZE, row, col, local.node);
-    for (NodeHandle h : members) {
-      rs.put(h);
+    RouteSet routeSet = new RouteSet(ROUTE_SET_SIZE, row, col, local.node);
+    for (NodeHandle nodeHandle : members) {
+      routeSet.put(nodeHandle);
     }
-    return rs;
+    return routeSet;
   }
 
   private static RouteSet[] row(int rowIndex) {
     RouteSet[] row = new RouteSet[COLUMNS];
     row[1] = routeSet(rowIndex, 1, a);
-    row[8] = routeSet(rowIndex, 8, b, c);
+    row[8] = routeSet(rowIndex, 8, nodeHandle, c);
     row[12] = routeSet(rowIndex, 12);
     return row;
   }
@@ -92,37 +92,37 @@ class PastryWireRoundTripTest {
   @Test
   @DisplayName("a join request with rows and a leaf set is read and sent on, inside a route message too")
   void joinRequest() throws IOException {
-    JoinRequest jr = new JoinRequest(a, (byte) 4, 1234L);
-    jr.pushRow(row(0));
-    jr.pushRow(new RouteSet[COLUMNS]);
-    jr.acceptJoin(b, leafSet(a, b, c));
+    JoinRequest joinRequest = new JoinRequest(a, (byte) 4, 1234L);
+    joinRequest.pushRow(row(0));
+    joinRequest.pushRow(new RouteSet[COLUMNS]);
+    joinRequest.acceptJoin(nodeHandle, leafSet(a, nodeHandle, c));
 
-    JoinRequest copy = local.hop(jr, a);
+    JoinRequest copy = local.hop(joinRequest, a);
 
     assertEquals(a, copy.getHandle());
-    assertEquals(b, copy.getJoinHandle());
+    assertEquals(nodeHandle, copy.getJoinHandle());
     assertEquals(3, copy.getLeafSet().getUniqueCount() - 1);
-    assertEquals(jr.lastRow(), copy.lastRow());
+    assertEquals(joinRequest.lastRow(), copy.lastRow());
 
-    RouteMessage routed = local.hop(new RouteMessage(Id.build("9000"), jr, (byte) 1), a);
-    JoinRequest unwrapped = (JoinRequest) routed.unwrap(local.deserializer(jr.getDestination()));
-    assertArrayEquals(WireRoundTrip.bytes(jr), WireRoundTrip.bytes(unwrapped));
-    assertArrayEquals(local.wire(new RouteMessage(Id.build("9000"), jr, (byte) 1)), local.wire(routed));
+    RouteMessage routed = local.hop(new RouteMessage(Id.build("9000"), joinRequest, (byte) 1), a);
+    JoinRequest unwrapped = (JoinRequest) routed.unwrap(local.deserializer(joinRequest.getDestination()));
+    assertArrayEquals(WireRoundTrip.bytes(joinRequest), WireRoundTrip.bytes(unwrapped));
+    assertArrayEquals(local.wire(new RouteMessage(Id.build("9000"), joinRequest, (byte) 1)), local.wire(routed));
   }
 
   @Test
   @DisplayName("a hop that unwraps a routed message sends it on with the priority it was sent with")
   void unwrapKeepsPriority() throws IOException {
-    JoinRequest jr = new JoinRequest(a, (byte) 4, 1234L);
-    RouteMessage sent = new RouteMessage(Id.build("9000"), jr, (byte) 1);
-    assertEquals(jr.getPriority(), sent.getPriority());
+    JoinRequest joinRequest = new JoinRequest(a, (byte) 4, 1234L);
+    RouteMessage sent = new RouteMessage(Id.build("9000"), joinRequest, (byte) 1);
+    assertEquals(joinRequest.getPriority(), sent.getPriority());
     assertNotEquals(Message.DEFAULT_PRIORITY_LEVEL, sent.getPriority());
 
     RouteMessage atHop = assertInstanceOf(RouteMessage.class, local.read(local.wire(sent), a));
-    Message unwrapped = atHop.unwrap(local.deserializer(jr.getDestination()));
+    Message unwrapped = atHop.unwrap(local.deserializer(joinRequest.getDestination()));
 
-    assertEquals(jr.getPriority(), unwrapped.getPriority());
-    assertEquals(jr.getPriority(), atHop.getPriority());
+    assertEquals(joinRequest.getPriority(), unwrapped.getPriority());
+    assertEquals(joinRequest.getPriority(), atHop.getPriority());
   }
 
   @Test
@@ -138,17 +138,17 @@ class PastryWireRoundTripTest {
   @ValueSource(bytes = {1, 2, 3, 4, 5, 6, 7, 8})
   @DisplayName("a join request round-trips for every supported routing table base")
   void joinRequestBases(byte base) throws IOException {
-    JoinRequest jr = new JoinRequest(a, base, 5L);
+    JoinRequest joinRequest = new JoinRequest(a, base, 5L);
     RouteSet[] row = new RouteSet[1 << base];
-    row[0] = routeSet(0, 0, b);
-    jr.pushRow(row);
+    row[0] = routeSet(0, 0, nodeHandle);
+    joinRequest.pushRow(row);
 
-    local.hop(jr, a);
+    local.hop(joinRequest, a);
   }
 
   @Test
   void broadcastLeafSet() throws IOException {
-    BroadcastLeafSet copy = local.hop(new BroadcastLeafSet(a, leafSet(a, b, c), BroadcastLeafSet.Update, 77L), a);
+    BroadcastLeafSet copy = local.hop(new BroadcastLeafSet(a, leafSet(a, nodeHandle, c), BroadcastLeafSet.Update, 77L), a);
 
     assertEquals(a, copy.from());
     assertEquals(BroadcastLeafSet.Update, copy.type());
@@ -207,9 +207,9 @@ class PastryWireRoundTripTest {
 
   @Test
   void consistentJoin() throws IOException {
-    Set<NodeHandle> failed = new HashSet<>(List.of(b, c));
+    Set<NodeHandle> failed = new HashSet<>(List.of(nodeHandle, c));
 
-    local.hop(new ConsistentJoinMessage(leafSet(a, b), failed, true), a);
+    local.hop(new ConsistentJoinMessage(leafSet(a, nodeHandle), failed, true), a);
     local.hop(new ConsistentJoinMessage(leafSet(), new HashSet<>(), false), a);
   }
 
@@ -218,7 +218,7 @@ class PastryWireRoundTripTest {
     int pns = StandardAddress.getAddress(ProximityNeighborSelectionApplication.class, null, env);
 
     local.hop(new ProximityLeafSetRequest(a, pns), a);
-    assertEquals(4, local.hop(new LeafSetResponse(leafSet(a, b, c), pns), a).getLeafSet().getUniqueCount());
+    assertEquals(4, local.hop(new LeafSetResponse(leafSet(a, nodeHandle, c), pns), a).getLeafSet().getUniqueCount());
     assertEquals(5, local.hop(new RouteRowRequest(a, (short) 5, pns), a).getIndex());
     RouteRowResponse copy = local.hop(new RouteRowResponse(a, (short) 1, row(1), pns), a);
     assertEquals(COLUMNS, copy.getRow().length);
@@ -227,13 +227,13 @@ class PastryWireRoundTripTest {
 
   @Test
   void values() throws IOException {
-    WireRoundTrip.roundTrip(leafSet(a, b, c), LeafSet::serialize, buf -> LeafSet.build(buf, local.node));
+    WireRoundTrip.roundTrip(leafSet(a, nodeHandle, c), LeafSet::serialize, buf -> LeafSet.build(buf, local.node));
     WireRoundTrip.roundTrip(leafSet(), LeafSet::serialize, buf -> LeafSet.build(buf, local.node));
-    WireRoundTrip.roundTrip(routeSet(1, 2, a, b, c), RouteSet::serialize, buf -> new RouteSet(buf, local.node, local.node));
+    WireRoundTrip.roundTrip(routeSet(1, 2, a, nodeHandle, c), RouteSet::serialize, buf -> new RouteSet(buf, local.node, local.node));
     WireRoundTrip.roundTrip(routeSet(1, 2), RouteSet::serialize, buf -> new RouteSet(buf, local.node, local.node));
     NodeSet set = new NodeSet();
     set.put(a);
-    set.put(b);
+    set.put(nodeHandle);
     WireRoundTrip.roundTrip(set, NodeSet::serialize, buf -> new NodeSet(buf, local.node));
     WireRoundTrip.roundTrip(new NodeSet(), NodeSet::serialize, buf -> new NodeSet(buf, local.node));
     WireRoundTrip.roundTrip(new IdRange(Id.build("1000"), Id.build("8000")), IdRange::serialize, IdRange::new);

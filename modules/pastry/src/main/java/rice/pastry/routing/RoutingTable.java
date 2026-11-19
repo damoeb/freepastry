@@ -188,9 +188,9 @@ public class RoutingTable implements NodeSetEventSource {
         int digit = (j == 0) ? (keyDigit + i) & (cols - 1)
             : (keyDigit + cols - i) & (cols - 1);
 
-        RouteSet rs = getRouteSet(diffDigit, digit);
-        for (int k = 0; rs != null && k < rs.size(); k++) {
-          NodeHandle n = rs.get(k);
+        RouteSet routeSet = getRouteSet(diffDigit, digit);
+        for (int k = 0; routeSet != null && k < routeSet.size(); k++) {
+          NodeHandle n = routeSet.get(k);
 
           if (n.getLiveness() <= minLiveness /* isAlive() */) {
             Id.Distance nDist = n.getNodeId().distance(key);
@@ -236,9 +236,9 @@ public class RoutingTable implements NodeSetEventSource {
               (keyDigit + i) & (cols - 1) // & (cols-1) effects the overflow, making cols => 0, so it makes the algorithm wrap around
             : (keyDigit + cols - i) & (cols - 1);
 
-        RouteSet rs = getRouteSet(diffDigit, digit);
-        for (int k = 0; rs != null && k < rs.size(); k++) {
-          NodeHandle n = rs.get(k);
+        RouteSet routeSet = getRouteSet(diffDigit, digit);
+        for (int k = 0; routeSet != null && k < routeSet.size(); k++) {
+          NodeHandle n = routeSet.get(k);
 
           if (n.getLiveness() < NodeHandle.LIVENESS_DEAD) {
             Id.Distance nDist = n.getNodeId().distance(key);
@@ -377,9 +377,9 @@ public class RoutingTable implements NodeSetEventSource {
    */
 
   public RouteSet getRouteSet(int index, int digit) {
-    RouteSet ns = routingTable[index][digit];
+    RouteSet routeSet = routingTable[index][digit];
 
-    return ns;
+    return routeSet;
   }
 
   /**
@@ -439,12 +439,12 @@ public class RoutingTable implements NodeSetEventSource {
   public synchronized boolean put(NodeHandle handle) {
     assert pn.getEnvironment().getSelectorManager().isSelectorThread() : "the routing table is modified on the selector thread only";
     logger.trace("RT: put({})", handle);
-    Id nid = handle.getNodeId();
-    if (admission != null && !nid.equals(myNodeId) && !admission.test(handle)) return false;
-    RouteSet ns = makeBestEntry(nid);
+    Id nodeId = handle.getNodeId();
+    if (admission != null && !nodeId.equals(myNodeId) && !admission.test(handle)) return false;
+    RouteSet routeSet = makeBestEntry(nodeId);
 
-    if (ns != null) {
-      return ns.put(handle);
+    if (routeSet != null) {
+      return routeSet.put(handle);
     }
 
     return false;
@@ -470,21 +470,21 @@ public class RoutingTable implements NodeSetEventSource {
       return TEST_SUCCESS_NO_ENTRIES;
     }
 
-    RouteSet rs = routingTable[diffDigit][digit];
+    RouteSet routeSet = routingTable[diffDigit][digit];
 
     // the RouteSet for that entry is empty
-    if (rs.size() == 0) return TEST_SUCCESS_NO_ENTRIES;
+    if (routeSet.size() == 0) return TEST_SUCCESS_NO_ENTRIES;
 
     // the RouteSet for that entry has room
-    if (rs.size() < rs.capacity()) return TEST_SUCCESS_AVAILABLE_SPACE;
+    if (routeSet.size() < routeSet.capacity()) return TEST_SUCCESS_AVAILABLE_SPACE;
 
     int prox = pn.proximity(handle);
     if (prox == Integer.MAX_VALUE) return TEST_FAIL_EXISTING_ARE_BETTER;
 
-    for (int i = 0; i < rs.size(); i++) {
-      NodeHandle nh = rs.get(i);
-      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) return TEST_SUCCESS_ENTRY_WAS_DEAD;
-      if (pn.proximity(nh) > prox) return TEST_SUCCESS_BETTER_PROXIMITY;
+    for (int i = 0; i < routeSet.size(); i++) {
+      NodeHandle nodeHandle = routeSet.get(i);
+      if (nodeHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD) return TEST_SUCCESS_ENTRY_WAS_DEAD;
+      if (pn.proximity(nodeHandle) > prox) return TEST_SUCCESS_BETTER_PROXIMITY;
     }
     return TEST_FAIL_EXISTING_ARE_BETTER;
   }
@@ -508,19 +508,19 @@ public class RoutingTable implements NodeSetEventSource {
   /**
    * Removes a node id from the table.
    *
-   * @param nh the node to remove.
+   * @param nodeHandle the node to remove.
    * @return the handle that was removed, or null if it did not exist.
    */
 
-  public synchronized NodeHandle remove(NodeHandle nh) {
+  public synchronized NodeHandle remove(NodeHandle nodeHandle) {
     assert pn.getEnvironment().getSelectorManager().isSelectorThread() : "the routing table is modified on the selector thread only";
-    logger.trace("RT: remove({})", nh);
-    RouteSet ns = getBestEntry(nh.getNodeId());
+    logger.trace("RT: remove({})", nodeHandle);
+    RouteSet routeSet = getBestEntry(nodeHandle.getNodeId());
 
-    if (ns == null)
+    if (routeSet == null)
       return null;
 
-    return ns.remove(nh);
+    return routeSet.remove(nodeHandle);
   }
 
   /**
@@ -534,11 +534,11 @@ public class RoutingTable implements NodeSetEventSource {
 
   public void nodeSetUpdate(Object o, NodeHandle handle, boolean added) {
     if (logger.isDebugEnabled()) {
-      RouteSet rs = (RouteSet)o;
+      RouteSet routeSet = (RouteSet)o;
       if (added) {
-        logger.debug("RT: added("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
+        logger.debug("RT: added("+handle+")@("+routeSet.row+","+Id.tran[routeSet.col]+")");
       } else {
-        logger.debug("RT: removed("+handle+")@("+rs.row+","+Id.tran[rs.col]+")");
+        logger.debug("RT: removed("+handle+")@("+routeSet.row+","+Id.tran[routeSet.col]+")");
       }
     }
 
@@ -593,14 +593,14 @@ public class RoutingTable implements NodeSetEventSource {
 
     for (int i = routingTable.length - 1; i >= depthToPrint; i--) {
       for (int j = 0; j < routingTable[i].length; j++) {
-        RouteSet rs = routingTable[i][j];
-        NodeHandle nh = null;
+        RouteSet routeSet = routingTable[i][j];
+        NodeHandle nodeHandle = null;
         if (routingTable[i][j] != null) {
-          nh = rs.get(0);
+          nodeHandle = routeSet.get(0);
         }
-        if (nh != null) {
-          s += ("" + nh.getNodeId().toStringBare());
-          if (nh.equals(myNodeHandle)) {
+        if (nodeHandle != null) {
+          s += ("" + nodeHandle.getNodeId().toStringBare());
+          if (nodeHandle.equals(myNodeHandle)) {
             s += "*";
           }
         } else {
@@ -621,9 +621,9 @@ public class RoutingTable implements NodeSetEventSource {
     int maxc = numColumns();
     for (int r = 0; r < maxr; r++) {
       for (int c = 0; c < maxc; c++) {
-        RouteSet rs = routingTable[r][c];
-        if (rs != null) {
-          count+=rs.size();
+        RouteSet routeSet = routingTable[r][c];
+        if (routeSet != null) {
+          count+=routeSet.size();
         }
       }
     }
@@ -636,10 +636,10 @@ public class RoutingTable implements NodeSetEventSource {
     int maxc = numColumns();
     for (int r = 0; r < maxr; r++) {
       for (int c = 0; c < maxc; c++) {
-        RouteSet rs = routingTable[r][c];
-        if (rs != null) {
-          for (int i = 0; i < rs.size(); i++) {
-            set.add(rs.get(i));
+        RouteSet routeSet = routingTable[r][c];
+        if (routeSet != null) {
+          for (int i = 0; i < routeSet.size(); i++) {
+            set.add(routeSet.get(i));
           }
         }
       }
@@ -678,9 +678,9 @@ public class RoutingTable implements NodeSetEventSource {
         RouteSet entry = row[c];
         if (entry != null) {
           for (int i = 0; i < entry.size(); i++) {
-            NodeHandle nh = entry.get(i);
-            if (!nh.equals(pn.getLocalHandle())) {
-              rtHandles.add(nh);
+            NodeHandle nodeHandle = entry.get(i);
+            if (!nodeHandle.equals(pn.getLocalHandle())) {
+              rtHandles.add(nodeHandle);
             }
           }
         }

@@ -77,23 +77,23 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
 
   @Override
   public void messageForApplication(Message msg) {
-    ProbeRequestMessage prm = (ProbeRequestMessage)msg;
-    handleProbeRequestMessage(prm);
+    ProbeRequestMessage probeRequest = (ProbeRequestMessage)msg;
+    handleProbeRequestMessage(probeRequest);
   }
 
   /**
    * Probes the address a peer asks for, unless it is one this node must not contact for someone else (see
    * {@link AddressPolicyForwardStrategy#isAcceptable}).
    */
-  public void handleProbeRequestMessage(ProbeRequestMessage prm) {
-    logger.debug("handleProbeRequestMessage({})", prm);
+  public void handleProbeRequestMessage(ProbeRequestMessage probeRequest) {
+    logger.debug("handleProbeRequestMessage({})", probeRequest);
     MultiInetSocketAddress local = ((SocketNodeHandle)thePastryNode.getLocalHandle()).getAddress();
-    InetSocketAddress target = addressStrategy.getAddress(local, prm.getProbeRequester());
+    InetSocketAddress target = addressStrategy.getAddress(local, probeRequest.getProbeRequester());
     if (!AddressPolicyForwardStrategy.isAcceptable(AddressPolicyForwardStrategy.addresses(local), target)) {
-      logger.info("Refusing to probe {} for {}", target, prm);
+      logger.info("Refusing to probe {} for {}", target, probeRequest);
       return;
     }
-    prober.probe(target, prm.getUID(), null, null);
+    prober.probe(target, probeRequest.getUID(), null, null);
   }
 
   /**
@@ -113,12 +113,12 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
 
     Iterator<NodeHandle> candidates = thePastryNode.getLeafSet().iterator();
     while(candidates.hasNext()) {
-      SocketNodeHandle nh = (SocketNodeHandle)candidates.next();
+      SocketNodeHandle nodeHandle = (SocketNodeHandle)candidates.next();
       // don't pick self
-      if (!nh.equals(thePastryNode.getLocalHandle())) {
+      if (!nodeHandle.equals(thePastryNode.getLocalHandle())) {
         // if nh will send to addr's outermost address
-        if (addressStrategy.getAddress(nh.getAddress(), addr).equals(addr.getOutermostAddress())) {
-          valid.add(nh);
+        if (addressStrategy.getAddress(nodeHandle.getAddress(), addr).equals(addr.getOutermostAddress())) {
+          valid.add(nodeHandle);
         }
       }
     }
@@ -133,8 +133,8 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
     NodeHandle handle = valid.get(thePastryNode.getEnvironment().getRandomSource().nextInt(valid.size()));
 
     // Step 3: send the probeRequest
-    ProbeRequestMessage prm = new ProbeRequestMessage(addr, uid, getAddress());
-    return thePastryNode.send(handle, prm, new PastryMessageSendListener() {
+    ProbeRequestMessage probeRequest = new ProbeRequestMessage(addr, uid, getAddress());
+    return thePastryNode.send(handle, probeRequest, new PastryMessageSendListener() {
       @Override
       public void sent(PastryMessageReceipt msg) {
         deliverResultToMe.receiveResult(true);
@@ -153,16 +153,16 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
    */
   @Override
   public Collection<InetSocketAddress> getExternalAddresses() {
-    ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
-    for (NodeHandle nh : thePastryNode.getLeafSet()) {
-      if (nh instanceof RendezvousSocketNodeHandle rsnh && !rsnh.canContactDirect()) {
+    ArrayList<InetSocketAddress> result = new ArrayList<InetSocketAddress>();
+    for (NodeHandle nodeHandle : thePastryNode.getLeafSet()) {
+      if (nodeHandle instanceof RendezvousSocketNodeHandle rsnh && !rsnh.canContactDirect()) {
         continue;
       }
-      if (nh instanceof SocketNodeHandle snh) {
-        ret.add(snh.getInetSocketAddress());
+      if (nodeHandle instanceof SocketNodeHandle socketNodeHandle) {
+        result.add(socketNodeHandle.getInetSocketAddress());
       }
     }
 
-    return ret;
+    return result;
   }
 }

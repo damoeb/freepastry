@@ -83,16 +83,16 @@ public class PingClient extends PastryAppl {
     return pingAddress;
   }
 
-  public void sendPing(Id nid) {
+  public void sendPing(Id nodeId) {
     // routeMessage, sans the getAddress() in the RouteMessage constructor
-    routeMessage(nid, new PingMessage(pingAddress, getNodeId(), nid),
+    routeMessage(nodeId, new PingMessage(pingAddress, getNodeId(), nodeId),
         new SendOptions());
   }
 
-  public void sendTrace(Id nid) {
-    System.out.println("sending a trace from " + getNodeId() + " to " + nid);
+  public void sendTrace(Id nodeId) {
+    System.out.println("sending a trace from " + getNodeId() + " to " + nodeId);
     // sendEnrouteMessage
-    routeMessage(nid, new PingMessage(pingAddress, getNodeId(), nid),
+    routeMessage(nodeId, new PingMessage(pingAddress, getNodeId(), nodeId),
         new SendOptions());
   }
 
@@ -112,10 +112,10 @@ public class PingClient extends PastryAppl {
   }
 
   @Override
-  public void leafSetChange(NodeHandle nh, boolean wasAdded) {
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {
     if (true) return;
     System.out.println("at... " + getNodeId() + "'s leaf set");
-    System.out.print("node " + nh.getNodeId() + " was ");
+    System.out.print("node " + nodeHandle.getNodeId() + " was ");
     if (wasAdded)
       System.out.println("added");
     else
@@ -123,10 +123,10 @@ public class PingClient extends PastryAppl {
   }
 
   @Override
-  public void routeSetChange(NodeHandle nh, boolean wasAdded) {
+  public void routeSetChange(NodeHandle nodeHandle, boolean wasAdded) {
     if (true) return;
     System.out.println("at... " + getNodeId() + "'s route set");
-    System.out.print("node " + nh.getNodeId() + " was ");
+    System.out.print("node " + nodeHandle.getNodeId() + " was ");
     if (wasAdded)
       System.out.println("added");
     else

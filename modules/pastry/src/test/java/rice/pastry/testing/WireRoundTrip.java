@@ -94,10 +94,10 @@ public final class WireRoundTrip {
 
   /** Like {@link #roundTrip(RawSerializable, Reader)} for a message that a {@link MessageDeserializer} reads. */
   @SuppressWarnings("unchecked")
-  public static <M extends RawMessage> M roundTrip(M message, MessageDeserializer md,
+  public static <M extends RawMessage> M roundTrip(M message, MessageDeserializer deserializer,
       rice.p2p.commonapi.NodeHandle sender) throws IOException {
     return (M) roundTrip((RawMessage) message, buf -> {
-      Message read = md.deserialize(buf, message.getType(), message.getPriority(), sender);
+      Message read = deserializer.deserialize(buf, message.getType(), message.getPriority(), sender);
       assertNotNull(read, () -> "the deserializer read " + message);
       assertEquals(message.getClass(), read.getClass());
       return (RawMessage) read;
@@ -115,18 +115,18 @@ public final class WireRoundTrip {
   /** A socket node that is never booted: its handles and ids read and write the way they do on a socket ring. */
   public static final class SocketNode {
     public final PastryNode node;
-    private final TransportLayerDeserializer[] tl;
+    private final TransportLayerDeserializer[] transportLayer;
 
-    private SocketNode(PastryNode node, TransportLayerDeserializer[] tl) {
+    private SocketNode(PastryNode node, TransportLayerDeserializer[] transportLayer) {
       this.node = node;
-      this.tl = tl;
+      this.transportLayer = transportLayer;
     }
 
     /**
      * Builds a node with the given hex id on a free loopback port.
      */
     public static SocketNode create(Environment env, String id) throws IOException {
-      TransportLayerDeserializer[] tl = new TransportLayerDeserializer[1];
+      TransportLayerDeserializer[] transportLayer = new TransportLayerDeserializer[1];
       int port;
       try (java.net.ServerSocket probe = new java.net.ServerSocket(0, 1, LOOPBACK)) {
         port = probe.getLocalPort();
@@ -134,11 +134,11 @@ public final class WireRoundTrip {
       PastryNode node = new SocketPastryNodeFactory(() -> Id.build(id), LOOPBACK, port, env) {
         @Override
         protected TransportLayerDeserializer getTransportLayerDeserializer(NodeHandleFactory<?> handleFactory, PastryNode pn) {
-          tl[0] = super.getTransportLayerDeserializer(handleFactory, pn);
-          return tl[0];
+          transportLayer[0] = super.getTransportLayerDeserializer(handleFactory, pn);
+          return transportLayer[0];
         }
       }.newNode();
-      return new SocketNode(node, tl);
+      return new SocketNode(node, transportLayer);
     }
 
     /** A handle of another node, read the way a handle from the wire is read. */
@@ -152,7 +152,7 @@ public final class WireRoundTrip {
 
     /** The deserializer the node registered for an address. */
     public MessageDeserializer deserializer(int address) {
-      return tl[0].getDeserializer(address);
+      return transportLayer[0].getDeserializer(address);
     }
 
     /** The node's local handle. */
@@ -163,14 +163,14 @@ public final class WireRoundTrip {
     /** The bytes the transport writes for a message to a node: address, priority, type and the message. */
     public byte[] wire(RawMessage message) throws IOException {
       SimpleOutputBuffer out = new SimpleOutputBuffer();
-      tl[0].serialize(message, out);
+      transportLayer[0].serialize(message, out);
       return out.getBytes();
     }
 
     /** Reads a message from the bytes of {@link #wire(RawMessage)}, as the node does when it arrives. */
     public RawMessage read(byte[] bytes, NodeHandle from) throws IOException {
       SimpleInputBuffer in = new SimpleInputBuffer(bytes);
-      RawMessage read = tl[0].deserialize(in, from);
+      RawMessage read = transportLayer[0].deserialize(in, from);
       if (!(read instanceof RouteMessage)) { // a route message keeps the rest of the buffer to unwrap later
         assertEquals(0, in.bytesRemaining(), () -> "bytes left after reading " + read);
       }
@@ -219,12 +219,12 @@ public final class WireRoundTrip {
         rice.p2p.commonapi.NodeHandle sender, boolean toHandle) throws IOException {
       roundTrip(message, endpoint.getDeserializer(), sender);
       PastryEndpoint pe = (PastryEndpoint) endpoint;
-      PastryEndpointMessage pem = new PastryEndpointMessage(pe.getAddress(), message, (NodeHandle) sender);
-      RouteMessage rm = new RouteMessage((Id) key, pem, (byte) 1);
+      PastryEndpointMessage endpointMessage = new PastryEndpointMessage(pe.getAddress(), message, (NodeHandle) sender);
+      RouteMessage routeMessage = new RouteMessage((Id) key, endpointMessage, (byte) 1);
       if (toHandle) {
-        rm.setDestinationHandle(handle(((Id) key).toStringFull()));
+        routeMessage.setDestinationHandle(handle(((Id) key).toStringFull()));
       }
-      byte[] first = wire(rm);
+      byte[] first = wire(routeMessage);
       NodeHandle prev = handle("ABCD");
 
       // a hop that only routes the bytes on

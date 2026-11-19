@@ -75,19 +75,19 @@ public class JoinRequest extends PastryRawMessage {
   private long timestamp;
 
 
-  public JoinRequest(NodeHandle nh, byte rtBaseBitLength, long timestamp) {
-    this(nh, rtBaseBitLength);
+  public JoinRequest(NodeHandle nodeHandle, byte rtBaseBitLength, long timestamp) {
+    this(nodeHandle, rtBaseBitLength);
     this.timestamp = timestamp;
   }
 
   /**
    * Constructor.
    *
-   * @param nh a handle of the node trying to join the network.
+   * @param nodeHandle a handle of the node trying to join the network.
    */
-  public JoinRequest(NodeHandle nh, byte rtBaseBitLength) {
+  public JoinRequest(NodeHandle nodeHandle, byte rtBaseBitLength) {
     super(JoinAddress.getCode());
-    handle = nh;
+    handle = nodeHandle;
     initialize(rtBaseBitLength);
     setPriority(MAX_PRIORITY);
   }
@@ -133,11 +133,11 @@ public class JoinRequest extends PastryRawMessage {
   /**
    * Accept join request.
    *
-   * @param nh the node handle that accepts the join request.
+   * @param nodeHandle the node handle that accepts the join request.
    */
 
-  public void acceptJoin(NodeHandle nh, LeafSet ls) {
-    joinHandle = nh;
+  public void acceptJoin(NodeHandle nodeHandle, LeafSet ls) {
+    joinHandle = nodeHandle;
     leafSet = ls;
   }
 
@@ -251,7 +251,7 @@ public class JoinRequest extends PastryRawMessage {
 
   }
 
-  public JoinRequest(InputBuffer buf, NodeHandleFactory<?> nhf, NodeHandle sender, PastryNode localNode) throws IOException {
+  public JoinRequest(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, NodeHandle sender, PastryNode localNode) throws IOException {
     super(JoinAddress.getCode());
 
     byte version = buf.readByte();
@@ -267,9 +267,9 @@ public class JoinRequest extends PastryRawMessage {
         }
         initialize(rtBaseBitLength);
 
-        handle = nhf.readNodeHandle(buf);
+        handle = nodeHandleFactory.readNodeHandle(buf);
         if (buf.readBoolean())
-          joinHandle = nhf.readNodeHandle(buf);
+          joinHandle = nodeHandleFactory.readNodeHandle(buf);
 
         rowCount = buf.readShort();
         int numRows = Id.IdBitLength / rtBaseBitLength;
@@ -284,7 +284,7 @@ public class JoinRequest extends PastryRawMessage {
             thisRow = new RouteSet[numCols];
             for (int j=0; j<numCols; j++) {
               if (buf.readBoolean()) {
-                thisRow[j] = new RouteSet(buf, nhf, localNode);
+                thisRow[j] = new RouteSet(buf, nodeHandleFactory, localNode);
               } else {
                 thisRow[j] = null;
               }
@@ -296,7 +296,7 @@ public class JoinRequest extends PastryRawMessage {
         }
 
         if (buf.readBoolean())
-          leafSet = LeafSet.build(buf, nhf);
+          leafSet = LeafSet.build(buf, nodeHandleFactory);
         break;
       default:
         throw new IOException("Unknown Version: "+version);
