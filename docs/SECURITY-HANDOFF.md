@@ -35,6 +35,7 @@ Each fix has a test that fails on `bf507352` (the tip before the review) and pas
 | Past replication fetch stored a reply under the id it claimed | `2dc5532a` | Stored only under the requested id, after checkInsert |
 | Content-hash content was never hashed | `e2685f2e` | Verified on insert, cache and lookup. API change: subclasses implement `computeContentHash(IdFactory)` |
 | FileTransfer allocated whatever size the peer announced | `c0605016` | New `p2p_filetransfer_max_*` params bound sizes; protocol errors close the socket |
+| Open relay: source routes and NetworkInfo probes reached any IP:port (W5, Medium) | (branch `q4-sec-relay`) | A hop asks its `SourceRouteForwardStrategy` for datagrams too, not only sockets; with no strategy it relays nothing. Socket nodes install `AddressPolicyForwardStrategy` (no wildcard, multicast or the node itself; loopback and link-local only if the node has such an address) plus the old liveness check for sockets. A NetworkInfo probe request may name only the requester's own IP; `ProbeApp` applies the same address policy. Remaining: a hop still relays to any other routable address, such as a non-Pastry host on the LAN, because it cannot tell peers apart |
 
 Behaviour change in certified mode: a node restarting at the same address is recognised only once it reconnects over TLS, which it does when it rejoins.
 
@@ -46,7 +47,6 @@ None of these has been reproduced yet; each needs a failing test before its fix.
 | --- | --- | --- | --- |
 | Admission checks the id only (`CertifiedSocketPastryNodeFactory.isAuthenticatedOrVerify`) | Medium | An authenticated insider can advertise another trusted node's id at its own address; the handle is admitted without a probe | Admit per (id, address, epoch), probing the handle's address |
 | Join-window trust (`ConsistentJoinProtocol`) | Medium | A node that is still joining trusts any accepted JoinRequest | Needs authentication of the accepting node, not a bounds check |
-| Open relay (`SourceRouteTransportLayer`, NetworkInfo probes) | Medium | Nodes forward source-routed traffic to any IP:port, incl. loopback and internal networks; ping reflection about 1:1 | Forward only to live Pastry peers and to addresses that pass an address policy |
 | Unbounded tables (`IdentityImpl.bindings`, liveness `managers`) | Medium | Spoofed identities and routes grow the heap until OOM; a forged PONG marks routes alive | Cap and expire; create liveness managers only for routes this node started |
 | Big-message preallocation (`BigMessageReader.java:87`) | Medium | 300 idle sockets announcing 4 MB pin about 1.2 GB | Grow the buffer as data arrives; global in-flight budget |
 | Glacier default signature (`GlacierDefaultPolicy.java:66-74`) | Medium | The "signature" is the key's own bytes, so manifests are forgeable: fragment squatting, endless lifetime | Ship a real signing policy; make the stub opt-in |
