@@ -33,7 +33,7 @@ import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
 import org.mpisws.p2p.transport.simpleidentity.SimpleIdentityTransportLayer;
-import org.mpisws.p2p.transport.table.TableStore;
+import org.mpisws.p2p.transport.table.KeyValueStore;
 import org.mpisws.p2p.transport.table.TableTransportLayer;
 import org.mpisws.p2p.transport.table.UnknownValueException;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -434,7 +434,7 @@ class TransportLayersWireRoundTripTest {
     }
   };
 
-  private static final class MapStore implements TableStore<Long, byte[]> {
+  private static final class MapStore implements KeyValueStore<Long, byte[]> {
     final Map<Long, byte[]> map = new java.util.HashMap<>();
 
     @Override

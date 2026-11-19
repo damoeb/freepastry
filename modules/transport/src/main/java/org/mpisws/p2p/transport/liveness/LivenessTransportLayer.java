@@ -189,7 +189,7 @@ public class LivenessTransportLayer<Identifier>
   }
 
   public P2PSocket<Identifier> wrapSocketWithLivenessCheck(P2PSocket<Identifier> s, LivenessTracker<Identifier> manager) {
-    LSocket<Identifier> sock = new LSocket<>(this, manager, s, manager.identifier.get());
+    LivenessCheckingSocket<Identifier> sock = new LivenessCheckingSocket<>(this, manager, s, manager.identifier.get());
     synchronized(manager.sockets) {
       manager.sockets.add(sock);
     }

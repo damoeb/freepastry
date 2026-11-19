@@ -80,9 +80,9 @@ class IdentityBindingsBoundTest {
     }
   }
 
-  private IdentityImpl<String, String, String, String> identity(@Nullable BindStrategy<String, String> strategy) {
-    IdentityImpl<String, String, String, String> identity =
-        new IdentityImpl<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
+  private IdentityLayerCore<String, String, String, String> identity(@Nullable BindStrategy<String, String> strategy) {
+    IdentityLayerCore<String, String, String, String> identity =
+        new IdentityLayerCore<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
     identity.setOverrideLiveness((l, liveness, options) -> {});
     return identity;
   }
@@ -100,7 +100,7 @@ class IdentityBindingsBoundTest {
     done.get(10, TimeUnit.SECONDS);
   }
 
-  private static void spoof(IdentityImpl<String, String, String, String> identity) {
+  private static void spoof(IdentityLayerCore<String, String, String, String> identity) {
     for (int k = 0; k < SPOOFED_IDENTITIES; k++) {
       identity.addBinding("spoofed" + k, "spoofed" + k, null);
     }

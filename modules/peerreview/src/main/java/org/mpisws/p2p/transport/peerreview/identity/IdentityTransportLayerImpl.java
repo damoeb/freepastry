@@ -51,7 +51,7 @@ import org.mpisws.p2p.pki.x509.X509Serializer;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.peerreview.history.HashProvider;
-import org.mpisws.p2p.transport.table.TableStore;
+import org.mpisws.p2p.transport.table.KeyValueStore;
 import org.mpisws.p2p.transport.table.TableTransportLayer;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
@@ -102,7 +102,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    * TODO: Use a param to load the store from a file.
    * @param buf must be null: loading a persistent store is not implemented and throws
    */
-  static <H, I> TableStore<I, X509Certificate> loadTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
+  static <H, I> KeyValueStore<I, X509Certificate> loadTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
     MyStore<H, I> ret = new MyStore<H, I>();
     ret.put(localId, localCert);
     if (buf != null) {
@@ -113,7 +113,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     return ret;
   }
 
-  static class MyStore<H, I> extends HashMap<I, X509Certificate> implements TableStore<I, X509Certificate> {
+  static class MyStore<H, I> extends HashMap<I, X509Certificate> implements KeyValueStore<I, X509Certificate> {
     IdentityTransportCallback<H, I> callback;
     @Override
     public X509Certificate put(I key, X509Certificate value) {

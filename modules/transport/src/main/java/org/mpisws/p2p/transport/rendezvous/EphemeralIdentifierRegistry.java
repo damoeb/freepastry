@@ -50,7 +50,7 @@ import rice.environment.time.TimeSource;
  *
  * @author Jeff Hoye
  */
-public class EphemeralDB<Identifier, HighIdentifier> {
+public class EphemeralIdentifierRegistry<Identifier, HighIdentifier> {
   public static final long NO_TAG = Long.MIN_VALUE;
 
   /** Default time after which an unused ephemeral port is forgotten: 2 hours. */
@@ -83,9 +83,9 @@ public class EphemeralDB<Identifier, HighIdentifier> {
    *
    * @param stalePortTime how long until we should forget about the port binding
    */
-  public EphemeralDB(Environment env, long stalePortTime) {
+  public EphemeralIdentifierRegistry(Environment env, long stalePortTime) {
     time = env.getTimeSource();
-    this.logger = env.getLogManager().getLogger(EphemeralDB.class, null);
+    this.logger = env.getLogManager().getLogger(EphemeralIdentifierRegistry.class, null);
     this.STALE_PORT_TIME = stalePortTime;
   }
 

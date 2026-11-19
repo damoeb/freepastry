@@ -55,12 +55,12 @@ public class MutableInetSocketAddressStrategy implements LocalIdentifierStrategy
   private static final Logger LOG = LoggerFactory.getLogger(MutableInetSocketAddressStrategy.class);
 
   int port;
-  Serializer<InetSocketAddress> serializer;
+  IdentifierSerializer<InetSocketAddress> serializer;
 
   @Nullable InetAddress lastLocalAddress;
   byte @Nullable [] lastBytes;
 
-  public MutableInetSocketAddressStrategy(int port, Serializer<InetSocketAddress> serializer) {
+  public MutableInetSocketAddressStrategy(int port, IdentifierSerializer<InetSocketAddress> serializer) {
     this.serializer = serializer;
     this.port = port;
   }

@@ -64,7 +64,7 @@ import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager.AddressManager.PendingMessage;
+import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteSelectingTransportLayer.AddressManager.PendingMessage;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  *
  * @author Jeff Hoye
  */
-public class SourceRouteManager<Identifier>
+public class SourceRouteSelectingTransportLayer<Identifier>
     implements TransportLayerCallback<SourceRoute<Identifier>, ByteBuffer>, LivenessListener<SourceRoute<Identifier>>, ProximityListener<SourceRoute<Identifier>>, TransportLayer<Identifier, ByteBuffer>, LivenessProvider<Identifier>, ProximityProvider<Identifier> {
 
   // the default distance, which is used before a ping
@@ -109,7 +109,7 @@ public class SourceRouteManager<Identifier>
   final List<LivenessListener<Identifier>> livenessListeners;
   SourceRouteFactory<Identifier> srFactory;
 
-  public SourceRouteManager(
+  public SourceRouteSelectingTransportLayer(
       SourceRouteFactory<Identifier> srFactory,
       TransportLayer<SourceRoute<Identifier>, ByteBuffer> tl,
       LivenessProvider<SourceRoute<Identifier>> livenessProvider,
@@ -127,7 +127,7 @@ public class SourceRouteManager<Identifier>
     this.proxProvider.addProximityListener(this);
     this.strategy = strategy;
     this.environment = env;
-    this.logger = env.getLogManager().getLogger(SourceRouteManager.class, null);
+    this.logger = env.getLogManager().getLogger(SourceRouteSelectingTransportLayer.class, null);
     this.srFactory = srFactory;
     this.localAddress = tl.getLocalIdentifier().getFirstHop();
     tl.setCallback(this);
@@ -386,7 +386,7 @@ public class SourceRouteManager<Identifier>
 
       @Override
       public void receiveResult(SocketRequestHandle<SourceRoute<Identifier>> cancellable, P2PSocket<SourceRoute<Identifier>> sock) {
-        deliverSocketToMe.receiveResult(this, new SourceRouteManagerP2PSocket<Identifier>(sock, logger, errorHandler, environment));
+        deliverSocketToMe.receiveResult(this, new SourceRouteSelectingSocket<Identifier>(sock, logger, errorHandler, environment));
       }
 
       @Override
@@ -558,7 +558,7 @@ public class SourceRouteManager<Identifier>
           public void receiveResult(
               SocketRequestHandle<SourceRoute<Identifier>> cancellable,
               P2PSocket<SourceRoute<Identifier>> sock) {
-            deliverSocketToMe.receiveResult(handle, new SourceRouteManagerP2PSocket<Identifier>(sock, logger, errorHandler, environment));
+            deliverSocketToMe.receiveResult(handle, new SourceRouteSelectingSocket<Identifier>(sock, logger, errorHandler, environment));
           }
           @Override
           public void receiveException(SocketRequestHandle<SourceRoute<Identifier>> s, Exception ex) {
@@ -920,7 +920,7 @@ public class SourceRouteManager<Identifier>
 
   @Override
   public void incomingSocket(P2PSocket<SourceRoute<Identifier>> s) throws IOException {
-    callback.incomingSocket(new SourceRouteManagerP2PSocket<Identifier>(s, logger, errorHandler, environment));
+    callback.incomingSocket(new SourceRouteSelectingSocket<Identifier>(s, logger, errorHandler, environment));
   }
 
   @Override

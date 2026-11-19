@@ -134,7 +134,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   public static final byte CONNECTION_RESPONSE_SUCCESS = 1; // forms a pilot connection
 
   // UDP Tagging
-  public static final long NO_TAG = EphemeralDB.NO_TAG;
+  public static final long NO_TAG = EphemeralIdentifierRegistry.NO_TAG;
   public static final String TAG_KEY = "RendezvousTransportLayer.UDP_TAG";
   /**
    * The message came from the overlay, rather than a lower layer
@@ -162,7 +162,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   final ContactDeserializer<Identifier, HighIdentifier> serializer;
   final SelectorLoop selectorManager;
   private final RandomSource random;
-  private final EphemeralDB<Identifier, HighIdentifier> ephemeralDB;
+  private final EphemeralIdentifierRegistry<Identifier, HighIdentifier> ephemeralDB;
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
   private ErrorHandler<Identifier> errorHandler;
 
@@ -187,7 +187,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.rendezvousStrategy = rendezvousStrategy;
     this.responseStrategy = responseStrategy;
     this.contactDirectStrategy = contactDirectStrategy;
-    this.ephemeralDB = new EphemeralDB<Identifier, HighIdentifier>(env,EphemeralDB.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
+    this.ephemeralDB = new EphemeralIdentifierRegistry<Identifier, HighIdentifier>(env,EphemeralIdentifierRegistry.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
 

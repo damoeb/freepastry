@@ -70,7 +70,7 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
+import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteSelectingTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
@@ -92,7 +92,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
   static TransportLayer<MultiInetSocketAddress, ByteBuffer> dave; // going to be the middle hop for alice/bob
   static ProximityProvider<SourceRoute<MultiInetSocketAddress>> bob_prox; // going to be the middle hop for alice/bob
   /**
-   * bob's liveness layer (the SourceRouteManager doesn't implement Pinger, the layer below it does)
+   * bob's liveness layer (the SourceRouteSelectingTransportLayer doesn't implement Pinger, the layer below it does)
    */
   static Pinger<SourceRoute<MultiInetSocketAddress>> bob_pinger;
   static SourceRouteTransportLayer<MultiInetSocketAddress> carol_tap; // going to be the middle hop for alice/bob
@@ -216,7 +216,7 @@ public class SRManagerTest extends TLTest<MultiInetSocketAddress> {
       bob_pinger = temp;
     }
 
-    return new SourceRouteManager<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a,
+    return new SourceRouteSelectingTransportLayer<MultiInetSocketAddress>(srFactory, temp, temp, prox, env_a,
         new TestSRS(temp.getLocalIdentifier().getLastHop()));
   }
 

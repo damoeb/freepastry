@@ -58,11 +58,11 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
-import org.mpisws.p2p.transport.util.BufferReader;
 import org.mpisws.p2p.transport.util.BufferWriter;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.InsufficientBytesException;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
+import org.mpisws.p2p.transport.util.SocketBufferReader;
 import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
@@ -521,7 +521,7 @@ public class NetworkInfoTransportLayer implements
 
   public void handleIdRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
     // read the index
-    new BufferReader<InetSocketAddress>(socket,new Continuation<ByteBuffer, Exception>() {
+    new SocketBufferReader<InetSocketAddress>(socket,new Continuation<ByteBuffer, Exception>() {
 
       @Override
       public void receiveResult(ByteBuffer result) {

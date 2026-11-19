@@ -73,7 +73,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, MessageType> callback;
   private ErrorHandler<Identifier> errorHandler;
-  private final Serializer<Identifier> serializer;
+  private final IdentifierSerializer<Identifier> serializer;
   LocalIdentifierStrategy<Identifier> localIdStrategy;
 
   /**
@@ -93,7 +93,7 @@ public class SimpleIdentityTransportLayer<Identifier, MessageType> implements
     }
   }
 
-  public SimpleIdentityTransportLayer(TransportLayer<Identifier, MessageType> tl, Serializer<Identifier> serializer, LocalIdentifierStrategy<Identifier> localIdStrategy, Environment env, ErrorHandler<Identifier> handler) throws IOException {
+  public SimpleIdentityTransportLayer(TransportLayer<Identifier, MessageType> tl, IdentifierSerializer<Identifier> serializer, LocalIdentifierStrategy<Identifier> localIdStrategy, Environment env, ErrorHandler<Identifier> handler) throws IOException {
     this.tl = tl;
     this.tl.setCallback(this);
     this.errorHandler = handler;

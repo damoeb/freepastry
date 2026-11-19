@@ -34,14 +34,18 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.table;
+package org.mpisws.p2p.transport.commonapi;
 
-/**
- * A subset of the functionality of java.util.Map.  The idea is that you can optionally use an implementation of Map.
- * @author Jeff Hoye
- */
-public interface TableStore<Key, Value> {
-  public boolean containsKey(Key key);
-  public Value put(Key k, Value v);
-  public Value get(Key k);
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+
+public interface MessageOptionsDecorator {
+
+  /**
+   * Add any options related to this message
+   */
+  public Map<String, Object> addOptions(@Nullable Map<String, Object> options,RawMessage m);
+
 }

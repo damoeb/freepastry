@@ -59,7 +59,7 @@ import rice.environment.time.TimeSource;
  *
  * @author Jeff Hoye
  */
-public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
+public class FirewallTransportLayer<Identifier, MessageType> implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
 
   private final int UDP_OPEN_MILLIS;
 
@@ -83,11 +83,11 @@ public class FirewallTLImpl<Identifier, MessageType> implements TransportLayer<I
    *
    * @param udpOpenMillis how long the udp hole remains open
    */
-  public FirewallTLImpl(TransportLayer<Identifier, MessageType> tl, int udpOpenMillis, Environment env) {
+  public FirewallTransportLayer(TransportLayer<Identifier, MessageType> tl, int udpOpenMillis, Environment env) {
     this.UDP_OPEN_MILLIS = udpOpenMillis;
     this.environment = env;
     this.timeSource = environment.getTimeSource();
-    this.logger = env.getLogManager().getLogger(FirewallTLImpl.class, null);
+    this.logger = env.getLogManager().getLogger(FirewallTransportLayer.class, null);
     this.udpTable = new HashMap<Identifier, Long>();
     this.tl = tl;
     tl.setCallback(this);

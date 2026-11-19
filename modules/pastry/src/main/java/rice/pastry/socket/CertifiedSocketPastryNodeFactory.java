@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.commonapi.OptionsAdder;
+import org.mpisws.p2p.transport.commonapi.MessageOptionsDecorator;
 import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
@@ -97,8 +97,8 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * would drop it ({@link CertifiedIdBindStrategy#acceptsMessage}).
    */
   @Override
-  protected OptionsAdder getOptionsAdder(PastryNode pn) {
-    OptionsAdder adder = super.getOptionsAdder(pn);
+  protected MessageOptionsDecorator getOptionsAdder(PastryNode pn) {
+    MessageOptionsDecorator adder = super.getOptionsAdder(pn);
     return (options, message) -> OptionsFactory.removeOption(adder.addOptions(options, message), WireTransportLayer.OPTION_TRANSPORT_TYPE);
   }
 

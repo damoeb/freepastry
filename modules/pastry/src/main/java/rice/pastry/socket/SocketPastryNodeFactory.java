@@ -51,12 +51,12 @@ import java.util.concurrent.ExecutionException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
+import org.mpisws.p2p.transport.commonapi.IdReader;
+import org.mpisws.p2p.transport.commonapi.MessageOptionsDecorator;
 import org.mpisws.p2p.transport.commonapi.CommonAPITransportLayer;
-import org.mpisws.p2p.transport.commonapi.IdFactory;
-import org.mpisws.p2p.transport.commonapi.OptionsAdder;
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
 import org.mpisws.p2p.transport.identity.BindStrategy;
-import org.mpisws.p2p.transport.identity.IdentityImpl;
+import org.mpisws.p2p.transport.identity.IdentityLayerCore;
 import org.mpisws.p2p.transport.identity.IdentitySerializer;
 import org.mpisws.p2p.transport.identity.LowerIdentity;
 import org.mpisws.p2p.transport.identity.NodeChangeStrategy;
@@ -77,6 +77,7 @@ import org.mpisws.p2p.transport.networkinfo.NetworkInfoTransportLayer;
 import org.mpisws.p2p.transport.networkinfo.ProbeStrategy;
 import org.mpisws.p2p.transport.priority.PriorityConfig;
 import org.mpisws.p2p.transport.sourceroute.factory.SourceRouteConfig;
+import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteSelectingTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.MinRTTProximityProvider;
@@ -87,8 +88,6 @@ import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteTransportLayer;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
-import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteManager;
 import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.SimpleSourceRouteStrategy;
@@ -341,7 +340,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> srl = getSourceRouteTransportLayer(etl, pn, esrFactory);
 
     // Identity (who knows how to simplify this one...)
-    IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
+    IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
         ByteBuffer, SourceRoute<MultiInetSocketAddress>> identity = getIdentityImpl(pn, handleFactory);
 
     // LowerIdentity
@@ -507,7 +506,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return new SocketNodeHandleIdentitySerializer(pn, handleFactory);
   }
 
-  protected IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>,
+  protected IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>,
                        MultiInetSocketAddress, ByteBuffer,
                        SourceRoute<MultiInetSocketAddress>>
       getIdentityImpl(final PastryNode pn, final SocketNodeHandleFactory handleFactory) throws IOException {
@@ -522,9 +521,9 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     byte[] localHandleBytes = new byte[buf.getWritten()];
     System.arraycopy(buf.getBytes(), 0, localHandleBytes, 0, localHandleBytes.length);
 
-    final IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
+    final IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
         ByteBuffer, SourceRoute<MultiInetSocketAddress>> identity =
-      new IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
+      new IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress,
             ByteBuffer, SourceRoute<MultiInetSocketAddress>>(
           localHandleBytes, serializer,
           new NodeChangeStrategy<TransportLayerNodeHandle<MultiInetSocketAddress>>(){
@@ -567,7 +566,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> getLowerIdentityLayer(
       TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> srl,
       PastryNode pn,
-      IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>,
+      IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>,
                    MultiInetSocketAddress,
                    ByteBuffer,
                    SourceRoute<MultiInetSocketAddress>> identity) {
@@ -617,8 +616,8 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     SourceRouteStrategy<MultiInetSocketAddress> srStrategy = getSourceRouteStrategy(ltl, livenessProvider, pinger, pn, proxyAddress, esrFactory);
     MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>> prox =
       new MinRTTProximityProvider<SourceRoute<MultiInetSocketAddress>>(pinger, environment);
-    final SourceRouteManager<MultiInetSocketAddress> srm =
-      new SourceRouteManager<MultiInetSocketAddress>(esrFactory,ltl,livenessProvider,prox,environment,srStrategy);
+    final SourceRouteSelectingTransportLayer<MultiInetSocketAddress> srm =
+      new SourceRouteSelectingTransportLayer<MultiInetSocketAddress>(esrFactory,ltl,livenessProvider,prox,environment,srStrategy);
     return new TransLivenessProximity<MultiInetSocketAddress, ByteBuffer>(){
         @Override
         public TransportLayer<MultiInetSocketAddress, ByteBuffer> getTransportLayer() {
@@ -676,7 +675,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransLivenessProximity<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> getUpperIdentityLayer(
       TransportLayer<MultiInetSocketAddress, ByteBuffer> priorityTL,
       PastryNode pn,
-      IdentityImpl<TransportLayerNodeHandle<MultiInetSocketAddress>,
+      IdentityLayerCore<TransportLayerNodeHandle<MultiInetSocketAddress>,
                    MultiInetSocketAddress,
                    ByteBuffer,
                    SourceRoute<MultiInetSocketAddress>> identity,
@@ -707,7 +706,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, ByteBuffer> upperIdentity,
       PastryNode pn, TransportLayerDeserializer deserializer) {
     final Environment environment = pn.getEnvironment();
-    IdFactory idFactory = new IdFactory(){
+    IdReader idFactory = new IdReader(){
       @Override
       public rice.p2p.commonapi.Id build(InputBuffer buf) throws IOException {
         return Id.build(buf);
@@ -757,7 +756,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     return commonAPItl;
   }
 
-  protected OptionsAdder getOptionsAdder(PastryNode pn) {
+  protected MessageOptionsDecorator getOptionsAdder(PastryNode pn) {
 
     return (options, m1) -> {
       Message m = m1;

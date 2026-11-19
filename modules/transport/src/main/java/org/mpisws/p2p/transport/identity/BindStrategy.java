@@ -40,7 +40,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Decides which upper identifiers {@link IdentityImpl} binds to a lower one, and which received messages it passes
+ * Decides which upper identifiers {@link IdentityLayerCore} binds to a lower one, and which received messages it passes
  * up as coming from them.
  */
 public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
@@ -66,7 +66,7 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
     return true;
   }
 
-  /** What {@link IdentityImpl} does when a lower identifier that is bound to one upper identifier is offered another. */
+  /** What {@link IdentityLayerCore} does when a lower identifier that is bound to one upper identifier is offered another. */
   enum Replacement {
     /** the new one replaces the old one, which is marked dead for good */
     REPLACE,

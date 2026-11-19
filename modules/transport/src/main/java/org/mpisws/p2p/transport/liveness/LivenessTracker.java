@@ -90,7 +90,7 @@ public class LivenessTracker<Identifier> {
   // whether or not a check dead is currently being carried out on this route
   private LivenessTransportLayer<Identifier>.@Nullable DeadChecker pendingDeadchecker;
 
-  final Set<LSocket<Identifier>> sockets;
+  final Set<LivenessCheckingSocket<Identifier>> sockets;
 
   /** when the layer last looked this tracker up; the layer forgets the least recently used idle trackers */
   long lastUsed;
@@ -118,7 +118,7 @@ public class LivenessTracker<Identifier> {
     this.pendingDeadchecker = null;
     this.updated = 0L;
     this.lastUsed = layer.time.currentTimeMillis();
-    sockets = new HashSet<LSocket<Identifier>>();
+    sockets = new HashSet<LivenessCheckingSocket<Identifier>>();
   }
 
   /** Remembers a ping sent on this route at {@code sentTime}, so that its pong is recognised. */
@@ -163,7 +163,7 @@ public class LivenessTracker<Identifier> {
     pendingDeadchecker = d;
   }
 
-  public void removeSocket(LSocket<Identifier> socket) {
+  public void removeSocket(LivenessCheckingSocket<Identifier> socket) {
     synchronized(sockets) {
       sockets.remove(socket);
     }
@@ -245,13 +245,13 @@ public class LivenessTracker<Identifier> {
       }
     }
 
-    ArrayList<LSocket<Identifier>> temp;
+    ArrayList<LivenessCheckingSocket<Identifier>> temp;
     synchronized(sockets) {
       // the close() operation can cause a ConcurrentModificationException
-      temp = new ArrayList<LSocket<Identifier>>(sockets);
+      temp = new ArrayList<LivenessCheckingSocket<Identifier>>(sockets);
       sockets.clear();
     }
-    for (LSocket<Identifier> sock : temp) {
+    for (LivenessCheckingSocket<Identifier> sock : temp) {
       logger.info("closing {}", sock);
       sock.close();
     }

@@ -86,13 +86,13 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
   public static final String MSG_TYPE = "commonapi_msg_type";
   public static final String MSG_ADDR = "commonapi_msg_addr";
 
-  private OptionsAdder optionsAdder;
+  private MessageOptionsDecorator optionsAdder;
 
   public CommonAPITransportLayer(
       TransportLayer<Identifier, ByteBuffer> tl,
-      IdFactory idFactory,
+      IdReader idFactory,
       RawMessageDeserializer deserializer,
-      OptionsAdder optionsAdder,
+      MessageOptionsDecorator optionsAdder,
       ErrorHandler<Identifier> errorHandler,
       Environment env) {
 

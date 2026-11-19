@@ -98,7 +98,7 @@ public class TCPLayer extends SelectionKeyHandler {
       wire.broadcastChannelOpened(destination, options, true);
 
       synchronized (sockets) {
-        SocketManager sm = new SocketManager(this, destination, deliverSocketToMe, options);
+        WireSocket sm = new WireSocket(this, destination, deliverSocketToMe, options);
         sockets.add(sm);
         return sm;
       }
@@ -110,9 +110,9 @@ public class TCPLayer extends SelectionKeyHandler {
     }
   }
 
-  final Collection<SocketManager> sockets = new HashSet<SocketManager>();
+  final Collection<WireSocket> sockets = new HashSet<WireSocket>();
 
-  protected void socketClosed(SocketManager sm) {
+  protected void socketClosed(WireSocket sm) {
     wire.broadcastChannelClosed(sm.addr, sm.options);
     sockets.remove(sm);
   }
@@ -131,7 +131,7 @@ public class TCPLayer extends SelectionKeyHandler {
     }
 
     // TODO: add a flag to disable this to simulate a silent fault
-    for (SocketManager socket : new ArrayList<SocketManager>(sockets)) {
+    for (WireSocket socket : new ArrayList<WireSocket>(sockets)) {
       socket.close();
     }
   }
@@ -174,9 +174,9 @@ public class TCPLayer extends SelectionKeyHandler {
         logger.debug("accept() found no pending connection");
         return;
       }
-      SocketManager sm;
+      WireSocket sm;
       try {
-        sm = new SocketManager(this, channel);
+        sm = new WireSocket(this, channel);
       } catch (IOException e) {
         channel.close();
         throw e;

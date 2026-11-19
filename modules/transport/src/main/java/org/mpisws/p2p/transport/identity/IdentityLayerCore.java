@@ -64,7 +64,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
 import static rice.environment.params.ConfigChecks.requirePositive;
 
-public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
+public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> {
   final byte[] localIdentifier;
 
   private @Nullable LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> lower;
@@ -116,14 +116,14 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
 
   final BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy;
 
-  public IdentityImpl(
+  public IdentityLayerCore(
       byte[] localIdentifier,
       IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer,
       NodeChangeStrategy<UpperIdentifier> nodeChangeStrategy,
       SanityChecker<UpperIdentifier, MiddleIdentifier> sanityChecker,
       BindStrategy<UpperIdentifier, LowerIdentifier> bindStrategy,
       Environment environment) {
-    this.logger = environment.getLogManager().getLogger(IdentityImpl.class, null);
+    this.logger = environment.getLogManager().getLogger(IdentityLayerCore.class, null);
     this.bindStrategy = bindStrategy;
     this.sanityChecker = sanityChecker;
     if (sanityChecker == null) throw new IllegalArgumentException("SanityChecker is null");
@@ -149,10 +149,10 @@ public class IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, Lower
       Runnable r = () -> {
         addBinding(handle, null, null); // I hope setting the options to null is ok...
       };
-      if (IdentityImpl.this.environment.getSelectorManager().isSelectorThread()) {
+      if (IdentityLayerCore.this.environment.getSelectorManager().isSelectorThread()) {
         r.run();
       } else {
-        IdentityImpl.this.environment.getSelectorManager().invoke(r);
+        IdentityLayerCore.this.environment.getSelectorManager().invoke(r);
       }
     });
   }

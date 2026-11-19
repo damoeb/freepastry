@@ -34,18 +34,36 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.commonapi;
+package org.mpisws.p2p.transport.wire;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
-import rice.p2p.commonapi.rawserialization.RawMessage;
+import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 
-public interface OptionsAdder {
+public class DisabledUdpLayer implements UDPLayer {
 
-  /**
-   * Add any options related to this message
-   */
-  public Map<String, Object> addOptions(@Nullable Map<String, Object> options,RawMessage m);
+  @Override
+  public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
+      InetSocketAddress destination, ByteBuffer m,
+      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
+    MessageRequestHandle<InetSocketAddress, ByteBuffer> ret =
+      new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(destination, m, options);
+    if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new IOException("UDP is disabled.  To use this feature, enable UDP in the WireTransportLayer constructor."));
+    return ret;
+  }
 
+  @Override
+  public void destroy() {
+  }
+
+  @Override
+  public void acceptMessages(boolean b) {
+  }
 }

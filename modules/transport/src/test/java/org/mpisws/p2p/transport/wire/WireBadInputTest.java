@@ -140,7 +140,7 @@ class WireBadInputTest {
       InetSocketAddress serverAddress = (InetSocketAddress) server.getLocalSocketAddress();
       env.getSelectorManager().invoke(() -> {
         try {
-          new SocketManager(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
+          new WireSocket(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
             @Override
             public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
               sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {

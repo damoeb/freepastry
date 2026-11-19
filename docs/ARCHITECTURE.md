@@ -192,11 +192,11 @@ Some layers also provide side interfaces: `LivenessProvider` (alive, suspected, 
 | 4 | network info (`getIpServiceTransportLayer`) | `networkinfo.NetworkInfoTransportLayer` | same | Answers "what is my external IP?" and "what is your id?" for bootstrapping and NAT probing. |
 | 5 | multi-address (`getMultiAddressSourceRouteTransportLayer`) | `multiaddress.MultiInetAddressTransportLayer` | `MultiInetSocketAddress` | A node's list of addresses, from the public one to the local one, plus an epoch. `AddressStrategy` picks which address to use. |
 | 6 | source route (`getSourceRouteTransportLayer`) | `sourceroute.SourceRouteTransportLayer` | `SourceRoute<MultiInetSocketAddress>` | Sends along explicit relay paths; intermediate nodes forward. |
-| 7 | lower identity (`getLowerIdentityLayer`) | `identity.IdentityImpl` (lower half) | same | Prefixes the destination's identity and rejects traffic meant for a previous incarnation of the address. |
+| 7 | lower identity (`getLowerIdentityLayer`) | `identity.IdentityLayerCore` (lower half) | same | Prefixes the destination's identity and rejects traffic meant for a previous incarnation of the address. |
 | 8 | liveness (`getLivenessTransportLayer`) | `liveness.LivenessTransportLayer` | same | Pings, RTT estimation, liveness events. A pong counts only if it echoes a ping this node sent on that route; at most `pastry_socket_liveness_max_trackers` routes are tracked, the least recently used idle ones are forgotten. |
-| 9 | source route manager (`getSourceRouteManagerLayer`) | `sourceroute.manager.SourceRouteManager` | `MultiInetSocketAddress` | Uses the direct route while it is alive, otherwise tries relay routes from a `SourceRouteStrategy`. Provides liveness and proximity per address. |
+| 9 | source route manager (`getSourceRouteManagerLayer`) | `sourceroute.manager.SourceRouteSelectingTransportLayer` | `MultiInetSocketAddress` | Uses the direct route while it is alive, otherwise tries relay routes from a `SourceRouteStrategy`. Provides liveness and proximity per address. |
 | 10 | priority (`getPriorityTransportLayer`) | `priority.PriorityTransportLayer` | same | See below. |
-| 11 | upper identity (`getUpperIdentityLayer`) | `identity.IdentityImpl` (upper half) | `TransportLayerNodeHandle<MultiInetSocketAddress>` | Cancels pending traffic and reports "dead forever" when the node behind an address changes. |
+| 11 | upper identity (`getUpperIdentityLayer`) | `identity.IdentityLayerCore` (upper half) | `TransportLayerNodeHandle<MultiInetSocketAddress>` | Cancels pending traffic and reports "dead forever" when the node behind an address changes. |
 | 12 | common API (`getCommonAPITransportLayer`) | `commonapi.CommonAPITransportLayer` | same, message type `RawMessage` | Serializes `RawMessage`s to bytes and back, using `rice.pastry.transport.TransportLayerDeserializer`. |
 | — | adapter | `rice.pastry.transport.NodeHandleAdapter` | `NodeHandle` | Combines the top layer with its liveness and proximity providers and hands them to `PastryNode.setSocketElements()`. |
 
@@ -220,7 +220,7 @@ Subclasses swap or insert layers by overriding these protected factory methods:
 flowchart BT
   W["1 WireTransportLayer (TCP+UDP, InetSocketAddress)"] --> M["2 MagicNumberTransportLayer"] --> LS["3 LimitSocketsTransportLayer"] --> NI["4 NetworkInfoTransportLayer"]
   NI --> MA["5 MultiInetAddressTransportLayer (MultiInetSocketAddress)"] --> SR["6 SourceRouteTransportLayer (SourceRoute)"] --> LI["7 lower identity"] --> LV["8 LivenessTransportLayer"]
-  LV --> SRM["9 SourceRouteManager (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayer"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
+  LV --> SRM["9 SourceRouteSelectingTransportLayer (MultiInetSocketAddress)"] --> PR["10 PriorityTransportLayer"] --> UI["11 upper identity (TransportLayerNodeHandle)"] --> CA["12 CommonAPITransportLayer (RawMessage)"]
   CA --> NHA["NodeHandleAdapter"] --> PN["PastryNode"]
 ```
 

@@ -39,7 +39,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 /**
- * Drives both roles of an {@link IdentityImpl} through fake neighbouring layers. Upper identifiers look like
+ * Drives both roles of an {@link IdentityLayerCore} through fake neighbouring layers. Upper identifiers look like
  * {@code node@address}; the middle and lower identifier is the address.
  */
 class IdentityLayersTest {
@@ -48,7 +48,7 @@ class IdentityLayersTest {
   private static final String NODE_A = "A@" + ADDRESS;
   private static final String NODE_B = "B@" + ADDRESS;
   private static final byte[] PAYLOAD = {7, 8, 9};
-  private static final String INDEX = IdentityImpl.NODE_HANDLE_FROM_INDEX;
+  private static final String INDEX = IdentityLayerCore.NODE_HANDLE_FROM_INDEX;
 
   private Environment env;
   private final FakeLayer<ByteBuffer> lowerTl = new FakeLayer<>();
@@ -62,7 +62,7 @@ class IdentityLayersTest {
   private final List<String> upperReceived = new ArrayList<>();
   private final List<String> upperLiveness = new ArrayList<>();
   private final List<String> upperProximity = new ArrayList<>();
-  private IdentityImpl<String, String, String, String> identity;
+  private IdentityLayerCore<String, String, String, String> identity;
   private TransportLayerCallback<String, ByteBuffer> lowerInput;
 
   @BeforeEach
@@ -211,7 +211,7 @@ class IdentityLayersTest {
 
   private void build(NodeChangeStrategy<String> nodeChange, @Nullable BindStrategy<String, String> bindStrategy)
       throws IOException {
-    identity = new IdentityImpl<>(serialized(LOCAL), new Serializer(), nodeChange, (u, m) -> true, bindStrategy, env);
+    identity = new IdentityLayerCore<>(serialized(LOCAL), new Serializer(), nodeChange, (u, m) -> true, bindStrategy, env);
     identity.initLowerLayer(lowerTl, new ErrorHandler<String>() {
       @Override
       public void receivedUnexpectedData(String i, byte[] bytes, int location, @Nullable Map<String, Object> options) {
@@ -269,7 +269,7 @@ class IdentityLayersTest {
   private void receiveFrom(String node) throws Exception {
     byte[] header = serialized(node);
     ByteBuffer message = ByteBuffer.allocate(1 + header.length + PAYLOAD.length);
-    message.put(IdentityImpl.NO_ID).put(header).put(PAYLOAD).flip();
+    message.put(IdentityLayerCore.NO_ID).put(header).put(PAYLOAD).flip();
     onSelector(() -> {
       lowerInput.messageReceived(ADDRESS, message, null);
       return null;
@@ -354,7 +354,7 @@ class IdentityLayersTest {
 
     byte[] local = serialized(LOCAL);
     ByteBuffer sent = lowerTl.sent.get(0);
-    assertEquals(IdentityImpl.NO_ID, sent.get());
+    assertEquals(IdentityLayerCore.NO_ID, sent.get());
     byte[] sender = new byte[local.length];
     sent.get(sender);
     assertArrayEquals(local, sender);
@@ -369,7 +369,7 @@ class IdentityLayersTest {
     build((oldDest, newDest) -> false, null);
     byte[] other = serialized("other@me");
     ByteBuffer message = ByteBuffer.allocate(1 + other.length);
-    message.put(IdentityImpl.NORMAL).put(other).flip();
+    message.put(IdentityLayerCore.NORMAL).put(other).flip();
 
     onSelector(() -> {
       lowerInput.messageReceived(ADDRESS, message, null);
@@ -378,7 +378,7 @@ class IdentityLayersTest {
 
     assertTrue(lowerReceived.isEmpty());
     assertEquals(List.of(ADDRESS), lowerTl.sentTo);
-    assertEquals(IdentityImpl.INCORRECT_IDENTITY, lowerTl.sent.get(0).get());
+    assertEquals(IdentityLayerCore.INCORRECT_IDENTITY, lowerTl.sent.get(0).get());
   }
 
   @Test

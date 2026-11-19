@@ -72,8 +72,8 @@ class SourceRouteManagerPendingTest {
   }
 
   @SuppressWarnings("unchecked")
-  private SourceRouteManager<InetSocketAddress> deadPeer() {
-    SourceRouteManager<InetSocketAddress> srm = new SourceRouteManager<>(factory,
+  private SourceRouteSelectingTransportLayer<InetSocketAddress> deadPeer() {
+    SourceRouteSelectingTransportLayer<InetSocketAddress> srm = new SourceRouteSelectingTransportLayer<>(factory,
         stub(TransportLayer.class, 0), stub(LivenessProvider.class, LIVENESS_DEAD), stub(ProximityProvider.class, 0),
         env, stub(SourceRouteStrategy.class, 0));
     srm.livenessChanged(direct, LIVENESS_DEAD, null);
@@ -107,7 +107,7 @@ class SourceRouteManagerPendingTest {
   @Test
   @DisplayName("a message waiting for a route leaves the queue on cancel, once")
   void cancelTakesAWaitingMessageOutOfTheQueue() {
-    SourceRouteManager<InetSocketAddress> srm = deadPeer();
+    SourceRouteSelectingTransportLayer<InetSocketAddress> srm = deadPeer();
     MessageRequestHandle<InetSocketAddress, ByteBuffer> testObj = srm.sendMessage(PEER, ByteBuffer.allocate(3), null, null);
 
     assertTrue(testObj.cancel());
@@ -119,7 +119,7 @@ class SourceRouteManagerPendingTest {
   @Test
   @DisplayName("a message sent once the route is up cancels the lower send")
   void cancelOfASentMessageCancelsTheLowerSend() {
-    SourceRouteManager<InetSocketAddress> srm = deadPeer();
+    SourceRouteSelectingTransportLayer<InetSocketAddress> srm = deadPeer();
     MessageRequestHandle<InetSocketAddress, ByteBuffer> testObj = srm.sendMessage(PEER, ByteBuffer.allocate(3), null, null);
     srm.livenessChanged(direct, LIVENESS_ALIVE, null);
 
@@ -131,7 +131,7 @@ class SourceRouteManagerPendingTest {
   @Test
   @DisplayName("a socket waiting for a route carries its destination and options and leaves the queue on cancel")
   void cancelTakesAWaitingSocketOutOfTheQueue() {
-    SourceRouteManager<InetSocketAddress> srm = deadPeer();
+    SourceRouteSelectingTransportLayer<InetSocketAddress> srm = deadPeer();
     Map<String, Object> options = Map.of("k", "v");
     SocketRequestHandle<InetSocketAddress> testObj = srm.openSocket(PEER, IGNORE, options);
 
@@ -146,7 +146,7 @@ class SourceRouteManagerPendingTest {
   @Test
   @DisplayName("a socket opened once the route is up cancels the lower open")
   void cancelOfAnOpenedSocketCancelsTheLowerOpen() {
-    SourceRouteManager<InetSocketAddress> srm = deadPeer();
+    SourceRouteSelectingTransportLayer<InetSocketAddress> srm = deadPeer();
     SocketRequestHandle<InetSocketAddress> testObj = srm.openSocket(PEER, IGNORE, null);
     srm.livenessChanged(direct, LIVENESS_ALIVE, null);
 

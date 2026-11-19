@@ -62,10 +62,10 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
   <li><b>LimitSockets</b> -- Prevents exaustion of FileDescripters by closing the Least Recently Used socket.</li>
   <li><b>NetworkInfo</b> -- Answers "what is my external IP?" and "what is your id?" for bootstrapping and NAT probing.</li>
   <li><b>MultiInetAddressTransportLayer</b> -- Handles multi-homing (ex, when using a NAT a node may have more than 1 address:port, the internal address, and the NAT's external address that is forwarded)</li>
-  <li><b>SourceRoute</b> -- sends messages/opens sockets along a source route to route around temporary routing anomalies.  This layer manages both the endpoints and the intermediate nodes.  Note that this layer does <i>not</i> determine the optimal route to an end host, that is done by another layer, the <i>SourceRouteManager</i>.</li>
+  <li><b>SourceRoute</b> -- sends messages/opens sockets along a source route to route around temporary routing anomalies.  This layer manages both the endpoints and the intermediate nodes.  Note that this layer does <i>not</i> determine the optimal route to an end host, that is done by another layer, the <i>SourceRouteSelectingTransportLayer</i>.</li>
   <li><b>LowerIdentity</b> -- This layer, in conjunction with the <i>UpperIdenity</i> maintains the "intention" of the sent/received message.  For example, if a node has restarted with a different NodeId this layer drops pings/sockets if they were intended for the previous node at this address.</li>
   <li><b>Liveness</b> -- Pings nodes to determine liveness/proximity, implements 2 new interfaces: <i>LivenessProvider, Pinger</i> </li>
-  <li><b>SourceRouteManager</b> -- Chooses the appropriate SourceRoute based on the liveness/proximity exported by the lower layer, implements another new interface <i>ProximityProvider</i></li>
+  <li><b>SourceRouteSelectingTransportLayer</b> -- Chooses the appropriate SourceRoute based on the liveness/proximity exported by the lower layer, implements another new interface <i>ProximityProvider</i></li>
   <li><b>Priority</b> -- Uses a single TCP socket to send messages.  Can select the order of the messages based on the priority.</li>
   <li><b>UpperIdentity</b> -- (See Lower Identity) This layer keeps track of the intended destination of the message so that the lower layer can properly encode that intention.</li>
   <li><b>CommonAPI</b> -- Serializes/Deserializes messages from a RawMessage to a ByteBuffer.</li>
@@ -76,7 +76,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <ul>
   <li>Some of these layers depend on lower layers and don't make much sense by themself, ex: <b>SourceRoute/SourceRotueManager</b>, <b>Lower/Upper Identity</b> layers.</li>  
   <li>Some layers could be re-arranged.  For example the LimitSockets layer could probably go anywhere in the stack, yet it seems to make the most sense where it is.</li>
-  <li>Some layers read/write bytes in the protocol (MagicNumber, SourceRoute, Liveness) while others only make logical decisions (LimitSockets, SourceRouteManager).</li>
+  <li>Some layers read/write bytes in the protocol (MagicNumber, SourceRoute, Liveness) while others only make logical decisions (LimitSockets, SourceRouteSelectingTransportLayer).</li>
 </ul>
 
 <h3>Other interesting layers:</h3>
@@ -713,9 +713,9 @@ When the user requests to send the message, it may be buffered or even fail.  Th
 <p/>You can replace the construction of the SocketPastryNodeFactory at the beginning of any of the existing tutorials with this code to add the "bandwidth-limiting" feature.  
 
 <h4>Example B</h4>
-<p/>Perhaps we don't want to include some of FreePastry's overhead in our bandwidth limits.  We can remove the calculated overhead for liveness checks and from constructing source routes if we put the <code>BandwidthLimitingTransportLayer</code> above the <code>SourceRouteManager</code>.  However, the <code>SourceRouteManager</code> also performs additional functions of providing <i>Liveness</i> and <i>Proximity</i>.  Unfortunately our transport layer doesn't implement these additional interfaces.
+<p/>Perhaps we don't want to include some of FreePastry's overhead in our bandwidth limits.  We can remove the calculated overhead for liveness checks and from constructing source routes if we put the <code>BandwidthLimitingTransportLayer</code> above the <code>SourceRouteSelectingTransportLayer</code>.  However, the <code>SourceRouteSelectingTransportLayer</code> also performs additional functions of providing <i>Liveness</i> and <i>Proximity</i>.  Unfortunately our transport layer doesn't implement these additional interfaces.
 
-<p/>In <code>exampleB()</code> we show how easy it is to replace only the <i>TransportLayer</i> functionality of the <code>SourceRouteManager</code> while still returning the existing <code>SourceRouteManager</code> for the <i>Liveness</i> and <i>Proximity</i> functionality.  The returned object for <code>getSourceRouteManagerLayer()</code> is a <code>TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt;</code>.  This is a very simple interface that returns 3 objects:
+<p/>In <code>exampleB()</code> we show how easy it is to replace only the <i>TransportLayer</i> functionality of the <code>SourceRouteSelectingTransportLayer</code> while still returning the existing <code>SourceRouteSelectingTransportLayer</code> for the <i>Liveness</i> and <i>Proximity</i> functionality.  The returned object for <code>getSourceRouteManagerLayer()</code> is a <code>TransLivenessProximity&lt;MultiInetSocketAddress, ByteBuffer&gt;</code>.  This is a very simple interface that returns 3 objects:
 
 <pre>
   protected interface TransLivenessProximity&lt;Identifier, MessageType&gt; {

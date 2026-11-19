@@ -54,7 +54,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
  *
  * @author Jeff Hoye
  */
-public class InetSocketAddressSerializer implements Serializer<InetSocketAddress>, org.mpisws.p2p.transport.util.Serializer<InetSocketAddress> {
+public class InetSocketAddressSerializer implements IdentifierSerializer<InetSocketAddress>, org.mpisws.p2p.transport.util.Serializer<InetSocketAddress> {
   public static final byte IPV4 = 4;
   public static final byte IPV6 = 6;
   public static final int IPV4_BYTES = 4;

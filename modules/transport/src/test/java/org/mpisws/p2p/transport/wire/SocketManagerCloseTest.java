@@ -56,7 +56,7 @@ class SocketManagerCloseTest {
     List<Throwable> failures = new CopyOnWriteArrayList<Throwable>();
 
     for (int round = 0; round < ROUNDS && failures.isEmpty(); round++) {
-      SocketManager socket = openSocket(tcp, address);
+      WireSocket socket = openSocket(tcp, address);
       CyclicBarrier start = new CyclicBarrier(2);
       Runnable close = () -> {
         try {
@@ -95,7 +95,7 @@ class SocketManagerCloseTest {
       InetSocketAddress serverAddress = (InetSocketAddress) server.getLocalSocketAddress();
       env.getSelectorManager().invoke(() -> {
         try {
-          SocketManager socket = new SocketManager(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
+          WireSocket socket = new WireSocket(tcp, serverAddress, new SocketCallback<InetSocketAddress>() {
             @Override
             public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
               connectFailure.completeExceptionally(new AssertionError("delivered a closed socket: " + sock));
@@ -136,7 +136,7 @@ class SocketManagerCloseTest {
     InetAddress localhost = InetAddress.getLoopbackAddress();
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
     WireTransportLayer wire = new WireTransportLayer(address, env, null);
-    SocketManager socket = openSocket(tcpOf(wire), address);
+    WireSocket socket = openSocket(tcpOf(wire), address);
     CompletableFuture<Void> handled = new CompletableFuture<Void>();
 
     env.getSelectorManager().invoke(() -> {
@@ -184,14 +184,14 @@ class SocketManagerCloseTest {
   }
 
   /** @return a socket that has finished connecting, so that only the closes race */
-  private SocketManager openSocket(TCPLayer tcp, InetSocketAddress to) throws Exception {
-    CompletableFuture<SocketManager> connected = new CompletableFuture<SocketManager>();
+  private WireSocket openSocket(TCPLayer tcp, InetSocketAddress to) throws Exception {
+    CompletableFuture<WireSocket> connected = new CompletableFuture<WireSocket>();
     env.getSelectorManager().invoke(() -> {
       try {
-        new SocketManager(tcp, to, new SocketCallback<InetSocketAddress>() {
+        new WireSocket(tcp, to, new SocketCallback<InetSocketAddress>() {
           @Override
           public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
-            connected.complete((SocketManager) sock);
+            connected.complete((WireSocket) sock);
           }
 
           @Override
@@ -206,8 +206,8 @@ class SocketManagerCloseTest {
     return connected.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
-  private static SelectionKey keyOf(SocketManager socket) throws ReflectiveOperationException {
-    Field field = SocketManager.class.getDeclaredField("key");
+  private static SelectionKey keyOf(WireSocket socket) throws ReflectiveOperationException {
+    Field field = WireSocket.class.getDeclaredField("key");
     field.setAccessible(true);
     return (SelectionKey) field.get(socket);
   }

@@ -45,14 +45,14 @@ import java.util.Map;
 
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
-import org.mpisws.p2p.transport.identity.IdentityImpl;
+import org.mpisws.p2p.transport.identity.IdentityLayerCore;
 import org.mpisws.p2p.transport.identity.IdentitySerializer;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.Pinger;
 import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
-import org.mpisws.p2p.transport.nat.FirewallTLImpl;
+import org.mpisws.p2p.transport.nat.FirewallTransportLayer;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.rendezvous.ContactDeserializer;
@@ -229,7 +229,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle> ret =
       new RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>(
         mtl,
-        IdentityImpl.NODE_HANDLE_FROM_INDEX,
+        IdentityLayerCore.NODE_HANDLE_FROM_INDEX,
 //        CommonAPITransportLayer.DESTINATION_IDENTITY,
         (RendezvousSocketNodeHandle)pn.getLocalHandle(),
         getContactDeserializer(pn),
@@ -291,7 +291,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
       @Override
       public Map<String, Object> getOptions(RendezvousSocketNodeHandle high) {
-        return OptionsFactory.addOption(null, IdentityImpl.NODE_HANDLE_FROM_INDEX, high);
+        return OptionsFactory.addOption(null, IdentityLayerCore.NODE_HANDLE_FROM_INDEX, high);
       }
 
       @Override
@@ -422,7 +422,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
     TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.buildWireTransportLayer(innermostAddress, pn);
     if ((pn.getAttributes().containsKey(SIMULATE_FIREWALL) && ((Boolean)pn.getAttributes().get(SIMULATE_FIREWALL)).booleanValue()) ||
         rendezvousConfig.simulateFirewall()) {
-      return new FirewallTLImpl<InetSocketAddress, ByteBuffer>(baseTl,SIMULATED_FIREWALL_TIMEOUT_MILLIS,pn.getEnvironment());
+      return new FirewallTransportLayer<InetSocketAddress, ByteBuffer>(baseTl,SIMULATED_FIREWALL_TIMEOUT_MILLIS,pn.getEnvironment());
     }
 
     // do the normal thing

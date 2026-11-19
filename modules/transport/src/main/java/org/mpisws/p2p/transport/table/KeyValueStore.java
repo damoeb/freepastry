@@ -34,36 +34,14 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.wire;
+package org.mpisws.p2p.transport.table;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Map;
-
-import org.jspecify.annotations.Nullable;
-import org.mpisws.p2p.transport.MessageCallback;
-import org.mpisws.p2p.transport.MessageRequestHandle;
-import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
-
-public class BogusUDPLayerImpl implements UDPLayer {
-
-  @Override
-  public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
-      InetSocketAddress destination, ByteBuffer m,
-      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
-      @Nullable Map<String, Object> options) {
-    MessageRequestHandle<InetSocketAddress, ByteBuffer> ret =
-      new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(destination, m, options);
-    if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new IOException("UDP is disabled.  To use this feature, enable UDP in the WireTransportLayer constructor."));
-    return ret;
-  }
-
-  @Override
-  public void destroy() {
-  }
-
-  @Override
-  public void acceptMessages(boolean b) {
-  }
+/**
+ * A subset of the functionality of java.util.Map.  The idea is that you can optionally use an implementation of Map.
+ * @author Jeff Hoye
+ */
+public interface KeyValueStore<Key, Value> {
+  public boolean containsKey(Key key);
+  public Value put(Key k, Value v);
+  public Value get(Key k);
 }

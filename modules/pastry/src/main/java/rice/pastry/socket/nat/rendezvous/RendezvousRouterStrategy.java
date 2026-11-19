@@ -39,7 +39,7 @@ package rice.pastry.socket.nat.rendezvous;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.mpisws.p2p.transport.identity.IdentityImpl;
+import org.mpisws.p2p.transport.identity.IdentityLayerCore;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
@@ -155,7 +155,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
   }
 
   protected Map<String, Object> getOptions(NodeHandle nh) {
-    return OptionsFactory.addOption(null, IdentityImpl.NODE_HANDLE_FROM_INDEX, nh);
+    return OptionsFactory.addOption(null, IdentityLayerCore.NODE_HANDLE_FROM_INDEX, nh);
   }
 
 }

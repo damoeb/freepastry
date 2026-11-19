@@ -48,7 +48,7 @@ import rice.Continuation;
  * Reads a ByteBuffer to the socket then calls receiveResult().
  * @author Jeff Hoye
  */
-public class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
+public class SocketBufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
   int size = -1;
   ByteBuffer buf;
   Continuation<ByteBuffer, Exception> continuation;
@@ -56,7 +56,7 @@ public class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
   /**
    * Constructor for variable/unknown sized BB, it reads the size off the stream
    */
-  public BufferReader(P2PSocket<Identifier> socket,
+  public SocketBufferReader(P2PSocket<Identifier> socket,
       Continuation<ByteBuffer, Exception> continuation) {
     this(socket, continuation, -1);
   }
@@ -65,7 +65,7 @@ public class BufferReader<Identifier> implements P2PSocketReceiver<Identifier> {
    * Constructor for fixed size BB
    * @param size the fixed size buffer to read
    */
-  public BufferReader(P2PSocket<Identifier> socket,
+  public SocketBufferReader(P2PSocket<Identifier> socket,
       Continuation<ByteBuffer, Exception> continuation, int size) {
     this.continuation = continuation;
     this.size = size;

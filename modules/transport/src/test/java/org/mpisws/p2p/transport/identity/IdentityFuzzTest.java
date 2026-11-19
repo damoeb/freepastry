@@ -75,7 +75,7 @@ class IdentityFuzzTest {
       public void removeSerializerListener(SerializerListener<InetSocketAddress> listener) {
       }
     };
-    IdentityImpl<InetSocketAddress, InetSocketAddress, ByteBuffer, InetSocketAddress> identity = new IdentityImpl<>(
+    IdentityLayerCore<InetSocketAddress, InetSocketAddress, ByteBuffer, InetSocketAddress> identity = new IdentityLayerCore<>(
         new byte[LOCAL_ID_BYTES], serializer, (oldDest, newDest) -> true, (upper, middle) -> true, null, env);
     identity.initLowerLayer(stub(TransportLayer.class), null);
     identity.initUpperLayer(PEER, stub(TransportLayer.class), stub(LivenessProvider.class),

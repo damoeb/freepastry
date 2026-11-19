@@ -57,7 +57,7 @@ public class MutableInetSocketAddressStrategyTest {
   static final int PORT = 1234;
 
   /** Writes the four bytes of the IPv4 address, no port. */
-  static class AddressSerializer implements Serializer<InetSocketAddress> {
+  static class AddressSerializer implements IdentifierSerializer<InetSocketAddress> {
     int calls;
 
     @Override
@@ -76,7 +76,7 @@ public class MutableInetSocketAddressStrategyTest {
   static class SwitchableStrategy extends MutableInetSocketAddressStrategy {
     InetAddress current;
 
-    SwitchableStrategy(Serializer<InetSocketAddress> serializer, InetAddress initial) {
+    SwitchableStrategy(IdentifierSerializer<InetSocketAddress> serializer, InetAddress initial) {
       super(PORT, serializer);
       current = initial;
     }

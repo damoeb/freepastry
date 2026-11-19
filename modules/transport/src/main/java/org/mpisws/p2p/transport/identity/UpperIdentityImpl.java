@@ -65,7 +65,7 @@ import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.environment.Environment;
 
-import static org.mpisws.p2p.transport.identity.IdentityImpl.NODE_HANDLE_FROM_INDEX;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.NODE_HANDLE_FROM_INDEX;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD_FOREVER;
 
@@ -74,7 +74,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     TransportLayerCallback<MiddleIdentifier, UpperMsgType>,
     LivenessListener<MiddleIdentifier>,
     ProximityListener<MiddleIdentifier> {
-  private final IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity;
+  private final IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity;
   private final Environment environment;
   private final IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
   private final Set<UpperIdentifier> deadForever;
@@ -93,7 +93,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   private UpperIdentifier localIdentifier;
 
   UpperIdentityImpl(
-      IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
+      IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
       UpperIdentifier local,
       TransportLayer<MiddleIdentifier, UpperMsgType> tl,
       LivenessProvider<MiddleIdentifier> live,
@@ -108,7 +108,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     this.tl = tl;
     this.livenessProvider = live;
     this.prox = prox;
-    logger = environment.getLogManager().getLogger(IdentityImpl.class, "upper");
+    logger = environment.getLogManager().getLogger(IdentityLayerCore.class, "upper");
 
     tl.setCallback(this);
     livenessProvider.addLivenessListener(this);
@@ -178,7 +178,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       return mrh;
     }
 
-    IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier>.IdentityMessageHandle ret;
+    IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier>.IdentityMessageHandle ret;
 
     MiddleIdentifier middle = serializer.translateDown(i);
     if (identity.addBinding(i, null, options)) {
@@ -208,7 +208,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     final UpperIdentifier from = identity.getIntendedDest(s.getOptions());
 
     if (from == null) {
-      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+s.getIdentifier()+" index="+IdentityImpl.index(s.getOptions())));
+      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+s.getIdentifier()+" index="+IdentityLayerCore.index(s.getOptions())));
       s.close();
       return;
     }
@@ -228,7 +228,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     final UpperIdentifier from = identity.getIntendedDest(options);
 
     if (from == null) {
-      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityImpl.index(options)+" dropping message"+m));
+      errorHandler.receivedException(null, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityLayerCore.index(options)+" dropping message"+m));
       return;
     }
 
@@ -287,7 +287,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
     UpperIdentifier upper = identity.getIntendedDest(options);
       if (upper == null) {
-        logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for index "+IdentityImpl.index(options)+" collected suppressing livenessChanged()");
+        logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for index "+IdentityLayerCore.index(options)+" collected suppressing livenessChanged()");
         return;
       }
     setLiveness(upper, val, options);
@@ -342,7 +342,7 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   public void proximityChanged(MiddleIdentifier i, int newProx, @Nullable Map<String, Object> options) {
     UpperIdentifier upper = identity.getIntendedDest(options);
     if (upper == null) {
-      logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for "+IdentityImpl.index(options)+" collected suppressing proximityChanged()");
+      logger.atWarn().setCause(new Exception("Stack Trace")).log(() -> "Memory for "+IdentityLayerCore.index(options)+" collected suppressing proximityChanged()");
       return;
     }
 

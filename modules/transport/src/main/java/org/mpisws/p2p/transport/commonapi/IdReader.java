@@ -34,19 +34,13 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-package org.mpisws.p2p.transport.sourceroute.manager;
+package org.mpisws.p2p.transport.commonapi;
 
-import org.mpisws.p2p.transport.ErrorHandler;
-import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.sourceroute.SourceRoute;
-import org.mpisws.p2p.transport.util.SocketWrapperSocket;
-import org.slf4j.Logger;
-import rice.environment.Environment;
+import java.io.IOException;
 
-public class SourceRouteManagerP2PSocket<Identifier> extends SocketWrapperSocket<Identifier, SourceRoute<Identifier>> {
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
 
-  public SourceRouteManagerP2PSocket(P2PSocket<SourceRoute<Identifier>> socket, Logger logger, ErrorHandler<Identifier> errorHandler, Environment env) {
-    super(socket.getIdentifier().getLastHop(),socket,logger, errorHandler ,socket.getOptions());
-  }
-
+public interface IdReader {
+  public Id build(InputBuffer buf) throws IOException;
 }

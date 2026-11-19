@@ -49,10 +49,10 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.util.BufferReader;
 import org.mpisws.p2p.transport.util.BufferWriter;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.mpisws.p2p.transport.util.Serializer;
+import org.mpisws.p2p.transport.util.SocketBufferReader;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.Continuation;
@@ -80,7 +80,7 @@ public class TableTransportLayer<Identifier, Key, Value>
   /**
    * Could just be a hashTable
    */
-  protected TableStore<Key, Value> knownValues;
+  protected KeyValueStore<Key, Value> knownValues;
 
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
   private TransportLayerCallback<Identifier, ByteBuffer> callback;
@@ -96,7 +96,7 @@ public class TableTransportLayer<Identifier, Key, Value>
    *
    * @param tableStore should be pre-populated with any persistent or initial values
    */
-  public TableTransportLayer(Serializer<Key> iSerializer, Serializer<Value> cSerializer, TableStore<Key, Value> tableStore, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
+  public TableTransportLayer(Serializer<Key> iSerializer, Serializer<Value> cSerializer, KeyValueStore<Key, Value> tableStore, TransportLayer<Identifier, ByteBuffer> tl, Environment env) {
     this.keySerializer = iSerializer;
     this.valueSerializer = cSerializer;
     this.knownValues = tableStore;
@@ -146,7 +146,7 @@ public class TableTransportLayer<Identifier, Key, Value>
 
             @Override
             public void receiveResult(P2PSocket<Identifier> result) {
-              new BufferReader<Identifier>(result,new Continuation<ByteBuffer, Exception>() {
+              new SocketBufferReader<Identifier>(result,new Continuation<ByteBuffer, Exception>() {
 
                 @Override
                 public void receiveResult(ByteBuffer result) {
@@ -237,7 +237,7 @@ public class TableTransportLayer<Identifier, Key, Value>
   @Override
   public void incomingSocket(final P2PSocket<Identifier> sock) throws IOException {
     logger.trace("incomingSocket() from {}", sock);
-    new BufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
+    new SocketBufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
       @Override
       public void receiveResult(ByteBuffer result) {
         byte type = result.get();
@@ -269,7 +269,7 @@ public class TableTransportLayer<Identifier, Key, Value>
 
   public void handleValueRequest(final P2PSocket<Identifier> sock) {
     logger.trace("handleValueRequest() from {}", sock);
-    new BufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
+    new SocketBufferReader<Identifier>(sock,new Continuation<ByteBuffer, Exception>() {
 
       @Override
       public void receiveResult(ByteBuffer result) {

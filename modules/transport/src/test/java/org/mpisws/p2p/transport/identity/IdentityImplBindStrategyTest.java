@@ -55,11 +55,11 @@ class IdentityImplBindStrategyTest {
     public void removeSerializerListener(SerializerListener<String> listener) {}
   }
 
-  private IdentityImpl<String, String, String, String> identity(BindStrategy<String, String> strategy) {
-    return new IdentityImpl<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
+  private IdentityLayerCore<String, String, String, String> identity(BindStrategy<String, String> strategy) {
+    return new IdentityLayerCore<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
   }
 
-  private boolean addBindingOnSelector(IdentityImpl<String, String, String, String> identity) throws Exception {
+  private boolean addBindingOnSelector(IdentityLayerCore<String, String, String, String> identity) throws Exception {
     CompletableFuture<Boolean> result = new CompletableFuture<>();
     env.getSelectorManager().invoke(() -> {
       try {

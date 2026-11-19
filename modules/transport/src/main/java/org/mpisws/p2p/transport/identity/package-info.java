@@ -39,7 +39,7 @@ advised of the possibility of such damage.
  * The {@link org.mpisws.p2p.transport.identity.LowerIdentity} layer prefixes traffic with the
  * destination's identity and rejects traffic meant for a previous identity; the
  * {@link org.mpisws.p2p.transport.identity.UpperIdentity} layer then cancels pending messages for the
- * old node and reports it dead forever. {@link org.mpisws.p2p.transport.identity.IdentityImpl} holds
+ * old node and reports it dead forever. {@link org.mpisws.p2p.transport.identity.IdentityLayerCore} holds
  * both halves.
  */
 @NullMarked

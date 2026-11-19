@@ -66,16 +66,16 @@ import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-import static org.mpisws.p2p.transport.identity.IdentityImpl.DONT_VERIFY;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.FAILURE;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.INCORRECT_IDENTITY;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.NODE_HANDLE_FROM_INDEX;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.NORMAL;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.NO_ID;
-import static org.mpisws.p2p.transport.identity.IdentityImpl.SUCCESS;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.DONT_VERIFY;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.FAILURE;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.INCORRECT_IDENTITY;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.NODE_HANDLE_FROM_INDEX;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.NORMAL;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.NO_ID;
+import static org.mpisws.p2p.transport.identity.IdentityLayerCore.SUCCESS;
 
 class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> implements LowerIdentity<LowerIdentifier, ByteBuffer>, TransportLayerCallback<LowerIdentifier, ByteBuffer> {
-  private final IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity;
+  private final IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity;
   private final Environment environment;
   private final byte[] localIdentifier;
   private final IdentitySerializer<UpperIdentifier, MiddleIdentifier, LowerIdentifier> serializer;
@@ -89,7 +89,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
   Logger logger;
 
   LowerIdentityImpl(
-      IdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
+      IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerIdentifier> identity,
       TransportLayer<LowerIdentifier, ByteBuffer> tl,
       ErrorHandler<LowerIdentifier> handler) {
     this.identity = identity;
@@ -99,7 +99,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     this.bindings = identity.bindings;
     this.bindStrategy = identity.bindStrategy;
     this.tl = tl;
-    logger = environment.getLogManager().getLogger(IdentityImpl.class, "lower");
+    logger = environment.getLogManager().getLogger(IdentityLayerCore.class, "lower");
     if (handler != null) {
       this.errorHandler = handler;
     } else {
@@ -471,7 +471,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       UpperIdentifier dest = identity.getIntendedDest(options);
 
       if (dest == null) {
-        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityImpl.index(options)));
+        if (deliverAckToMe != null) deliverAckToMe.sendFailed(ret, new MemoryExpiredException("No record of the upper identifier for "+i+" index="+IdentityLayerCore.index(options)));
         return ret;
       }
 

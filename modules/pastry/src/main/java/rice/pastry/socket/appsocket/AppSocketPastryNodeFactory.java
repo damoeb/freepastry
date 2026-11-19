@@ -53,7 +53,7 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.identity.IdentityImpl;
+import org.mpisws.p2p.transport.identity.IdentityLayerCore;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.OverrideLiveness;
 import org.mpisws.p2p.transport.liveness.Pinger;
@@ -61,7 +61,7 @@ import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-import org.mpisws.p2p.transport.wire.SocketManager;
+import org.mpisws.p2p.transport.wire.WireSocket;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.Continuation;
 import rice.environment.Environment;
@@ -94,7 +94,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
    * Used for getSocketChannel.  The AppSocketFactroyLayer stores the channel here,
    * and then it is retrieved when the channel is opened.
    */
-  private final Map<Integer, SocketManager> socketTable = new HashMap<Integer, SocketManager>();
+  private final Map<Integer, WireSocket> socketTable = new HashMap<Integer, WireSocket>();
 
   public AppSocketPastryNodeFactory(NodeIdFactory nf, int startPort,
       Environment env) throws IOException {
@@ -145,7 +145,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
             P2PSocket<InetSocketAddress> sock) {
 
-          SocketManager sa = (SocketManager)sock;
+          WireSocket sa = (WireSocket)sock;
           if (options.containsKey(STORE_SOCKET)) {
             socketTable.put((Integer)options.get(STORE_SOCKET), sa);
           }
@@ -268,7 +268,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         options = OptionsFactory.addOption(options, STORE_SOCKET, myUid);
 
         // open the socket
-        // the AppSocketFactoryLayer will intercept the SocketManager from the wtl using the UID
+        // the AppSocketFactoryLayer will intercept the WireSocket from the wtl using the UID
 
         return getSocket(addr, appid,
             new Continuation<P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>>, Exception>(){
@@ -282,7 +282,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
               public void receiveResult(
                   P2PSocket<TransportLayerNodeHandle<MultiInetSocketAddress>> result) {
                 // return the socket
-                SocketManager sm = socketTable.remove(myUid);
+                WireSocket sm = socketTable.remove(myUid);
                 SocketChannel ret = sm.getSocketChannel();
                 c.receiveResult(ret);
               }
@@ -296,7 +296,7 @@ public class AppSocketPastryNodeFactory extends SocketPastryNodeFactory {
         final SocketRequestHandleImpl<TransportLayerNodeHandle<MultiInetSocketAddress>> ret =
           new SocketRequestHandleImpl<TransportLayerNodeHandle<MultiInetSocketAddress>>(handle, options, logger);
 
-        options = OptionsFactory.addOption(options, IdentityImpl.DONT_VERIFY, true);
+        options = OptionsFactory.addOption(options, IdentityLayerCore.DONT_VERIFY, true);
         // open the socket
         // send the id
         ret.setSubCancellable(getTL().openSocket(handle, new SocketCallback<TransportLayerNodeHandle<MultiInetSocketAddress>>() {

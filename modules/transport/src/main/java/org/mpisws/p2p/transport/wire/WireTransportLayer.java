@@ -151,7 +151,7 @@ public class WireTransportLayer
     if (enableUDPServer) {
       udp = new UDPLayerImpl(this);
     } else {
-      udp = new BogusUDPLayerImpl();
+      udp = new DisabledUdpLayer();
     }
     try {
       tcp = new TCPLayer(this, enableTCPServer);

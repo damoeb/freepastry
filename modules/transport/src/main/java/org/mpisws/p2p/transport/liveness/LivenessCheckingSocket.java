@@ -55,7 +55,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  *
  * @author Jeff Hoye
  */
-class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
+class LivenessCheckingSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
   final LivenessTransportLayer<Identifier> layer;
   LivenessTracker<Identifier> manager;
 
@@ -72,7 +72,7 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
 
   boolean closed = false;
 
-  public LSocket(LivenessTransportLayer<Identifier> layer, LivenessTracker<Identifier> manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
+  public LivenessCheckingSocket(LivenessTransportLayer<Identifier> layer, LivenessTracker<Identifier> manager, P2PSocket<Identifier> socket, @Nullable Identifier hardRef) {
     super(socket.getIdentifier(), socket, layer.logger, layer.errorHandler, socket.getOptions());
     this.layer = layer;
     if (hardRef == null) throw new IllegalArgumentException("hardRef == null "+manager+" "+socket);
@@ -108,13 +108,13 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
 
   public void startLivenessCheckerTimer() {
     // it's already going to check
-    synchronized(LSocket.this) {
+    synchronized(LivenessCheckingSocket.this) {
       if (livenessCheckerTimer != null) return;
       livenessCheckerTimer = new TimerTask(){
         @Override
         @SuppressWarnings("ReferenceEquality") // the same instance is meant
         public void run() {
-          synchronized(LSocket.this) {
+          synchronized(LivenessCheckingSocket.this) {
             if (livenessCheckerTimer == this) livenessCheckerTimer = null;
           }
           manager.checkLiveness(options);
@@ -126,7 +126,7 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
   }
 
   public void stopLivenessCheckerTimer() {
-    synchronized(LSocket.this) {
+    synchronized(LivenessCheckingSocket.this) {
       if (livenessCheckerTimer != null) livenessCheckerTimer.cancel();
       livenessCheckerTimer = null;
     }
@@ -141,6 +141,6 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
 
   @Override
   public String toString() {
-    return "LSocket{"+socket+"}";
+    return "LivenessCheckingSocket{"+socket+"}";
   }
 }
