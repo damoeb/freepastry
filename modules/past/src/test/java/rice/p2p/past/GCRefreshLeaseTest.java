@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.FutureContinuation;
 import rice.p2p.commonapi.Id;
+import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.gc.ExpiringPastImpl;
 import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.pastry.PastryNode;
@@ -26,8 +27,8 @@ import rice.persistence.MemoryStorage;
 import rice.persistence.NoOpCache;
 
 /**
- * A refresh can neither lease an object beyond p2p_past_gc_max_lease nor bring an object back out of the trash: the
- * refresh carries no proof that its sender owns the object.
+ * An insert, a refresh and a replication fetch can lease an object only up to p2p_past_gc_max_lease, and a refresh cannot
+ * bring an object back out of the trash: the refresh carries no proof that its sender owns the object.
  */
 class GCRefreshLeaseTest {
   private static final long SECONDS = 10;
@@ -97,6 +98,43 @@ class GCRefreshLeaseTest {
       }
     }
     assertTrue(holders > 0, "no node holds the object");
+  }
+
+  @Test
+  @DisplayName("an insert with Long.MAX_VALUE leases the object only up to the maximum lease")
+  void insertExpirationIsCapped() throws Exception {
+    List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
+    Id id = idf.buildId("insert-lease");
+
+    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), Long.MAX_VALUE, c)).get(SECONDS, TimeUnit.SECONDS);
+
+    awaitHolders(pasts, id, 1);
+    for (ExpiringPastImpl past : pasts) {
+      if (past.storage.exists(id)) {
+        long expiration = ((ExpiringPastMetadata) past.storage.getMetadata(id)).expiration();
+        assertTrue(expiration <= now() + MAX_LEASE_BOUND, "lease not capped: " + expiration);
+      }
+    }
+  }
+
+  @Test
+  @DisplayName("a replica fetched from a peer is leased only up to the maximum lease, whatever expiration the peer names")
+  void fetchedReplicaExpirationIsCapped() throws Exception {
+    List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
+    Id id = idf.buildId("fetch-lease");
+    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), now() + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
+    awaitHolders(pasts, id, 1);
+    ExpiringPastImpl holder = pasts.stream().filter(past -> past.storage.exists(id)).findFirst().orElseThrow();
+    ExpiringPastImpl fetcher = pasts.stream().filter(past -> !past.storage.exists(id)).findFirst().orElseThrow();
+
+    // a replica that is not stored yet, and one that is stored and whose lease the peer wants to raise
+    assertEquals(true, FutureContinuation.<Boolean>call(c -> fetcher.fetch(new ExpiringId(id, Long.MAX_VALUE), holder.getLocalNodeHandle(), c)).get(SECONDS, TimeUnit.SECONDS));
+    assertEquals(true, FutureContinuation.<Boolean>call(c -> holder.fetch(new ExpiringId(id, Long.MAX_VALUE), fetcher.getLocalNodeHandle(), c)).get(SECONDS, TimeUnit.SECONDS));
+
+    for (ExpiringPastImpl past : List.of(holder, fetcher)) {
+      long expiration = ((ExpiringPastMetadata) past.storage.getMetadata(id)).expiration();
+      assertTrue(expiration <= now() + MAX_LEASE_BOUND, "lease not capped: " + expiration);
+    }
   }
 
   @Test
