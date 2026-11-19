@@ -63,6 +63,15 @@ class GCRefreshLeaseTest {
     return past;
   }
 
+  /** Waits until the object is stored on that many nodes: the replication runs asynchronously to the insert. */
+  private void awaitHolders(List<ExpiringPastImpl> pasts, Id id, int expected) throws InterruptedException {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(SECONDS);
+    while (pasts.stream().filter(past -> past.storage.exists(id)).count() < expected) {
+      assertTrue(System.nanoTime() < deadline, "the object was not replicated to " + expected + " nodes");
+      Thread.sleep(10);
+    }
+  }
+
   private long now() {
     return ring.env.getTimeSource().currentTimeMillis();
   }
@@ -97,6 +106,9 @@ class GCRefreshLeaseTest {
     Id id = idf.buildId("trashed");
     GCPastInsertTest.Content content = new GCPastInsertTest.Content(id, false);
     FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, now() + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
+    // the insert returns once the root stores the object: the replication to the other replicas is still under way and
+    // would store the object behind the trash's back
+    awaitHolders(pasts, id, 2);
     // what the garbage collection does with an expired object: into the trash, out of the storage
     for (int i = 0; i < pasts.size(); i++) {
       ExpiringPastImpl past = pasts.get(i);
