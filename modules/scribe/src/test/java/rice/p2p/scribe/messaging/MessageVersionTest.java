@@ -25,7 +25,7 @@ class MessageVersionTest {
 
   @Test
   void subscribeRejectsVersion0() {
-    assertThrows(IOException.class, () -> SubscribeMessage.buildSM(version0(), null, null));
+    assertThrows(IOException.class, () -> SubscribeMessage.readFrom(version0(), null, null));
   }
 
   @Test

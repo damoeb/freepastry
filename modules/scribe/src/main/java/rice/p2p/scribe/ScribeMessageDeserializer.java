@@ -82,7 +82,7 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
     try {
       return switch (ScribeMessageType.find(type)) {
         case ANYCAST -> AnycastMessage.build(buf, endpoint, cd);
-        case SUBSCRIBE -> SubscribeMessage.buildSM(buf, endpoint, cd);
+        case SUBSCRIBE -> SubscribeMessage.readFrom(buf, endpoint, cd);
         case SUBSCRIBE_ACK -> SubscribeAckMessage.build(buf, endpoint);
         case SUBSCRIBE_FAILED -> SubscribeFailedMessage.build(buf, endpoint);
         case DROP -> DropMessage.build(buf, endpoint);

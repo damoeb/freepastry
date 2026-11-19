@@ -149,7 +149,7 @@ public final class SubscribeMessage extends AnycastMessage {
     }
   }
 
-  public static SubscribeMessage buildSM(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scd) throws IOException {
+  public static SubscribeMessage readFrom(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scd) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 1:

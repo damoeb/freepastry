@@ -508,6 +508,6 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
   public void intermediateNode(ScribeMessage message) {
   }
   @Override
-  public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
+  public void anycastFailed(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
   }
 }

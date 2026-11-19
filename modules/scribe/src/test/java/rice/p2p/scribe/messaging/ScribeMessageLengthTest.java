@@ -103,7 +103,7 @@ class ScribeMessageLengthTest {
     out.writeInt(0); // message id
     out.writeInt(Integer.MAX_VALUE);
 
-    assertThrows(IOException.class, () -> SubscribeMessage.buildSM(in(out), ENDPOINT, null));
+    assertThrows(IOException.class, () -> SubscribeMessage.readFrom(in(out), ENDPOINT, null));
   }
 
   @Test
@@ -118,7 +118,7 @@ class ScribeMessageLengthTest {
     out.writeInt(0); // message id
     out.writeInt(1); // topics, the first one is the topic above
 
-    assertEquals(1, SubscribeMessage.buildSM(in(out), ENDPOINT, null).getTopics().size());
+    assertEquals(1, SubscribeMessage.readFrom(in(out), ENDPOINT, null).getTopics().size());
   }
 
   @Test

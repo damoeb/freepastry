@@ -205,6 +205,6 @@ final class AnycastHandler {
 
   void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
     logger.debug("received anycast failure message from {} for topic {}", failedAtNode, topic);
-    policy.get().recvAnycastFail(topic, failedAtNode, content);
+    policy.get().anycastFailed(topic, failedAtNode, content);
   }
 }

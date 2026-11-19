@@ -132,7 +132,7 @@ public interface ScribePolicy {
   /**
    * This notifies us when we receive a failure for a anycast
    */
-  public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content);
+  public void anycastFailed(Topic topic, NodeHandle failedAtNode, ScribeContent content);
 
   /**
    * This is invoked whenever this message arrives on any overlay node, this gives the ScribeMultiClient's power
@@ -230,7 +230,7 @@ public interface ScribePolicy {
     public void intermediateNode(ScribeMessage message) {
     }
     @Override
-    public void recvAnycastFail(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
+    public void anycastFailed(Topic topic, NodeHandle failedAtNode, ScribeContent content) {
     }
     @Override
     public ScribeContent divideContent(List<Topic> theTopics, ScribeContent content) {
