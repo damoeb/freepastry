@@ -59,7 +59,7 @@ final class GlacierHandoffProtocol {
   private final GlacierConfig config;
   private final String instance;
   private final GlacierPolicy policy;
-  private final GlacierRouter router;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrash trash;
@@ -67,7 +67,7 @@ final class GlacierHandoffProtocol {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierHandoffProtocol(GlacierConfig config, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, Environment environment, Logger logger) {
+  GlacierHandoffProtocol(GlacierConfig config, String instance, GlacierPolicy policy, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, Environment environment, Logger logger) {
     this.config = config;
     this.instance = instance;
     this.policy = policy;

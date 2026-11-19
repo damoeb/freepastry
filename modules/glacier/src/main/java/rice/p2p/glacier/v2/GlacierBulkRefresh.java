@@ -70,8 +70,8 @@ final class GlacierBulkRefresh {
   private final int numFragments;
   private final int numSurvivors;
   private final GlacierPolicy policy;
-  private final GlacierScheduler scheduler;
-  private final GlacierRouter router;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final CachedStorage fragmentStorage;
@@ -79,7 +79,7 @@ final class GlacierBulkRefresh {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierBulkRefresh(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierBulkRefresh(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

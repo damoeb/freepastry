@@ -48,7 +48,7 @@ import rice.p2p.glacier.v2.messaging.GlacierTimeoutMessage;
  * Keeps Glacier's pending {@link GlacierContinuation}s by UID, and drives their timeouts with a single
  * self-scheduled {@link GlacierTimeoutMessage}. Runs on the selector thread.
  */
-final class GlacierScheduler {
+final class GlacierContinuationRegistry {
   /** Terminated continuations removed per pass; a full pass triggers another one. */
   private static final int MAX_DELETES_PER_PASS = 100;
 
@@ -60,7 +60,7 @@ final class GlacierScheduler {
   private int nextUID;
   private CancellableTask timer;
 
-  GlacierScheduler(Endpoint endpoint, Environment environment, Logger logger) {
+  GlacierContinuationRegistry(Endpoint endpoint, Environment environment, Logger logger) {
     this.endpoint = endpoint;
     this.environment = environment;
     this.logger = logger;

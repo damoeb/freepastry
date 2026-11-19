@@ -75,7 +75,7 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
   private final Logger logger;
   private final String instance;
   private final Endpoint endpoint;
-  private final GlacierScheduler scheduler;
+  private final GlacierContinuationRegistry scheduler;
   private final GlacierTrash trash;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierNeighborhood neighborhood;
@@ -101,13 +101,13 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     this.trash = new GlacierTrash(fragmentStorage, logger);
     this.trafficShaper = new GlacierTrafficShaper(config, numFragments, environment, logger);
     this.endpoint = node.buildEndpoint(this, instance);
-    this.scheduler = new GlacierScheduler(endpoint, environment, logger);
+    this.scheduler = new GlacierContinuationRegistry(endpoint, environment, logger);
     this.endpoint.setDeserializer(GlacierMessageDispatcher.deserializer(endpoint));
 
     FragmentLocator locator = new FragmentLocator(factory, numFragments);
     this.neighborhood = new GlacierNeighborhood(neighborStorage, factory, endpoint.getLocalNodeHandle().getId(), config.neighborTimeout(), environment, logger);
     this.statisticsCollector = new GlacierStatisticsCollector(config, scheduler, trafficShaper, neighborhood, trash, fragmentStorage, neighborStorage, instance, environment, logger);
-    GlacierRouter router = new GlacierRouter(endpoint, statisticsCollector, logger);
+    GlacierMessageSender router = new GlacierMessageSender(endpoint, statisticsCollector, logger);
     this.retriever = new GlacierRetriever(config, numFragments, numSurvivors, instance, policy, endpoint, scheduler, router, locator, trafficShaper, trash, environment, logger);
     GlacierBulkRefresh bulkRefresh = new GlacierBulkRefresh(config, numFragments, numSurvivors, policy, scheduler, router, locator, neighborhood, fragmentStorage, factory, environment, logger);
     this.inserter = new GlacierInserter(config, numFragments, numSurvivors, policy, endpoint, scheduler, router, locator, trafficShaper, retriever, bulkRefresh, environment, logger);

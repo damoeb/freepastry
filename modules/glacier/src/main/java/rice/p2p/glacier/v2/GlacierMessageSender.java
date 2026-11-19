@@ -45,12 +45,12 @@ import rice.p2p.glacier.v2.messaging.GlacierMessage;
 /**
  * Sends Glacier's messages, and counts them for the statistics.
  */
-final class GlacierRouter {
+final class GlacierMessageSender {
   private final Endpoint endpoint;
   private final GlacierStatisticsCollector statisticsCollector;
   private final Logger logger;
 
-  GlacierRouter(Endpoint endpoint, GlacierStatisticsCollector statisticsCollector, Logger logger) {
+  GlacierMessageSender(Endpoint endpoint, GlacierStatisticsCollector statisticsCollector, Logger logger) {
     this.endpoint = endpoint;
     this.statisticsCollector = statisticsCollector;
     this.logger = logger;

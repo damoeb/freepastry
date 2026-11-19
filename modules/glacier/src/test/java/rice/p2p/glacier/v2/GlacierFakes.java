@@ -50,9 +50,9 @@ final class GlacierFakes {
   }
 
   /** A router on top of {@link #endpoint}; the statistics collector only counts messages, so it needs no collaborators. */
-  static GlacierRouter router(NodeHandle local, List<Object> routed, Environment env) {
+  static GlacierMessageSender router(NodeHandle local, List<Object> routed, Environment env) {
     GlacierStatisticsCollector statistics = new GlacierStatisticsCollector(null, null, null, null, null, null, null, null, env,LoggerFactory.getLogger(GlacierFakes.class));
-    return new GlacierRouter(endpoint(local, routed), statistics, LoggerFactory.getLogger(GlacierFakes.class));
+    return new GlacierMessageSender(endpoint(local, routed), statistics, LoggerFactory.getLogger(GlacierFakes.class));
   }
 
   /** A storage manager whose calls are answered by the given handler. */

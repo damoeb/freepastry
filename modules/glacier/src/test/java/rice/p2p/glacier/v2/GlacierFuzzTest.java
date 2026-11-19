@@ -92,7 +92,7 @@ class GlacierFuzzTest {
   @FuzzTest(maxDuration = "30s")
   void bloomFilter(FuzzedDataProvider data) {
     // the node probes a peer's filter with the keys of its own fragments
-    FuzzSupport.read(data, buf -> new BloomFilter(buf).contains(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    FuzzSupport.read(data, buf -> new FragmentBloomFilter(buf).contains(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
   }
 
   @FuzzTest(maxDuration = "30s")

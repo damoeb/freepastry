@@ -70,8 +70,8 @@ final class GlacierDebugCommands {
   private final int numSurvivors;
   private final String instance;
   private final IdFactory factory;
-  private final GlacierScheduler scheduler;
-  private final GlacierRouter router;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrafficShaper trafficShaper;
@@ -83,7 +83,7 @@ final class GlacierDebugCommands {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierDebugCommands(GlacierConfig config, int numFragments, int numSurvivors, String instance, IdFactory factory, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, GlacierSyncProtocol syncProtocol, GlacierRetriever retriever, GlacierInserter inserter, CachedStorage fragmentStorage, CachedStorage neighborStorage, Environment environment, Logger logger) {
+  GlacierDebugCommands(GlacierConfig config, int numFragments, int numSurvivors, String instance, IdFactory factory, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, GlacierSyncProtocol syncProtocol, GlacierRetriever retriever, GlacierInserter inserter, CachedStorage fragmentStorage, CachedStorage neighborStorage, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

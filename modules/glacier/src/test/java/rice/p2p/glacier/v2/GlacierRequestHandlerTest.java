@@ -41,7 +41,7 @@ class GlacierRequestHandlerTest {
     NodeHandle local = GlacierFakes.nodeHandle(localId);
     sender = GlacierFakes.nodeHandle(factory.buildId("sender"));
     List<Object> routed = GlacierFakes.messages();
-    GlacierRouter router = GlacierFakes.router(local, routed, env);
+    GlacierMessageSender router = GlacierFakes.router(local, routed, env);
     FragmentLocator locator = new FragmentLocator(factory, NUM_FRAGMENTS);
 
     // no neighbors: this node is responsible for the whole ring

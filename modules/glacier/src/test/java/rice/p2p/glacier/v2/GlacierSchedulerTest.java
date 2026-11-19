@@ -73,7 +73,7 @@ class GlacierSchedulerTest {
   private Environment env;
   private DirectTimeSource time;
   private List<Timer> timers;
-  private GlacierScheduler testObj;
+  private GlacierContinuationRegistry testObj;
 
   @BeforeEach
   void setUp() {
@@ -105,7 +105,7 @@ class GlacierSchedulerTest {
       }
       return null;
     });
-    testObj = new GlacierScheduler(endpoint, env, LoggerFactory.getLogger(GlacierSchedulerTest.class));
+    testObj = new GlacierContinuationRegistry(endpoint, env, LoggerFactory.getLogger(GlacierSchedulerTest.class));
   }
 
   @AfterEach

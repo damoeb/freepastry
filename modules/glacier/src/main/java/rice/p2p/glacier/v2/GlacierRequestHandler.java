@@ -59,7 +59,7 @@ final class GlacierRequestHandler {
   private final int numSurvivors;
   private final String instance;
   private final GlacierPolicy policy;
-  private final GlacierRouter router;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierRetriever retriever;
@@ -67,7 +67,7 @@ final class GlacierRequestHandler {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierRequestHandler(int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, CachedStorage fragmentStorage, Environment environment, Logger logger) {
+  GlacierRequestHandler(int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, CachedStorage fragmentStorage, Environment environment, Logger logger) {
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;
     this.instance = instance;

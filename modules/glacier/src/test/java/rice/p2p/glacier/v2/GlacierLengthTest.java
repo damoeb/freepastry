@@ -142,7 +142,7 @@ class GlacierLengthTest {
     out.writeInt(0); // hash parameters
     out.writeInt(HUGE);
 
-    assertRejected(out, BloomFilter::new);
+    assertRejected(out, FragmentBloomFilter::new);
   }
 
   @Test
@@ -150,7 +150,7 @@ class GlacierLengthTest {
     SimpleOutputBuffer out = new SimpleOutputBuffer();
     out.writeInt(HUGE);
 
-    assertRejected(out, BloomFilter::new);
+    assertRejected(out, FragmentBloomFilter::new);
   }
 
   @Test

@@ -62,10 +62,10 @@ import rice.p2p.glacier.v2.messaging.GlacierTimeoutMessage;
 
 /**
  * Dispatches the messages Glacier receives: responses go to the {@link GlacierContinuation} that waits
- * for them, requests to the collaborator that answers them, and timeouts to the {@link GlacierScheduler}.
+ * for them, requests to the collaborator that answers them, and timeouts to the {@link GlacierContinuationRegistry}.
  */
 final class GlacierMessageDispatcher {
-  private final GlacierScheduler scheduler;
+  private final GlacierContinuationRegistry scheduler;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierRequestHandler requestHandler;
   private final GlacierNeighborProtocol neighborProtocol;
@@ -74,7 +74,7 @@ final class GlacierMessageDispatcher {
   private final GlacierHandoffProtocol handoffProtocol;
   private final Logger logger;
 
-  GlacierMessageDispatcher(GlacierScheduler scheduler, GlacierTrafficShaper trafficShaper, GlacierRequestHandler requestHandler, GlacierNeighborProtocol neighborProtocol, GlacierSyncProtocol syncProtocol, GlacierBulkRefresh bulkRefresh, GlacierHandoffProtocol handoffProtocol, Logger logger) {
+  GlacierMessageDispatcher(GlacierContinuationRegistry scheduler, GlacierTrafficShaper trafficShaper, GlacierRequestHandler requestHandler, GlacierNeighborProtocol neighborProtocol, GlacierSyncProtocol syncProtocol, GlacierBulkRefresh bulkRefresh, GlacierHandoffProtocol handoffProtocol, Logger logger) {
     this.scheduler = scheduler;
     this.trafficShaper = trafficShaper;
     this.requestHandler = requestHandler;

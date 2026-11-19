@@ -32,7 +32,7 @@ class GlacierBulkRefreshTest {
   private PastryIdFactory factory;
   private NodeHandle local;
   private List<Object> routed;
-  private GlacierScheduler scheduler;
+  private GlacierContinuationRegistry scheduler;
   private GlacierBulkRefresh testObj;
 
   @BeforeEach
@@ -43,8 +43,8 @@ class GlacierBulkRefreshTest {
     Id localId = factory.buildId("local");
     local = GlacierFakes.nodeHandle(localId);
     routed = GlacierFakes.messages();
-    GlacierRouter router = GlacierFakes.router(local, routed, env);
-    scheduler = new GlacierScheduler(GlacierFakes.endpoint(local, routed), env, LOGGER);
+    GlacierMessageSender router = GlacierFakes.router(local, routed, env);
+    scheduler = new GlacierContinuationRegistry(GlacierFakes.endpoint(local, routed), env, LOGGER);
     FragmentLocator locator = new FragmentLocator(factory, NUM_FRAGMENTS);
 
     // every fragment is held locally, but its stored object cannot be read (it vanished)

@@ -65,8 +65,8 @@ final class GlacierRetriever {
   private final String instance;
   private final GlacierPolicy policy;
   private final Endpoint endpoint;
-  private final GlacierScheduler scheduler;
-  private final GlacierRouter router;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierTrash trash;
@@ -75,7 +75,7 @@ final class GlacierRetriever {
   private long currentFragmentRequestTimeout;
   private PastContentDeserializer contentDeserializer;
 
-  GlacierRetriever(GlacierConfig config, int numFragments, int numSurvivors, String instance, GlacierPolicy policy, Endpoint endpoint, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierTrafficShaper trafficShaper, GlacierTrash trash, Environment environment, Logger logger) {
+  GlacierRetriever(GlacierConfig config, int numFragments, int numSurvivors, String instance, GlacierPolicy policy, Endpoint endpoint, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierTrafficShaper trafficShaper, GlacierTrash trash, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

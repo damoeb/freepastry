@@ -75,8 +75,8 @@ class GlacierRetrieverTest {
     NodeHandle local = GlacierFakes.nodeHandle(factory.buildId("local"));
     routed = GlacierFakes.messages();
     var endpoint = GlacierFakes.endpoint(local, routed);
-    GlacierRouter router = GlacierFakes.router(local, routed, env);
-    GlacierScheduler scheduler = new GlacierScheduler(endpoint, env, LOGGER);
+    GlacierMessageSender router = GlacierFakes.router(local, routed, env);
+    GlacierContinuationRegistry scheduler = new GlacierContinuationRegistry(endpoint, env, LOGGER);
     FragmentLocator locator = new FragmentLocator(factory, NUM_FRAGMENTS);
     trafficShaper = new GlacierTrafficShaper(config, NUM_FRAGMENTS, env, LOGGER);
     testObj = new GlacierRetriever(config, NUM_FRAGMENTS, 2, "test", null, endpoint, scheduler, router, locator, trafficShaper, new FailingTrash(), env, LOGGER);

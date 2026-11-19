@@ -379,12 +379,12 @@ class GlacierMessageWireRoundTripTest {
     }
   }
 
-  static Stream<BloomFilter> bloomFilters() {
+  static Stream<FragmentBloomFilter> bloomFilters() {
     Environment e = new Environment();
     try {
-      BloomFilter filled = new BloomFilter(1024, 3, e.getRandomSource());
+      FragmentBloomFilter filled = new FragmentBloomFilter(1024, 3, e.getRandomSource());
       filled.add(new byte[] {1, 2, 3});
-      return Stream.of(filled, new BloomFilter(64, 1, e.getRandomSource()));
+      return Stream.of(filled, new FragmentBloomFilter(64, 1, e.getRandomSource()));
     } finally {
       e.destroy();
     }
@@ -392,7 +392,7 @@ class GlacierMessageWireRoundTripTest {
 
   @ParameterizedTest
   @MethodSource("bloomFilters")
-  void syncMessage(BloomFilter bloom) throws IOException {
+  void syncMessage(FragmentBloomFilter bloom) throws IOException {
     GlacierSyncMessage actual = send(new GlacierSyncMessage(UID, range, 12, bloom, self, dest, TAG));
     assertEquals(range, actual.getRange());
     assertEquals(12, actual.getOffsetFID());

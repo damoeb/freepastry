@@ -50,7 +50,7 @@ import rice.persistence.Storage;
  */
 final class GlacierStatisticsCollector {
   private final GlacierConfig config;
-  private final GlacierScheduler scheduler;
+  private final GlacierContinuationRegistry scheduler;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrash trash;
@@ -62,7 +62,7 @@ final class GlacierStatisticsCollector {
   private final List<GlacierStatisticsListener> listeners;
   private GlacierStatistics statistics;
 
-  GlacierStatisticsCollector(GlacierConfig config, GlacierScheduler scheduler, GlacierTrafficShaper trafficShaper, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, CachedStorage neighborStorage, String instance, Environment environment, Logger logger) {
+  GlacierStatisticsCollector(GlacierConfig config, GlacierContinuationRegistry scheduler, GlacierTrafficShaper trafficShaper, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, CachedStorage neighborStorage, String instance, Environment environment, Logger logger) {
     this.config = config;
     this.scheduler = scheduler;
     this.trafficShaper = trafficShaper;

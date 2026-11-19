@@ -62,14 +62,14 @@ final class GlacierNeighborProtocol {
 
   private final GlacierConfig config;
   private final Endpoint endpoint;
-  private final GlacierRouter router;
+  private final GlacierMessageSender router;
   private final GlacierNeighborhood neighborhood;
   private final CachedStorage neighborStorage;
   private final IdFactory factory;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierNeighborProtocol(GlacierConfig config, Endpoint endpoint, GlacierRouter router, GlacierNeighborhood neighborhood, CachedStorage neighborStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierNeighborProtocol(GlacierConfig config, Endpoint endpoint, GlacierMessageSender router, GlacierNeighborhood neighborhood, CachedStorage neighborStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.endpoint = endpoint;
     this.router = router;

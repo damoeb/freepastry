@@ -64,8 +64,8 @@ final class GlacierInserter {
   private final int numSurvivors;
   private final GlacierPolicy policy;
   private final Endpoint endpoint;
-  private final GlacierScheduler scheduler;
-  private final GlacierRouter router;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierRetriever retriever;
@@ -73,7 +73,7 @@ final class GlacierInserter {
   private final Environment environment;
   private final Logger logger;
 
-  GlacierInserter(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, Endpoint endpoint, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierTrafficShaper trafficShaper, GlacierRetriever retriever, GlacierBulkRefresh bulkRefresh, Environment environment, Logger logger) {
+  GlacierInserter(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, Endpoint endpoint, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierTrafficShaper trafficShaper, GlacierRetriever retriever, GlacierBulkRefresh bulkRefresh, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

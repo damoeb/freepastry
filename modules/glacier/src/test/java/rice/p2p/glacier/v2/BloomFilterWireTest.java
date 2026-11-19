@@ -34,14 +34,14 @@ class BloomFilterWireTest {
   void rejectsAHashParameterOutsideTheBitField(int hashParam) throws IOException {
     SimpleInputBuffer buf = filter(hashParam);
 
-    assertThrows(IOException.class, () -> new BloomFilter(buf).contains(KEY));
+    assertThrows(IOException.class, () -> new FragmentBloomFilter(buf).contains(KEY));
   }
 
   @ParameterizedTest(name = "hash parameter {0}")
   @ValueSource(ints = {1, 7, BITS})
   @DisplayName("a hash parameter from 1 to the number of bits is read and probed")
   void readsAHashParameterInsideTheBitField(int hashParam) throws IOException {
-    BloomFilter read = new BloomFilter(filter(hashParam));
+    FragmentBloomFilter read = new FragmentBloomFilter(filter(hashParam));
     read.add(KEY);
 
     assertTrue(read.contains(KEY));

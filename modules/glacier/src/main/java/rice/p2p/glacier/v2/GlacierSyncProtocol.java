@@ -69,8 +69,8 @@ final class GlacierSyncProtocol {
   private final int numFragments;
   private final GlacierPolicy policy;
   private final Endpoint endpoint;
-  private final GlacierScheduler scheduler;
-  private final GlacierRouter router;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrafficShaper trafficShaper;
@@ -81,7 +81,7 @@ final class GlacierSyncProtocol {
   private long syncInterval;
   private int syncMaxFragments;
 
-  GlacierSyncProtocol(GlacierConfig config, int numFragments, GlacierPolicy policy, Endpoint endpoint, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierSyncProtocol(GlacierConfig config, int numFragments, GlacierPolicy policy, Endpoint endpoint, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.policy = policy;
@@ -140,7 +140,7 @@ final class GlacierSyncProtocol {
 
           final IdSet keySet = fragmentStorage.scan();
           endpoint.process(() -> {
-            BloomFilter bv = new BloomFilter((2*keySet.numElements()+5)*config.syncBloomFilterBitsPerKey(), config.syncBloomFilterNumHashes(), environment.getRandomSource());
+            FragmentBloomFilter bv = new FragmentBloomFilter((2*keySet.numElements()+5)*config.syncBloomFilterBitsPerKey(), config.syncBloomFilterNumHashes(), environment.getRandomSource());
             Iterator<Id> iter = keySet.getIterator();
 
             while (iter.hasNext()) {
@@ -161,11 +161,11 @@ final class GlacierSyncProtocol {
             }
 
             return bv;
-          }, new Continuation<BloomFilter, Exception>() {
+          }, new Continuation<FragmentBloomFilter, Exception>() {
             @Override
-            public void receiveResult(BloomFilter o) {
+            public void receiveResult(FragmentBloomFilter o) {
               if (o != null) {
-                BloomFilter bv = (BloomFilter) o;
+                FragmentBloomFilter bv = (FragmentBloomFilter) o;
                 logger.debug("Got {}", bv);
                 logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
 
@@ -232,7 +232,7 @@ final class GlacierSyncProtocol {
     Iterator<Id> iter = fragmentStorage.scan().getIterator();
     final IdRange range = gsm.getRange();
     final int offset = gsm.getOffsetFID();
-    final BloomFilter bv = gsm.getBloomFilter();
+    final FragmentBloomFilter bv = gsm.getBloomFilter();
     final long earliestAcceptableExpiration = environment.getTimeSource().currentTimeMillis() + config.syncMinRemainingLifetime();
     final long latestAcceptableStoredSince = environment.getTimeSource().currentTimeMillis() - config.syncMinQuietTime();
 

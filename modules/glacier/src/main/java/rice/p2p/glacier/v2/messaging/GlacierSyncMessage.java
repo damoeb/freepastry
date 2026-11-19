@@ -44,14 +44,14 @@ import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.glacier.v2.BloomFilter;
+import rice.p2p.glacier.v2.FragmentBloomFilter;
 
 public final class GlacierSyncMessage extends GlacierMessage {
   private final IdRange range;
   private final int offsetFID;
-  private final BloomFilter bloomFilter;
+  private final FragmentBloomFilter bloomFilter;
 
-  public GlacierSyncMessage(int uid, IdRange range, int offsetFID, BloomFilter bloomFilter, NodeHandle source, Id dest, char tag) {
+  public GlacierSyncMessage(int uid, IdRange range, int offsetFID, FragmentBloomFilter bloomFilter, NodeHandle source, Id dest, char tag) {
     super(uid, source, dest, false, tag);
 
     this.range = range;
@@ -67,7 +67,7 @@ public final class GlacierSyncMessage extends GlacierMessage {
     return range;
   }
 
-  public BloomFilter getBloomFilter() {
+  public FragmentBloomFilter getBloomFilter() {
     return bloomFilter;
   }
 
@@ -105,6 +105,6 @@ public final class GlacierSyncMessage extends GlacierMessage {
     super(buf, endpoint);
     offsetFID = buf.readInt();
     range = endpoint.readIdRange(buf);
-    bloomFilter = new BloomFilter(buf);
+    bloomFilter = new FragmentBloomFilter(buf);
   }
 }

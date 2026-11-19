@@ -132,15 +132,15 @@ class GlacierValueWireRoundTripTest {
 
   @Test
   void bloomFilter() throws IOException {
-    BloomFilter filled = new BloomFilter(2048, 4, env.getRandomSource());
+    FragmentBloomFilter filled = new FragmentBloomFilter(2048, 4, env.getRandomSource());
     filled.add(filled(10, 1));
     filled.add(filled(33, 2));
-    BloomFilter copy = WireRoundTrip.roundTrip(filled, BloomFilter::serialize, BloomFilter::new);
+    FragmentBloomFilter copy = WireRoundTrip.roundTrip(filled, FragmentBloomFilter::serialize, FragmentBloomFilter::new);
     assertEquals(filled.toString(), copy.toString());
     assertEquals(true, copy.contains(filled(10, 1)));
     assertEquals(true, copy.contains(filled(33, 2)));
-    BloomFilter small = new BloomFilter(16, 1, env.getRandomSource());
-    assertEquals(small.toString(), WireRoundTrip.roundTrip(small, BloomFilter::serialize, BloomFilter::new).toString());
+    FragmentBloomFilter small = new FragmentBloomFilter(16, 1, env.getRandomSource());
+    assertEquals(small.toString(), WireRoundTrip.roundTrip(small, FragmentBloomFilter::serialize, FragmentBloomFilter::new).toString());
   }
 
   @Test

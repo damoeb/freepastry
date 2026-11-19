@@ -44,12 +44,12 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.rawserialization.WireLengths;
 
-public class BloomFilter {
+public class FragmentBloomFilter {
 
   private byte bitfield[];
   private int hashParams[];
 
-  public BloomFilter(int length, int numHashes, RandomSource rand) {
+  public FragmentBloomFilter(int length, int numHashes, RandomSource rand) {
     bitfield = new byte[(length+7)/8];
     Arrays.fill(bitfield, (byte)0);
 
@@ -133,7 +133,7 @@ public class BloomFilter {
     return result;
   }
 
-  public BloomFilter(InputBuffer buf) throws IOException {
+  public FragmentBloomFilter(InputBuffer buf) throws IOException {
     hashParams = new int[WireLengths.readInt(buf, Integer.BYTES)];
     for (int i = 0; i < hashParams.length; i++) {
       hashParams[i] = buf.readInt();
