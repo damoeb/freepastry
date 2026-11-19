@@ -148,13 +148,13 @@ public class Aggregate implements ExpiringPastContent {
   }
 
   @Override
-  public PastContentHandle getHandle(Past local) {
-    return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), ExpiringPast.INFINITY_EXPIRATION);
+  public PastContentHandle getHandle(Past localPast) {
+    return new AggregateHandle(localPast.getLocalNodeHandle(), myId, getVersion(), ExpiringPast.INFINITY_EXPIRATION);
   }
 
   @Override
-  public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
-    return new AggregateHandle(local.getLocalNodeHandle(), myId, getVersion(), expiration);
+  public ExpiringPastContentHandle getHandle(ExpiringPast localPast, long expiration) {
+    return new AggregateHandle(localPast.getLocalNodeHandle(), myId, getVersion(), expiration);
   }
 
   @Override

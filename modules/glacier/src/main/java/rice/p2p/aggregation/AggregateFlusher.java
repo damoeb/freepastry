@@ -291,18 +291,18 @@ final class AggregateFlusher {
     }
 
     private void unstoreComponents() {
-      final Continuation.MultiContinuation<Object[]> c2 = new Continuation.MultiContinuation<Object[]>(command, desc.length);
+      final Continuation.MultiContinuation<Object[]> multiContinuation = new Continuation.MultiContinuation<Object[]>(command, desc.length);
       for (int i=0; i<desc.length; i++) {
-        final Continuation<Object, Exception> c2s = c2.getSubContinuation(i);
+        final Continuation<Object, Exception> subContinuation = multiContinuation.getSubContinuation(i);
         waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion()), new Continuation<Boolean, Exception>() {
           @Override
           public void receiveResult(Boolean result) {
-            c2s.receiveResult(result);
+            subContinuation.receiveResult(result);
           }
           @Override
           public void receiveException(Exception e) {
             logger.warn("Exception while unstoring aggregate component: ", e);
-            c2s.receiveException(e);
+            subContinuation.receiveException(e);
           }
         });
       }

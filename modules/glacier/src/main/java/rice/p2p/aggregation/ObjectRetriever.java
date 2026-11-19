@@ -287,8 +287,8 @@ final class ObjectRetriever {
     });
   }
 
-  private void validateAndExtract(final AggregateDescriptor aggregate, final int objDescIndex, final Aggregate aggr, final Continuation<? super ExpiringPastContent, Exception> command) {
-    endpoint.process(() -> factory.buildId(aggr.getContentHash()), new Continuation<Id, Exception>() {
+  private void validateAndExtract(final AggregateDescriptor aggregate, final int objDescIndex, final Aggregate fetchedAggregate, final Continuation<? super ExpiringPastContent, Exception> command) {
+    endpoint.process(() -> factory.buildId(fetchedAggregate.getContentHash()), new Continuation<Id, Exception>() {
       @Override
       public void receiveResult(Id result) {
         if (result != null) {
@@ -302,14 +302,14 @@ final class ObjectRetriever {
 
           logger.debug("Object {} (#{}) successfully retrieved from {}", aggregate.getObjects()[objDescIndex].getKey(), objDescIndex, aggregate.getKey());
 
-          objectStore.insert(aggr.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
+          objectStore.insert(fetchedAggregate.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
             @Override
             public void receiveResult(Boolean[] results) {}
             @Override
             public void receiveException(Exception e) {}
           });
 
-          command.receiveResult(aggr.getComponent(objDescIndex));
+          command.receiveResult(fetchedAggregate.getComponent(objDescIndex));
         } else {
           logger.warn("retrieveObjectFromAggregate cannot determine content hash, received {}", result);
           command.receiveException(new AggregationException("retrieveObjectFromAggregate cannot determine content hash"));

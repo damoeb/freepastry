@@ -165,11 +165,11 @@ final class GlacierBulkRefresh {
       }
       @Override
       public void receiveResult(Object received) {
-        if (received instanceof GlacierRefreshResponseMessage grrm) {
-          IdRange thisRange = grrm.getRange();
-          NodeHandle holder = grrm.isOnline() ? grrm.getSource() : null;
+        if (received instanceof GlacierRefreshResponseMessage refreshResponseMessage) {
+          IdRange thisRange = refreshResponseMessage.getRange();
+          NodeHandle holder = refreshResponseMessage.isOnline() ? refreshResponseMessage.getSource() : null;
 
-          logger.debug("AR got refresh response: range {}, online={}", thisRange, grrm.isOnline());
+          logger.debug("AR got refresh response: range {}, online={}", thisRange, refreshResponseMessage.isOnline());
           if (thisRange != null) {
             for (int i=0; i<ids.length; i++) {
               for (int j=0; j<numFragments; j++) {
@@ -205,35 +205,35 @@ final class GlacierBulkRefresh {
               }
             }
           }
-        } else if (received instanceof GlacierRefreshCompleteMessage grcm) {
-          logger.debug("AR Refresh completion reported by {}", grcm.getSource());
+        } else if (received instanceof GlacierRefreshCompleteMessage refreshCompleteMessage) {
+          logger.debug("AR Refresh completion reported by {}", refreshCompleteMessage.getSource());
 
-          for (int i=0; i<grcm.numKeys(); i++) {
-            if (logger.isDebugEnabled()) logger.debug("AR Refresh completion: Key "+grcm.getKey(i)+", "+grcm.getUpdates(i)+" update(s)");
+          for (int i=0; i<refreshCompleteMessage.numKeys(); i++) {
+            if (logger.isDebugEnabled()) logger.debug("AR Refresh completion: Key "+refreshCompleteMessage.getKey(i)+", "+refreshCompleteMessage.getUpdates(i)+" update(s)");
 
             int index = -1;
             for (int j=0; j<ids.length; j++) {
-              if (grcm.getKey(i).equals(versionKey[j]))
+              if (refreshCompleteMessage.getKey(i).equals(versionKey[j]))
                 index = j;
             }
 
             if (index >= 0) {
               int maxSuccesses = 0;
               for (int j=0; j<numFragments; j++) {
-                if (!fragmentChecked[index][j] && (fragmentHolder[index][j] != null) && fragmentHolder[index][j].equals(grcm.getSource())) {
+                if (!fragmentChecked[index][j] && (fragmentHolder[index][j] != null) && fragmentHolder[index][j].equals(refreshCompleteMessage.getSource())) {
                   maxSuccesses ++;
                   fragmentChecked[index][j] = true;
                 }
               }
 
-              if (grcm.getUpdates(i) > maxSuccesses) {
-                if (logger.isWarnEnabled()) logger.warn("Node "+grcm.getSource()+" reports "+grcm.getUpdates(i)+" for "+grcm.getKey(i)+", but is responsible for only "+maxSuccesses+" fragments -- duplicate message, or under attack?");
+              if (refreshCompleteMessage.getUpdates(i) > maxSuccesses) {
+                if (logger.isWarnEnabled()) logger.warn("Node "+refreshCompleteMessage.getSource()+" reports "+refreshCompleteMessage.getUpdates(i)+" for "+refreshCompleteMessage.getKey(i)+", but is responsible for only "+maxSuccesses+" fragments -- duplicate message, or under attack?");
                 successes[index] += maxSuccesses;
               } else {
-                successes[index] += (int) grcm.getUpdates(i); // at most maxSuccesses, checked above
+                successes[index] += (int) refreshCompleteMessage.getUpdates(i); // at most maxSuccesses, checked above
               }
             } else {
-              if (logger.isWarnEnabled()) logger.warn("Node "+grcm.getSource()+" reports completion for "+grcm.getKey(i)+", but no refresh request matches?!?");
+              if (logger.isWarnEnabled()) logger.warn("Node "+refreshCompleteMessage.getSource()+" reports completion for "+refreshCompleteMessage.getKey(i)+", but no refresh request matches?!?");
             }
           }
 
@@ -482,8 +482,8 @@ final class GlacierBulkRefresh {
    * Tells a refresh initiator which range around the requested id this node, or one of its neighbors,
    * is responsible for.
    */
-  void handleProbe(final GlacierRefreshProbeMessage grpm) {
-    Id requestedId = grpm.getRequestedId();
+  void handleProbe(final GlacierRefreshProbeMessage refreshPatchMessage) {
+    Id requestedId = refreshPatchMessage.getRequestedId();
 
     logger.info("Refresh probe for {} (RR={})", requestedId, neighborhood.getResponsibleRange());
 
@@ -506,8 +506,8 @@ final class GlacierBulkRefresh {
 
     router.sendMessage(
       null,
-      new GlacierRefreshResponseMessage(grpm.getUID(), returnedRange, online, router.getLocalNodeHandle(), grpm.getSource().getId(), grpm.getTag()),
-      grpm.getSource()
+      new GlacierRefreshResponseMessage(refreshPatchMessage.getUID(), returnedRange, online, router.getLocalNodeHandle(), refreshPatchMessage.getSource().getId(), refreshPatchMessage.getTag()),
+      refreshPatchMessage.getSource()
     );
   }
 
@@ -515,13 +515,13 @@ final class GlacierBulkRefresh {
    * Applies the new expirations and signatures of a refresh patch to the local fragments, and reports
    * how many fragments of each object were updated.
    */
-  void handlePatch(final GlacierRefreshPatchMessage grpm) {
-    logger.atInfo().log(() -> "AR Refresh patches received for "+grpm.numKeys()+" keys. Processing...");
+  void handlePatch(final GlacierRefreshPatchMessage refreshPatchMessage) {
+    logger.atInfo().log(() -> "AR Refresh patches received for "+refreshPatchMessage.numKeys()+" keys. Processing...");
     Continuation<Object, Exception> continuation = new Continuation<Object, Exception>() {
       static final int phaseFetch = 1;
       static final int phaseStore = 2;
       static final int phaseAdvance = 3;
-      int[] successes = new int[grpm.numKeys()];
+      int[] successes = new int[refreshPatchMessage.numKeys()];
       int currentPhase = phaseAdvance;
       FragmentKey currentKey = null;
       int currentIndex = 0;
@@ -540,25 +540,25 @@ final class GlacierBulkRefresh {
             currentPhase = phaseAdvance;
           } else {
             // a copy: the stored manifest must stay as it is unless the owner signed the new expiration
-            patched = fragmentAndManifest.getManifest().withExpiration(grpm.getLifetime(currentIndex), grpm.getSignature(currentIndex));
+            patched = fragmentAndManifest.getManifest().withExpiration(refreshPatchMessage.getLifetime(currentIndex), refreshPatchMessage.getSignature(currentIndex));
           }
 
           if (patched != null && policy.checkSignature(patched, currentKey.versionKey())) {
             FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(currentKey);
             if (metadata != null) {
-              if (metadata.currentExpiration() <= grpm.getLifetime(currentIndex)) {
+              if (metadata.currentExpiration() <= refreshPatchMessage.getLifetime(currentIndex)) {
                 currentPhase = phaseStore;
-                if (metadata.currentExpiration() == grpm.getLifetime(currentIndex)) {
-                  logger.atDebug().log(() -> "AR Duplicate refresh request (prev="+metadata.previousExpiration()+" cur="+metadata.currentExpiration()+" updated="+grpm.getLifetime(currentIndex)+") -- ignoring");
+                if (metadata.currentExpiration() == refreshPatchMessage.getLifetime(currentIndex)) {
+                  logger.atDebug().log(() -> "AR Duplicate refresh request (prev="+metadata.previousExpiration()+" cur="+metadata.currentExpiration()+" updated="+refreshPatchMessage.getLifetime(currentIndex)+") -- ignoring");
                 } else {
-                  FragmentMetadata newMetadata = new FragmentMetadata(grpm.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
+                  FragmentMetadata newMetadata = new FragmentMetadata(refreshPatchMessage.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
                   logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.previousExpiration(), newMetadata.currentExpiration());
                   fragmentAndManifest.replaceManifest(patched);
                   fragmentStorage.store(currentKey, newMetadata, fragmentAndManifest, this);
                   return;
                 }
               } else {
-                logger.atWarn().log(() -> "RefreshPatch attempts to roll back lifetime from "+metadata.currentExpiration()+" to "+grpm.getLifetime(currentIndex));
+                logger.atWarn().log(() -> "RefreshPatch attempts to roll back lifetime from "+metadata.currentExpiration()+" to "+refreshPatchMessage.getLifetime(currentIndex));
                 currentPhase = phaseStore;
               }
             } else {
@@ -585,12 +585,12 @@ final class GlacierBulkRefresh {
               currentIndex ++;
             }
 
-            if (currentIndex >= grpm.numKeys()) {
+            if (currentIndex >= refreshPatchMessage.numKeys()) {
               respond();
               return;
             }
 
-            currentKey = new FragmentKey(grpm.getKey(currentIndex), currentFID);
+            currentKey = new FragmentKey(refreshPatchMessage.getKey(currentIndex), currentFID);
           } while (!fragmentStorage.exists(currentKey));
 
           currentPhase = phaseFetch;
@@ -607,8 +607,8 @@ final class GlacierBulkRefresh {
 
         router.sendMessage(
           null,
-          new GlacierRefreshCompleteMessage(grpm.getUID(), grpm.getAllKeys(), successes, router.getLocalNodeHandle(), grpm.getSource().getId(), grpm.getTag()),
-          grpm.getSource()
+          new GlacierRefreshCompleteMessage(refreshPatchMessage.getUID(), refreshPatchMessage.getAllKeys(), successes, router.getLocalNodeHandle(), refreshPatchMessage.getSource().getId(), refreshPatchMessage.getTag()),
+          refreshPatchMessage.getSource()
         );
       }
       @Override

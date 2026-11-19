@@ -85,11 +85,11 @@ final class FragmentLocator {
     return objectKey.addToId(factory.buildIdDistance(getDistance(totalOffset - Math.floor(totalOffset))));
   }
 
-  Id getFragmentLocation(FragmentKey fkey) {
+  Id getFragmentLocation(FragmentKey fragmentKey) {
     return getFragmentLocation(
-      fkey.versionKey().id(),
-      fkey.fragmentId(),
-      fkey.versionKey().version()
+      fragmentKey.versionKey().id(),
+      fragmentKey.fragmentId(),
+      fragmentKey.versionKey().version()
     );
   }
 }

@@ -232,9 +232,9 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
 
   @Override
   public void lookup(Id id, long version, Continuation<? super PastContent, Exception> command) {
-    VersionKey vkey = new VersionKey(policy.storageId(id), version);
+    VersionKey versionKey = new VersionKey(policy.storageId(id), version);
     logger.info("lookup({}v{})", id, version);
-    retriever.retrieveObject(vkey, null, true, GlacierTags.LOOKUP, command);
+    retriever.retrieveObject(versionKey, null, true, GlacierTags.LOOKUP, command);
   }
 
   @Override

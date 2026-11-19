@@ -69,12 +69,12 @@ public class VersionKeyRange extends GlacierKeyRange {
   /**
    * Determines equality
    *
-   * @param o To compare to
+   * @param candidate To compare to
    * @return Equals
    */
   @Override
-  public boolean equals(Object o) {
-    return (o instanceof VersionKeyRange other) && range.equals(other.range);
+  public boolean equals(Object candidate) {
+    return (candidate instanceof VersionKeyRange candidateRange) && range.equals(candidateRange.range);
   }
 
   /**

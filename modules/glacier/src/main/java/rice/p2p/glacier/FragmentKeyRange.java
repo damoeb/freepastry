@@ -69,12 +69,12 @@ public class FragmentKeyRange extends GlacierKeyRange {
   /**
    * Two FragmentKeyRanges are equal if their underlying ranges are.
    *
-   * @param o the object to compare to
+   * @param candidate the object to compare to
    * @return whether o is a FragmentKeyRange over an equal range
    */
   @Override
-  public boolean equals(Object o) {
-    return (o instanceof FragmentKeyRange other) && range.equals(other.range);
+  public boolean equals(Object candidate) {
+    return (candidate instanceof FragmentKeyRange candidateRange) && range.equals(candidateRange.range);
   }
 
   /**

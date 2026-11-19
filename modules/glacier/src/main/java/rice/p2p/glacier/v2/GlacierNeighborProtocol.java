@@ -128,10 +128,10 @@ final class GlacierNeighborProtocol {
       }
       @Override
       public void receiveResult(Object result) {
-        if (result instanceof GlacierNeighborResponseMessage gnrm) {
-          logger.atDebug().log(() -> "NeighborResponse from "+gnrm.getSource()+" with "+gnrm.numNeighbors()+" neighbors");
-          for (int i=0; i<gnrm.numNeighbors(); i++)
-            neighborhood.neighborSeen(gnrm.getNeighbor(i), gnrm.getLastSeen(i));
+        if (result instanceof GlacierNeighborResponseMessage neighborResponseMessage) {
+          logger.atDebug().log(() -> "NeighborResponse from "+neighborResponseMessage.getSource()+" with "+neighborResponseMessage.numNeighbors()+" neighbors");
+          for (int i=0; i<neighborResponseMessage.numNeighbors(); i++)
+            neighborhood.neighborSeen(neighborResponseMessage.getNeighbor(i), neighborResponseMessage.getLastSeen(i));
         } else {
           logger.warn("Unknown response in neighbor continuation: {} -- discarded", result);
         }
@@ -157,8 +157,8 @@ final class GlacierNeighborProtocol {
   /**
    * Answers a neighbor request with the neighbors in the requested range, and when each was last seen.
    */
-  void handleNeighborRequest(final GlacierNeighborRequestMessage gnrm) {
-    final IdSet requestedNeighbors = neighborStorage.scan(gnrm.getRequestedRange());
+  void handleNeighborRequest(final GlacierNeighborRequestMessage neighborResponseMessage) {
+    final IdSet requestedNeighbors = neighborStorage.scan(neighborResponseMessage.getRequestedRange());
     final int numRequested = requestedNeighbors.numElements();
 
     if (numRequested < 1) {
@@ -166,7 +166,7 @@ final class GlacierNeighborProtocol {
       return;
     }
 
-    logger.info("Neighbor request for {}, found {} neighbors", gnrm.getRequestedRange(), numRequested);
+    logger.info("Neighbor request for {}, found {} neighbors", neighborResponseMessage.getRequestedRange(), numRequested);
 
     final Id[] neighbors = new Id[numRequested];
     final long[] lastSeen = new long[numRequested];
@@ -180,7 +180,7 @@ final class GlacierNeighborProtocol {
 
       @Override
       public void receiveResult(Object result) {
-        logger.debug("Continue: NeighborRequest from {} for range {}", gnrm.getSource().getId(), gnrm.getRequestedRange());
+        logger.debug("Continue: NeighborRequest from {} for range {}", neighborResponseMessage.getSource().getId(), neighborResponseMessage.getRequestedRange());
 
         if (result == null) {
           logger.warn("Problem while retrieving neighbors -- canceled");
@@ -197,8 +197,8 @@ final class GlacierNeighborProtocol {
             logger.debug("Sending neighbor response...");
             router.sendMessage(
               null,
-              new GlacierNeighborResponseMessage(gnrm.getUID(), neighbors, lastSeen, router.getLocalNodeHandle(), gnrm.getSource().getId(), gnrm.getTag()),
-              gnrm.getSource()
+              new GlacierNeighborResponseMessage(neighborResponseMessage.getUID(), neighbors, lastSeen, router.getLocalNodeHandle(), neighborResponseMessage.getSource().getId(), neighborResponseMessage.getTag()),
+              neighborResponseMessage.getSource()
             );
           }
         }
@@ -206,7 +206,7 @@ final class GlacierNeighborProtocol {
 
       @Override
       public void receiveException(Exception e) {
-        logger.warn("Problem while retrieving neighbors in range {} for {} -- canceled", gnrm.getRequestedRange(), gnrm.getSource(), e);
+        logger.warn("Problem while retrieving neighbors in range {} for {} -- canceled", neighborResponseMessage.getRequestedRange(), neighborResponseMessage.getSource(), e);
       }
     });
   }

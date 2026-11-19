@@ -82,13 +82,13 @@ public class DebugContent implements ExpiringPastContent {
   }
 
   @Override
-  public PastContentHandle getHandle(Past local) {
-    return new DebugContentHandle(myId, version, ExpiringPast.INFINITY_EXPIRATION, local.getLocalNodeHandle());
+  public PastContentHandle getHandle(Past localPast) {
+    return new DebugContentHandle(myId, version, ExpiringPast.INFINITY_EXPIRATION, localPast.getLocalNodeHandle());
   }
 
   @Override
-  public ExpiringPastContentHandle getHandle(ExpiringPast local, long expiration) {
-    return new DebugContentHandle(myId, version, expiration, local.getLocalNodeHandle());
+  public ExpiringPastContentHandle getHandle(ExpiringPast localPast, long expiration) {
+    return new DebugContentHandle(myId, version, expiration, localPast.getLocalNodeHandle());
   }
 
   @Override

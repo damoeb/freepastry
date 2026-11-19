@@ -100,17 +100,17 @@ final class AggregateStorer {
     return 0;
   }
 
-  void storeAggregate(final Aggregate aggr, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
+  void storeAggregate(final Aggregate aggregate, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
     logger.debug("storeAggregate() schedules content hash computation...");
     endpoint.process(() -> {
       logger.debug("storeAggregate() starts working on content hash...");
-      return factory.buildId(aggr.getContentHash());
+      return factory.buildId(aggregate.getContentHash());
     }, new Continuation<Id, Exception>() {
       @Override
       public void receiveResult(Id result) {
         if (result != null) {
-          aggr.setId((Id) result);
-          insertAggregate(aggr, expiration, desc, pointers, command);
+          aggregate.setId((Id) result);
+          insertAggregate(aggregate, expiration, desc, pointers, command);
         } else {
           logger.warn("storeAggregate() cannot determine content hash, received {}", result);
           command.receiveException(new AggregationException("storeAggregate() cannot determine content hash"));
@@ -124,15 +124,15 @@ final class AggregateStorer {
     });
   }
 
-  private void insertAggregate(final Aggregate aggr, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
-    logger.atInfo().log(() -> "Storing aggregate, CH="+aggr.getId()+", expiration="+expiration+" (rel "+(expiration-timeSource.currentTimeMillis())+") with "+desc.length+" objects:");
+  private void insertAggregate(final Aggregate aggregate, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
+    logger.atInfo().log(() -> "Storing aggregate, CH="+aggregate.getId()+", expiration="+expiration+" (rel "+(expiration-timeSource.currentTimeMillis())+") with "+desc.length+" objects:");
     for (int j=0; j<desc.length; j++)
       logger.info("#{}: {}", j, desc[j]);
 
     Continuation<Boolean[], Exception> continuation = new Continuation<Boolean[], Exception>() {
       @Override
       public void receiveResult(Boolean[] results) {
-        commitAggregate(aggr, expiration, desc, pointers, results, command);
+        commitAggregate(aggregate, expiration, desc, pointers, results, command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -141,14 +141,14 @@ final class AggregateStorer {
     };
 
     if (aggregateStore instanceof ExpiringPast gcPast)
-      gcPast.insert(aggr, expiration, continuation);
+      gcPast.insert(aggregate, expiration, continuation);
     else
-      aggregateStore.insert(aggr, continuation);
+      aggregateStore.insert(aggregate, continuation);
   }
 
-  private void commitAggregate(Aggregate aggr, long expiration, ObjectDescriptor[] desc, Id[] pointers, Boolean[] results, Continuation<? super Boolean, Exception> command) {
+  private void commitAggregate(Aggregate storedAggregate, long expiration, ObjectDescriptor[] desc, Id[] pointers, Boolean[] results, Continuation<? super Boolean, Exception> command) {
     AggregateDescriptor aggregate = new AggregateDescriptor(
-      aggr.getId(),
+      storedAggregate.getId(),
       expiration,
       desc,
       pointers
@@ -156,7 +156,7 @@ final class AggregateStorer {
 
     if (results != null) {
       aggregateList.addAggregateDescriptor(aggregate);
-      aggregateList.setRoot(aggr.getId());
+      aggregateList.setRoot(storedAggregate.getId());
       aggregateList.writeToDisk();
       logger.debug("Aggregate inserted successfully");
       command.receiveResult(Boolean.valueOf(true));

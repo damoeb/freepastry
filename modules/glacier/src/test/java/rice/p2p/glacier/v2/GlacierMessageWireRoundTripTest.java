@@ -123,11 +123,11 @@ class GlacierMessageWireRoundTripTest {
   }
 
   private static Fragment fragment(int size) {
-    Fragment f = new Fragment(size);
+    Fragment fragment = new Fragment(size);
     for (int i = 0; i < size; i++) {
-      f.getPayload()[i] = (byte) (i * 31);
+      fragment.getPayload()[i] = (byte) (i * 31);
     }
-    return f;
+    return fragment;
   }
 
   private static Manifest manifest(boolean signed) {
@@ -137,11 +137,11 @@ class GlacierMessageWireRoundTripTest {
     }
     byte[] objectHash = new byte[20];
     Arrays.fill(objectHash, (byte) 3);
-    Manifest m = new Manifest(objectHash, hashes, 1_700_000_000_000L, new byte[] {5, 5, 5}, new byte[] {6, 6});
+    Manifest manifest = new Manifest(objectHash, hashes, 1_700_000_000_000L, new byte[] {5, 5, 5}, new byte[] {6, 6});
     if (signed) {
-      m.setSignature(new byte[] {9, 8, 7});
+      manifest.setSignature(new byte[] {9, 8, 7});
     }
-    return m;
+    return manifest;
   }
 
   /** The message through the transport-level read, and routed to its destination over two hops. */
@@ -308,21 +308,21 @@ class GlacierMessageWireRoundTripTest {
 
   @ParameterizedTest
   @MethodSource("ranges")
-  void rangeQueryMessage(IdRange r) throws IOException {
-    assertEquals(r, send(new GlacierRangeQueryMessage(UID, r, self, dest, TAG)).getRequestedRange());
+  void rangeQueryMessage(IdRange range) throws IOException {
+    assertEquals(range, send(new GlacierRangeQueryMessage(UID, range, self, dest, TAG)).getRequestedRange());
   }
 
   @ParameterizedTest
   @MethodSource("ranges")
-  void rangeResponseMessage(IdRange r) throws IOException {
-    assertEquals(r, send(new GlacierRangeResponseMessage(UID, r, self, dest, TAG)).getCommonRange());
+  void rangeResponseMessage(IdRange range) throws IOException {
+    assertEquals(range, send(new GlacierRangeResponseMessage(UID, range, self, dest, TAG)).getCommonRange());
   }
 
   @ParameterizedTest
   @MethodSource("ranges")
-  void rangeForwardMessage(IdRange r) throws IOException {
-    GlacierRangeForwardMessage actual = send(new GlacierRangeForwardMessage(UID, r, peer, self, dest, TAG));
-    assertEquals(r, actual.getRequestedRange());
+  void rangeForwardMessage(IdRange range) throws IOException {
+    GlacierRangeForwardMessage actual = send(new GlacierRangeForwardMessage(UID, range, peer, self, dest, TAG));
+    assertEquals(range, actual.getRequestedRange());
     assertEquals(peer.getId(), actual.getRequestor().getId());
   }
 
@@ -371,10 +371,10 @@ class GlacierMessageWireRoundTripTest {
 
   @ParameterizedTest
   @MethodSource("ranges")
-  void refreshResponseMessage(IdRange r) throws IOException {
+  void refreshResponseMessage(IdRange range) throws IOException {
     for (boolean online : new boolean[] {true, false}) {
-      GlacierRefreshResponseMessage actual = send(new GlacierRefreshResponseMessage(UID, r, online, self, dest, TAG));
-      assertEquals(r, actual.getRange());
+      GlacierRefreshResponseMessage actual = send(new GlacierRefreshResponseMessage(UID, range, online, self, dest, TAG));
+      assertEquals(range, actual.getRange());
       assertEquals(online, actual.isOnline());
     }
   }

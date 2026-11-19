@@ -41,14 +41,14 @@ class AggregateListTest {
     Path config = dir.resolve("aggregates");
     Files.writeString(Path.of(config + ".log"), "this is not a log entry\n");
     PastryIdFactory idFactory = new PastryIdFactory(env);
-    UnixOperatingSystemMXBean os = (UnixOperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-    long before = os.getOpenFileDescriptorCount();
+    UnixOperatingSystemMXBean operatingSystem = (UnixOperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+    long before = operatingSystem.getOpenFileDescriptorCount();
 
     for (int i = 0; i < ATTEMPTS; i++) {
       assertThrows(IllegalStateException.class, () -> new AggregateList(config.toString(), "test", idFactory, true, "test", env));
     }
 
-    long leaked = os.getOpenFileDescriptorCount() - before;
+    long leaked = operatingSystem.getOpenFileDescriptorCount() - before;
     assertTrue(leaked < TOLERATED_NEW_DESCRIPTORS, "file descriptors left open by failed log recoveries: " + leaked);
   }
 }

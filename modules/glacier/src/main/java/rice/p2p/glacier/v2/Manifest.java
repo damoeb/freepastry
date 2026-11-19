@@ -150,7 +150,7 @@ public class Manifest {
   }
 
   private static String dump(byte[] data, boolean linebreak) {
-    final String hex = "0123456789ABCDEF";
+    final String hexDigits = "0123456789ABCDEF";
     if (data == null)
       return "null";
 
@@ -163,7 +163,7 @@ public class Manifest {
       int hi = (d>>4);
       int lo = (d&15);
 
-      result = result + hex.charAt(hi) + hex.charAt(lo);
+      result = result + hexDigits.charAt(hi) + hexDigits.charAt(lo);
       if (linebreak && (((i%16)==15) || (i==(data.length-1))))
         result = result + "\n";
       else if (i!=(data.length-1))

@@ -210,19 +210,19 @@ final class GlacierDebugCommands {
       Id id = factory.buildIdFromString(keyArg);
       long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
       inserter.refresh(new Id[] { id }, new long[] { 0 }, new long[] { expiration }, new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
-          ret.complete("result("+result+")");
+          reply.complete("result("+result+")");
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("exception("+e+")");
+          reply.complete("exception("+e+")");
         }
       });
 
-      return "refresh("+id+", "+expiration+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      return "refresh("+id+", "+expiration+")="+awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (instanceFreeCommand.startsWith("neighbors")) {
@@ -230,7 +230,7 @@ final class GlacierDebugCommands {
       @SuppressWarnings("JdkObsolete") // appended from lookup continuations that may run on different threads
       final StringBuffer result = new StringBuffer();
       final long now = (instanceFreeCommand.indexOf("-r") < 0) ? 0 : environment.getTimeSource().currentTimeMillis();
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
 
       result.append(neighborStorage.scan().numElements()+ " neighbor(s)\n");
 
@@ -245,17 +245,17 @@ final class GlacierDebugCommands {
             currentLookup = (Id) iter.next();
             neighborStorage.getObject(currentLookup, this);
           } else {
-            ret.complete("OK");
+            reply.complete("OK");
           }
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("Exception: "+e);
+          reply.complete("Exception: "+e);
         }
       };
 
       continuation.receiveResult(null);
-      String outcome = awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      String outcome = awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT);
       // the StringBuffer is synchronized, and complete() happens-after the last append
       result.append(outcome+"\n");
       return result.toString();
@@ -318,36 +318,36 @@ final class GlacierDebugCommands {
     }
 
     if (instanceFreeCommand.startsWith("delete") && config.faultInjectionEnabled()) {
-      String[] vkeyS = instanceFreeCommand.substring(7).split("[v#]");
-      Id key = factory.buildIdFromString(vkeyS[0]);
-      long version = Long.parseLong(vkeyS[1]);
-      VersionKey vkey = new VersionKey(key, version);
-      FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
+      String[] versionKeyParts = instanceFreeCommand.substring(7).split("[v#]");
+      Id key = factory.buildIdFromString(versionKeyParts[0]);
+      long version = Long.parseLong(versionKeyParts[1]);
+      VersionKey versionKey = new VersionKey(key, version);
+      FragmentKey id = new FragmentKey(versionKey, Integer.parseInt(versionKeyParts[2]));
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
       fragmentStorage.unstore(id, new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
-          ret.complete("result("+result+")");
+          reply.complete("result("+result+")");
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("exception("+e+")");
+          reply.complete("exception("+e+")");
         }
       });
 
-      return "delete("+id+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      return "delete("+id+")="+awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (instanceFreeCommand.startsWith("burst") && config.faultInjectionEnabled()) {
-      String[] vkeyS = instanceFreeCommand.substring(6).split("[v#]");
-      Id key = factory.buildIdFromString(vkeyS[0]);
-      long version = Long.parseLong(vkeyS[1]);
-      VersionKey vkey = new VersionKey(key, version);
-      final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
+      String[] versionKeyParts = instanceFreeCommand.substring(6).split("[v#]");
+      Id key = factory.buildIdFromString(versionKeyParts[0]);
+      long version = Long.parseLong(versionKeyParts[1]);
+      VersionKey versionKey = new VersionKey(key, version);
+      final FragmentKey id = new FragmentKey(versionKey, Integer.parseInt(versionKeyParts[2]));
       final Id fragmentLoc = locator.getFragmentLocation(id);
 
-      final String[] ret = new String[] { "" }; // only touched by the selector thread, until done completes
+      final String[] reply = new String[] { "" }; // only touched by the selector thread, until done completes
       final CompletableFuture<String> done = new CompletableFuture<String>();
       final long now = environment.getTimeSource().currentTimeMillis();
       scheduler.addContinuation(new GlacierContinuation() {
@@ -370,7 +370,7 @@ final class GlacierDebugCommands {
         @Override
         public void receiveResult(Object result) {
           if (result instanceof GlacierResponseMessage glacierResponseMessage) {
-            ret[0] = ret[0] + (environment.getTimeSource().currentTimeMillis() - now) + " msec ("+glacierResponseMessage.getSource().getId()+")\n";
+            reply[0] = reply[0] + (environment.getTimeSource().currentTimeMillis() - now) + " msec ("+glacierResponseMessage.getSource().getId()+")\n";
             if (++receivedSoFar == total)
               timeoutExpired();
           }
@@ -380,7 +380,7 @@ final class GlacierDebugCommands {
         }
         @Override
         public void timeoutExpired() {
-          done.complete(ret[0]);
+          done.complete(reply[0]);
           terminate();
         }
         @Override
@@ -393,54 +393,54 @@ final class GlacierDebugCommands {
     }
 
     if (instanceFreeCommand.startsWith("manifest")) {
-      String[] vkeyS = instanceFreeCommand.substring(9).split("v");
-      Id key = factory.buildIdFromString(vkeyS[0]);
-      long version = Long.parseLong(vkeyS[1]);
-      VersionKey vkey = new VersionKey(key, version);
+      String[] versionKeyParts = instanceFreeCommand.substring(9).split("v");
+      Id key = factory.buildIdFromString(versionKeyParts[0]);
+      long version = Long.parseLong(versionKeyParts[1]);
+      VersionKey versionKey = new VersionKey(key, version);
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
-      retriever.retrieveManifest(vkey, GlacierTags.DEBUG, new Continuation<Object, Exception>() {
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
+      retriever.retrieveManifest(versionKey, GlacierTags.DEBUG, new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           if (result instanceof Manifest manifest)
-            ret.complete(manifest.toStringFull());
+            reply.complete(manifest.toStringFull());
           else
-            ret.complete("result("+result+")");
+            reply.complete("result("+result+")");
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("exception("+e+")");
+          reply.complete("exception("+e+")");
         }
       });
 
-      return "manifest("+vkey+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      return "manifest("+versionKey+")="+awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (instanceFreeCommand.startsWith("retrieve")) {
-      String[] vkeyS = instanceFreeCommand.substring(9).split("[v#]");
-      Id key = factory.buildIdFromString(vkeyS[0]);
-      long version = Long.parseLong(vkeyS[1]);
-      VersionKey vkey = new VersionKey(key, version);
-      final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
+      String[] versionKeyParts = instanceFreeCommand.substring(9).split("[v#]");
+      Id key = factory.buildIdFromString(versionKeyParts[0]);
+      long version = Long.parseLong(versionKeyParts[1]);
+      VersionKey versionKey = new VersionKey(key, version);
+      final FragmentKey id = new FragmentKey(versionKey, Integer.parseInt(versionKeyParts[2]));
       final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(id);
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
       fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
-          ret.complete("OK\n\nFragment: "+fragmentAndManifest.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fragmentAndManifest.getFragment().getPayload()), false)+"], ID="+id.fragmentId()+"\n\nValidation: " +
+          reply.complete("OK\n\nFragment: "+fragmentAndManifest.getFragment().getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(fragmentAndManifest.getFragment().getPayload()), false)+"], ID="+id.fragmentId()+"\n\nValidation: " +
                    (fragmentAndManifest.getManifest().validatesFragment(fragmentAndManifest.getFragment(), id.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
                    fragmentAndManifest.getManifest().toStringFull()+"\n\nMetadata:\n - Stored since: "+metadata.storedSince()+
                    "\n - Current expiration: "+metadata.currentExpiration()+"\n - Previous expiration: "+metadata.previousExpiration()+"\n");
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("exception("+e+")");
+          reply.complete("exception("+e+")");
         }
       });
 
-      return "retrieve("+id+")="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT);
+      return "retrieve("+id+")="+awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT);
     }
 
     if (instanceFreeCommand.startsWith("validate")) {
@@ -451,7 +451,7 @@ final class GlacierDebugCommands {
 
       result.append(keyset.numElements()+ " fragment(s)\n");
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
       if (iter.hasNext()) {
         final FragmentKey thisKey = (FragmentKey) iter.next();
         fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
@@ -484,29 +484,29 @@ final class GlacierDebugCommands {
               fragmentStorage.getObject(currentKey, this);
             } else {
               if (totalFailures == 0)
-                ret.complete("OK ("+totalChecks+" fragments checked)");
+                reply.complete("OK ("+totalChecks+" fragments checked)");
               else
-                ret.complete("FAIL, "+totalFailures+"/"+totalChecks+" fragments damaged");
+                reply.complete("FAIL, "+totalFailures+"/"+totalChecks+" fragments damaged");
             }
           }
         });
 
-        return "validate="+awaitDebugResult(ret, DEBUG_COMMAND_TIMEOUT)+"\n\n"+result.toString();
+        return "validate="+awaitDebugResult(reply, DEBUG_COMMAND_TIMEOUT)+"\n\n"+result.toString();
       }
 
       return "validate: no objects\n\n" + result.toString();
     }
 
     if (instanceFreeCommand.startsWith("fetch")) {
-      String[] vkeyS = instanceFreeCommand.substring(6).split("[v#]");
-      Id key = factory.buildIdFromString(vkeyS[0]);
-      long version = Long.parseLong(vkeyS[1]);
-      VersionKey vkey = new VersionKey(key, version);
-      final FragmentKey id = new FragmentKey(vkey, Integer.parseInt(vkeyS[2]));
+      String[] versionKeyParts = instanceFreeCommand.substring(6).split("[v#]");
+      Id key = factory.buildIdFromString(versionKeyParts[0]);
+      long version = Long.parseLong(versionKeyParts[1]);
+      VersionKey versionKey = new VersionKey(key, version);
+      final FragmentKey id = new FragmentKey(versionKey, Integer.parseInt(versionKeyParts[2]));
       final long now = environment.getTimeSource().currentTimeMillis();
       final Id fragmentLoc = locator.getFragmentLocation(id);
 
-      final CompletableFuture<String> ret = new CompletableFuture<String>();
+      final CompletableFuture<String> reply = new CompletableFuture<String>();
       scheduler.addContinuation(new GlacierContinuation() {
         @Override
         public String toString() {
@@ -523,25 +523,25 @@ final class GlacierDebugCommands {
         @Override
         public void receiveResult(Object result) {
           if (result instanceof GlacierDataMessage dataMessage) {
-            ret.complete("\n\nResponse: "+dataMessage.getKey(0).toStringFull()+" ("+dataMessage.numKeys()+" keys)\n" +  "Holder: "+dataMessage.getSource()+"\n" +
+            reply.complete("\n\nResponse: "+dataMessage.getKey(0).toStringFull()+" ("+dataMessage.numKeys()+" keys)\n" +  "Holder: "+dataMessage.getSource()+"\n" +
                      "Fragment: "+dataMessage.getFragment(0).getPayload().length+" bytes, Hash=["+dump(HashUtils.hash(dataMessage.getFragment(0).getPayload()), false)+"]\n\nValidation: " +
                      (dataMessage.getManifest(0).validatesFragment(dataMessage.getFragment(0), dataMessage.getKey(0).fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance)) ? "OK" : "FAIL") + "\n\n" +
                      dataMessage.getManifest(0).toStringFull());
 
             terminate();
           } else {
-            ret.complete("Received "+result);
+            reply.complete("Received "+result);
             terminate();
           }
         }
         @Override
         public void receiveException(Exception e) {
-          ret.complete("Exception="+e);
+          reply.complete("Exception="+e);
           terminate();
         }
         @Override
         public void timeoutExpired() {
-          ret.complete("Timeout");
+          reply.complete("Timeout");
           terminate();
         }
         @Override
@@ -550,7 +550,7 @@ final class GlacierDebugCommands {
         }
       });
 
-      String fetched = awaitDebugResult(ret, 5 * GlacierConfig.SECONDS);
+      String fetched = awaitDebugResult(reply, 5 * GlacierConfig.SECONDS);
       if (fetched.startsWith("timeout"))
         fetched = "Timeout";
 
@@ -561,7 +561,7 @@ final class GlacierDebugCommands {
   }
 
   private static String dump(byte[] data, boolean linebreak) {
-    final String hex = "0123456789ABCDEF";
+    final String hexDigits = "0123456789ABCDEF";
     String result = "";
 
     for (int i=0; i<data.length; i++) {
@@ -571,7 +571,7 @@ final class GlacierDebugCommands {
       int hi = (d>>4);
       int lo = (d&15);
 
-      result = result + hex.charAt(hi) + hex.charAt(lo);
+      result = result + hexDigits.charAt(hi) + hexDigits.charAt(lo);
       if (linebreak && (((i%16)==15) || (i==(data.length-1))))
         result = result + "\n";
       else if (i!=(data.length-1))

@@ -83,11 +83,11 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
    */
   @Override
   public boolean equals(Object peer) {
-    if (!(peer instanceof FragmentKey sk)) {
+    if (!(peer instanceof FragmentKey peerKey)) {
       return false;
     }
 
-    return (sk.versionKey.equals(this.versionKey) && (sk.fragmentId == this.fragmentId));
+    return (peerKey.versionKey.equals(this.versionKey) && (peerKey.fragmentId == this.fragmentId));
   }
 
   /**
@@ -149,24 +149,24 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
   /**
    * Not supported.
    *
-   * @param nid the other id
+   * @param targetId the other id
    * @return never returns
    * @throws RuntimeException always
    */
   @Override
-  public Distance longDistanceFromId(Id nid) {
+  public Distance longDistanceFromId(Id targetId) {
     throw new RuntimeException("FragmentKey.longDistanceFromId() is not supported!");
   }
 
   /**
    * Not supported.
    *
-   * @param nid the other id
+   * @param targetId the other id
    * @return never returns
    * @throws RuntimeException always
    */
   @Override
-  public Distance distanceFromId(Id nid) {
+  public Distance distanceFromId(Id targetId) {
     throw new RuntimeException("FragmentKey.distanceFromId() is not supported!");
   }
 
@@ -185,32 +185,32 @@ public record FragmentKey(VersionKey versionKey, int fragmentId) implements Id {
   /**
    * Not supported.
    *
-   * @param nid the other id
+   * @param targetId the other id
    * @return never returns
    * @throws RuntimeException always
    */
   @Override
-  public boolean clockwise(Id nid) {
+  public boolean clockwise(Id targetId) {
     throw new RuntimeException("FragmentKey.clockwise() is not supported!");
   }
 
   /**
    * Compares this key to another key of the same type
    *
-   * @param o the key to compare to
+   * @param comparedId the key to compare to
    * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
   @Override
-  public int compareTo(Id o) {
-    int keyResult = versionKey.compareTo(((FragmentKey) o).versionKey);
+  public int compareTo(Id comparedId) {
+    int keyResult = versionKey.compareTo(((FragmentKey) comparedId).versionKey);
     if (keyResult != 0) {
       return keyResult;
     }
 
-    if (this.fragmentId < ((FragmentKey) o).fragmentId) {
+    if (this.fragmentId < ((FragmentKey) comparedId).fragmentId) {
       return -1;
     }
-    if (this.fragmentId > ((FragmentKey) o).fragmentId) {
+    if (this.fragmentId > ((FragmentKey) comparedId).fragmentId) {
       return 1;
     }
 

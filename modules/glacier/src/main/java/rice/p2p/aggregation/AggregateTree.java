@@ -236,30 +236,30 @@ final class AggregateTree {
       });
     }
 
-    private void aggregateFetched(Id fromKey, PastContentHandle thisHandle, Aggregate aggr) {
+    private void aggregateFetched(Id fromKey, PastContentHandle thisHandle, Aggregate aggregate) {
       keysInProgress.remove(fromKey);
       keysDone.add(fromKey);
 
       logger.atInfo().log(() -> "Rebuild: Got aggregate " + fromKey.toStringFull());
 
-      ObjectDescriptor[] objects = new ObjectDescriptor[aggr.numComponents()];
+      ObjectDescriptor[] objects = new ObjectDescriptor[aggregate.numComponents()];
       long aggregateExpiration = (thisHandle instanceof ExpiringPastContentHandle gcPastContentHandle) ? gcPastContentHandle.getExpiration() : ExpiringPast.INFINITY_EXPIRATION;
 
-      for (int i=0; i<aggr.numComponents(); i++) {
+      for (int i=0; i<aggregate.numComponents(); i++) {
         objects[i] = new ObjectDescriptor(
-          aggr.getComponent(i).getId(),
-          aggr.getComponent(i).getVersion(),
+          aggregate.getComponent(i).getId(),
+          aggregate.getComponent(i).getVersion(),
           aggregateExpiration,
           aggregateExpiration,
-          AggregateStorer.getSize(aggr.getComponent(i), logger)
+          AggregateStorer.getSize(aggregate.getComponent(i), logger)
         );
 
-        restoreInObjectStore(aggr.getComponent(i));
+        restoreInObjectStore(aggregate.getComponent(i));
       }
 
-      aggregateList.addAggregateDescriptor(new AggregateDescriptor(fromKey, aggregateExpiration, objects, aggr.getPointers()));
+      aggregateList.addAggregateDescriptor(new AggregateDescriptor(fromKey, aggregateExpiration, objects, aggregate.getPointers()));
 
-      Id[] pointers = aggr.getPointers();
+      Id[] pointers = aggregate.getPointers();
       int numAdded = 0;
       // register all lookups before starting any, so one that completes at once cannot see the run as done
       List<Id> toStart = new ArrayList<>();

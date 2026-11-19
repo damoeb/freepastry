@@ -87,15 +87,15 @@ public class FragmentKeyFactory extends GlacierKeyFactory {
    */
   @Override
   public Id buildIdFromString(String string) {
-    StringTokenizer stok = new StringTokenizer(string, "(,) :v#");
-    if (stok.countTokens() < 4) {
+    StringTokenizer tokenizer = new StringTokenizer(string, "(,) :v#");
+    if (tokenizer.countTokens() < 4) {
       return null;
     }
 
-    String keyRingS = stok.nextToken();
-    String keyNodeS = stok.nextToken();
-    String versionS = stok.nextToken();
-    String fragmentIdS = stok.nextToken();
+    String keyRingS = tokenizer.nextToken();
+    String keyNodeS = tokenizer.nextToken();
+    String versionS = tokenizer.nextToken();
+    String fragmentIdS = tokenizer.nextToken();
     RingId key = factory.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
 
     return new FragmentKey(new VersionKey(key, Long.valueOf(versionS).longValue()), Integer.valueOf(fragmentIdS).intValue());

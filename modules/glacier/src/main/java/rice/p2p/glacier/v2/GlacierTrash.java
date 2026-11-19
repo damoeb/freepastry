@@ -61,44 +61,44 @@ class GlacierTrash {
     this.trashStorage = null;
   }
 
-  void deleteFragment(final Id fkey, final Continuation<? super Boolean, Exception> command) {
+  void deleteFragment(final Id fragmentKey, final Continuation<? super Boolean, Exception> command) {
     if (trashStorage != null) {
-      logger.atInfo().log(() -> "Moving fragment "+fkey.toStringFull()+" to trash");
-      fragmentStorage.getObject(fkey, new Continuation<Object, Exception>() {
+      logger.atInfo().log(() -> "Moving fragment "+fragmentKey.toStringFull()+" to trash");
+      fragmentStorage.getObject(fragmentKey, new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
-          logger.atDebug().log(() -> "Fragment "+fkey.toStringFull()+" retrieved, storing in trash");
+          logger.atDebug().log(() -> "Fragment "+fragmentKey.toStringFull()+" retrieved, storing in trash");
           if (result != null) {
-            moveToTrash(fkey, result, command);
+            moveToTrash(fragmentKey, result, command);
           } else {
-            receiveException(new GlacierException("Move to trash: Fragment "+fkey+" does not exist?!?"));
+            receiveException(new GlacierException("Move to trash: Fragment "+fragmentKey+" does not exist?!?"));
           }
         }
         @Override
         public void receiveException(Exception e) {
-          logger.warn("Cannot retrieve fragment {} for deletion: e=", fkey, e);
-          command.receiveException(new GlacierException("Cannot retrieve fragment "+fkey+" for deletion"));
+          logger.warn("Cannot retrieve fragment {} for deletion: e=", fragmentKey, e);
+          command.receiveException(new GlacierException("Cannot retrieve fragment "+fragmentKey+" for deletion"));
         }
       });
     } else {
-      logger.atInfo().log(() -> "Deleting fragment "+fkey.toStringFull());
-      fragmentStorage.unstore(fkey, command);
+      logger.atInfo().log(() -> "Deleting fragment "+fragmentKey.toStringFull());
+      fragmentStorage.unstore(fragmentKey, command);
     }
   }
 
   /**
    * Stores a fragment in the trash, then removes it from the fragment storage.
    */
-  private void moveToTrash(final Id fkey, Object fam, final Continuation<? super Boolean, Exception> command) {
-    trashStorage.store(fkey, null, fam, new Continuation<Object, Exception>() {
+  private void moveToTrash(final Id fragmentKey, Object fragmentAndManifest, final Continuation<? super Boolean, Exception> command) {
+    trashStorage.store(fragmentKey, null, fragmentAndManifest, new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object result) {
-        logger.atDebug().log(() -> "Deleting fragment "+fkey.toStringFull());
-        fragmentStorage.unstore(fkey, command);
+        logger.atDebug().log(() -> "Deleting fragment "+fragmentKey.toStringFull());
+        fragmentStorage.unstore(fragmentKey, command);
       }
       @Override
       public void receiveException(Exception e) {
-        logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fkey.toStringFull()+", e=");
+        logger.atWarn().setCause(e).log(() -> "Cannot store in trash: "+fragmentKey.toStringFull()+", e=");
         command.receiveException(e);
       }
     });

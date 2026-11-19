@@ -91,8 +91,8 @@ public class ObjectDescriptor implements Comparable<ObjectDescriptor> {
   }
 
   @Override
-  public int compareTo(ObjectDescriptor other) {
-    ObjectDescriptor metadata = (ObjectDescriptor) other;
+  public int compareTo(ObjectDescriptor candidate) {
+    ObjectDescriptor metadata = (ObjectDescriptor) candidate;
 
     int result = this.key.compareTo(metadata.key);
     if (result != 0)

@@ -109,35 +109,35 @@ final class AggregateExpiration {
 
     aggregateList.resetMarkers();
     while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
-      if (!aggr.isMarker()) {
-        aggr.setMarker(true);
+      AggregateDescriptor aggregate = (AggregateDescriptor) enumeration.nextElement();
+      if (!aggregate.isMarker()) {
+        aggregate.setMarker(true);
 
         boolean isBeingRefreshed = false;
-        if (aggr.getCurrentLifetime() < (now + config.getExpirationRenewThreshold())) {
-          long newLifetime = AggregateStorer.chooseAggregateLifetime(aggr.getObjects());
-          if (newLifetime > aggr.getCurrentLifetime()) {
-            logger.atInfo().log(() -> "Refreshing aggregate "+aggr.getKey().toStringFull()+", new expiration is "+newLifetime);
+        if (aggregate.getCurrentLifetime() < (now + config.getExpirationRenewThreshold())) {
+          long newLifetime = AggregateStorer.chooseAggregateLifetime(aggregate.getObjects());
+          if (newLifetime > aggregate.getCurrentLifetime()) {
+            logger.atInfo().log(() -> "Refreshing aggregate "+aggregate.getKey().toStringFull()+", new expiration is "+newLifetime);
             isBeingRefreshed = true;
 
-            refreshAggregateList.add(aggr);
+            refreshAggregateList.add(aggregate);
             refreshLifetimeList.add(Long.valueOf(newLifetime));
           }
         }
 
-        if ((aggr.getCurrentLifetime() < now) && !isBeingRefreshed) {
-          logger.debug("Adding expired aggregate {} to remove list", aggr.getKey());
-          removeList.add(aggr);
+        if ((aggregate.getCurrentLifetime() < now) && !isBeingRefreshed) {
+          logger.debug("Adding expired aggregate {} to remove list", aggregate.getKey());
+          removeList.add(aggregate);
         }
       }
     }
 
     boolean deletedOne = false;
     while (!removeList.isEmpty()) {
-      AggregateDescriptor aggr = removeList.remove(0);
-      logger.atInfo().log(() -> "Removing expired aggregate "+aggr.getKey().toStringFull()+" from list");
+      AggregateDescriptor aggregate = removeList.remove(0);
+      logger.atInfo().log(() -> "Removing expired aggregate "+aggregate.getKey().toStringFull()+" from list");
       deletedOne = true;
-      aggregateList.removeAggregateDescriptor(aggr);
+      aggregateList.removeAggregateDescriptor(aggregate);
     }
 
     if (deletedOne)
@@ -150,9 +150,9 @@ final class AggregateExpiration {
       } else {
         logger.debug("Aggregate store does not support GC; refreshing directly");
         for (int i=0; i<refreshAggregateList.size(); i++) {
-          AggregateDescriptor aggr = refreshAggregateList.get(i);
+          AggregateDescriptor aggregate = refreshAggregateList.get(i);
           long newLifetime = refreshLifetimeList.get(i).longValue();
-          aggregateList.refreshAggregate(aggr, newLifetime);
+          aggregateList.refreshAggregate(aggregate, newLifetime);
         }
       }
     }
@@ -175,15 +175,15 @@ final class AggregateExpiration {
 
         for (int i=0; i<results.length; i++) {
           if (results[i] instanceof Boolean) {
-            AggregateDescriptor aggr = refreshAggregateList.get(i);
+            AggregateDescriptor aggregate = refreshAggregateList.get(i);
             long newLifetime = refreshLifetimeList.get(i).longValue();
-            if (logger.isDebugEnabled()) logger.debug("Aggregate #"+i+" ("+aggr.getKey().toStringFull()+"): OK, new lifetime is "+newLifetime);
-            aggregateList.refreshAggregate(aggr, newLifetime);
+            if (logger.isDebugEnabled()) logger.debug("Aggregate #"+i+" ("+aggregate.getKey().toStringFull()+"): OK, new lifetime is "+newLifetime);
+            aggregateList.refreshAggregate(aggregate, newLifetime);
             numOk ++;
           } else {
-            AggregateDescriptor aggr = refreshAggregateList.get(i);
+            AggregateDescriptor aggregate = refreshAggregateList.get(i);
             Exception e = (Exception) results[i];
-            if (logger.isWarnEnabled()) logger.warn("Aggregate #"+i+" ("+aggr.getKey().toStringFull()+"): Refresh failed, e=", e);
+            if (logger.isWarnEnabled()) logger.warn("Aggregate #"+i+" ("+aggregate.getKey().toStringFull()+"): Refresh failed, e=", e);
           }
         }
 

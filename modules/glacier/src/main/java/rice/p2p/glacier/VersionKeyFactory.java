@@ -88,14 +88,14 @@ public class VersionKeyFactory extends GlacierKeyFactory {
    */
   @Override
   public Id buildIdFromString(String string) {
-    StringTokenizer stok = new StringTokenizer(string, "(,)- :v#");
-    if (stok.countTokens() < 3) {
+    StringTokenizer tokenizer = new StringTokenizer(string, "(,)- :v#");
+    if (tokenizer.countTokens() < 3) {
       return null;
     }
 
-    String keyRingS = stok.nextToken();
-    String keyNodeS = stok.nextToken();
-    String versionS = stok.nextToken();
+    String keyRingS = tokenizer.nextToken();
+    String keyNodeS = tokenizer.nextToken();
+    String versionS = tokenizer.nextToken();
     RingId key = factory.buildRingId(rice.pastry.Id.build(keyRingS), rice.pastry.Id.build(keyNodeS));
 
     return new VersionKey(key, Long.valueOf(versionS).longValue());

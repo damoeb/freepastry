@@ -118,11 +118,11 @@ final class GlacierHandoffProtocol {
         Id destination = null;
 
         while (iter.hasNext()) {
-          FragmentKey fkey = (FragmentKey) iter.next();
-          Id thisPos = locator.getFragmentLocation(fkey);
+          FragmentKey fragmentKey = (FragmentKey) iter.next();
+          Id thisPos = locator.getFragmentLocation(fragmentKey);
           if (!neighborhood.getResponsibleRange().containsId(thisPos)) {
-            logger.debug("Must hand off {} @{}", fkey, thisPos);
-            handoffs.add(fkey);
+            logger.debug("Must hand off {} @{}", fragmentKey, thisPos);
+            handoffs.add(fragmentKey);
 
             if (handoffs.size() >= config.handoffMaxFragments()) {
               logger.debug("Limit of {} reached for handoff", config.handoffMaxFragments());

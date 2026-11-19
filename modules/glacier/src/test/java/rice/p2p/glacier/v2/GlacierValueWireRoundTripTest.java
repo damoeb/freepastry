@@ -77,9 +77,9 @@ class GlacierValueWireRoundTripTest {
     for (int i = 0; i < fragments; i++) {
       hashes[i] = filled(hashLength, i);
     }
-    Manifest m = new Manifest(filled(HASH_LENGTH, 99), hashes, 1_700_000_000_000L, filled(300, 5), filled(40, 6));
-    m.setSignature(signature);
-    return m;
+    Manifest manifest = new Manifest(filled(HASH_LENGTH, 99), hashes, 1_700_000_000_000L, filled(300, 5), filled(40, 6));
+    manifest.setSignature(signature);
+    return manifest;
   }
 
   private static void assertSameManifest(Manifest expected, Manifest actual) {

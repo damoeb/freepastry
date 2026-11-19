@@ -161,7 +161,7 @@ final class AggregationMonitor {
   private String check() {
     @SuppressWarnings("JdkObsolete") // appended from lookup continuations that may run on different threads
     final StringBuffer result = new StringBuffer();
-    final CompletableFuture<String> ret = new CompletableFuture<String>();
+    final CompletableFuture<String> reply = new CompletableFuture<String>();
 
     if (monitorIDs.isEmpty())
       return "Add objects first!";
@@ -217,19 +217,19 @@ final class AggregationMonitor {
             objectStore.lookupHandles((Id) monitorIDs.get(currentLookup), 1, this);
           } else {
             logger.debug("Monitor: Done");
-            ret.complete("done");
+            reply.complete("done");
           }
         }
       }
       @Override
       public void receiveException(Exception e) {
         logger.warn("Montior: Failed, e=", e);
-        ret.complete("done");
+        reply.complete("done");
       }
     };
 
     objectStore.lookupHandles((Id) monitorIDs.get(0), 1, continuation);
-    String outcome = AggregationDebugCommands.await(ret, environment);
+    String outcome = AggregationDebugCommands.await(reply, environment);
     // the StringBuffer is synchronized, and complete() happens-after the last append
     return outcome.equals("done") ? result.toString() : result.toString() + outcome;
   }

@@ -77,11 +77,11 @@ public class AggregationStorageSerializer implements StorageSerializer {
 
   @Override
   public Object readObject(InputBuffer buf) throws IOException {
-    AggregationImpl a = aggregation.get();
-    if (a == null) {
+    AggregationImpl aggregationImpl = aggregation.get();
+    if (aggregationImpl == null) {
       throw new IOException("No aggregation to read the stored content with");
     }
-    return a.getContentDeserializer().deserializePastContent(buf, a.getEndpoint(), buf.readShort());
+    return aggregationImpl.getContentDeserializer().deserializePastContent(buf, aggregationImpl.getEndpoint(), buf.readShort());
   }
 
   @Override

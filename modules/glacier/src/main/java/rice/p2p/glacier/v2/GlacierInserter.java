@@ -91,9 +91,9 @@ final class GlacierInserter {
 
   void insert(final PastContent content, final long expiration, final Continuation<? super Boolean[], Exception> command) {
     long theVersion = (content instanceof ExpiringPastContent gcPastContent) ? gcPastContent.getVersion() : 0;
-    final VersionKey vkey = new VersionKey(policy.storageId(content.getId()), theVersion);
+    final VersionKey versionKey = new VersionKey(policy.storageId(content.getId()), theVersion);
 
-    logger.atInfo().log(() -> "insert(" + content + " (id=" + vkey.toStringFull() + ", mutable=" + content.isMutable() + ")");
+    logger.atInfo().log(() -> "insert(" + content + " (id=" + versionKey.toStringFull() + ", mutable=" + content.isMutable() + ")");
 
     endpoint.process(() -> {
       boolean[] generateFragment = new boolean[numFragments];
@@ -107,8 +107,8 @@ final class GlacierInserter {
           return;
         }
 
-        logger.atDebug().log(() -> "insert(" + vkey.toStringFull() + ") encoded fragments OK, creating manifests...");
-        createManifestsAndDistribute(vkey, content, fragments, expiration, command);
+        logger.atDebug().log(() -> "insert(" + versionKey.toStringFull() + ") encoded fragments OK, creating manifests...");
+        createManifestsAndDistribute(versionKey, content, fragments, expiration, command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -122,8 +122,8 @@ final class GlacierInserter {
    * Second step of an insertion: creates the manifests of the encoded fragments on the processing
    * thread, then sends fragments and manifests to their holders.
    */
-  private void createManifestsAndDistribute(final VersionKey vkey, final PastContent content, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    endpoint.process(() -> policy.createManifests(vkey, content, fragments, expiration), new Continuation<Manifest[], Exception>() {
+  private void createManifestsAndDistribute(final VersionKey versionKey, final PastContent content, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
+    endpoint.process(() -> policy.createManifests(versionKey, content, fragments, expiration), new Continuation<Manifest[], Exception>() {
       @Override
       public void receiveResult(Manifest[] results) {
         if (results != null) {
@@ -134,20 +134,20 @@ final class GlacierInserter {
           }
 
           /* distribute() reports a Boolean[] for insertions */
-          distribute(vkey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
+          distribute(versionKey, fragments, manifests, expiration, GlacierTags.INSERT, new Continuation.StandardContinuation<Object, Boolean[], Exception>(command) {
             @Override
             public void receiveResult(Object result) {
               parent.receiveResult((Boolean[]) result);
             }
           });
         } else {
-          logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - returned o="+Arrays.toString(results));
+          logger.atWarn().log(() -> "insert(" + versionKey.toStringFull() + ") cannot create manifests - returned o="+Arrays.toString(results));
           command.receiveException(new GlacierException("Cannot create manifests in insert()"));
         }
       }
       @Override
       public void receiveException(Exception e) {
-        logger.atWarn().log(() -> "insert(" + vkey.toStringFull() + ") cannot create manifests - exception e="+e);
+        logger.atWarn().log(() -> "insert(" + versionKey.toStringFull() + ") cannot create manifests - exception e="+e);
         command.receiveException(e);
       }
     });

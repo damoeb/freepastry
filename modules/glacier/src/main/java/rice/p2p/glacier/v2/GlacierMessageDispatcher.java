@@ -159,11 +159,11 @@ final class GlacierMessageDispatcher {
   /**
    * This method is called when Glacier encounters a fatal error
    *
-   * @param s Message describing the error, which is logged
+   * @param message Message describing the error, which is logged
    * @throws Error always
    */
-  private void panic(String s) throws Error {
-    logger.error("PANIC: {}", s);
+  private void panic(String message) throws Error {
+    logger.error("PANIC: {}", message);
     throw new Error("Panic");
   }
 }

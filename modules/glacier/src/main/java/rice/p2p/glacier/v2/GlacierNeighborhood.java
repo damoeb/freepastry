@@ -175,28 +175,28 @@ final class GlacierNeighborhood {
 
   Id[][] getNeighborRanges() {
     Iterator<Id> iter = neighborStorage.scan().getIterator();
-    List<Id> ccwIDs = new ArrayList<Id>();
-    List<Id> cwIDs = new ArrayList<Id>();
+    List<Id> counterClockwiseIds = new ArrayList<Id>();
+    List<Id> clockwiseIds = new ArrayList<Id>();
     Id myID = localId;
 
     while (iter.hasNext()) {
       Id thisNeighbor = (Id)iter.next();
       if (myID.clockwise(thisNeighbor))
-        cwIDs.add(thisNeighbor);
+        clockwiseIds.add(thisNeighbor);
       else
-        ccwIDs.add(thisNeighbor);
+        counterClockwiseIds.add(thisNeighbor);
     }
 
     for (int j=0; j<2; j++) {
-      List<Id> v = (j==0) ? cwIDs : ccwIDs;
+      List<Id> sideIds = (j==0) ? clockwiseIds : counterClockwiseIds;
       boolean madeProgress = true;
       while (madeProgress) {
         madeProgress = false;
-        for (int i=0; i<(v.size()-1); i++) {
-          if (v.get(i+1).clockwise(v.get(i))) {
-            Id h = v.get(i);
-            v.set(i, v.get(i+1));
-            v.set(i+1, h);
+        for (int i=0; i<(sideIds.size()-1); i++) {
+          if (sideIds.get(i+1).clockwise(sideIds.get(i))) {
+            Id swappedId = sideIds.get(i);
+            sideIds.set(i, sideIds.get(i+1));
+            sideIds.set(i+1, swappedId);
             madeProgress = true;
           }
         }
@@ -204,32 +204,32 @@ final class GlacierNeighborhood {
     }
 
     List<Id> allIDs = new ArrayList<Id>();
-    allIDs.addAll(ccwIDs);
+    allIDs.addAll(counterClockwiseIds);
     allIDs.add(myID);
-    allIDs.addAll(cwIDs);
+    allIDs.addAll(clockwiseIds);
 
     Id[][] result = new Id[allIDs.size()][3];
     for (int i=0; i<allIDs.size(); i++) {
       Id currentElement = allIDs.get(i);
-      Id cwId, ccwId;
+      Id clockwiseId, counterClockwiseId;
 
       if (i>0) {
         Id previousElement = allIDs.get(i-1);
-        ccwId = previousElement.addToId(previousElement.distanceFromId(currentElement).shiftDistance(1,0));
+        counterClockwiseId = previousElement.addToId(previousElement.distanceFromId(currentElement).shiftDistance(1,0));
       } else {
-        ccwId = currentElement;
+        counterClockwiseId = currentElement;
       }
 
       if (i<(allIDs.size()-1)) {
         Id nextElement = allIDs.get(i+1);
-        cwId = currentElement.addToId(currentElement.distanceFromId(nextElement).shiftDistance(1,0));
+        clockwiseId = currentElement.addToId(currentElement.distanceFromId(nextElement).shiftDistance(1,0));
       } else {
-        cwId = currentElement;
+        clockwiseId = currentElement;
       }
 
-      result[i][0] = ccwId;
+      result[i][0] = counterClockwiseId;
       result[i][1] = currentElement;
-      result[i][2] = cwId;
+      result[i][2] = clockwiseId;
     }
 
     return result;

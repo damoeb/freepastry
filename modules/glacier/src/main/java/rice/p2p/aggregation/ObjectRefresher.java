@@ -274,9 +274,9 @@ final class ObjectRefresher {
 
       Iterator<Id> iter = waitingList.scan().getIterator();
       while (iter.hasNext()) {
-        final VersionKey vkey = (VersionKey) iter.next();
-        if (vkey.id().equals(id))
-          return refreshInWaitingList(vkey, expiration);
+        final VersionKey versionKey = (VersionKey) iter.next();
+        if (versionKey.id().equals(id))
+          return refreshInWaitingList(versionKey, expiration);
       }
 
       /* If the object is neither in the aggregate list nor in the waiting list, there must have
@@ -316,29 +316,29 @@ final class ObjectRefresher {
       return Boolean.valueOf(true);
     }
 
-    private Object refreshInWaitingList(final VersionKey vkey, long expiration) {
-      ObjectDescriptor thisObject = (ObjectDescriptor) waitingList.getMetadata(vkey);
-      logger.atInfo().log(() -> "Refreshing in waiting list: " + vkey.toStringFull());
+    private Object refreshInWaitingList(final VersionKey versionKey, long expiration) {
+      ObjectDescriptor thisObject = (ObjectDescriptor) waitingList.getMetadata(versionKey);
+      logger.atInfo().log(() -> "Refreshing in waiting list: " + versionKey.toStringFull());
 
       if (thisObject == null) {
-        logger.atWarn().log(() -> "Broken object in waiting list: " + vkey.toStringFull() + ", removing...");
-        waitingList.unstore(vkey, new Continuation<Boolean, Exception>() {
+        logger.atWarn().log(() -> "Broken object in waiting list: " + versionKey.toStringFull() + ", removing...");
+        waitingList.unstore(versionKey, new Continuation<Boolean, Exception>() {
           @Override
           public void receiveResult(Boolean result) {
-            logger.atInfo().log(() -> "Broken object "+vkey.toStringFull()+" removed successfully");
-            RefreshRun.this.receiveResult(new AggregationException("Object in waiting list, but broken: "+vkey.toStringFull()));
+            logger.atInfo().log(() -> "Broken object "+versionKey.toStringFull()+" removed successfully");
+            RefreshRun.this.receiveResult(new AggregationException("Object in waiting list, but broken: "+versionKey.toStringFull()));
           }
           @Override
           public void receiveException(Exception e) {
-            logger.atWarn().setCause(e).log(() -> "Cannot remove broken object "+vkey.toStringFull()+" from waiting list (exception: "+e+")");
-            RefreshRun.this.receiveResult(new AggregationException("Object broken, in waiting list, and cannot remove: "+vkey.toStringFull()+" (e="+e+")"));
+            logger.atWarn().setCause(e).log(() -> "Cannot remove broken object "+versionKey.toStringFull()+" from waiting list (exception: "+e+")");
+            RefreshRun.this.receiveResult(new AggregationException("Object broken, in waiting list, and cannot remove: "+versionKey.toStringFull()+" (e="+e+")"));
           }
         });
         return PENDING;
       }
 
       if (thisObject.getRefreshedLifetime() >= expiration) {
-        logger.atDebug().log(() -> "Object found in waiting list and no update needed: "+vkey.toStringFull());
+        logger.atDebug().log(() -> "Object found in waiting list and no update needed: "+versionKey.toStringFull());
         return Boolean.valueOf(true);
       }
 
@@ -347,16 +347,16 @@ final class ObjectRefresher {
         expiration, thisObject.getSize()
       );
 
-      waitingList.setMetadata(vkey, newDescriptor, new Continuation<Boolean, Exception>() {
+      waitingList.setMetadata(versionKey, newDescriptor, new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {
-          logger.atDebug().log(() -> "Refreshed metadata written ok for "+vkey.toStringFull());
+          logger.atDebug().log(() -> "Refreshed metadata written ok for "+versionKey.toStringFull());
           RefreshRun.this.receiveResult(Boolean.valueOf(true));
         }
         @Override
         public void receiveException(Exception e) {
-          logger.atWarn().setCause(e).log(() -> "Cannot refresh waiting object "+vkey.toStringFull()+", e=");
-          RefreshRun.this.receiveResult(new AggregationException("Cannot refresh waiting object "+vkey.toStringFull()+", setMetadata() failed (e="+e+")"));
+          logger.atWarn().setCause(e).log(() -> "Cannot refresh waiting object "+versionKey.toStringFull()+", e=");
+          RefreshRun.this.receiveResult(new AggregationException("Cannot refresh waiting object "+versionKey.toStringFull()+", setMetadata() failed (e="+e+")"));
         }
       });
       return PENDING;
@@ -394,7 +394,7 @@ final class ObjectRefresher {
         theVersion = 0;
       }
 
-      final VersionKey vkey = new VersionKey(content.getId(), theVersion);
+      final VersionKey versionKey = new VersionKey(content.getId(), theVersion);
       final int theSize = AggregateStorer.getSize(content, logger);
 
       if (!policy.shouldBeAggregated(content, theSize)) {
@@ -403,7 +403,7 @@ final class ObjectRefresher {
         return;
       }
 
-      if (waitingList.exists(vkey)) {
+      if (waitingList.exists(versionKey)) {
         logger.atDebug().log(() -> "Refresh: Missing object already in waiting list: "+id.toStringFull());
         receiveResult(Boolean.valueOf(true));
         return;
@@ -411,7 +411,7 @@ final class ObjectRefresher {
 
       logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", content.getId());
 
-      waitingList.store(vkey, new ObjectDescriptor(content.getId(), theVersion, expiration, expiration, theSize), content, new Continuation<Boolean, Exception>() {
+      waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersion, expiration, expiration, theSize), content, new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean received) {
           if (!(objectStore instanceof PastImpl pastImpl)) {

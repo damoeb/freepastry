@@ -25,7 +25,7 @@ class NonAggregateTest {
     }
 
     @Override
-    public PastContentHandle getHandle(Past local) {
+    public PastContentHandle getHandle(Past localPast) {
       return null;
     }
 

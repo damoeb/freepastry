@@ -86,7 +86,7 @@ final class GlacierRequestHandler {
    * responsible for it. Inserts, refreshes and handoffs start with a query.
    */
   void handleQuery(final GlacierQueryMessage queryMessage) {
-    FragmentKey[] keyA = new FragmentKey[queryMessage.numKeys()];
+    FragmentKey[] keys = new FragmentKey[queryMessage.numKeys()];
     boolean[] haveItA = new boolean[queryMessage.numKeys()];
     long[] expirationA = new long[queryMessage.numKeys()];
     boolean[] authoritativeA = new boolean[queryMessage.numKeys()];
@@ -95,7 +95,7 @@ final class GlacierRequestHandler {
       Id fragmentLocation = locator.getFragmentLocation(queryMessage.getKey(i));
       if (logger.isInfoEnabled()) logger.info("Queried for " + queryMessage.getKey(i) + " (at "+fragmentLocation+")");
 
-      keyA[i] = queryMessage.getKey(i);
+      keys[i] = queryMessage.getKey(i);
       haveItA[i] = fragmentStorage.exists(queryMessage.getKey(i));
       if (haveItA[i]) {
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(queryMessage.getKey(i));
@@ -117,7 +117,7 @@ final class GlacierRequestHandler {
 
     router.sendMessage(
       null,
-      new GlacierResponseMessage(queryMessage.getUID(), keyA, haveItA, expirationA, authoritativeA, router.getLocalNodeHandle(), queryMessage.getSource().getId(), true, queryMessage.getTag()),
+      new GlacierResponseMessage(queryMessage.getUID(), keys, haveItA, expirationA, authoritativeA, router.getLocalNodeHandle(), queryMessage.getSource().getId(), true, queryMessage.getTag()),
       queryMessage.getSource()
     );
   }

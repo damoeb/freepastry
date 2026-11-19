@@ -220,9 +220,9 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     timers.put(Integer.valueOf(timeoutID), timer);
   }
 
-  private void panic(String s) throws Error {
-    Error error = new Error("Panic "+s);
-    logger.error("PANIC: {}", s, error);
+  private void panic(String message) throws Error {
+    Error error = new Error("Panic "+message);
+    logger.error("PANIC: {}", message, error);
     throw error;
   }
 
@@ -331,7 +331,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       theVersion = 0;
     }
 
-    final VersionKey vkey = new VersionKey(content.getId(), theVersion);
+    final VersionKey versionKey = new VersionKey(content.getId(), theVersion);
     final long theVersionF = theVersion;
     final int theSize = AggregateStorer.getSize(content, logger);
 
@@ -343,7 +343,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       else
         objectStore.insert(content, command);
 
-      waitingList.store(vkey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content, new Continuation<Boolean, Exception>() {
+      waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content, new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {
         }

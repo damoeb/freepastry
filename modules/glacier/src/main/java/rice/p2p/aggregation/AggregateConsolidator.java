@@ -135,18 +135,18 @@ final class AggregateConsolidator {
 
     aggregateList.resetMarkers();
     while (enumeration.hasMoreElements()) {
-      AggregateDescriptor aggr = (AggregateDescriptor) enumeration.nextElement();
-      if (!aggr.isMarker()) {
-        aggr.setMarker(true);
+      AggregateDescriptor aggregate = (AggregateDescriptor) enumeration.nextElement();
+      if (!aggregate.isMarker()) {
+        aggregate.setMarker(true);
 
-        if ((aggr.getCurrentLifetime() > (now + config.getExpirationRenewThreshold())) &&
-            (aggr.getCurrentLifetime() < (now + config.getConsolidationThreshold())) &&
-            (aggr.objectsAliveAt(now) > 0)) {
-          float fractionAlive = ((float)aggr.objectsAliveAt(now)) / aggr.getObjects().length;
-          if ((aggr.getObjects().length < config.getConsolidationMinObjectsInAggregate()) ||
+        if ((aggregate.getCurrentLifetime() > (now + config.getExpirationRenewThreshold())) &&
+            (aggregate.getCurrentLifetime() < (now + config.getConsolidationThreshold())) &&
+            (aggregate.objectsAliveAt(now) > 0)) {
+          float fractionAlive = ((float)aggregate.objectsAliveAt(now)) / aggregate.getObjects().length;
+          if ((aggregate.getObjects().length < config.getConsolidationMinObjectsInAggregate()) ||
               (fractionAlive < config.getConsolidationMinComponentsAlive())) {
-            logger.atDebug().log(() -> "Can consolidate: "+aggr.getKey().toStringFull()+", "+aggr.objectsAliveAt(now)+"/"+aggr.getObjects().length+" alive");
-            candidateList.add(aggr);
+            logger.atDebug().log(() -> "Can consolidate: "+aggregate.getKey().toStringFull()+", "+aggregate.objectsAliveAt(now)+"/"+aggregate.getObjects().length+" alive");
+            candidateList.add(aggregate);
           }
         }
       }

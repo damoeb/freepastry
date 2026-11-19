@@ -61,11 +61,11 @@ public record VersionKey(Id id, long version) implements Id {
    */
   @Override
   public boolean equals(Object peer) {
-    if (!(peer instanceof VersionKey fk)) {
+    if (!(peer instanceof VersionKey peerKey)) {
       return false;
     }
 
-    return ((fk.version == this.version) && fk.id.equals(this.id));
+    return ((peerKey.version == this.version) && peerKey.id.equals(this.id));
   }
 
   /**
@@ -91,17 +91,17 @@ public record VersionKey(Id id, long version) implements Id {
   /**
    * Compares this key to another key of the same type
    *
-   * @param o the key to compare to
+   * @param comparedId the key to compare to
    * @return a negative number, zero or a positive number as this key is less than, equal to or greater than o
    */
   @Override
-  public int compareTo(Id o) {
-    int idResult = id.compareTo(((VersionKey) o).id);
+  public int compareTo(Id comparedId) {
+    int idResult = id.compareTo(((VersionKey) comparedId).id);
     if (idResult != 0) {
       return idResult;
     }
 
-    return Long.compare(version, ((VersionKey) o).version);
+    return Long.compare(version, ((VersionKey) comparedId).version);
   }
 
   /**
@@ -156,12 +156,12 @@ public record VersionKey(Id id, long version) implements Id {
   }
 
   @Override
-  public Distance longDistanceFromId(Id nid) {
+  public Distance longDistanceFromId(Id targetId) {
     throw new RuntimeException("VersionKey.longDistanceFromId() is not supported!");
   }
 
   @Override
-  public Distance distanceFromId(Id nid) {
+  public Distance distanceFromId(Id targetId) {
     throw new RuntimeException("VersionKey.distanceFromId() is not supported!");
   }
 
@@ -171,14 +171,14 @@ public record VersionKey(Id id, long version) implements Id {
   }
 
   @Override
-  public boolean clockwise(Id nid) {
+  public boolean clockwise(Id targetId) {
     throw new RuntimeException("VersionKey.clockwise() is not supported!");
   }
 
   public static VersionKey build(String s) {
     @SuppressWarnings("StringSplitter") // the fixed format of toString(), no trailing empty fields
-    String[] sArray = s.split("v");
-    return new VersionKey(RingId.build(sArray[0]), Long.parseLong(sArray[1]));
+    String[] parts = s.split("v");
+    return new VersionKey(RingId.build(parts[0]), Long.parseLong(parts[1]));
   }
 
   public VersionKey(InputBuffer buf, Endpoint endpoint) throws IOException {

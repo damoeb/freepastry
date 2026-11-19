@@ -70,8 +70,8 @@ public class NonAggregate implements PastContent {
   }
 
   @Override
-  public PastContentHandle getHandle(Past local) {
-    return content.getHandle(local);
+  public PastContentHandle getHandle(Past localPast) {
+    return content.getHandle(localPast);
   }
 
   @Override
