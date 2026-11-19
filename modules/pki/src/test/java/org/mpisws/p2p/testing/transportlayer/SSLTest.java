@@ -352,8 +352,55 @@ public class SSLTest {
 
     sendPayload(bob, new InetSocketAddress(addr, alicePort));
 
-    assertNotNull(aliceError.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    // the failure must be the certificate check, not any error: it names the certificate path of bob's untrusted certificate
+    Throwable error = aliceError.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertNotNull(error);
+    assertTrue(causeChainMentionsCertificate(error), "alice's error should be a certificate rejection: " + error);
+    // give a (wrongly) completed handshake time to deliver the payload before asserting it did not
+    assertThrows(java.util.concurrent.TimeoutException.class, () -> aliceRead.get(500, TimeUnit.MILLISECONDS));
     assertFalse(aliceRead.isDone() && !aliceRead.isCompletedExceptionally(), "alice must not receive data");
+  }
+
+  /** whether the exception or one of its causes talks about certificates (certificate_unknown, PKIX path building, ...) */
+  static boolean causeChainMentionsCertificate(Throwable error) {
+    for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+      String message = String.valueOf(cause.getMessage()).toLowerCase(java.util.Locale.ROOT);
+      if (message.contains("certificate") || message.contains("pkix")) return true;
+    }
+    return false;
+  }
+
+  /** a client that is not a SSLTransportLayer: it speaks TLS with exactly the given protocol to alice, who does not ask for a client certificate */
+  void clientHandshake(String protocol) throws Exception {
+    KeyStore trust = store("client", null, ca(false));
+    javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance("SunX509");
+    tmf.init(trust);
+    javax.net.ssl.SSLContext context = javax.net.ssl.SSLContext.getInstance("TLS");
+    context.init(null, tmf.getTrustManagers(), null);
+    try (javax.net.ssl.SSLSocket socket = (javax.net.ssl.SSLSocket) context.getSocketFactory().createSocket()) {
+      socket.connect(new InetSocketAddress(addr, alicePort), (int) TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+      socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+      socket.setEnabledProtocols(new String[] {protocol});
+      socket.startHandshake();
+      assertEquals(protocol, socket.getSession().getProtocol());
+      assertTrue(List.of("TLS_AES_256_GCM_SHA384", "TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256").contains(socket.getSession().getCipherSuite()), socket.getSession().getCipherSuite());
+    }
+  }
+
+  @Test
+  @DisplayName("the TLS layer negotiates TLS 1.3 with an AEAD cipher suite")
+  void tls13IsNegotiated() throws Exception {
+    acceptOn(layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE));
+
+    clientHandshake("TLSv1.3");
+  }
+
+  @Test
+  @DisplayName("the TLS layer refuses TLS 1.2, whatever the JDK defaults enable")
+  void tls12IsRefused() throws Exception {
+    acceptOn(layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE));
+
+    assertThrows(javax.net.ssl.SSLException.class, () -> clientHandshake("TLSv1.2"));
   }
 
   /** a node handle that only has an id; the bind strategy looks at nothing else */

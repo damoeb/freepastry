@@ -87,6 +87,14 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
     this.keyPassword = keyPassword.clone();
   }
 
+  /**
+   * @return the trust store of the TLS layer for a node store: it holds the CA certificate only, so that no node
+   *     certificate (not even this node's own) is a trust anchor
+   */
+  public static KeyStore trustStoreOf(KeyStore store) {
+    return store;
+  }
+
   /** @return the bind strategy, which tells which ids are authenticated */
   public CertifiedIdBindStrategy getCertifiedIdBindStrategy() {
     return bindStrategy;

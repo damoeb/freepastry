@@ -111,4 +111,33 @@ public class CAToolTest {
   void passwordOptionOnTheCommandLineIsRefused() {
     assertThrows(IllegalArgumentException.class, () -> CertificateAuthorityTool.main(new String[] {"-p", "secret"}));
   }
+
+  @Test
+  void nodeCertificateIsALeafForTlsOnly() throws Exception {
+    CertificateAuthorityTool certificateAuthorityTool = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
+
+    X509Certificate cert = certificateAuthorityTool.sign("node", CertificateAuthorityTool.generateKeyPair().getPublic());
+
+    assertEquals(-1, cert.getBasicConstraints(), "basicConstraints CA:false");
+    assertTrue(cert.getCriticalExtensionOIDs().contains("2.5.29.19"), "basicConstraints is critical");
+    boolean[] usage = cert.getKeyUsage();
+    assertTrue(usage != null && usage[0] && usage[2], "digitalSignature and keyEncipherment");
+    for (int bit = 0; bit < usage.length; bit++) {
+      if (bit != 0 && bit != 2) assertFalse(usage[bit], "no other key usage, bit " + bit);
+    }
+    assertEquals(java.util.List.of("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"), cert.getExtendedKeyUsage().stream().sorted().toList());
+  }
+
+  @Test
+  void nodeCertificateSerialsAreRandom128BitPositive() throws Exception {
+    CertificateAuthorityTool certificateAuthorityTool = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray());
+    java.security.PublicKey key = CertificateAuthorityTool.generateKeyPair().getPublic();
+
+    java.math.BigInteger first = certificateAuthorityTool.sign("node", key).getSerialNumber();
+    java.math.BigInteger second = certificateAuthorityTool.sign("node", key).getSerialNumber();
+
+    assertTrue(first.signum() > 0 && second.signum() > 0);
+    assertTrue(first.bitLength() > 64 && second.bitLength() > 64, "not a millisecond clock: " + first);
+    assertFalse(first.equals(second));
+  }
 }
