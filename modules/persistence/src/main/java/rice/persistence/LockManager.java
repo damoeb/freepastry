@@ -58,7 +58,7 @@ public class LockManager {
 
   public LockManager(Environment env) {
     this.locks = new HashMap<Id, List<Continuation<?, ?>>>();
-    this.logger =  env.getLogManager().getLogger(StorageManagerImpl.class,null);
+    this.logger =  env.getLogManager().getLogger(CachedStorageImpl.class,null);
   }
 
 

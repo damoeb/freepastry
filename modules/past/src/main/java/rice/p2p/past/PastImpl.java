@@ -92,9 +92,9 @@ import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.persistence.Cache;
+import rice.persistence.CachedStorage;
 import rice.persistence.LockManager;
 import rice.persistence.LockManager;
-import rice.persistence.StorageManager;
 
 /**
  * This is an implementation of the Past interface.
@@ -125,13 +125,13 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private final Endpoint endpoint;
 
   // the storage manager used by this Past
-  protected StorageManager storage;
+  protected CachedStorage storage;
 
   /** Builds the ids that content-hash objects are checked against. */
   private final IdFactory idFactory;
 
   // The trash can, or where objects should go once removed.  If null, they are deleted
-  protected StorageManager trash;
+  protected CachedStorage trash;
 
   // The backup store, or location of over-replicated objects, helping PAST to better deal with churn
   protected Cache backup;
@@ -181,7 +181,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param replicas The number of object replicas
    * @param instance The unique instance name of this Past
    */
-  public PastImpl(Node node, StorageManager manager, int replicas, String instance) {
+  public PastImpl(Node node, CachedStorage manager, int replicas, String instance) {
     this(node, manager, replicas, instance, new DefaultPastPolicy());
   }
 
@@ -193,7 +193,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param replicas The number of object replicas
    * @param instance The unique instance name of this Past
    */
-  public PastImpl(Node node, StorageManager manager, int replicas, String instance, PastPolicy policy) {
+  public PastImpl(Node node, CachedStorage manager, int replicas, String instance, PastPolicy policy) {
     this(node, manager, null, replicas, instance, policy, null);
   }
 
@@ -234,7 +234,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       return new IOException("Unknown type:"+type+" in "+PastImpl.this.toString());
     }
   }
-  public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash) {
+  public PastImpl(Node node, CachedStorage manager, Cache backup, int replicas, String instance, PastPolicy policy, CachedStorage trash) {
     this(node, manager, backup, replicas, instance, policy, trash, false);
   }
 
@@ -242,7 +242,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @param useOwnSocket send all inserts/fetches over a socket (default is false)
    */
-  public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash, boolean useOwnSocket) {
+  public PastImpl(Node node, CachedStorage manager, Cache backup, int replicas, String instance, PastPolicy policy, CachedStorage trash, boolean useOwnSocket) {
     this(node, manager, backup, replicas, instance, policy, trash, new DefaultSocketStrategy(useOwnSocket));
   }
 
@@ -254,7 +254,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param replicas The number of object replicas
    * @param instance The unique instance name of this Past
    */
-  public PastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, StorageManager trash, SocketStrategy strategy) {
+  public PastImpl(Node node, CachedStorage manager, Cache backup, int replicas, String instance, PastPolicy policy, CachedStorage trash, SocketStrategy strategy) {
     this.environment = node.getEnvironment();
     this.idFactory = node.getIdFactory();
     logger = environment.getLogManager().getLogger(getClass(), instance);
@@ -1379,7 +1379,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @return This Past's storage manager.
    */
-  public StorageManager getStorageManager() {
+  public CachedStorage getStorageManager() {
     return storage;
   }
 

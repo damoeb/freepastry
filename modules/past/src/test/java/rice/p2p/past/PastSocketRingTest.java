@@ -15,9 +15,9 @@ import rice.FutureContinuation;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * Past on a real socket ring on loopback: inserts and lookups are routed as bytes, replicas are stored on other nodes
@@ -51,7 +51,7 @@ class PastSocketRingTest {
   void insertAndLookup() throws Exception {
     PastryIdFactory idf = new PastryIdFactory(ring.env);
     List<Past> pasts = ring.boot(NODES, node -> {
-      PastImpl past = new PastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf),
+      PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
           new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), REPLICAS, "socket-ring");
       past.setContentDeserializer((buf, endpoint, type) -> {
         if (type == DistPastTestContent.TYPE) {

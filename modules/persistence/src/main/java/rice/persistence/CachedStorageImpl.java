@@ -38,12 +38,12 @@ advised of the possibility of such damage.
 package rice.persistence;
 
 /*
- * @(#) StorageManager.java
+ * @(#) CachedStorage.java
  *
  * @author Ansley Post
  * @author Alan Mislove
  *
- * @version $Id: StorageManagerImpl.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: CachedStorageImpl.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 import java.util.SortedMap;
 
@@ -56,14 +56,14 @@ import rice.p2p.commonapi.IdSet;
 
 /**
  * This class provides both persistent and caching services to
- * external applications. Building the StorageManager requires a
+ * external applications. Building the CachedStorage requires a
  * Storage object, to provide the back-end storage, and a Cache
  * to serve as a cache.  Note that this implementation has separate
  * areas for the Cache and Storage, but the next version will allow
  * the cache to use the unused storage space.
  */
 @SuppressWarnings("unchecked")
-public class StorageManagerImpl implements StorageManager {
+public class CachedStorageImpl implements CachedStorage {
 
   // the storage used by this manager
   private Storage storage;
@@ -72,7 +72,7 @@ public class StorageManagerImpl implements StorageManager {
   private Cache cache;
 
   /**
-   * Builds a StorageManager given a Storage object to provide
+   * Builds a CachedStorage given a Storage object to provide
    * storage services and a Cache object to provide caching
    * services.
    *
@@ -81,13 +81,13 @@ public class StorageManagerImpl implements StorageManager {
    *        persistent storage.
    * @param cache The Cache object which will serve as the cache.
    */
-  public StorageManagerImpl(IdFactory factory, Storage storage, Cache cache) {
+  public CachedStorageImpl(IdFactory factory, Storage storage, Cache cache) {
     this.storage = storage;
     this.cache = cache;
   }
 
   /**
-   * Returns the permantent storage object used by this StorageManager
+   * Returns the permantent storage object used by this CachedStorage
    *
    * @return The storage of this storage manager
    */
@@ -97,7 +97,7 @@ public class StorageManagerImpl implements StorageManager {
   }
 
   /**
-   * Returns the cache object used by this StorageManager
+   * Returns the cache object used by this CachedStorage
    *
    * @return The cache of this storage manager
    */

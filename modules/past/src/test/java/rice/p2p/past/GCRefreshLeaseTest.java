@@ -20,10 +20,10 @@ import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorage;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManager;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 /**
  * A refresh can neither lease an object beyond p2p_past_gc_max_lease nor bring an object back out of the trash: the
@@ -38,7 +38,7 @@ class GCRefreshLeaseTest {
 
   private SocketRing ring;
   private PastryIdFactory idf;
-  private final List<StorageManager> trashes = new ArrayList<>();
+  private final List<CachedStorage> trashes = new ArrayList<>();
 
   @BeforeEach
   void setUp() {
@@ -52,9 +52,9 @@ class GCRefreshLeaseTest {
   }
 
   private ExpiringPastImpl newPast(PastryNode node) {
-    StorageManager trash = new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf));
+    CachedStorage trash = new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf));
     trashes.add(trash);
-    ExpiringPastImpl past = new ExpiringPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
+    ExpiringPastImpl past = new ExpiringPastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf)), null, 1,
         "gc-lease", new PastPolicy.DefaultPastPolicy(), 100_000_000L, trash);
     past.setContentDeserializer((buf, endpoint, type) -> new GCPastInsertTest.Content(buf, endpoint));
     past.setContentHandleDeserializer((buf, endpoint, type) -> {
@@ -100,7 +100,7 @@ class GCRefreshLeaseTest {
     // what the garbage collection does with an expired object: into the trash, out of the storage
     for (int i = 0; i < pasts.size(); i++) {
       ExpiringPastImpl past = pasts.get(i);
-      StorageManager trash = trashes.get(i);
+      CachedStorage trash = trashes.get(i);
       if (past.storage.exists(id)) {
         FutureContinuation.<Boolean>call(c -> trash.store(id, new ExpiringPastMetadata(1), content, c)).get(SECONDS, TimeUnit.SECONDS);
         FutureContinuation.<Boolean>call(c -> past.storage.unstore(id, c)).get(SECONDS, TimeUnit.SECONDS);

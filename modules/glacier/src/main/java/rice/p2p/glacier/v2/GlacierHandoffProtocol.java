@@ -49,7 +49,7 @@ import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
 import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The handoff protocol: fragments that are stored here but now belong to another node's range are sent
@@ -63,11 +63,11 @@ final class GlacierHandoffProtocol {
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrash trash;
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierHandoffProtocol(GlacierConfig config, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, StorageManager fragmentStorage, Environment environment, Logger logger) {
+  GlacierHandoffProtocol(GlacierConfig config, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, Environment environment, Logger logger) {
     this.config = config;
     this.instance = instance;
     this.policy = policy;

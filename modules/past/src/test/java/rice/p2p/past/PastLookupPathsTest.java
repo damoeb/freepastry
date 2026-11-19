@@ -17,9 +17,9 @@ import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * The paths of a lookup: the local store first, then the node the key routes to, then the replicas. Replies are
@@ -48,7 +48,7 @@ class PastLookupPathsTest {
   }
 
   private PastImpl newPast(PastryNode node) {
-    PastImpl past = new PastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf),
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
         new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), 1, "lookup");
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {

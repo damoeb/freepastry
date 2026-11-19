@@ -60,7 +60,7 @@ import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The Glacier application: implements the PAST interfaces on top of erasure-coded fragments, and wires
@@ -90,7 +90,7 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
   private final GlacierDebugCommands debugCommands;
   private final GlacierPolicy policy;
 
-  public GlacierImpl(Node node, StorageManager fragmentStorage, StorageManager neighborStorage, int numFragments, int numSurvivors, IdFactory factory, String instance, GlacierPolicy policy) {
+  public GlacierImpl(Node node, CachedStorage fragmentStorage, CachedStorage neighborStorage, int numFragments, int numSurvivors, IdFactory factory, String instance, GlacierPolicy policy) {
     this.environment = node.getEnvironment();
     this.logger = environment.getLogManager().getLogger(GlacierImpl.class, instance);
     this.instance = instance;

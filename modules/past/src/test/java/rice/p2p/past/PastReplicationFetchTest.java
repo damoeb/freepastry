@@ -19,9 +19,9 @@ import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
 import rice.persistence.Cache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * A replica peer answers a replication fetch with content under another id. The fetching node must store only what
@@ -50,7 +50,7 @@ class PastReplicationFetchTest {
   }
 
   private PastImpl newPast(PastryNode node, PastPolicy policy) {
-    PastImpl past = new PastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf),
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
         new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), 1, "fetch", policy);
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {

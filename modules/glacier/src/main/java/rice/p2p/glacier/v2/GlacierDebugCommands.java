@@ -57,7 +57,7 @@ import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
 import rice.p2p.util.DebugCommandHandler;
 import rice.p2p.util.HashUtils;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The debug commands of a Glacier instance, addressed as {@code glacier.<instance> <command>} or
@@ -78,12 +78,12 @@ final class GlacierDebugCommands {
   private final GlacierSyncProtocol syncProtocol;
   private final GlacierRetriever retriever;
   private final GlacierInserter inserter;
-  private final StorageManager fragmentStorage;
-  private final StorageManager neighborStorage;
+  private final CachedStorage fragmentStorage;
+  private final CachedStorage neighborStorage;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierDebugCommands(GlacierConfig config, int numFragments, int numSurvivors, String instance, IdFactory factory, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, GlacierSyncProtocol syncProtocol, GlacierRetriever retriever, GlacierInserter inserter, StorageManager fragmentStorage, StorageManager neighborStorage, Environment environment, Logger logger) {
+  GlacierDebugCommands(GlacierConfig config, int numFragments, int numSurvivors, String instance, IdFactory factory, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, GlacierSyncProtocol syncProtocol, GlacierRetriever retriever, GlacierInserter inserter, CachedStorage fragmentStorage, CachedStorage neighborStorage, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

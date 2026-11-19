@@ -23,9 +23,9 @@ import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 /**
  * Round trips of what a Past persists: its content, through the Past's own content deserializer, and GC metadata.
@@ -43,7 +43,7 @@ class PastStorageSerializerTest {
     factory = new PastryIdFactory(env);
     NetworkSimulator<DirectNodeHandle, RawMessage> simulator = new EuclideanNetwork<DirectNodeHandle, RawMessage>(env);
     PastryNode node = new DirectPastryNodeFactory(new RandomNodeIdFactory(env), simulator, env).newNode();
-    past = new PastImpl(node, new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory)), 0, "past-test");
+    past = new PastImpl(node, new CachedStorageImpl(factory, new MemoryStorage(factory), new NoOpCache(factory)), 0, "past-test");
     past.setContentDeserializer((buf, endpoint, contentType) -> {
       if (contentType == DebugContent.TYPE) {
         return new DebugContent(buf, endpoint);

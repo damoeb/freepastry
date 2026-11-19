@@ -50,7 +50,7 @@ import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.glacier.v2.messaging.GlacierNeighborRequestMessage;
 import rice.p2p.glacier.v2.messaging.GlacierNeighborResponseMessage;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The neighbor protocol: nodes exchange which neighbors they know and when they last saw them, which
@@ -64,12 +64,12 @@ final class GlacierNeighborProtocol {
   private final Endpoint endpoint;
   private final GlacierRouter router;
   private final GlacierNeighborhood neighborhood;
-  private final StorageManager neighborStorage;
+  private final CachedStorage neighborStorage;
   private final IdFactory factory;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierNeighborProtocol(GlacierConfig config, Endpoint endpoint, GlacierRouter router, GlacierNeighborhood neighborhood, StorageManager neighborStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierNeighborProtocol(GlacierConfig config, Endpoint endpoint, GlacierRouter router, GlacierNeighborhood neighborhood, CachedStorage neighborStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.endpoint = endpoint;
     this.router = router;

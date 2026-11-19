@@ -43,7 +43,7 @@ package rice.persistence;
  * @author Ansley Post
  * @author Alan Mislove
  *
- * @version $Id: EmptyCache.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @version $Id: NoOpCache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 import java.util.SortedMap;
 
@@ -58,7 +58,7 @@ import rice.p2p.util.ConcurrentRingMap;
  * This class is a cahcce which doesn't store anything.
  */
 @SuppressWarnings("unchecked")
-public class EmptyCache implements Cache {
+public class NoOpCache implements Cache {
 
   /**
    * The facotry for building id sets
@@ -68,7 +68,7 @@ public class EmptyCache implements Cache {
   /**
    * Builds an emtpy cache
    */
-  public EmptyCache(IdFactory factory) {
+  public NoOpCache(IdFactory factory) {
     this.factory = factory;
   }
 
@@ -82,7 +82,7 @@ public class EmptyCache implements Cache {
    */
   @Override
   public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
-    c.receiveException(new IllegalArgumentException("EmptyCache has no objects!"));
+    c.receiveException(new IllegalArgumentException("NoOpCache has no objects!"));
   }
 
   /**

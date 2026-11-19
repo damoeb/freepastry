@@ -50,7 +50,7 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
   <li><b>PersistentStorage</b>&mdash;an implementation of Storage which provides persistent storage to disk.  <i>It writes the objects with the StorageSerializer it is built with; for Past that is a PastStorageSerializer.</i></li>
   <li><b>Cache</b>&mdash;finite temporary storage for rapid access.</i></li>
   <li><b>LRUCache</b>&mdash;implemetation of a least-recently-used (LRU) cache.</i></li>
-  <li><b>StorageManager</b>&mdash;a storage attached to a cache.  <i>Objects inserted and retrieved from the storage are auto-matically cached, to speed up future accesses.</i></li>
+  <li><b>CachedStorage</b>&mdash;a storage attached to a cache.  <i>Objects inserted and retrieved from the storage are auto-matically cached, to speed up future accesses.</i></li>
 </ul>
 
 
@@ -122,7 +122,7 @@ Now on to the PastTutorial.  The first part of PastTutorial looks identical to S
       // new PersistentStorage(idf, new PastStorageSerializer(() -&gt; past), storageDirectory,
       //     4 * 1024 * 1024, node.getEnvironment())
       Storage stor = new MemoryStorage(idf);
-      Past app = new PastImpl(node, new StorageManagerImpl(idf, stor, new LRUCache(
+      Past app = new PastImpl(node, new CachedStorageImpl(idf, stor, new LRUCache(
           new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 0, "");
 
       // tell Past how to read our content back from the wire
@@ -142,11 +142,11 @@ Here is an overview of what is going on.<br/><br/>
 PastImpl needs the following:
 <ul>
   <li>The Node</li>
-  <li>StorageManager</li>
+  <li>CachedStorage</li>
   <li>The number of Replicas to maintain &mdash; this is a parameter that you can tune to adjust overhead vs. chance of data-loss.  We use 0, so each object is stored only on its root node.</li>
   <li>An instance name</li>
 </ul>
-StorageManagerImpl (the StorageManager) needs the following:
+CachedStorageImpl (the CachedStorage) needs the following:
 <ul>
   <li>An IdFactory</li>
   <li>A storage &mdash; we'll use a MemoryStorage</li>

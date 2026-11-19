@@ -27,9 +27,9 @@ import rice.p2p.past.gc.ExpiringPastContent;
 import rice.p2p.past.gc.ExpiringPastContentHandle;
 import rice.p2p.past.gc.ExpiringPastImpl;
 import rice.p2p.past.gc.ExpiringPastMetadata;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -65,7 +65,7 @@ class GCPastRefreshTest {
 
     @Override
     protected void processNode(int num, Node node) {
-      pasts[num] = new ExpiringPastImpl(node, new StorageManagerImpl(FACTORY, new MemoryStorage(FACTORY), new EmptyCache(FACTORY)),
+      pasts[num] = new ExpiringPastImpl(node, new CachedStorageImpl(FACTORY, new MemoryStorage(FACTORY), new NoOpCache(FACTORY)),
           null, REPLICAS, "gc-refresh-test", new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
       pasts[num].setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
       pasts[num].setContentHandleDeserializer((buf, endpoint, type) -> {

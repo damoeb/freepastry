@@ -77,7 +77,7 @@ import rice.p2p.past.messaging.FetchHandleMessage;
 import rice.p2p.past.messaging.PastMessage;
 import rice.p2p.past.rawserialization.SocketStrategy;
 import rice.persistence.Cache;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * This class is an implementation of the ExpiringPast interface, which provides
@@ -143,7 +143,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
    * @param policy The policy this past instance should use
    * @param collectionInterval The frequency with which ExpiringPast should collection local expired objects
    */
-  public ExpiringPastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, long collectionInterval, StorageManager trash) {
+  public ExpiringPastImpl(Node node, CachedStorage manager, Cache backup, int replicas, String instance, PastPolicy policy, long collectionInterval, CachedStorage trash) {
     super(new ExpiringIdNode(node), manager, backup, replicas, instance, policy, trash);
     this.realFactory = node.getIdFactory();
     this.maxLease = ConfigChecks.requirePositive("p2p_past_gc_max_lease", getEnvironment().getParameters().getLong("p2p_past_gc_max_lease"));

@@ -20,10 +20,10 @@ import rice.pastry.direct.DirectPastryNodeFactory;
 import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.direct.NetworkSimulator;
 import rice.pastry.standard.RandomNodeIdFactory;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorage;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManager;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -42,7 +42,7 @@ class GlacierImplTest {
 
   private Environment env;
   private GlacierImpl testObj;
-  private StorageManager fragmentStorage;
+  private CachedStorage fragmentStorage;
   private IdFactory ringIdFactory;
   private MultiringNode node;
 
@@ -55,8 +55,8 @@ class GlacierImplTest {
     MultiringIdFactory ringFactory = (MultiringIdFactory) node.getIdFactory();
     ringIdFactory = ringFactory;
     IdFactory fragmentKeyFactory = new FragmentKeyFactory(ringFactory);
-    fragmentStorage = new StorageManagerImpl(fragmentKeyFactory, new MemoryStorage(fragmentKeyFactory), new EmptyCache(fragmentKeyFactory));
-    StorageManager neighborStorage = new StorageManagerImpl(ringFactory, new MemoryStorage(ringFactory), new EmptyCache(ringFactory));
+    fragmentStorage = new CachedStorageImpl(fragmentKeyFactory, new MemoryStorage(fragmentKeyFactory), new NoOpCache(fragmentKeyFactory));
+    CachedStorage neighborStorage = new CachedStorageImpl(ringFactory, new MemoryStorage(ringFactory), new NoOpCache(ringFactory));
     GlacierPolicy policy = new InsecureGlacierPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env));
 
     testObj = new GlacierImpl(node, fragmentStorage, neighborStorage, NUM_FRAGMENTS, NUM_SURVIVORS, ringFactory, INSTANCE, policy);

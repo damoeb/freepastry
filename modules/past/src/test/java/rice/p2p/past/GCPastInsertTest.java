@@ -26,9 +26,9 @@ import rice.p2p.past.gc.ExpiringPastMetadata;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 /**
  * The insert path of ExpiringPastImpl: the object is checked by its own checkInsert, then stored with the expiration of the
@@ -53,7 +53,7 @@ class GCPastInsertTest {
   }
 
   private ExpiringPastImpl newPast(PastryNode node) {
-    ExpiringPastImpl past = new ExpiringPastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf)), null, 1,
+    ExpiringPastImpl past = new ExpiringPastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf)), null, 1,
         "gc-insert", new PastPolicy.DefaultPastPolicy(), 100_000_000L, null);
     past.setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
     past.setContentHandleDeserializer((buf, endpoint, type) -> {

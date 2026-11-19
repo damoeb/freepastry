@@ -48,14 +48,14 @@ import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.commonapi.NodeHandleSet;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * Tracks when each neighbor was last seen (in the neighbor storage), and derives the part of the ring
  * this node is responsible for from those neighbors.
  */
 final class GlacierNeighborhood {
-  private final StorageManager neighborStorage;
+  private final CachedStorage neighborStorage;
   private final IdFactory factory;
   private final Id localId;
   private final Environment environment;
@@ -63,7 +63,7 @@ final class GlacierNeighborhood {
   private IdRange responsibleRange;
   private long neighborTimeout;
 
-  GlacierNeighborhood(StorageManager neighborStorage, IdFactory factory, Id localId, long neighborTimeout, Environment environment, Logger logger) {
+  GlacierNeighborhood(CachedStorage neighborStorage, IdFactory factory, Id localId, long neighborTimeout, Environment environment, Logger logger) {
     this.neighborStorage = neighborStorage;
     this.factory = factory;
     this.localId = localId;

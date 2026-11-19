@@ -63,11 +63,11 @@ import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastStorageSerializer;
 import rice.p2p.past.messaging.LookupMessage;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.persistence.CachedStorage;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
-import rice.persistence.StorageManager;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * Provides regression testing for the Past service
@@ -87,7 +87,7 @@ public class RawPastRegrTest extends CommonAPITest {
   public static final int REPLICATION_FACTOR = 3;
 
   // the storage services in the ring
-  protected StorageManager storages[];
+  protected CachedStorage storages[];
 
   // the past impls in the ring
   protected PastImpl pasts[];
@@ -99,7 +99,7 @@ public class RawPastRegrTest extends CommonAPITest {
   public RawPastRegrTest(Environment env) throws IOException {
     super(env);
     pasts = new PastImpl[NUM_NODES];
-    storages = new StorageManager[NUM_NODES];
+    storages = new CachedStorage[NUM_NODES];
 
     if (PROTOCOL_DIRECT.equalsIgnoreCase(PROTOCOL)) {
       new Thread() {
@@ -133,7 +133,7 @@ public class RawPastRegrTest extends CommonAPITest {
   protected void processNode(int num, Node node) {
     try {
       final int n = num;
-      storages[num] = new StorageManagerImpl(FACTORY,
+      storages[num] = new CachedStorageImpl(FACTORY,
                                              new PersistentStorage(FACTORY, new PastStorageSerializer(() -> pasts[n]), "root-" + num, storageRoot, 1000000, environment),
                                              new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
       pasts[num] = new PastImpl(node, storages[num], REPLICATION_FACTOR, INSTANCE);

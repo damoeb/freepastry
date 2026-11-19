@@ -38,7 +38,7 @@ advised of the possibility of such damage.
  * Local storage for the applications. {@link rice.persistence.Storage} is durable storage
  * ({@link rice.persistence.PersistentStorage} on disk, {@link rice.persistence.MemoryStorage} in
  * memory), {@link rice.persistence.Cache} a bounded cache ({@link rice.persistence.LRUCache},
- * {@link rice.persistence.EmptyCache}), and {@link rice.persistence.StorageManager} combines one of each,
+ * {@link rice.persistence.NoOpCache}), and {@link rice.persistence.CachedStorage} combines one of each,
  * as PAST uses it. All operations are asynchronous and report through a {@link rice.Continuation}.
  * <p>
  * Threading: {@code PersistentStorage} does its disk IO on the environment's blocking-IO thread and

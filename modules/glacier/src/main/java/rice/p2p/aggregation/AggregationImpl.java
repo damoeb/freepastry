@@ -68,12 +68,12 @@ import rice.p2p.past.gc.ExpiringPastContent;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 @SuppressWarnings("unchecked")
 public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregation, Application, DebugCommandHandler {
   private final Past aggregateStore;
-  private final StorageManager waitingList;
+  private final CachedStorage waitingList;
   private final AggregationPolicy policy;
   private final AggregateList aggregateList;
   private final Endpoint endpoint;
@@ -106,7 +106,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
 
   private AggregateFactory aggregateFactory;
 
-  public AggregationImpl(Node node, Past aggregateStore, Past objectStore, StorageManager waitingList, String configFileName, IdFactory factory, String instance, AggregationPolicy policy, AggregateFactory aggregateFactory) throws IOException {
+  public AggregationImpl(Node node, Past aggregateStore, Past objectStore, CachedStorage waitingList, String configFileName, IdFactory factory, String instance, AggregationPolicy policy, AggregateFactory aggregateFactory) throws IOException {
     this.environment = node.getEnvironment();
     logger = environment.getLogManager().getLogger(AggregationImpl.class, instance);
 

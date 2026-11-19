@@ -11,7 +11,7 @@ import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /** Hand-made stand-ins for the collaborators of the Glacier components under test. */
 final class GlacierFakes {
@@ -56,8 +56,8 @@ final class GlacierFakes {
   }
 
   /** A storage manager whose calls are answered by the given handler. */
-  static StorageManager storage(InvocationHandler handler) {
-    return (StorageManager) Proxy.newProxyInstance(StorageManager.class.getClassLoader(), new Class<?>[] {StorageManager.class}, handler);
+  static CachedStorage storage(InvocationHandler handler) {
+    return (CachedStorage) Proxy.newProxyInstance(CachedStorage.class.getClassLoader(), new Class<?>[] {CachedStorage.class}, handler);
   }
 
   static List<Object> messages() {

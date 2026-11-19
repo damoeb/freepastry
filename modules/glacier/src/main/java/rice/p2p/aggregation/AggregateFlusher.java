@@ -46,7 +46,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.past.gc.ExpiringPastContent;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * Forms aggregates from the objects in the waiting list: packs them into bins, builds and stores one aggregate
@@ -54,7 +54,7 @@ import rice.persistence.StorageManager;
  * requested meanwhile is daisy-chained and starts when the running one completes.
  */
 final class AggregateFlusher {
-  private final StorageManager waitingList;
+  private final CachedStorage waitingList;
   private final AggregateList aggregateList;
   private final AggregateFactory aggregateFactory;
   private final AggregateStorer storer;
@@ -63,7 +63,7 @@ final class AggregateFlusher {
 
   private Continuation<? super Boolean, Exception> flushWait;
 
-  AggregateFlusher(StorageManager waitingList, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationSettings config, Logger logger) {
+  AggregateFlusher(CachedStorage waitingList, AggregateList aggregateList, AggregateFactory aggregateFactory, AggregateStorer storer, AggregationSettings config, Logger logger) {
     this.waitingList = waitingList;
     this.aggregateList = aggregateList;
     this.aggregateFactory = aggregateFactory;

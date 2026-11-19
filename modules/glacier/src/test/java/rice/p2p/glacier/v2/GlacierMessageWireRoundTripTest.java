@@ -48,10 +48,10 @@ import rice.pastry.NodeHandle;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.WireRoundTrip;
 import rice.pastry.testing.WireRoundTrip.SocketNode;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorage;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManager;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 /**
  * Every Glacier protocol message through the bytes of a socket ring, with the deserializer of a GlacierImpl that is
@@ -82,8 +82,8 @@ class GlacierMessageWireRoundTripTest {
     self = socketNode.local();
     peer = socketNode.handle("8000");
     PastryIdFactory factory = new PastryIdFactory(env);
-    StorageManager fragments = new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory));
-    StorageManager neighbors = new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory));
+    CachedStorage fragments = new CachedStorageImpl(factory, new MemoryStorage(factory), new NoOpCache(factory));
+    CachedStorage neighbors = new CachedStorageImpl(factory, new MemoryStorage(factory), new NoOpCache(factory));
     GlacierImpl glacier = new GlacierImpl(socketNode.node, fragments, neighbors, NUM_FRAGMENTS, NUM_SURVIVORS, factory,
         INSTANCE, new InsecureGlacierPolicy(new ErasureCodec(NUM_FRAGMENTS, NUM_SURVIVORS, env)));
     Field field = GlacierImpl.class.getDeclaredField("endpoint");

@@ -52,7 +52,7 @@ import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.util.DebugCommandHandler;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The debug commands of an {@link AggregationImpl}. Commands for another instance are passed on to the
@@ -68,7 +68,7 @@ final class AggregationDebugCommands {
   private final Past aggregateStore;
   private final Past objectStore;
   private final AggregateList aggregateList;
-  private final StorageManager waitingList;
+  private final CachedStorage waitingList;
   private final AggregationMonitor monitor;
   private final IdFactory factory;
   private final Environment environment;
@@ -76,7 +76,7 @@ final class AggregationDebugCommands {
   private final String instance;
   private final Logger logger;
 
-  AggregationDebugCommands(AggregationImpl aggregation, Past aggregateStore, Past objectStore, AggregateList aggregateList, StorageManager waitingList, AggregationMonitor monitor, IdFactory factory, Environment environment, AggregationSettings config, String instance, Logger logger) {
+  AggregationDebugCommands(AggregationImpl aggregation, Past aggregateStore, Past objectStore, AggregateList aggregateList, CachedStorage waitingList, AggregationMonitor monitor, IdFactory factory, Environment environment, AggregationSettings config, String instance, Logger logger) {
     this.aggregation = aggregation;
     this.aggregateStore = aggregateStore;
     this.objectStore = objectStore;

@@ -51,7 +51,7 @@ import rice.p2p.commonapi.Id;
  * This interface is the abstraction of something which provides a
  * caching service.  Implementations should take in parameters specific
  * to the cache algorithm.  Two implementations are provided,
- * the LRUCache and EmptyCache. This interface extends the Catalog
+ * the LRUCache and NoOpCache. This interface extends the Catalog
  * interface, as the cache provides a Catalog service.
  *
  * @version $Id: Cache.java 4654 2009-01-08 16:33:07Z jeffh $

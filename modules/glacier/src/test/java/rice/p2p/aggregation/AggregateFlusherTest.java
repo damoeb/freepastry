@@ -12,7 +12,7 @@ import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -32,7 +32,7 @@ class AggregateFlusherTest {
     env.getParameters().setInt("p2p_aggregation_maxAggregateSize", 1000 * OBJECT_SIZE);
     env.getParameters().setInt("p2p_aggregation_maxAggregatesPerRun", 100);
     idFactory = new PastryIdFactory(env);
-    StorageManager waitingList = (StorageManager) Proxy.newProxyInstance(StorageManager.class.getClassLoader(), new Class<?>[] {StorageManager.class}, (proxy, method, args) -> {
+    CachedStorage waitingList = (CachedStorage) Proxy.newProxyInstance(CachedStorage.class.getClassLoader(), new Class<?>[] {CachedStorage.class}, (proxy, method, args) -> {
       if (method.getName().equals("getMetadata")) {
         return new ObjectDescriptor((Id) args[0], 0, 0, 0, OBJECT_SIZE);
       }

@@ -46,7 +46,7 @@ import rice.p2p.commonapi.IdSet;
 import rice.p2p.glacier.Fragment;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.VersionKey;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * Local maintenance of the fragment storage: garbage collection of expired fragments, and the local scan
@@ -59,11 +59,11 @@ final class GlacierMaintenance {
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrash trash;
   private final GlacierRetriever retriever;
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierMaintenance(GlacierConfig config, int numFragments, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, GlacierRetriever retriever, StorageManager fragmentStorage, Environment environment, Logger logger) {
+  GlacierMaintenance(GlacierConfig config, int numFragments, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrash trash, GlacierRetriever retriever, CachedStorage fragmentStorage, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.locator = locator;

@@ -52,11 +52,11 @@ import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * @author jstewart
@@ -95,7 +95,7 @@ public class DistPastTest {
 
         final PastImpl[] past = new PastImpl[1];
         stor = new PersistentStorage(idf, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
-          p = past[0] = new PastImpl(node, new StorageManagerImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
+          p = past[0] = new PastImpl(node, new CachedStorageImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
           p.setContentDeserializer((buf, endpoint, contentType) -> {
             if (contentType == DistPastTestContent.TYPE) {
               return new DistPastTestContent(buf, endpoint);

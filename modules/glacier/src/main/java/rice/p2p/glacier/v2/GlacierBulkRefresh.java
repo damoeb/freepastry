@@ -56,7 +56,7 @@ import rice.p2p.glacier.v2.messaging.GlacierRefreshCompleteMessage;
 import rice.p2p.glacier.v2.messaging.GlacierRefreshPatchMessage;
 import rice.p2p.glacier.v2.messaging.GlacierRefreshProbeMessage;
 import rice.p2p.glacier.v2.messaging.GlacierRefreshResponseMessage;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The aggregated refresh protocol ({@code p2p_glacier_enableBulkRefresh}): the refreshing node probes,
@@ -74,12 +74,12 @@ final class GlacierBulkRefresh {
   private final GlacierRouter router;
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final IdFactory factory;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierBulkRefresh(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, StorageManager fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierBulkRefresh(GlacierConfig config, int numFragments, int numSurvivors, GlacierPolicy policy, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;

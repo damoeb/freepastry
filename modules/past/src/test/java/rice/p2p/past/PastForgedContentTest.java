@@ -18,9 +18,9 @@ import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
 
 /**
  * A peer that answers with content it made up. Content-hash objects are immutable and self-certifying, so a node
@@ -51,7 +51,7 @@ class PastForgedContentTest {
   }
 
   private PastImpl newPast(PastryNode node, PastPolicy policy) {
-    PastImpl past = new PastImpl(node, new StorageManagerImpl(idf, new MemoryStorage(idf),
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
         new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), REPLICAS, "forged", policy);
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {

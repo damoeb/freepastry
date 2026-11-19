@@ -49,7 +49,7 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.past.gc.ExpiringPastContent;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * Extends the lifetimes of objects: in the object store, and in the aggregate list or the waiting list,
@@ -63,13 +63,13 @@ final class ObjectRefresher {
   private static final Object PENDING = new Object();
 
   private final Past objectStore;
-  private final StorageManager waitingList;
+  private final CachedStorage waitingList;
   private final AggregateList aggregateList;
   private final AggregationPolicy policy;
   private final AggregationSettings config;
   private final Logger logger;
 
-  ObjectRefresher(Past objectStore, StorageManager waitingList, AggregateList aggregateList, AggregationPolicy policy, AggregationSettings config, Logger logger) {
+  ObjectRefresher(Past objectStore, CachedStorage waitingList, AggregateList aggregateList, AggregationPolicy policy, AggregationSettings config, Logger logger) {
     this.objectStore = objectStore;
     this.waitingList = waitingList;
     this.aggregateList = aggregateList;

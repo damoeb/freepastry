@@ -42,20 +42,20 @@ import rice.Continuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.GlacierException;
+import rice.persistence.CachedStorage;
 import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
-import rice.persistence.StorageManager;
 
 /**
  * Deletes fragments from the fragment storage. When a trash storage is set, deleted fragments are
  * moved there first, and fragments that must be recovered are looked up there before asking other nodes.
  */
 class GlacierTrash {
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final Logger logger;
-  private StorageManager trashStorage;
+  private CachedStorage trashStorage;
 
-  GlacierTrash(StorageManager fragmentStorage, Logger logger) {
+  GlacierTrash(CachedStorage fragmentStorage, Logger logger) {
     this.fragmentStorage = fragmentStorage;
     this.logger = logger;
     this.trashStorage = null;

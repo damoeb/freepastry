@@ -18,9 +18,9 @@ import rice.p2p.replication.ReplicationImpl;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.StubHandleNodes;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 import rice.testing.fuzz.FuzzSupport;
 
 /**
@@ -43,7 +43,7 @@ class PastFuzzTest {
     node = StubHandleNodes.newNode(env);
     PastryIdFactory factory = new PastryIdFactory(env);
     ExpiringPastImpl gcPast = new ExpiringPastImpl(node,
-        new StorageManagerImpl(factory, new MemoryStorage(factory), new EmptyCache(factory)), null, REPLICAS, "past-fuzz",
+        new CachedStorageImpl(factory, new MemoryStorage(factory), new NoOpCache(factory)), null, REPLICAS, "past-fuzz",
         new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
     gcPast.setContentDeserializer((buf, ep, type) -> switch (type) {
       case DistPastTestContent.TYPE -> new DistPastTestContent(buf, ep);

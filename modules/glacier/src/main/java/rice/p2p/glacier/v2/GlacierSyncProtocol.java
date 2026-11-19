@@ -56,7 +56,7 @@ import rice.p2p.glacier.v2.messaging.GlacierRangeForwardMessage;
 import rice.p2p.glacier.v2.messaging.GlacierRangeQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierRangeResponseMessage;
 import rice.p2p.glacier.v2.messaging.GlacierSyncMessage;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * The sync protocol, which lets a node recover the fragments it should hold: it periodically picks a
@@ -74,14 +74,14 @@ final class GlacierSyncProtocol {
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrafficShaper trafficShaper;
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final IdFactory factory;
   private final Environment environment;
   private final Logger logger;
   private long syncInterval;
   private int syncMaxFragments;
 
-  GlacierSyncProtocol(GlacierConfig config, int numFragments, GlacierPolicy policy, Endpoint endpoint, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, StorageManager fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
+  GlacierSyncProtocol(GlacierConfig config, int numFragments, GlacierPolicy policy, Endpoint endpoint, GlacierScheduler scheduler, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
     this.config = config;
     this.numFragments = numFragments;
     this.policy = policy;

@@ -38,7 +38,7 @@ advised of the possibility of such damage.
 package rice.persistence;
 
 /**
- * @(#) StorageManager.java
+ * @(#) CachedStorage.java
  *
  * This interface represents a "smart" storage manger, which represents a storage
  * attached to a cache.  Objects inserted and retrieved from the storage are auto-
@@ -47,19 +47,19 @@ package rice.persistence;
  * @author Ansley Post
  * @author Alan Mislove
  *
- * @version $Id: StorageManager.java 3613 2007-02-15 14:45:14Z jstewart $
+ * @version $Id: CachedStorage.java 3613 2007-02-15 14:45:14Z jstewart $
  */
-public interface StorageManager extends Cache, Storage {
+public interface CachedStorage extends Cache, Storage {
 
   /**
-   * Returns the permantent storage object used by this StorageManager
+   * Returns the permantent storage object used by this CachedStorage
    *
    * @return The storage of this storage manager
    */
   public Storage getStorage();
 
   /**
-   * Returns the cache object used by this StorageManager
+   * Returns the cache object used by this CachedStorage
    *
    * @return The cache of this storage manager
    */

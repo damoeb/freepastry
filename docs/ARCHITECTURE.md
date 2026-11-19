@@ -330,13 +330,13 @@ The interfaces are asynchronous and use `Continuation`s:
 - `Catalog`: `exists`, `scan`, `getSize`, …
 - `Storage extends Catalog`: `store(id, metadata, obj, c)`, `unstore`, `getObject`, `getMetadata`, `setMetadata`.
 - `Cache extends Catalog`: `cache`, `uncache`, `setMaximumSize`.
-- `StorageManager extends Cache, Storage`: a `Storage` plus a `Cache`, implemented by `StorageManagerImpl`. This is what PAST takes as its `manager`.
+- `CachedStorage extends Cache, Storage`: a `Storage` plus a `Cache`, implemented by `CachedStorageImpl`. This is what PAST takes as its `manager`.
 
 The implementations:
 
 - `PersistentStorage` stores data on disk under a root directory, with a size limit. It writes one file per object in a versioned binary format (`ObjectFileFormat`), keeps a metadata index persisted in per-directory `metadata.cache` files (`MetadataIndex`), and recovers after crashes. The values are written by the `StorageSerializer` it is built with: `PastStorageSerializer`, `GlacierStorageSerializer` or `AggregationStorageSerializer`, which use the raw serialization of the wire. Files of the old Java-serialized XML format are not read. It does all disk IO through `Processor.processBlockingIO()` and delivers results on the selector thread. Its Javadoc lists restrictions on key `toString()`s, for example no `.` or `!`.
 - `MemoryStorage` is a hash table, not durable. It calls continuations synchronously.
-- `LRUCache` (backed by a `Storage`) and `EmptyCache`.
+- `LRUCache` (backed by a `Storage`) and `NoOpCache`.
 - `LockManager`/`LockManager` serialize operations per id.
 
 ## Applications
@@ -347,7 +347,7 @@ The implementations:
 - `lookup()` routes a `LookupMessage` and can cache the result locally (`lookup(id, cache, c)`).
 - `lookupHandles()` and `fetch()` find and retrieve particular replicas.
 - Replicas are kept in place by a `ReplicaFetchCoordinatorImpl`; `PastImpl` implements `ReplicationManagerClient` and so receives `fetch()` and `remove()` calls.
-- Local data lives in a `StorageManager`; an optional `trash` `StorageManager` keeps deleted objects.
+- Local data lives in a `CachedStorage`; an optional `trash` `CachedStorage` keeps deleted objects.
 - A `PastPolicy` (`DefaultPastPolicy`) decides how to fetch and validate content.
 - `ContentHashPastContent` is content whose id is the hash of its data.
 
@@ -363,7 +363,7 @@ The implementations:
 
 **Aggregation** (`rice.p2p.aggregation`, `AggregationImpl`): stores many small objects efficiently in a durable store. It wraps two stores: `objectStore`, a PAST/ExpiringPast instance for fast lookups, and `aggregateStore`, typically Glacier.
 
-- If `AggregationPolicy.shouldBeAggregated()` says so, an inserted object goes into `objectStore` at once and onto a local `waitingList` (`StorageManager`).
+- If `AggregationPolicy.shouldBeAggregated()` says so, an inserted object goes into `objectStore` at once and onto a local `waitingList` (`CachedStorage`).
 - A periodic flush (`p2p_aggregation_flushInterval`) packs waiting objects into an `Aggregate` and inserts it into `aggregateStore`.
 - Objects that should not be aggregated go into both stores directly, the durable copy wrapped as a `NonAggregate`.
 - `AggregateList` records which aggregate holds which object and is saved to `configFileName`.

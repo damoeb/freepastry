@@ -55,9 +55,9 @@ import rice.pastry.IdSet;
 import rice.pastry.NodeSet;
 import rice.pastry.testing.WireRoundTrip;
 import rice.pastry.testing.WireRoundTrip.SocketNode;
-import rice.persistence.EmptyCache;
+import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
-import rice.persistence.StorageManagerImpl;
+import rice.persistence.NoOpCache;
 
 /**
  * The messages of Past and ExpiringPast, and the handles, ids and metadata they carry, through the bytes of a socket ring:
@@ -110,8 +110,8 @@ class PastWireRoundTripTest {
     env.destroy();
   }
 
-  private static StorageManagerImpl storage() {
-    return new StorageManagerImpl(idf, new MemoryStorage(idf), new EmptyCache(idf));
+  private static CachedStorageImpl storage() {
+    return new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf));
   }
 
   private enum TestContentReader implements PastContentDeserializer {

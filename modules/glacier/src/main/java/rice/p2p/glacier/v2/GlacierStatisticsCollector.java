@@ -41,9 +41,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.persistence.CachedStorage;
 import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
-import rice.persistence.StorageManager;
 
 /**
  * Collects the statistics of one reporting interval, and reports them to the registered listeners.
@@ -54,15 +54,15 @@ final class GlacierStatisticsCollector {
   private final GlacierTrafficShaper trafficShaper;
   private final GlacierNeighborhood neighborhood;
   private final GlacierTrash trash;
-  private final StorageManager fragmentStorage;
-  private final StorageManager neighborStorage;
+  private final CachedStorage fragmentStorage;
+  private final CachedStorage neighborStorage;
   private final String instance;
   private final Environment environment;
   private final Logger logger;
   private final List<GlacierStatisticsListener> listeners;
   private GlacierStatistics statistics;
 
-  GlacierStatisticsCollector(GlacierConfig config, GlacierScheduler scheduler, GlacierTrafficShaper trafficShaper, GlacierNeighborhood neighborhood, GlacierTrash trash, StorageManager fragmentStorage, StorageManager neighborStorage, String instance, Environment environment, Logger logger) {
+  GlacierStatisticsCollector(GlacierConfig config, GlacierScheduler scheduler, GlacierTrafficShaper trafficShaper, GlacierNeighborhood neighborhood, GlacierTrash trash, CachedStorage fragmentStorage, CachedStorage neighborStorage, String instance, Environment environment, Logger logger) {
     this.config = config;
     this.scheduler = scheduler;
     this.trafficShaper = trafficShaper;

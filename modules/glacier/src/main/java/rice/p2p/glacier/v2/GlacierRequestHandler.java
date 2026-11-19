@@ -48,7 +48,7 @@ import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
 import rice.p2p.glacier.v2.messaging.GlacierFetchMessage;
 import rice.p2p.glacier.v2.messaging.GlacierQueryMessage;
 import rice.p2p.glacier.v2.messaging.GlacierResponseMessage;
-import rice.persistence.StorageManager;
+import rice.persistence.CachedStorage;
 
 /**
  * Answers the fragment requests of other nodes (queries and fetches), and accepts the fragments and
@@ -63,11 +63,11 @@ final class GlacierRequestHandler {
   private final FragmentLocator locator;
   private final GlacierNeighborhood neighborhood;
   private final GlacierRetriever retriever;
-  private final StorageManager fragmentStorage;
+  private final CachedStorage fragmentStorage;
   private final Environment environment;
   private final Logger logger;
 
-  GlacierRequestHandler(int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, StorageManager fragmentStorage, Environment environment, Logger logger) {
+  GlacierRequestHandler(int numFragments, int numSurvivors, String instance, GlacierPolicy policy, GlacierRouter router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierRetriever retriever, CachedStorage fragmentStorage, Environment environment, Logger logger) {
     this.numFragments = numFragments;
     this.numSurvivors = numSurvivors;
     this.instance = instance;
