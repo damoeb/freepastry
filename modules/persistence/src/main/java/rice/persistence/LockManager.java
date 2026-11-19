@@ -62,27 +62,27 @@ public class LockManager {
   }
 
 
-  public void lock(Id id, Continuation<?, ?> c) {
-    Continuation<?, ?> torun = null;
-    logger.debug("locking on id {} for continuation {}", id, c);
+  public void lock(Id id, Continuation<?, ?> continuation) {
+    Continuation<?, ?> pendingContinuation = null;
+    logger.debug("locking on id {} for continuation {}", id, continuation);
     synchronized (locksLock) {
       if (locks.containsKey(id)) {
         List<Continuation<?, ?>> locklist = locks.get(id);
         logger.trace("locking on id {}; blocked on {} earlier continuations", id, locklist.size());
         if (locklist.size() > 10) logger.info("locking on id {}; {} continuations in queue.  That seems large", id, locklist.size());
-        locklist.add(c);
+        locklist.add(continuation);
       } else {
         locks.put(id, new ArrayList<Continuation<?, ?>>());
-        logger.trace("locking on id {}; no contention so running {}", id, c);
-        torun = c;
+        logger.trace("locking on id {}; no contention so running {}", id, continuation);
+        pendingContinuation = continuation;
       }
     }
-    if (torun != null)
-      torun.receiveResult(null);
+    if (pendingContinuation != null)
+      pendingContinuation.receiveResult(null);
   }
 
   public void unlock(Id id) {
-    Continuation<?, ?> torun = null;
+    Continuation<?, ?> pendingContinuation = null;
     logger.debug("unlocking on id {}", id);
     synchronized (locksLock) {
       if (locks.containsKey(id)) {
@@ -92,14 +92,14 @@ public class LockManager {
         } else {
           Continuation<?, ?> next = locks.get(id).remove(0);
           logger.trace("unlocking on id {}; starting next continuation {}", id, next);
-          torun = next;
+          pendingContinuation = next;
         }
       } else {
         logger.warn("unlocking on id {}; no lock currently held!!", id);
       }
     }
-    if (torun != null)
-      torun.receiveResult(null);
+    if (pendingContinuation != null)
+      pendingContinuation.receiveResult(null);
   }
 
 }

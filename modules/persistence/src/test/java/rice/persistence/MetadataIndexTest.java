@@ -47,8 +47,8 @@ class MetadataIndexTest {
     factory = new PastryIdFactory(env);
     logger = env.getLogManager().getLogger(MetadataIndexTest.class, null);
     dir = root;
-    rangeForDirectory = d -> factory.buildIdRangeFromPrefix(PREFIX);
-    prefixOf = d -> PREFIX;
+    rangeForDirectory = directory -> factory.buildIdRangeFromPrefix(PREFIX);
+    prefixOf = directory -> PREFIX;
   }
 
   @AfterEach
@@ -142,9 +142,9 @@ class MetadataIndexTest {
     written.put(low, 1, dir);
     written.put(high, 2, dir);
 
-    written.writeDirty(d -> range);
+    written.writeDirty(directory -> range);
     MetadataIndex actual = newIndex();
-    actual.readMetadataFile(dir, d -> range, d -> "");
+    actual.readMetadataFile(dir, directory -> range, directory -> "");
 
     assertEquals(1, actual.get(low));
     assertEquals(2, actual.get(high));

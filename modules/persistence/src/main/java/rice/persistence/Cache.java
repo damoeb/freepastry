@@ -74,9 +74,9 @@ public interface Cache extends Catalog {
    * @param id The object's id.
    * @param metadata The object's metdatadata
    * @param obj The object to cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c);
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation);
 
   /**
    * Removes the object from the list of cached objects. This method is
@@ -87,9 +87,9 @@ public interface Cache extends Catalog {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void uncache(Id id, Continuation<? super Boolean, Exception> c);
+  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation);
 
   /**
    * Returns the maximum size of the cache, in bytes.
@@ -107,7 +107,7 @@ public interface Cache extends Catalog {
    * (through receiveResult on c).
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> c);
+  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> continuation);
 }

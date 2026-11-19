@@ -202,13 +202,13 @@ public class PersistentStorage implements Storage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
     printStats();
 
-    blockingIO.run(() -> "rename " + oldId + " " + newId, c, () -> objectFiles.rename(oldId, newId));
+    blockingIO.run(() -> "rename " + oldId + " " + newId, continuation, () -> objectFiles.rename(oldId, newId));
   }
 
   /**
@@ -227,18 +227,18 @@ public class PersistentStorage implements Storage {
    * @param obj The object to be made persistent.
    * @param id The object's id.
    * @param metadata The object's metadata
-   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void store(final Id id, final Object metadata, final Object obj, Continuation<? super Boolean, Exception> c) {
+  public void store(final Id id, final Object metadata, final Object obj, Continuation<? super Boolean, Exception> continuation) {
     if (id == null || obj == null) {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
       return;
     }
 
     printStats();
 
-    blockingIO.run(() -> "store " + id, c, () -> objectFiles.store(id, metadata, obj));
+    blockingIO.run(() -> "store " + id, continuation, () -> objectFiles.store(id, metadata, obj));
   }
 
   /**
@@ -254,13 +254,13 @@ public class PersistentStorage implements Storage {
    * with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void unstore(final Id id, Continuation<? super Boolean, Exception> c) {
+  public void unstore(final Id id, Continuation<? super Boolean, Exception> continuation) {
     printStats();
 
-    blockingIO.run(() -> "unstore " + id, c, () -> objectFiles.unstore(id));
+    blockingIO.run(() -> "unstore " + id, continuation, () -> objectFiles.unstore(id));
   }
 
   /**
@@ -302,16 +302,16 @@ public class PersistentStorage implements Storage {
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> c) {
+  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> continuation) {
     printStats();
 
     if (! exists(id)) {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
     } else {
-      blockingIO.run(() -> "setMetadata " + id, c, () -> objectFiles.setMetadata(id, metadata));
+      blockingIO.run(() -> "setMetadata " + id, continuation, () -> objectFiles.setMetadata(id, metadata));
     }
   }
 
@@ -319,16 +319,16 @@ public class PersistentStorage implements Storage {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(final Id id, Continuation<? super Object, Exception> c) {
+  public void getObject(final Id id, Continuation<? super Object, Exception> continuation) {
     printStats();
 
     if (index && ! exists(id)) {
-      c.receiveResult(null);
+      continuation.receiveResult(null);
     } else {
-      blockingIO.run(() -> "getObject " + id, c, () -> objectFiles.getObject(id));
+      blockingIO.run(() -> "getObject " + id, continuation, () -> objectFiles.getObject(id));
     }
   }
 
@@ -473,11 +473,11 @@ public class PersistentStorage implements Storage {
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> c) {
-    blockingIO.run(() -> "flush", c, () -> objectFiles.flush());
+  public void flush(Continuation<? super Boolean, Exception> continuation) {
+    blockingIO.run(() -> "flush", continuation, () -> objectFiles.flush());
   }
 
   /*****************************************************************/

@@ -132,15 +132,15 @@ final class ObjectFileFormat {
    * @param file The file which should be read for the metadata
    */
   Object readMetadata(Path file) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "r")) {
-      long length = metadataLength(ras, file);
+    try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
+      long length = metadataLength(randomAccessFile, file);
       if (length < 0) {
         return null;
       }
 
       byte[] section = new byte[(int) length];
-      ras.seek(ras.length() - TRAILER_LENGTH - length);
-      ras.readFully(section);
+      randomAccessFile.seek(randomAccessFile.length() - TRAILER_LENGTH - length);
+      randomAccessFile.readFully(section);
       InputBuffer buf = gunzip(section);
       return buf.readBoolean() ? serializer.readMetadata(buf) : null;
     }
@@ -180,12 +180,12 @@ final class ObjectFileFormat {
    * @param metadata The metadata to write
    */
   void writeMetadata(Path file, Object metadata) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "rw")) {
-      long length = metadataLength(ras, file);
+    try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "rw")) {
+      long length = metadataLength(randomAccessFile, file);
       if (length < 0) {
         throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
       }
-      ras.setLength(ras.length() - TRAILER_LENGTH - length);
+      randomAccessFile.setLength(randomAccessFile.length() - TRAILER_LENGTH - length);
     }
 
     appendMetadata(file, metadata);
@@ -218,15 +218,15 @@ final class ObjectFileFormat {
    * @return the object section of the file, unzipped
    */
   private InputBuffer readObjectSection(Path file) throws IOException {
-    try (RandomAccessFile ras = new RandomAccessFile(file.toFile(), "r")) {
-      long length = metadataLength(ras, file);
+    try (RandomAccessFile randomAccessFile = new RandomAccessFile(file.toFile(), "r")) {
+      long length = metadataLength(randomAccessFile, file);
       if (length < 0) {
         throw new IOException("Not a version " + PersistentStorage.PERSISTENCE_VERSION_3 + " object file: " + file);
       }
 
-      byte[] section = new byte[(int) (ras.length() - TRAILER_LENGTH - length)];
-      ras.seek(0);
-      ras.readFully(section);
+      byte[] section = new byte[(int) (randomAccessFile.length() - TRAILER_LENGTH - length)];
+      randomAccessFile.seek(0);
+      randomAccessFile.readFully(section);
       return gunzip(section);
     }
   }
@@ -236,26 +236,26 @@ final class ObjectFileFormat {
    *
    * @return the length of the metadata section, or -1 if the file has no valid version 3 trailer
    */
-  private long metadataLength(RandomAccessFile ras, Path file) throws IOException {
-    long fileLength = ras.length();
+  private long metadataLength(RandomAccessFile randomAccessFile, Path file) throws IOException {
+    long fileLength = randomAccessFile.length();
     if (fileLength < TRAILER_LENGTH) {
       return -1;
     }
 
-    ras.seek(fileLength - TRAILER_LENGTH);
-    if (ras.readLong() != PersistentStorage.PERSISTENCE_MAGIC_NUMBER) {
+    randomAccessFile.seek(fileLength - TRAILER_LENGTH);
+    if (randomAccessFile.readLong() != PersistentStorage.PERSISTENCE_MAGIC_NUMBER) {
       return -1;
     }
-    if (ras.readLong() != PersistentStorage.PERSISTENCE_VERSION_3) {
+    if (randomAccessFile.readLong() != PersistentStorage.PERSISTENCE_VERSION_3) {
       logger.warn("Persistence version of {} did not match - ignoring it", file);
       return -1;
     }
-    if (ras.readLong() > PersistentStorage.PERSISTENCE_REVISION_3_0) {
+    if (randomAccessFile.readLong() > PersistentStorage.PERSISTENCE_REVISION_3_0) {
       logger.warn("Persistence revision of {} did not match - ignoring it", file);
       return -1;
     }
 
-    long length = ras.readLong();
+    long length = randomAccessFile.readLong();
     if ((length < 0) || (length > fileLength - TRAILER_LENGTH)) {
       return -1;
     }
@@ -271,8 +271,8 @@ final class ObjectFileFormat {
   }
 
   private static InputBuffer gunzip(byte[] section) throws IOException {
-    try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(section))) {
-      return new SimpleInputBuffer(in.readAllBytes());
+    try (GZIPInputStream gzipInput = new GZIPInputStream(new ByteArrayInputStream(section))) {
+      return new SimpleInputBuffer(gzipInput.readAllBytes());
     }
   }
 }

@@ -123,13 +123,13 @@ public class CachedStorageImpl implements CachedStorage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
-    cache.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(c) {
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
+    cache.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         storage.rename(oldId, newId, parent);
       }
       @Override
@@ -142,15 +142,15 @@ public class CachedStorageImpl implements CachedStorage {
    * there is no corresponding object (through receiveResult on c).
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void getObject(final Id id, Continuation<? super Object, Exception> c) {
-    cache.getObject(id, new StandardContinuation<Object, Object, Exception>(c) {
+  public void getObject(final Id id, Continuation<? super Object, Exception> continuation) {
+    cache.getObject(id, new StandardContinuation<Object, Object, Exception>(continuation) {
       @Override
-      public void receiveResult(Object o) {
-        if (o != null) {
-          parent.receiveResult(o);
+      public void receiveResult(Object result) {
+        if (result != null) {
+          parent.receiveResult(result);
         } else {
           storage.getObject(id, parent);
         }
@@ -186,7 +186,7 @@ public class CachedStorageImpl implements CachedStorage {
   public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> command) {
     cache.setMetadata(id, metadata, new StandardContinuation<Boolean, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         storage.setMetadata(id, metadata, parent);
       }
       @Override
@@ -303,11 +303,11 @@ public class CachedStorageImpl implements CachedStorage {
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to store.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
-    storage.store(id, metadata, obj, c);
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
+    storage.store(id, metadata, obj, continuation);
   }
 
   /**
@@ -319,11 +319,11 @@ public class CachedStorageImpl implements CachedStorage {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
-    storage.unstore(id, c);
+  public void unstore(Id id, Continuation<? super Boolean, Exception> continuation) {
+    storage.unstore(id, continuation);
   }
 
   /**
@@ -341,11 +341,11 @@ public class CachedStorageImpl implements CachedStorage {
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
-    cache.cache(id, metadata, obj, c);
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
+    cache.cache(id, metadata, obj, continuation);
   }
 
   /**
@@ -357,11 +357,11 @@ public class CachedStorageImpl implements CachedStorage {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
-    cache.uncache(id, c);
+  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
+    cache.uncache(id, continuation);
   }
 
   /**
@@ -383,24 +383,24 @@ public class CachedStorageImpl implements CachedStorage {
    * (through receiveResult on c).
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> c) {
-    cache.setMaximumSize(size, c);
+  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> continuation) {
+    cache.setMaximumSize(size, continuation);
   }
 
   /**
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> c) {
-    cache.flush(new StandardContinuation<Boolean, Boolean, Exception>(c) {
+  public void flush(Continuation<? super Boolean, Exception> continuation) {
+    cache.flush(new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         storage.flush(parent);
       }
     });

@@ -133,18 +133,18 @@ public class LRUCacheTest extends Test {
     return ObjectSizes.sizeOf(obj);
   }
 
-  public void setUp(final Continuation<Object, Exception> c) {
+  public void setUp(final Continuation<Object, Exception> continuation) {
     final Continuation<Object, Exception> put4 = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(false))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
         }
 
         sectionEnd();
-        c.receiveResult(Boolean.valueOf(true));
+        continuation.receiveResult(Boolean.valueOf(true));
       }
 
       @Override
@@ -155,8 +155,8 @@ public class LRUCacheTest extends Test {
 
     final Continuation<Object, Exception> put3 = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -174,8 +174,8 @@ public class LRUCacheTest extends Test {
 
     final Continuation<Object, Exception> put2 = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -193,8 +193,8 @@ public class LRUCacheTest extends Test {
 
     Continuation<Object, Exception> put1 = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -216,11 +216,11 @@ public class LRUCacheTest extends Test {
     cache.cache(data[1], null, FIRST, put1);
   }
 
-  private void testExists(final Continuation<Object, Exception> c) {
+  private void testExists(final Continuation<Object, Exception> continuation) {
     setUp(new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           sectionStart("Checking for Objects");
           stepStart("Checking First Object was evicted");
           if (!cache.exists(data[1])) stepDone(SUCCESS); else stepDone(FAILURE);
@@ -234,7 +234,7 @@ public class LRUCacheTest extends Test {
           if (!cache.exists(data[5])) stepDone(SUCCESS); else stepDone(FAILURE);
           sectionEnd();
 
-          c.receiveResult(Boolean.valueOf(true));
+          continuation.receiveResult(Boolean.valueOf(true));
         } else {
           throw new RuntimeException("SetUp did not complete correctly!");
         }
@@ -247,10 +247,10 @@ public class LRUCacheTest extends Test {
     });
   }
 
-  private void testScan(final Continuation<Object, Exception> c) {
+  private void testScan(final Continuation<Object, Exception> continuation) {
     final Continuation<Object, Exception> handleBadScan = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         stepDone(FAILURE, "Query returned; should have thrown exception");
       }
 
@@ -260,14 +260,14 @@ public class LRUCacheTest extends Test {
 
         sectionEnd();
 
-        c.receiveResult(Boolean.valueOf(true));
+        continuation.receiveResult(Boolean.valueOf(true));
       }
     };
 
     final Continuation<Object, Exception> query = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object previousResult) {
+        if (previousResult.equals(Boolean.valueOf(true))) {
           stepDone(SUCCESS);
         } else {
           stepDone(FAILURE);
@@ -310,8 +310,8 @@ public class LRUCacheTest extends Test {
 
     Continuation<Object, Exception> insertString = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           sectionStart("Testing Scan");
 
           stepStart("Inserting String as Key");
@@ -330,16 +330,16 @@ public class LRUCacheTest extends Test {
     testExists(insertString);
   }
 
-  private void testRandomInserts(final Continuation<Object, Exception> c) {
+  private void testRandomInserts(final Continuation<Object, Exception> continuation) {
 
     final int NUM_ELEMENTS = (END_NUM - LAST_NUM_REMAINING) / SKIP + 1;
 
     final Continuation<Object, Exception> checkRandom = new Continuation<Object, Exception>() {
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         stepStart("Checking object deletion");
-        int NUM_DELETED = ((Integer) o).intValue();
+        int NUM_DELETED = ((Integer) result).intValue();
         int length = cache.scan(FACTORY.buildIdRange(data[13 + START_NUM], data[13 + END_NUM + SKIP])).numElements();
 
         int desired = NUM_ELEMENTS - NUM_DELETED;
@@ -348,7 +348,7 @@ public class LRUCacheTest extends Test {
           stepDone(SUCCESS);
 
           sectionEnd();
-          c.receiveResult(Boolean.valueOf(true));
+          continuation.receiveResult(Boolean.valueOf(true));
         } else {
           stepDone(FAILURE, "Expected " + desired + " objects after deletes, found " + length + ".");
           return;
@@ -368,12 +368,12 @@ public class LRUCacheTest extends Test {
       private int num_deleted = 0;
 
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         if (count == LAST_NUM_REMAINING) {
           stepStart("Removing random subset of objects");
         }
 
-        if (o.equals(Boolean.valueOf(false))) {
+        if (result.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Deletion of " + count + " failed.");
           return;
         }
@@ -401,14 +401,14 @@ public class LRUCacheTest extends Test {
 
     final Continuation<Object, Exception> checkExists = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         stepStart("Checking exists for all 50 objects");
 
         for (int count = START_NUM - SKIP; count < END_NUM; count+=SKIP) {
-          Boolean b = Boolean.valueOf(cache.exists(data[13 + count]));
+          Boolean exists = Boolean.valueOf(cache.exists(data[13 + count]));
 
-          if (b.equals(Boolean.valueOf(count < LAST_NUM_REMAINING))) {
-            if (b.booleanValue()) {
+          if (exists.equals(Boolean.valueOf(count < LAST_NUM_REMAINING))) {
+            if (exists.booleanValue()) {
               stepDone(FAILURE, "Element " + count + " did exist - should not have.");
               return;
             } else {
@@ -434,8 +434,8 @@ public class LRUCacheTest extends Test {
       private int count = START_NUM;
 
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(false))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Insertion of " + count + " failed.");
           return;
         }
@@ -465,9 +465,9 @@ public class LRUCacheTest extends Test {
 
     final Continuation<Object, Exception> setSize = new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
 
-        if (o.equals(Boolean.valueOf(false))) {
+        if (result.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Testing of scan failed");
           return;
         }
@@ -492,8 +492,8 @@ public class LRUCacheTest extends Test {
     final Continuation<Object, Exception> validateNullValue = new Continuation<Object, Exception>() {
 
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           stepDone(FAILURE, "Null value should return false");
           return;
         }
@@ -513,8 +513,8 @@ public class LRUCacheTest extends Test {
     final Continuation<Object, Exception> insertNullValue = new Continuation<Object, Exception>() {
 
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(true))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
           stepDone(FAILURE, "Null key should return false");
           return;
         }
@@ -535,8 +535,8 @@ public class LRUCacheTest extends Test {
     final Continuation<Object, Exception> insertNullKey = new Continuation<Object, Exception>() {
 
       @Override
-      public void receiveResult(Object o) {
-        if (o.equals(Boolean.valueOf(false))) {
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
           stepDone(FAILURE, "Randon insert tests failed.");
           return;
         }

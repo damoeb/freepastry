@@ -99,16 +99,16 @@ public class MemoryStorage implements Storage {
    * Method which is used to erase all data stored in the Storage.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> c) {
+  public void flush(Continuation<? super Boolean, Exception> continuation) {
     storage = new HashMap<Id, Object>();
     metadata = new ReverseTreeMap<Id, Object>();
     idSet = factory.buildIdSet();
     currentSize = 0;
 
-    c.receiveResult(Boolean.TRUE);
+    continuation.receiveResult(Boolean.TRUE);
   }
 
   /**
@@ -117,12 +117,12 @@ public class MemoryStorage implements Storage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> c) {
+  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> continuation) {
     if (! idSet.isMemberId(oldId)) {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
       return;
     }
 
@@ -135,7 +135,7 @@ public class MemoryStorage implements Storage {
     metadata.put(newId, metadata.get(oldId));
     metadata.remove(oldId);
 
-    c.receiveResult(Boolean.valueOf(true));
+    continuation.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -148,12 +148,12 @@ public class MemoryStorage implements Storage {
    * @param obj The object to be made persistent.
    * @param id The object's id.
    * @param metadata The object's metadata
-   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
     if (id == null || obj == null) {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
       return;
     }
 
@@ -162,7 +162,7 @@ public class MemoryStorage implements Storage {
     this.storage.put(id, obj);
     this.metadata.put(id, metadata);
     idSet.addId(id);
-    c.receiveResult(Boolean.valueOf(true));
+    continuation.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -174,19 +174,19 @@ public class MemoryStorage implements Storage {
    * with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void unstore(Id id, Continuation<? super Boolean, Exception> c) {
+  public void unstore(Id id, Continuation<? super Boolean, Exception> continuation) {
     Object stored = storage.remove(id);
     metadata.remove(id);
     idSet.removeId(id);
 
     if (stored != null) {
       currentSize -= getSize(stored);
-      c.receiveResult(Boolean.valueOf(true));
+      continuation.receiveResult(Boolean.valueOf(true));
     } else {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
     }
   }
 
@@ -236,11 +236,11 @@ public class MemoryStorage implements Storage {
    * there is no corresponding object (through receiveResult on c).
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> c) {
-    c.receiveResult(storage.get(id));
+  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
+    continuation.receiveResult(storage.get(id));
   }
 
   /**

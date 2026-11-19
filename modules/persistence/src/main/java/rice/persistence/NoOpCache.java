@@ -78,11 +78,11 @@ public class NoOpCache implements Cache {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
-    c.receiveException(new IllegalArgumentException("NoOpCache has no objects!"));
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveException(new IllegalArgumentException("NoOpCache has no objects!"));
   }
 
   /**
@@ -99,11 +99,11 @@ public class NoOpCache implements Cache {
    *
    * @param id The object's id.
    * @param obj The object to cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c) {
-    c.receiveResult(Boolean.valueOf(true));
+  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -115,11 +115,11 @@ public class NoOpCache implements Cache {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
-    c.receiveResult(Boolean.valueOf(true));
+  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -137,11 +137,11 @@ public class NoOpCache implements Cache {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> c) {
-    c.receiveResult(null);
+  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
+    continuation.receiveResult(null);
   }
 
   /**
@@ -164,11 +164,11 @@ public class NoOpCache implements Cache {
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> c) {
-    c.receiveResult(Boolean.valueOf(true));
+  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveResult(Boolean.valueOf(true));
   }
 
   /**
@@ -283,21 +283,21 @@ public class NoOpCache implements Cache {
    * object being evicted from the cache.
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param c The command to run once the operation is complete; receives the success or failure of the setSize operation
+   * @param continuation The command to run once the operation is complete; receives the success or failure of the setSize operation
    */
   @Override
-  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
-    c.receiveResult(Boolean.TRUE);
+  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveResult(Boolean.TRUE);
   }
 
   /**
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> c) {
-    c.receiveResult(Boolean.TRUE);
+  public void flush(Continuation<? super Boolean, Exception> continuation) {
+    continuation.receiveResult(Boolean.TRUE);
   }
 }

@@ -122,18 +122,18 @@ public class LRUCache implements Cache {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> c) {
-    storage.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(c) {
+  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
+    storage.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
       @Override
-      public void receiveResult(Boolean o) {
-        if (Boolean.TRUE.equals(o)) {
+      public void receiveResult(Boolean result) {
+        if (Boolean.TRUE.equals(result)) {
           forget(oldId);
           touch(newId);
         }
-        parent.receiveResult(o);
+        parent.receiveResult(result);
       }
     });
   }
@@ -153,36 +153,36 @@ public class LRUCache implements Cache {
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to cache.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void cache(final Id id, final Object metadata, final Object obj, final Continuation<? super Boolean, Exception> c) {
+  public void cache(final Id id, final Object metadata, final Object obj, final Continuation<? super Boolean, Exception> continuation) {
     final int size = getSize(obj);
 
     if (exists(id)) {
       touch(id);
 
-      c.receiveResult(Boolean.valueOf(true));
+      continuation.receiveResult(Boolean.valueOf(true));
       return;
     }
 
     if (size > maximumSize) {
-      c.receiveResult(Boolean.valueOf(false));
+      continuation.receiveResult(Boolean.valueOf(false));
       return;
     }
 
 
     final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         touch(id);
 
-        storage.store(id, metadata, obj, c);
+        storage.store(id, metadata, obj, continuation);
       }
 
       @Override
       public void receiveException(Exception e) {
-        c.receiveException(e);
+        continuation.receiveException(e);
       }
     };
 
@@ -203,13 +203,13 @@ public class LRUCache implements Cache {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> c) {
+  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
     forget(id);
 
-    storage.unstore(id, c);
+    storage.unstore(id, continuation);
   }
 
   /**
@@ -227,18 +227,18 @@ public class LRUCache implements Cache {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> c) {
+  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
     if (! exists(id)) {
-      c.receiveResult(null);
+      continuation.receiveResult(null);
       return;
     }
 
     touch(id);
 
-    storage.getObject(id, c);
+    storage.getObject(id, continuation);
   }
 
   /**
@@ -380,21 +380,21 @@ public class LRUCache implements Cache {
    * object being evicted from the cache.
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param c The command to run once the operation is complete; receives the success or failure of the setSize operation
+   * @param continuation The command to run once the operation is complete; receives the success or failure of the setSize operation
    */
   @Override
-  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> c) {
+  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> continuation) {
     Continuation<Boolean, Exception> local = new Continuation<Boolean, Exception>() {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         maximumSize = size;
 
-        c.receiveResult(Boolean.valueOf(true));
+        continuation.receiveResult(Boolean.valueOf(true));
       }
 
       @Override
       public void receiveException(Exception e) {
-        c.receiveException(e);
+        continuation.receiveException(e);
       }
     };
 
@@ -410,12 +410,12 @@ public class LRUCache implements Cache {
    * is smaller than the specified size
    *
    * @param size The maximum number of bytes to make the cache
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  private void resize(final int size, Continuation<? super Boolean, Exception> c) {
-    final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(c) {
+  private void resize(final int size, Continuation<? super Boolean, Exception> continuation) {
+    final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         if (storage.getTotalSize() > size) {
           Id last = eldest();
           if (last == null) {
@@ -453,13 +453,13 @@ public class LRUCache implements Cache {
    * Method which is used to erase all data stored in the Cache.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> c) {
-    storage.flush(new StandardContinuation<Boolean, Boolean, Exception>(c) {
+  public void flush(Continuation<? super Boolean, Exception> continuation) {
+    storage.flush(new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
       @Override
-      public void receiveResult(Boolean o) {
+      public void receiveResult(Boolean result) {
         synchronized (order) {
           order.clear();
         }

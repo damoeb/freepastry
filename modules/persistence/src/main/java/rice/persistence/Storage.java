@@ -72,9 +72,9 @@ public interface Storage extends Catalog {
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to store.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> c);
+  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation);
 
   /**
    * Removes the object from the list of stored objects. This method is
@@ -85,7 +85,7 @@ public interface Storage extends Catalog {
    * <code>False</code>  (through receiveResult on c).
    *
    * @param id The object's persistence id
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void unstore(Id id, Continuation<? super Boolean, Exception> c);
+  public void unstore(Id id, Continuation<? super Boolean, Exception> continuation);
 }

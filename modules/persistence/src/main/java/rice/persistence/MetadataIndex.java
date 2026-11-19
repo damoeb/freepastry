@@ -220,13 +220,13 @@ final class MetadataIndex {
         synchronized (metadata) {
           dirty.remove(files[i]);
         }
-      } catch (FileSystemException f) {
+      } catch (FileSystemException e) {
         // the file could not be opened, as FileOutputStream reported with a FileNotFoundException
         synchronized (metadata) {
           dirty.remove(files[i]);
         }
 
-        logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].toAbsolutePath().normalize(), f);
+        logger.warn("ERROR: Could not find directory while writing out metadata in '{}' - removing from dirty list and continuing!", files[i].toAbsolutePath().normalize(), e);
       } catch (IOException e) {
         logger.warn("ERROR: Got error {} while writing out metadata in '{}' - aborting!", e, files[i].toAbsolutePath().normalize(), e);
       }

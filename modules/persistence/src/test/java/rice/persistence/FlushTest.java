@@ -48,8 +48,8 @@ class FlushTest {
     CompletableFuture<T> result = new CompletableFuture<T>();
     operation.accept(new Continuation<T, Exception>() {
       @Override
-      public void receiveResult(T t) {
-        result.complete(t);
+      public void receiveResult(T value) {
+        result.complete(value);
       }
 
       @Override
@@ -63,7 +63,7 @@ class FlushTest {
   @Test
   void flushRemovesTheMetadataCacheFilesWithoutTreatingThemAsObjects() throws Exception {
     Id id = factory.buildId("flushed");
-    assertTrue(this.<Boolean>await(c -> storage.store(id, null, "value", c)));
+    assertTrue(this.<Boolean>await(continuation -> storage.store(id, null, "value", continuation)));
     Path appDirectory = root.resolve(PersistentStorage.BACKUP_DIRECTORY).resolve("default");
     List<Path> directories;
     try (Stream<Path> walk = Files.walk(appDirectory)) {

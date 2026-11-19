@@ -64,11 +64,11 @@ final class BlockingIO {
 
   /**
    * @param description describes the work, as the WorkRequest's toString()
-   * @param c receives the result on the selector thread
+   * @param continuation receives the result on the selector thread
    * @param work the work
    */
-  <R> void run(final Supplier<String> description, Continuation<? super R, Exception> c, final Work<R> work) {
-    environment.getProcessor().processBlockingIO(new WorkRequest<R>(c, environment.getSelectorManager()) {
+  <R> void run(final Supplier<String> description, Continuation<? super R, Exception> continuation, final Work<R> work) {
+    environment.getProcessor().processBlockingIO(new WorkRequest<R>(continuation, environment.getSelectorManager()) {
       @Override
       public String toString() { return description.get(); }
       @Override

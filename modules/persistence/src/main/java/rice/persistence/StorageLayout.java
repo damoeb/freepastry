@@ -341,14 +341,14 @@ final class StorageLayout {
   private String[] getDirectories(String[] names) {
     int length = getPrefixLength(names);
     String prefix = names[0].substring(0, length);
-    CharacterHashSet set = new CharacterHashSet();
+    CharacterHashSet characters = new CharacterHashSet();
 
     for (String name : names) {
       if (name.length() > length)
-        set.put(name.charAt(length));
+        characters.put(name.charAt(length));
     }
 
-    char[] splits = set.get();
+    char[] splits = characters.get();
     String[] result = new String[splits.length];
 
     for (int i=0; i<result.length; i++)
@@ -377,15 +377,15 @@ final class StorageLayout {
    * Method which takes in two strings and returns the length of the
    * shared prefix, or a predefined maximum.
    *
-   * @param a The first string
-   * @param b The second string
+   * @param first The first string
+   * @param second The second string
    * @param max The maximum value to return
    */
-  private int getPrefixLength(String a, String b, int max) {
+  private int getPrefixLength(String first, String second, int max) {
     int i=0;
 
-    for (; (i<a.length()-1) && (i<b.length()-1) && (i<max); i++)
-      if (a.charAt(i) != b.charAt(i))
+    for (; (i<first.length()-1) && (i<second.length()-1) && (i<max); i++)
+      if (first.charAt(i) != second.charAt(i))
         return i;
 
     return i;
@@ -619,8 +619,8 @@ final class StorageLayout {
   private static class CharacterHashSet {
     private final boolean[] bitMap = new boolean[256];
 
-    void put(char a) {
-      bitMap[(int) a] = true;
+    void put(char character) {
+      bitMap[(int) character] = true;
     }
 
     char[] get() {

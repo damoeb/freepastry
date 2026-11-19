@@ -77,13 +77,13 @@ final class ObjectFiles {
   Boolean rename(final Id oldId, final Id newId) throws Exception {
     stats.countRename();
 
-    Path f = layout.getFile(oldId);
+    Path oldFile = layout.getFile(oldId);
 
-    if ((f != null) && Files.exists(f)) {
-      Path g = layout.getFile(newId);
-      StorageFiles.renameFile(f, g);
+    if ((oldFile != null) && Files.exists(oldFile)) {
+      Path newFile = layout.getFile(newId);
+      StorageFiles.renameFile(oldFile, newFile);
 
-      layout.checkDirectory(g.getParent());
+      layout.checkDirectory(newFile.getParent());
 
       if (metadataIndex != null) {
         metadataIndex.rename(oldId, newId);

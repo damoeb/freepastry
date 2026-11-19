@@ -74,9 +74,9 @@ public interface Catalog {
    * there is no corresponding object (through receiveResult on c).
    *
    * @param id The id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void getObject(Id id, Continuation<? super Object, Exception> c);
+  public void getObject(Id id, Continuation<? super Object, Exception> continuation);
 
   /**
    * Returns the metadata associated with the provided object, or null if
@@ -111,9 +111,9 @@ public interface Catalog {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param c The command to run once the operation is complete
+   * @param continuation The command to run once the operation is complete
    */
-  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> c);
+  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> continuation);
 
  /**
    * Return the objects identified by the given range of ids. The IdSet
@@ -190,7 +190,7 @@ public interface Catalog {
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param c The command to run once done
+   * @param continuation The command to run once done
    */
-  public void flush(Continuation<? super Boolean, Exception> c);
+  public void flush(Continuation<? super Boolean, Exception> continuation);
 }

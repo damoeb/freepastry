@@ -23,9 +23,9 @@ public class LRUCacheEvictionOrderTest {
   private Environment env;
   private PastryIdFactory factory;
   private LRUCache cache;
-  private Id a;
-  private Id b;
-  private Id c;
+  private Id firstId;
+  private Id secondId;
+  private Id thirdId;
 
   @BeforeEach
   public void setUp() {
@@ -33,11 +33,11 @@ public class LRUCacheEvictionOrderTest {
     factory = new PastryIdFactory(env);
     // room for two objects, not three
     cache = new LRUCache(new MemoryStorage(factory), 2 * OBJECT_SIZE + 5, env);
-    a = factory.buildId("a");
-    b = factory.buildId("b");
-    c = factory.buildId("c");
-    put(a);
-    put(b);
+    firstId = factory.buildId("a");
+    secondId = factory.buildId("b");
+    thirdId = factory.buildId("c");
+    put(firstId);
+    put(secondId);
   }
 
   @AfterEach
@@ -47,49 +47,49 @@ public class LRUCacheEvictionOrderTest {
 
   @Test
   public void evictsTheOldestInsertWhenNothingWasTouched() {
-    put(c);
+    put(thirdId);
 
-    assertFalse(cache.exists(a));
-    assertTrue(cache.exists(b));
-    assertTrue(cache.exists(c));
+    assertFalse(cache.exists(firstId));
+    assertTrue(cache.exists(secondId));
+    assertTrue(cache.exists(thirdId));
   }
 
   @Test
   public void readingAnObjectProtectsItFromEviction() {
-    cache.getObject(a, noop());
+    cache.getObject(firstId, noop());
 
-    put(c);
+    put(thirdId);
 
-    assertTrue(cache.exists(a));
-    assertFalse(cache.exists(b));
-    assertTrue(cache.exists(c));
+    assertTrue(cache.exists(firstId));
+    assertFalse(cache.exists(secondId));
+    assertTrue(cache.exists(thirdId));
   }
 
   @Test
   public void cachingAnExistingObjectAgainProtectsItFromEviction() {
-    put(a);
+    put(firstId);
 
-    put(c);
+    put(thirdId);
 
-    assertTrue(cache.exists(a));
-    assertFalse(cache.exists(b));
+    assertTrue(cache.exists(firstId));
+    assertFalse(cache.exists(secondId));
   }
 
   @Test
   public void renamedObjectCountsAsMostRecentlyUsed() {
     Id renamed = factory.buildId("renamed");
-    cache.rename(a, renamed, noop());
+    cache.rename(firstId, renamed, noop());
 
-    put(c);
+    put(thirdId);
 
     assertTrue(cache.exists(renamed));
-    assertFalse(cache.exists(b));
+    assertFalse(cache.exists(secondId));
   }
 
   @Test
   public void anObjectLargerThanTheCacheIsNotCachedAndEvictsNothing() {
     boolean[] cached = {true};
-    cache.cache(c, null, new byte[3 * OBJECT_SIZE], new Continuation<Boolean, Exception>() {
+    cache.cache(thirdId, null, new byte[3 * OBJECT_SIZE], new Continuation<Boolean, Exception>() {
       @Override
       public void receiveResult(Boolean result) {
         cached[0] = result;
@@ -102,8 +102,8 @@ public class LRUCacheEvictionOrderTest {
     });
 
     assertFalse(cached[0]);
-    assertTrue(cache.exists(a));
-    assertTrue(cache.exists(b));
+    assertTrue(cache.exists(firstId));
+    assertTrue(cache.exists(secondId));
   }
 
   private void put(Id id) {
