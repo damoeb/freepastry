@@ -46,6 +46,7 @@ import java.util.List;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import org.mpisws.p2p.transport.sourceroute.SourceRouteFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
 
 /**
  * TODO: may be a good idea to special case the single hop, as is done in multi-inet.
@@ -77,8 +78,11 @@ public class WireSourceRouteFactory implements SourceRouteFactory<InetSocketAddr
     }
     ArrayList<InetSocketAddress> path = new ArrayList<InetSocketAddress>(numInPath);
     for (int i = 0; i < numInPath; i++) {
-      byte[] addrBytes = new byte[WireSourceRoute.IPV4_BYTES];
-      buf.read(addrBytes);
+      byte addressLength = buf.readByte();
+      if (addressLength != WireSourceRoute.IPV4_BYTES && addressLength != WireSourceRoute.IPV6_BYTES) {
+        throw new IOException("Invalid address length in source route: " + addressLength + " (expected 4 or 16)");
+      }
+      byte[] addrBytes = WireLengths.readBytes(buf, addressLength);
       InetAddress address = InetAddress.getByAddress(addrBytes);
       short port = buf.readShort();
 

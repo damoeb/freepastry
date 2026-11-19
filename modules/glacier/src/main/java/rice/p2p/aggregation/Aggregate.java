@@ -79,11 +79,11 @@ public class Aggregate implements ExpiringPastContent {
     switch(version) {
       case 0:
         myId = endpoint.readId(buf, buf.readShort());
-        pointers = new Id[WireLengths.readShort(buf, 2)];
+        pointers = new Id[WireLengths.readInt(buf, Short.BYTES)];
         for (int i = 0; i < pointers.length; i++) {
           pointers[i] = endpoint.readId(buf, buf.readShort());
         }
-        components = new ExpiringPastContent[WireLengths.readShort(buf, 2)];
+        components = new ExpiringPastContent[WireLengths.readInt(buf, Short.BYTES)];
         for (int i = 0; i < components.length; i++) {
           components[i] = (ExpiringPastContent) contentDeserializer.deserializePastContent(buf, endpoint, buf.readShort());
         }
@@ -176,13 +176,13 @@ public class Aggregate implements ExpiringPastContent {
   }
 
   private void serializeHelper(OutputBuffer buf) throws IOException {
-    buf.writeShort((short)pointers.length);
+    buf.writeInt(pointers.length);
     for (Id pointer : pointers) {
       buf.writeShort(pointer.getType());
       pointer.serialize(buf);
     }
 
-    buf.writeShort((short)components.length);
+    buf.writeInt(components.length);
     for (ExpiringPastContent component : components) {
       buf.writeShort(component.getType());
       component.serialize(buf);

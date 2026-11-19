@@ -43,10 +43,15 @@ import java.util.List;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
+/**
+ * Wire format: hop count (byte), then per hop the address length (byte, 4 or 16), the address bytes and the port
+ * (unsigned short).
+ */
 public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
   static final int IPV4_BYTES = 4;
-  /** Bytes per hop: IPv4 address and port. */
-  static final int HOP_BYTES = IPV4_BYTES + Short.BYTES;
+  static final int IPV6_BYTES = 16;
+  /** Bytes of a hop besides its address: the address-length byte (4 or 16) and the port. */
+  static final int HOP_OVERHEAD_BYTES = Byte.BYTES + Short.BYTES;
 
   WireSourceRoute(InetSocketAddress local, InetSocketAddress remote) {
     super(local, remote);
@@ -64,8 +69,13 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
   public void serialize(OutputBuffer buf) throws IOException {
     buf.writeByte((byte) path.size());
     for (InetSocketAddress address : path) {
-      buf.write(address.getAddress().getAddress(),0,IPV4_BYTES);
-      buf.writeShort((short)address.getPort());
+      byte[] addressBytes = address.getAddress().getAddress();
+      if (addressBytes.length != IPV4_BYTES && addressBytes.length != IPV6_BYTES) {
+        throw new IOException("Incorrect number of bytes for IP address, expecting 4 or 16, got " + addressBytes.length);
+      }
+      buf.writeByte((byte) addressBytes.length);
+      buf.write(addressBytes, 0, addressBytes.length);
+      buf.writeShort((short) address.getPort());
     }
   }
 
@@ -73,8 +83,9 @@ public class WireSourceRoute extends SourceRoute<InetSocketAddress> {
   public int getSerializedLength() {
     int ret = 1; // numhops
 
-    // IPV4+port
-    ret += path.size() * HOP_BYTES;
+    for (InetSocketAddress address : path) {
+      ret += HOP_OVERHEAD_BYTES + address.getAddress().getAddress().length;
+    }
 
     return ret;
   }
