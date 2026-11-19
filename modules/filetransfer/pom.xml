@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.mpisws.p2p</groupId>
+        <artifactId>freepastry</artifactId>
+        <version>2.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>freepastry-filetransfer</artifactId>
+    <packaging>jar</packaging>
+
+    <name>FreePastry File Transfer</name>
+    <description>Bulk file and byte-buffer transfer over a socket (org.mpisws.p2p.filetransfer)</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>freepastry-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>freepastry-transport</artifactId>
+        </dependency>
+
+        <!-- Test only -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>freepastry-pastry</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

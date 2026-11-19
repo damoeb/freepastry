@@ -1,0 +1,253 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.glacier.v2;
+
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import rice.p2p.util.HashUtils;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.glacier.Fragment;
+import rice.p2p.util.rawserialization.WireLengths;
+
+/**
+ * Describes one stored object: the hashes of the object and of its fragments, its expiration, and the owner
+ * who signed it. The owner's encoded public key and the object's name (the id the application gave it) let a
+ * verifier recompute the id the object is stored under; see {@link GlacierDefaultPolicy}.
+ */
+public class Manifest {
+
+  /** Written in place of the signature length when the manifest is not signed yet. */
+  private static final int NO_SIGNATURE = -1;
+
+  /** The longest owner key a manifest read from the wire may carry: an encoded RSA key of up to 16384 bits. */
+  static final int MAX_OWNER_KEY_LENGTH = 2100;
+
+  /** The longest name a manifest read from the wire may carry; names are encoded ids, far shorter. */
+  static final int MAX_NAME_LENGTH = 256;
+
+  private final byte[] objectHash;
+  private final byte[][] fragmentHash;
+  private final byte[] ownerKey;
+  private final byte[] name;
+  private byte[] signature;
+  private long expirationDate;
+
+  /**
+   * @param ownerKey the owner's public key, encoded by {@link rice.p2p.util.SecurityUtils#encodePublicKey}
+   * @param name the name the owner gave the object; with the owner key, it determines the object's id
+   */
+  public Manifest(byte[] objectHash, byte[][] fragmentHash, long expirationDate, byte[] ownerKey, byte[] name) {
+    this.objectHash = objectHash;
+    this.fragmentHash = fragmentHash;
+    this.expirationDate = expirationDate;
+    this.ownerKey = ownerKey;
+    this.name = name;
+    this.signature = null;
+  }
+
+  public byte[] getObjectHash() {
+    return objectHash;
+  }
+
+  public byte[] getFragmentHash(int fragmentID) {
+    return fragmentHash[fragmentID];
+  }
+
+  public byte[][] getFragmentHashes() {
+    return fragmentHash;
+  }
+
+  public byte[] getSignature() {
+    return signature;
+  }
+
+  public void setSignature(byte[] signature) {
+    this.signature = signature;
+  }
+
+  public long getExpiration() {
+    return expirationDate;
+  }
+
+  public byte[] getOwnerKey() {
+    return ownerKey;
+  }
+
+  public byte[] getName() {
+    return name;
+  }
+
+  /**
+   * A copy of this manifest with another expiration and signature, as a refresh patch carries them. This
+   * manifest stays unchanged, so a patch that does not verify leaves no trace.
+   */
+  public Manifest withExpiration(long newExpirationDate, byte[] newSignature) {
+    Manifest result = new Manifest(objectHash, fragmentHash, newExpirationDate, ownerKey, name);
+    result.setSignature(newSignature);
+    return result;
+  }
+
+  public boolean validatesFragment(Fragment fragment, int fragmentID, Logger logger) {
+    if ((fragmentID < 0) || (fragmentID >= fragmentHash.length))
+      return false;
+
+    byte[] thisHash = HashUtils.hash(fragment.getPayload());
+
+    if (thisHash.length != fragmentHash[fragmentID].length) {
+      logger.atWarn().log(() -> "*** LENGTH MISMATCH: "+thisHash.length+" != "+fragmentHash[fragmentID].length+" ***"+toStringFull());
+      return false;
+    }
+
+    for (int i=0; i<thisHash.length; i++) {
+      if (thisHash[i] != fragmentHash[fragmentID][i]) {
+        String s= "*** HASH MISMATCH: POS#"+i+", "+thisHash[i]+" != "+fragmentHash[fragmentID][i]+" ***\n";
+        s+="Hash: ";
+        for (int j=0; j<thisHash.length; j++)
+          s+=thisHash[j];
+        s+="\n"+toStringFull();
+        logger.warn(s);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private static String dump(byte[] data, boolean linebreak) {
+    final String hexDigits = "0123456789ABCDEF";
+    if (data == null)
+      return "null";
+
+    String result = "";
+
+    for (int i=0; i<data.length; i++) {
+      int d = data[i];
+      if (d<0)
+        d+= 256;
+      int hi = (d>>4);
+      int lo = (d&15);
+
+      result = result + hexDigits.charAt(hi) + hexDigits.charAt(lo);
+      if (linebreak && (((i%16)==15) || (i==(data.length-1))))
+        result = result + "\n";
+      else if (i!=(data.length-1))
+        result = result + " ";
+    }
+
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "[Manifest obj=["+dump(objectHash, false)+"] expires="+expirationDate+"]";
+  }
+
+  public String toStringFull() {
+    String result = "";
+
+    result = result + "Manifest (expires "+expirationDate+")\n";
+    result = result + "  - objectHash = ["+dump(objectHash, false)+"]\n";
+    result = result + "  - owner key  = ["+dump(ownerKey, false)+"]\n";
+    result = result + "  - name       = ["+dump(name, false)+"]\n";
+    result = result + "  - signature  = ["+dump(signature, false)+"]\n";
+    for (int i=0; i<fragmentHash.length; i++)
+      result = result + "  - fragmHash"+i+" = ["+dump(fragmentHash[i], false)+"]\n";
+
+    return result;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeLong(expirationDate);
+    buf.writeInt(objectHash.length);
+    buf.writeInt(fragmentHash.length);
+    buf.writeInt(fragmentHash[0].length);
+    buf.writeInt(signature == null ? NO_SIGNATURE : signature.length);
+    buf.write(objectHash, 0, objectHash.length);
+    int dim1 = fragmentHash.length;
+    int dim2 = fragmentHash[0].length;
+    byte[] fragmentHashField = new byte[dim1*dim2];
+    for (int i=0; i<dim1; i++)
+      for (int j=0; j<dim2; j++)
+        fragmentHashField[i*dim2 + j] = fragmentHash[i][j];
+    buf.write(fragmentHashField, 0, fragmentHashField.length);
+    if (signature != null) buf.write(signature, 0, signature.length);
+    buf.writeInt(ownerKey.length);
+    buf.write(ownerKey, 0, ownerKey.length);
+    buf.writeInt(name.length);
+    buf.write(name, 0, name.length);
+  }
+
+  public Manifest(InputBuffer buf) throws IOException {
+    expirationDate = buf.readLong();
+    int objectHashLength = WireLengths.check(buf, buf.readInt(), 0);
+    int fragmentHashLength = WireLengths.check(buf, buf.readInt(), 0);
+    if (fragmentHashLength == 0) {
+      // serialize() takes the hash length from the first fragment hash, so it cannot write a manifest without one
+      throw new IOException("A manifest without fragment hashes");
+    }
+    int fragmentHashSubLength = WireLengths.check(buf, buf.readInt(), 0);
+    int rawSignatureLength = buf.readInt();
+    boolean hasSignature = rawSignatureLength != NO_SIGNATURE;
+    int signatureLength = hasSignature ? WireLengths.check(buf, rawSignatureLength, 0) : 0;
+    // checked as a long, the product of two ints can overflow
+    long fragmentHashBytes = (long) fragmentHashLength * fragmentHashSubLength;
+    // rows of no bytes cost nothing on the wire, but an array each
+    if (fragmentHashBytes > Integer.MAX_VALUE || fragmentHashSubLength == 0) {
+      throw new IOException("Fragment hashes of " + fragmentHashLength + "x" + fragmentHashSubLength + " bytes are too big");
+    }
+    WireLengths.check(buf, objectHashLength + fragmentHashBytes + signatureLength, 1);
+    objectHash = WireLengths.readBytes(buf, objectHashLength);
+    byte[] fragmentHashField = WireLengths.readBytes(buf, (int) fragmentHashBytes);
+    fragmentHash = new byte[fragmentHashLength][fragmentHashSubLength];
+    for (int i=0; i<fragmentHashLength; i++)
+      for (int j=0; j<fragmentHashSubLength; j++)
+        fragmentHash[i][j] = fragmentHashField[i*fragmentHashSubLength + j];
+    signature = hasSignature ? WireLengths.readBytes(buf, signatureLength) : null;
+    ownerKey = readBounded(buf, MAX_OWNER_KEY_LENGTH, "owner key");
+    name = readBounded(buf, MAX_NAME_LENGTH, "name");
+  }
+
+  private static byte[] readBounded(InputBuffer buf, int max, String what) throws IOException {
+    int length = buf.readInt();
+    if (length < 0 || length > max) {
+      throw new IOException("A manifest " + what + " of " + length + " bytes, at most " + max + " allowed");
+    }
+    return WireLengths.readBytes(buf, length);
+  }
+}

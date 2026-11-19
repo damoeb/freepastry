@@ -1,0 +1,174 @@
+package org.mpisws.p2p.transport.identity;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import rice.environment.Environment;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+
+/**
+ * Every datagram's identity header offers a binding of an address to a node handle, so a remote sender can offer as
+ * many as it likes. The table must stay bounded, and must not forget the bindings that protect authenticated nodes.
+ */
+class IdentityBindingsBoundTest {
+  private static final int MAX_BINDINGS = 100;
+  private static final int SPOOFED_IDENTITIES = 10 * MAX_BINDINGS;
+  private static final String TRUSTED = "trusted";
+  private static final String CERTIFICATE = "certificate";
+
+  private Environment env;
+
+  @BeforeEach
+  void setUp() {
+    env = Environment.directEnvironment(1);
+    env.getParameters().setInt("pastry_socket_identity_max_bindings", MAX_BINDINGS);
+  }
+
+  @AfterEach
+  void tearDown() {
+    env.destroy();
+  }
+
+  /** Upper, middle and lower identifiers are all the same string. */
+  private static class StubSerializer implements IdentitySerializer<String, String, String> {
+    @Override
+    public void serialize(OutputBuffer buf, String identifier) throws IOException {}
+
+    @Override
+    public String deserialize(InputBuffer buf, String lowerIdentifier) throws IOException {
+      return lowerIdentifier;
+    }
+
+    @Override
+    public String translateDown(String identifier) {
+      return identifier;
+    }
+
+    @Override
+    public String translateUp(String identifier) {
+      return identifier;
+    }
+
+    @Override
+    public void addSerializerListener(SerializerListener<String> listener) {}
+
+    @Override
+    public void removeSerializerListener(SerializerListener<String> listener) {}
+  }
+
+  /** Accepts everything and, like the certified strategy, keeps a binding confirmed with a certificate. */
+  private static class KeepCertified implements BindStrategy<String, String> {
+    @Override
+    public boolean accept(String upperIdentifier, @Nullable String lowerIdentifier, @Nullable Map<String, Object> options) {
+      return true;
+    }
+
+    @Override
+    public boolean shouldKeepBinding(String upperIdentifier, @Nullable Map<String, Object> options) {
+      return options != null && options.containsKey(CERTIFICATE);
+    }
+  }
+
+  private IdentityLayerCore<String, String, String, String> identity(@Nullable BindStrategy<String, String> strategy) {
+    IdentityLayerCore<String, String, String, String> identity =
+        new IdentityLayerCore<>(new byte[0], new StubSerializer(), (oldDest, newDest) -> false, (upper, middle) -> true, strategy, env);
+    identity.setOverrideLiveness((l, liveness, options) -> {});
+    return identity;
+  }
+
+  private void onSelector(Runnable action) throws Exception {
+    CompletableFuture<Void> completed = new CompletableFuture<>();
+    env.getSelectorManager().invoke(() -> {
+      try {
+        action.run();
+        completed.complete(null);
+      } catch (Throwable throwable) {
+        completed.completeExceptionally(throwable);
+      }
+    });
+    completed.get(10, TimeUnit.SECONDS);
+  }
+
+  private static void spoof(IdentityLayerCore<String, String, String, String> identity) {
+    for (int k = 0; k < SPOOFED_IDENTITIES; k++) {
+      identity.addBinding("spoofed" + k, "spoofed" + k, null);
+    }
+  }
+
+  @Test
+  @DisplayName("bindings offered by spoofed identity headers do not grow the table beyond its cap")
+  void spoofedIdentitiesAreBounded() throws Exception {
+    var identity = identity(null);
+
+    onSelector(() -> spoof(identity));
+
+    assertTrue(identity.bindings.size() <= MAX_BINDINGS, "bindings: " + identity.bindings.size());
+  }
+
+  @Test
+  @DisplayName("a binding the bind strategy keeps (an authenticated node) survives a flood of spoofed identities")
+  void keptBindingSurvivesTheFlood() throws Exception {
+    var identity = identity(new KeepCertified());
+
+    onSelector(() -> {
+      identity.addBinding(TRUSTED, TRUSTED, null);
+      identity.addBinding(TRUSTED, TRUSTED, Map.of(CERTIFICATE, TRUSTED));
+      spoof(identity);
+    });
+
+    assertEquals(TRUSTED, identity.bindings.get(TRUSTED));
+    assertTrue(identity.bindings.size() <= MAX_BINDINGS, "bindings: " + identity.bindings.size());
+  }
+
+  @Test
+  @DisplayName("a binding offered without a certificate is forgotten like any other")
+  void uncertifiedBindingIsForgotten() throws Exception {
+    var identity = identity(new KeepCertified());
+
+    onSelector(() -> {
+      identity.addBinding(TRUSTED, TRUSTED, null);
+      spoof(identity);
+    });
+
+    assertNull(identity.bindings.get(TRUSTED));
+  }
+
+  @Test
+  @DisplayName("identifiers marked dead forever are bounded too")
+  void deadForeverIsBounded() throws Exception {
+    var identity = identity(null);
+
+    onSelector(() -> {
+      for (int k = 0; k < SPOOFED_IDENTITIES; k++) {
+        identity.deadForever.add("dead" + k);
+      }
+    });
+
+    assertTrue(identity.deadForever.size() <= MAX_BINDINGS, "dead forever: " + identity.deadForever.size());
+  }
+
+  @Test
+  @DisplayName("a binding with messages waiting for it survives a flood of spoofed identities")
+  void bindingInUseSurvivesTheFlood() throws Exception {
+    var identity = identity(null);
+
+    onSelector(() -> {
+      identity.addBinding("busy", "busy", null);
+      identity.addPendingMessage("busy", identity.new IdentityMessageHandle("busy", "msg", null, null));
+      spoof(identity);
+    });
+
+    assertEquals("busy", identity.bindings.get("busy"));
+  }
+}

@@ -1,0 +1,548 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.pastry.socket.nat.rendezvous;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Map;
+
+import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.identity.IdentityLayerCore;
+import org.mpisws.p2p.transport.identity.IdentitySerializer;
+import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.Pinger;
+import org.mpisws.p2p.transport.multiaddress.AddressStrategy;
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
+import org.mpisws.p2p.transport.multiaddress.SimpleAddressStrategy;
+import org.mpisws.p2p.transport.nat.FirewallTransportLayer;
+import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
+import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import org.mpisws.p2p.transport.rendezvous.ContactDeserializer;
+import org.mpisws.p2p.transport.rendezvous.ContactDirectStrategy;
+import org.mpisws.p2p.transport.rendezvous.PilotFinder;
+import org.mpisws.p2p.transport.rendezvous.PilotManager;
+import org.mpisws.p2p.transport.rendezvous.RendezvousGenerationStrategy;
+import org.mpisws.p2p.transport.rendezvous.RendezvousStrategy;
+import org.mpisws.p2p.transport.rendezvous.RendezvousTransportLayerImpl;
+import org.mpisws.p2p.transport.rendezvous.ResponseStrategy;
+import org.mpisws.p2p.transport.rendezvous.TimeoutResponseStrategy;
+import org.mpisws.p2p.transport.sourceroute.SourceRoute;
+import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
+import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
+import org.mpisws.p2p.transport.util.OptionsFactory;
+import rice.Continuation;
+import rice.environment.Environment;
+import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeHandleFactory;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.PastryNodeListener;
+import rice.pastry.ReadyStrategy;
+import rice.pastry.boot.Bootstrapper;
+import rice.pastry.join.JoinProtocol;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.routing.RoutingTable;
+import rice.pastry.socket.SocketNodeBootstrapper;
+import rice.pastry.socket.SocketNodeHandle;
+import rice.pastry.socket.SocketNodeHandleFactory;
+import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.socket.TransportLayerNodeHandle;
+import rice.pastry.standard.ProximityNeighborSelector;
+import rice.pastry.standard.StandardRouter;
+import rice.pastry.transport.NodeHandleAdapter;
+
+
+/**
+ * This class assembles the rendezvous layer with the rendezvous app.
+ *
+ * Need to think about where this best goes, but for now, we'll put it just above the magic number layer.
+ *
+ * @author Jeff Hoye
+ *
+ */
+public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
+  /** A natted node answers a peer only within this long after hearing from it. */
+  private static final int RESPONSE_TIMEOUT_MILLIS = 3000;
+  /** How long a simulated firewall keeps a hole open for a peer we contacted. */
+  private static final int SIMULATED_FIREWALL_TIMEOUT_MILLIS = 5000;
+
+  /**
+   * Maps to a byte contactState
+   */
+  private final String CONTACT_STATE = "RendezvousSocketPastryNodeFactory.CONTACT_STATE";
+
+  private RandomSource random;
+
+  /**
+   * maps to a RendezvousStrategy&lt;RendezvousSocketNodeHandle&gt;
+   */
+  public static final String RENDEZVOUS_STRATEGY = "RendezvousSocketPastryNodeFactory.RENDEZVOUS_STRATEGY";
+
+  /**
+   * maps to a RendezvousTransportLayerImpl&lt;InetSocketAddress, RendezvousSocketNodeHandle&gt;
+   */
+  public static final String RENDEZVOUS_TL = "RendezvousSocketPastryNodeFactory.RENDEZVOUS_TL";
+
+  /**
+   * maps to a boolean, if true then simulates a firewall
+   */
+  public static final String SIMULATE_FIREWALL = "rendezvous_simulate_firewall";
+
+  /**
+   * getAttributes() maps to a ContactDirectStrategy&lt;RendezvousSocketNodeHandle&gt;
+   */
+  public static final String RENDEZVOUS_CONTACT_DIRECT_STRATEGY = "RendezvousSocketPastryNodeFactory.ContactDirectStrategy";
+
+  /**
+   * The local node's contact state, set by the constructor or setContactState().
+   */
+  byte localContactState = RendezvousSocketNodeHandle.CONTACT_DIRECT;
+
+  /**
+   * The rendezvous parameters, read at construction.
+   */
+  protected RendezvousConfig rendezvousConfig;
+
+  public RendezvousSocketPastryNodeFactory(NodeIdFactory nodeIdFactory, InetAddress bindAddress, int startPort, Environment env, boolean firewalled) throws IOException {
+    super(nodeIdFactory, bindAddress, startPort, env);
+    init(firewalled);
+  }
+
+  public RendezvousSocketPastryNodeFactory(NodeIdFactory nodeIdFactory, int startPort, Environment env, boolean firewalled) throws IOException {
+    super(nodeIdFactory, startPort, env);
+    init(firewalled);
+  }
+
+  private void init(boolean firewalled) {
+    random = environment.getRandomSource();
+    rendezvousConfig = RendezvousConfig.fromParameters(environment.getParameters());
+    if (firewalled) setContactState(RendezvousSocketNodeHandle.CONTACT_FIREWALLED);
+  }
+
+  public void setContactState(byte contactState) {
+    this.localContactState = contactState;
+  }
+
+  /**
+   * Can override the contactState on a per-node basis
+   *
+   */
+  protected void newNodeSelector(Id nodeId,
+      MultiInetSocketAddress proxyAddress,
+      Continuation<PastryNode, IOException> deliverResultToMe,
+      Map<String, Object> initialVars, boolean firewalled) {
+
+    byte contactState = localContactState;
+    if (firewalled) {
+      contactState = RendezvousSocketNodeHandle.CONTACT_FIREWALLED;
+    } else {
+      contactState = RendezvousSocketNodeHandle.CONTACT_DIRECT;
+    }
+    newNodeSelector(nodeId, proxyAddress, deliverResultToMe, initialVars, contactState);
+  }
+
+
+
+  /**
+   * Can override the contactState on a per-node basis
+   *
+   */
+  protected void newNodeSelector(Id nodeId,
+      MultiInetSocketAddress proxyAddress,
+      Continuation<PastryNode, IOException> deliverResultToMe,
+      Map<String, Object> initialVars, byte contactState) {
+    initialVars = OptionsFactory.addOption(initialVars, CONTACT_STATE, contactState);
+    super.newNodeSelector(nodeId, proxyAddress, deliverResultToMe, initialVars);
+  }
+
+  @Override
+  protected JoinProtocol getJoinProtocol(PastryNode pn, LeafSet leafSet,
+      RoutingTable routeTable, ReadyStrategy lsProtocol) {
+    RendezvousJoinProtocol jProtocol = new RendezvousJoinProtocol(pn,
+        pn.getLocalHandle(), routeTable, leafSet, lsProtocol, (PilotManager<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_TL));
+    jProtocol.register();
+    return jProtocol;
+  }
+
+
+  @Override
+  protected TransportLayer<InetSocketAddress, ByteBuffer> getIpServiceTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer, PastryNode pn) throws IOException {
+    TransportLayer<InetSocketAddress, ByteBuffer> mtl = super.getIpServiceTransportLayer(wireTransportLayer, pn);
+
+    if (pn.getLocalHandle() == null) return mtl;
+
+    return getRendezvousTransportLayer(mtl, pn);
+  }
+
+  @Override
+  protected IdentitySerializer<TransportLayerNodeHandle<MultiInetSocketAddress>, MultiInetSocketAddress, SourceRoute<MultiInetSocketAddress>> getIdentitySerializer(PastryNode pn, SocketNodeHandleFactory handleFactory) {
+    return new RendezvousNodeHandleIdentitySerializer(pn, handleFactory);
+  }
+
+  protected TransportLayer<InetSocketAddress, ByteBuffer> getRendezvousTransportLayer(
+      TransportLayer<InetSocketAddress, ByteBuffer> mtl, PastryNode pn) {
+
+    RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle> result =
+      new RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle>(
+        mtl,
+        IdentityLayerCore.NODE_HANDLE_FROM_INDEX,
+//        CommonAPITransportLayer.DESTINATION_IDENTITY,
+        (RendezvousSocketNodeHandle)pn.getLocalHandle(),
+        getContactDeserializer(pn),
+        getRendezvousGenerator(pn),
+        getPilotFinder(pn),
+        getRendezvousStrategyHelper(pn),
+        getResponseStrategy(pn),
+        getContactDirectStrategy(pn),
+        pn.getEnvironment());
+
+    pn.getAttributes().put(RENDEZVOUS_TL, result);
+    ((RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY)).setTransportLayer(result);
+
+    generatePilotStrategy(pn, result);
+    return result;
+  }
+
+  @Override
+  protected NextHopStrategy<MultiInetSocketAddress> getNextHopStrategy(
+      TransportLayer<SourceRoute<MultiInetSocketAddress>, ByteBuffer> livenessTransportLayer,
+      LivenessProvider<SourceRoute<MultiInetSocketAddress>> livenessProvider,
+      Pinger<SourceRoute<MultiInetSocketAddress>> pinger,
+      PastryNode pn,
+      MultiInetSocketAddress proxyAddress,
+      MultiAddressSourceRouteFactory esrFactory) throws IOException {
+
+    return new RendezvousLeafSetNodeHandleStrategy(pn.getLeafSet());
+  }
+
+  protected ResponseStrategy<InetSocketAddress> getResponseStrategy(PastryNode pn) {
+  return new TimeoutResponseStrategy<InetSocketAddress>(RESPONSE_TIMEOUT_MILLIS, pn.getEnvironment());
+}
+
+  protected ContactDirectStrategy<RendezvousSocketNodeHandle> getContactDirectStrategy(PastryNode pn) {
+    AddressStrategy adrStrat = (AddressStrategy)pn.getAttributes().get(MULTI_ADDRESS_STRATEGY);
+    if (adrStrat == null) {
+      adrStrat = new SimpleAddressStrategy();
+    }
+
+    ContactDirectStrategy<RendezvousSocketNodeHandle> result = new RendezvousContactDirectStrategy((RendezvousSocketNodeHandle)pn.getLocalNodeHandle(), adrStrat, pn.getEnvironment());
+    pn.getAttributes().put(RENDEZVOUS_CONTACT_DIRECT_STRATEGY, result);
+
+    return result;
+}
+
+  protected PilotFinder<RendezvousSocketNodeHandle> getPilotFinder(PastryNode pn) {
+    return new LeafSetPilotFinder(pn);
+  }
+
+  protected void generatePilotStrategy(PastryNode pn, RendezvousTransportLayerImpl<InetSocketAddress, RendezvousSocketNodeHandle> rendezvousLayer) {
+    // only do this if firewalled
+    RendezvousSocketNodeHandle handle = (RendezvousSocketNodeHandle)pn.getLocalHandle();
+    if (handle != null && !handle.canContactDirect())
+      new LeafSetPilotStrategy<RendezvousSocketNodeHandle>(pn.getLeafSet(),rendezvousLayer, pn.getEnvironment());
+  }
+
+  protected ContactDeserializer<InetSocketAddress, RendezvousSocketNodeHandle> getContactDeserializer(final PastryNode pn) {
+    return new ContactDeserializer<InetSocketAddress, RendezvousSocketNodeHandle>(){
+
+      @Override
+      public Map<String, Object> getOptions(RendezvousSocketNodeHandle high) {
+        return OptionsFactory.addOption(null, IdentityLayerCore.NODE_HANDLE_FROM_INDEX, high);
+      }
+
+      @Override
+      public RendezvousSocketNodeHandle deserialize(InputBuffer inputBuffer) throws IOException {
+        return (RendezvousSocketNodeHandle)pn.readNodeHandle(inputBuffer);
+      }
+
+      @Override
+      public InetSocketAddress convert(RendezvousSocketNodeHandle high) {
+        // TODO: is this the correct one?
+        return high.getAddress().getAddress(0);
+      }
+
+      @Override
+      public void serialize(RendezvousSocketNodeHandle i, OutputBuffer buf) throws IOException {
+        i.serialize(buf);
+      }
+
+      @Override
+      public ByteBuffer serialize(RendezvousSocketNodeHandle i)
+          throws IOException {
+        SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
+        serialize(i,outputBuffer);
+        return outputBuffer.getByteBuffer();
+      }
+
+    };
+  }
+
+  protected RendezvousGenerationStrategy<RendezvousSocketNodeHandle> getRendezvousGenerator(PastryNode pn) {
+    return null;
+  }
+
+  @Override
+  protected ProximityNeighborSelector getProximityNeighborSelector(PastryNode pn) {
+    if (factoryConfig.usePns()) {
+      RendezvousPNSApplication pns = new RendezvousPNSApplication(pn, (ContactDirectStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_CONTACT_DIRECT_STRATEGY));
+      pns.register();
+      return pns;
+    }
+
+    // do nothing
+    return (bootHandles, deliverResultToMe) -> {
+      deliverResultToMe.receiveResult(bootHandles);
+      return null;
+    };
+  }
+
+
+  /**
+   * This is an annoying hack.  We can't register the RendezvousApplication until registerApps(), but we need it here.
+   *
+   * This table temporarily holds the rendezvousApps until they are needed, then it is deleted.
+   */
+  protected RendezvousStrategy<RendezvousSocketNodeHandle> getRendezvousStrategyHelper(PastryNode pn) {
+    RendezvousStrategy<RendezvousSocketNodeHandle>  app = getRendezvousStrategy(pn);
+    pn.getAttributes().put(RENDEZVOUS_STRATEGY, app);
+    return app;
+  }
+
+  protected RendezvousStrategy<RendezvousSocketNodeHandle> getRendezvousStrategy(PastryNode pn) {
+    RendezvousApplication app = new RendezvousApplication(pn);
+    return app;
+  }
+
+  @Override
+  protected void registerApps(PastryNode pn, LeafSet leafSet, RoutingTable routeTable, NodeHandleAdapter nodeHandleAdapter, NodeHandleFactory<?> handleFactory) {
+    super.registerApps(pn, leafSet, routeTable, nodeHandleAdapter, handleFactory);
+    RendezvousStrategy<RendezvousSocketNodeHandle> app = (RendezvousStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_STRATEGY);
+    if (app instanceof RendezvousApplication rendezvousApp) {
+      rendezvousApp.register();
+    }
+  }
+
+  @Override
+  public NodeHandleFactory<?> getNodeHandleFactory(PastryNode pn) {
+    return new RendezvousSocketNodeHandleFactory(pn);
+  }
+
+  /**
+   * Used with getWireTL to make sure to return the bootstrap as not firewalled.
+   */
+  boolean firstNode = true;
+
+  @Override
+  public NodeHandle getLocalHandle(PastryNode pn, NodeHandleFactory<?> nodeHandleFactory) {
+    byte contactState = localContactState;
+
+    if (pn.getAttributes().containsKey(CONTACT_STATE)) {
+      contactState = (Byte)pn.getAttributes().get(CONTACT_STATE);
+    }
+
+    // this code is for testing
+    if (firstNode && rendezvousConfig.testMakesBootstrap()) {
+      firstNode = false;
+      // this just guards the next part
+    } else if (rendezvousConfig.testFirewall()) {
+      if (random.nextFloat() <= rendezvousConfig.testNumFirewalled()) {
+        pn.getAttributes().put(SIMULATE_FIREWALL, true);
+        contactState = RendezvousSocketNodeHandle.CONTACT_FIREWALLED;
+      }
+    }
+
+    RendezvousSocketNodeHandleFactory pnhf = (RendezvousSocketNodeHandleFactory)nodeHandleFactory;
+    MultiInetSocketAddress proxyAddress = (MultiInetSocketAddress)pn.getAttributes().get(PROXY_ADDRESS);
+    SocketNodeHandle result = pnhf.getNodeHandle(proxyAddress, pn.getEnvironment().getTimeSource().currentTimeMillis(), pn.getNodeId(), contactState);
+
+    // this code is for logging
+    if (logger.isDebugEnabled() || (contactState != localContactState && logger.isInfoEnabled())) {
+      switch(contactState) {
+      case RendezvousSocketNodeHandle.CONTACT_DIRECT:
+        logger.info(result+" is not firewalled.");
+        break;
+      case RendezvousSocketNodeHandle.CONTACT_FIREWALLED:
+        logger.info(result+" is firewalled.");
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * For testing, may return a FirewallTL impl for testing.
+   */
+  @Override
+  protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, PastryNode pn) throws IOException {
+    TransportLayer<InetSocketAddress, ByteBuffer> baseTl = super.buildWireTransportLayer(innermostAddress, pn);
+    if ((pn.getAttributes().containsKey(SIMULATE_FIREWALL) && ((Boolean)pn.getAttributes().get(SIMULATE_FIREWALL)).booleanValue()) ||
+        rendezvousConfig.simulateFirewall()) {
+      return new FirewallTransportLayer<InetSocketAddress, ByteBuffer>(baseTl,SIMULATED_FIREWALL_TIMEOUT_MILLIS,pn.getEnvironment());
+    }
+
+    // do the normal thing
+    return baseTl;
+  }
+
+  @Override
+  protected PriorityTransportLayer<MultiInetSocketAddress> getPriorityTransportLayer(
+      TransportLayer<MultiInetSocketAddress, ByteBuffer> trans,
+      LivenessProvider<MultiInetSocketAddress> liveness,
+      ProximityProvider<MultiInetSocketAddress> prox, PastryNode pn) {
+    PriorityTransportLayer<MultiInetSocketAddress> result = super.getPriorityTransportLayer(trans, liveness, prox, pn);
+    ((StandardRouter)pn.getRouter()).setRouterStrategy(new RendezvousRouterStrategy(result, pn.getEnvironment()));
+    return result;
+  }
+
+  /**
+   * This code opens a pilot to our bootstrap node before proceeding.  This is necessary to allow the liveness
+   * checks to be sent back to me without the bootstrap node remembering the address that I sent the liveness
+   * check on.
+   *
+   * When the node goes live, close all of the opened pilots, to not blow out the bootstrap node.
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  protected Bootstrapper<InetSocketAddress> getBootstrapper(final PastryNode pn,
+      NodeHandleAdapter nodeHandleAdapter,
+      NodeHandleFactory<?> handleFactory,
+      ProximityNeighborSelector neighborSelector) {
+    final PilotManager<RendezvousSocketNodeHandle> manager = (PilotManager<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_TL);
+
+    // only do the special step if we're NATted
+    if (((RendezvousSocketNodeHandle)pn.getLocalHandle()).canContactDirect()) return super.getBootstrapper(pn, nodeHandleAdapter, handleFactory, neighborSelector);
+
+    // set the contents true when booted
+    final boolean[] booted = new boolean[1];
+    booted[0] = false;
+    final ArrayList<RendezvousSocketNodeHandle> closeMeWhenReady = new ArrayList<RendezvousSocketNodeHandle>();
+    PastryNodeListener listener = new PastryNodeListener() {
+      @Override
+      public void pastryNodeReady(PastryNode o, boolean ready) {
+        if (ready) {
+          // node is ready
+          synchronized(closeMeWhenReady) {
+            booted[0] = true;
+          }
+          for (RendezvousSocketNodeHandle nodeHandle : closeMeWhenReady) {
+            manager.closePilot(nodeHandle);
+          }
+          closeMeWhenReady.clear();
+          o.removePastryNodeListener(this);
+        }
+      }
+    };
+    pn.addPastryNodeListener(listener);
+
+    SocketNodeBootstrapper bootstrapper = new SocketNodeBootstrapper(pn, (TransportLayer<TransportLayerNodeHandle<MultiInetSocketAddress>, RawMessage>)nodeHandleAdapter.getTransportLayer(), (SocketNodeHandleFactory)handleFactory, neighborSelector,
+        socketConfig.seed(), environment.getSelectorManager()) {
+
+      @Override
+      protected void checkLiveness(final SocketNodeHandle nodeHandle, Map<String, Object> options) {
+        // open pilot first, then call checkliveness, but it's gonna fail the first time, because the NH is bogus.
+        // so, open it the first time and watch it fail, then open it again
+        ContactDirectStrategy<RendezvousSocketNodeHandle> contactStrat =
+          (ContactDirectStrategy<RendezvousSocketNodeHandle>)pn.getAttributes().get(RENDEZVOUS_CONTACT_DIRECT_STRATEGY);
+        RendezvousSocketNodeHandle rsnh = (RendezvousSocketNodeHandle)nodeHandle;
+        if (!rsnh.canContactDirect() && contactStrat.canContactDirect(rsnh)) {
+          super.checkLiveness(nodeHandle, options);
+          return;
+        }
+
+        manager.openPilot((RendezvousSocketNodeHandle)nodeHandle, new Continuation<SocketRequestHandle<RendezvousSocketNodeHandle>, Exception>() {
+
+          @Override
+          public void receiveResult(
+              SocketRequestHandle<RendezvousSocketNodeHandle> result) {
+
+            // don't hold the lock when calling closePilot()
+            boolean close = false;
+
+            // see if we already joined
+            synchronized(closeMeWhenReady) {
+              if (booted[0]) {
+                close = true;
+              } else {
+                closeMeWhenReady.add(result.getIdentifier());
+              }
+            }
+            if (close) {
+              logger.info("closing pilot");
+              manager.closePilot(result.getIdentifier());
+              return;
+            }
+
+            // remember to close the pilot once we're joined
+            pn.getLivenessProvider().checkLiveness(nodeHandle, null);
+          }
+
+          @Override
+          public void receiveException(Exception exception) {
+            logger.warn("In Rendezvous Bootstrapper.checkLiveness({})", nodeHandle, exception);
+          }
+        });
+      }
+    };
+    return bootstrapper;
+  }
+
+  /**
+   * @return true if ip address matches firewall prefix
+   */
+  protected boolean isInternetRoutablePrefix(InetAddress address) {
+    String ip = address.getHostAddress();
+    for (String string : rendezvousConfig.natNetworkPrefixes()) {
+      if (ip.startsWith(string)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+
+}

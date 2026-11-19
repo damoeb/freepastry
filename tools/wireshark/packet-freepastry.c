@@ -189,7 +189,7 @@ static const value_string freepastry_priority[] = {
 static const value_string freepastry_id_type[] = {
   { ID_TYPE_NORMAL,  "Normal" },
   { ID_TYPE_RINGID,  "RingId" },
-  { ID_TYPE_GCID,  "GCId" },
+  { ID_TYPE_GCID,  "ExpiringId" },
   { ID_TYPE_VERSIONKEY,  "Version Key" },
   { ID_TYPE_FRAGMENTKEY,  "Fragment Key" },
   { 0, NULL }
@@ -1501,11 +1501,11 @@ proto_register_freepastry(void)
     { &hf_freepastry_ls_cw_size,
     { "Clockwise size",	"freepastry.leafset.cw_size",
     FT_UINT8, BASE_DEC, NULL, 0x0,
-    "Number of NodeHandle inside a clockwise SimilarSet", HFILL }},
+    "Number of NodeHandle inside a clockwise LeafSetHalf", HFILL }},
     { &hf_freepastry_ls_ccw_size,
     { "Counter clockwise size",	"freepastry.leafset.ccw_size",
     FT_UINT8, BASE_DEC, NULL, 0x0,
-    "Number of NodeHandle inside a counter clockwise SimilarSet", HFILL }},
+    "Number of NodeHandle inside a counter clockwise LeafSetHalf", HFILL }},
     { &hf_freepastry_ls_handle_index,
     { "Index",	"freepastry.leafset.hdl_index",
     FT_UINT8, BASE_DEC, NULL, 0x0,

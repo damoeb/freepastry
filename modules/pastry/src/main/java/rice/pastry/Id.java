@@ -1,0 +1,1203 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.Locale;
+import java.util.Random;
+import java.util.WeakHashMap;
+
+import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.IdType;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
+
+/**
+ * Represents a Pastry identifier for a node, object or key. A single identifier and the bit length
+ * for Ids is stored in this class. Ids are stored little endian.  NOTE: Ids are immutable, and are
+ * coalesced for memory efficiency.  New Ids are to be constructed from the build() methods, which
+ * ensure that only one copy of each Id is in memory at a time.
+ *
+ * @version $Id: Id.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @author Andrew Ladd
+ * @author Peter Druschel
+ * @author Alan Mislove
+ */
+public class Id implements rice.p2p.commonapi.Id, RawSerializable {
+
+  /**
+   * Support for coalesced Ids - ensures only one copy of each Id is in memory
+   */
+  private static final WeakHashMap<Id, WeakReference<Id>> ID_MAP = new WeakHashMap<Id, WeakReference<Id>>();
+
+  /**
+   * The static translation array
+   */
+  @SuppressWarnings("MutablePublicArray") // public API, read by RouteSet and RoutingTable
+  public static final String tran[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
+
+  /**
+   * This is the bit length of the node ids. If it is n, then there are 2^n possible different Ids.
+   * We currently assume that it is divisible by 32.
+   */
+  public final static int IdBitLength = 160;
+  public final static int nlen = IdBitLength / 32;
+
+  /**
+   * serialver for backwards compatibility
+   */
+
+  /**
+   * Distance constants
+   */
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
+  public final static int[] Null = {0, 0, 0, 0, 0};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
+  public final static int[] One = {1, 0, 0, 0, 0};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
+  public final static int[] NegOne = {-1, -1, -1, -1, -1};
+  @SuppressWarnings("MutablePublicArray") // public API, passed to Id.build
+  public final static int[] Half = {0, 0, 0, 0, 0x80000000};
+
+  /**
+   * The actual contents of this Id
+   */
+  private int Id[];
+
+  /**
+   * Constructor.
+   *
+   * @param material an array of length at least IdBitLength/32 containing raw Id material.
+   */
+  protected Id(int material[]) {
+    Id = new int[nlen];
+    for (int i = 0; (i < nlen) && (i < material.length); i++)
+      Id[i] = material[i];
+  }
+
+  /**
+   * return the number of digits in a given base
+   *
+   * @param base the number of bits in the base
+   * @return the number of digits in that base
+   */
+  public static int numDigits(int base) {
+    return IdBitLength / base;
+  }
+
+  /**
+   * Creates a random Id. For testing purposed only -- should NOT be used to generate real node or
+   * object identifiers (low quality of random material).
+   *
+   * @param random random number generator
+   * @return a random Id
+   */
+  public static Id makeRandomId(Random random) {
+    byte material[] = new byte[IdBitLength / 8];
+    random.nextBytes(material);
+    return build(material);
+  }
+
+  public static Id makeRandomId(RandomSource random) {
+    byte material[] = new byte[IdBitLength / 8];
+    random.nextBytes(material);
+    return build(material);
+  }
+
+
+
+  // ----- SUPPORT FOR ID COALESCING -----
+
+  /**
+   * Constructor.
+   *
+   * @param material an array of length at least IdBitLength/32 containing raw Id material.
+   */
+  public static Id build(int material[]) {
+    return resolve(ID_MAP, new Id(material));
+  }
+
+  /**
+   * Id (Version 0)
+   * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   * +   160 Bit                                                     +
+   * +                                                               +
+   * +                                                               +
+   * +                                                               +
+   * +                                                               +
+   * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   */
+  public static Id build(rice.p2p.commonapi.rawserialization.InputBuffer buf) throws IOException {
+    int[] material = new int[nlen];
+    for (int i = 0; i < material.length; i++) {
+      material[i] = buf.readInt();
+    }
+    return build(material);
+  }
+
+  @Override
+  public void serialize(rice.p2p.commonapi.rawserialization.OutputBuffer buf) throws IOException {
+    for (int i = 0; i < Id.length; i++) {
+      buf.writeInt(Id[i]);
+    }
+  }
+
+
+  /**
+   * Constructor, which takes the output of a toStringFull() and converts it back
+   * into an Id.  Should not normally be used.
+   *
+   * @param hex The hexadecimal representation from the toStringFull()
+   */
+  public static Id build(String hex) {
+    while (hex.length() < IdBitLength/4)
+      hex = hex + "0";
+
+    return build(hex.toUpperCase(Locale.ROOT).toCharArray(), 0, hex.length());
+  }
+
+  /**
+   * Constructor, which takes the output of a toStringFull() and converts it back
+   * into an Id.  Should not normally be used.
+   *
+   * @param chars the hexadecimal representation from the toStringFull()
+   */
+  public static Id build(char[] chars, int offset, int length) {
+    int[] array = new int[nlen];
+
+    for (int i=0; i<nlen; i++)
+      for (int j=0; j<8; j++)
+        array[nlen-1-i] = (array[nlen-1-i] << 4) | trans(chars[offset + 8*i + j]);
+
+    return build(array);
+  }
+
+  /**
+   * Internal method for mapping digit -> num
+   *
+   * @param hexChar the printed char
+   * @return the value of the digit
+   */
+  protected static byte trans(char hexChar) {
+    if (('0' <= hexChar) && ('9' >= hexChar))
+      return (byte) (hexChar - '0');
+    else
+      return (byte) (hexChar - 'A' + 10);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param material an array of length at least IdBitLength/8 containing raw Id material.
+   */
+  public static Id build(byte[] material) {
+    return build(trans(material));
+  }
+
+  /**
+   * Internal method for mapping byte[] -> int[]
+   *
+   * @param material The input byte[]
+   * @return THe int[]
+   */
+  protected static int[] trans(byte[] material) {
+    int[] array = new int[nlen];
+
+    for (int j = 0; (j < IdBitLength / 8) && (j < material.length); j++) {
+      int k = material[j] & 0xff;
+      array[j / 4] |= k << ((j % 4) * 8);
+    }
+
+    return array;
+  }
+
+  /**
+   * Constructor. It constructs a new Id with a value of 0 for all bits.
+   */
+  public static Id build() {
+    return build(new int[nlen]);
+  }
+
+  /**
+   * Static method for converting the hex representation into an array of
+   * ints.
+   *
+   * @param hex The hexadecimal representation
+   * @return The corresponding int array
+   */
+  protected static int[] trans(String hex) {
+    int[] ints = new int[nlen];
+
+    for (int i=0; i<nlen; i++) {
+      String s = hex.substring(i*8, (i+1)*8);
+      ints[nlen-1-i] = new java.math.BigInteger(s, 16).intValue();
+    }
+
+    return ints;
+  }
+
+  /**
+   * Method which performs the coalescing and interaction with the weak hash map
+   *
+   * @param candidate The Id to coalesce
+   * @return The Id to use
+   */
+  protected static Id resolve(WeakHashMap<Id, WeakReference<Id>> map, Id candidate) {
+    synchronized (map) {
+      WeakReference<Id> ref = map.get(candidate);
+      Id result = null;
+
+      if ((ref != null) && ((result = ref.get()) != null)) {
+        return result;
+      } else {
+        map.put(candidate, new WeakReference<Id>(candidate));
+
+        return candidate;
+      }
+    }
+  }
+
+
+  // ----- NORMAL ID METHODS -----
+
+  /**
+   * gets the Id just clockwise from this
+   *
+   * @return The CW value
+   */
+  public Id getCW() {
+    Distance one = new Distance(One);
+    return add(one);
+  }
+
+  /**
+   * gets the Id just counterclockwise from this
+   *
+   * @return The CCW value
+   */
+  public Id getCCW() {
+    Distance negone = new Distance(NegOne);
+    return add(negone);
+  }
+
+  /**
+   * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
+   *
+   * @param counterClockwiseId the counterclockwise id
+   * @param clockwiseId the clockwise id
+   * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
+   */
+  public boolean isBetween(Id counterClockwiseId, Id clockwiseId) {
+    if (counterClockwiseId.equals(clockwiseId)) {
+      return false;
+    }
+
+    if (counterClockwiseId.clockwise(clockwiseId)) {
+      return this.clockwise(clockwiseId) && !this.clockwise(counterClockwiseId);
+    } else {
+      return !this.clockwise(counterClockwiseId) || this.clockwise(clockwiseId);
+    }
+  }
+
+  /**
+   * Gets the ith digit in base 2^b. i = 0 is the least significant digit.
+   *
+   * @param i which digit to get.
+   * @param bitsPerDigit which power of 2 is the base to get it in.
+   * @return the ith digit in base 2^b.
+   */
+  public int getDigit(int i, int bitsPerDigit) {
+    int bitIndex = bitsPerDigit * i + (IdBitLength % bitsPerDigit);
+    int index = bitIndex / 32;
+    int shift = bitIndex % 32;
+
+    long word = Id[index];
+    if (shift + bitsPerDigit > 32) {
+      word = (word & 0xffffffffL) | (((long) Id[index + 1]) << 32);
+    }
+
+    return ((int) (word >> shift)) & ((1 << bitsPerDigit) - 1);
+  }
+
+  /**
+   * produces a Id whose prefix up to row is identical to this, followed by a digit with value
+   * column, followed by a suffix of digits with value suffixDigits.
+   *
+   * @param row the length of the prefix
+   * @param column the value of the following digit
+   * @param suffixDigit the value of the suffix digits
+   * @param bitsPerDigit power of 2 of the base
+   * @return the resulting Id
+   */
+  public Id getDomainPrefix(int row, int column, int suffixDigit, int bitsPerDigit) {
+    Id result = new Id(Id);
+
+    result.setDigit(row, column, bitsPerDigit);
+    for (int i = 0; i < row; i++) {
+      result.setDigit(i, suffixDigit, bitsPerDigit);
+    }
+
+    return build(result.Id);
+  }
+
+
+  /**
+   * produces a set of ids (keys) that are evenly distributed around the id ring. One invocation
+   * produces the i-th member of a set of size num. The set is evenly distributed around the ring,
+   * with an offset given by this Id. The set is useful for constructing, for instance, Scribe trees
+   * with disjoint sets of interior nodes.
+   *
+   * @param num the number of Ids in the set (must be &lt;= 2^b)
+   * @param bitsPerDigit the routing base (as a power of 2)
+   * @param i the index of the requested member of the set (0&lt;=i&lt;num; the 0-th member is this)
+   * @return the resulting set member, or null in case of illegal arguments
+   */
+  public Id getAlternateId(int num, int bitsPerDigit, int i) {
+    if (num > (1 << bitsPerDigit) || i < 0 || i >= num) {
+      return null;
+    }
+
+    Id result = new Id(Id);
+
+    int digit = result.getDigit(numDigits(bitsPerDigit) - 1, bitsPerDigit) + ((1 << bitsPerDigit) / num) * i;
+    result.setDigit(numDigits(bitsPerDigit) - 1, digit, bitsPerDigit);
+
+    return build(result.Id);
+  }
+
+  // ----- COMMON API SUPPORT -----
+
+  /**
+   * Checks if this Id is between two given ids ccw (inclusive) and cw (exclusive) on the circle
+   *
+   * @param counterClockwiseId the counterclockwise id
+   * @param clockwiseId the clockwise id
+   * @return true if this is between ccw (inclusive) and cw (exclusive), false otherwise
+   */
+  @Override
+  public boolean isBetween(rice.p2p.commonapi.Id counterClockwiseId, rice.p2p.commonapi.Id clockwiseId) {
+    return isBetween((Id) counterClockwiseId, (Id) clockwiseId);
+  }
+
+
+  /**
+   * Sets the ith digit in base 2^b. i = 0 is the least significant digit.
+   *
+   * @param i which digit to get.
+   * @param v the new value of the digit
+   * @param bitsPerDigit which power of 2 is the base to get it in.
+   */
+  private void setDigit(int i, int v, int bitsPerDigit) {
+    int bitIndex = bitsPerDigit * i + (IdBitLength % bitsPerDigit);
+    int index = bitIndex / 32;
+    int shift = bitIndex % 32;
+    int mask = (1 << bitsPerDigit) - 1;
+
+    if (shift + bitsPerDigit > 32) {
+      // digit overlaps a word boundary
+
+      long newd = ((long) (v & mask)) << shift;
+      long vmask = ~(((long) mask) << shift);
+      long word = Id[index];
+      word = (word & 0xffffffffL) | (((long) Id[index + 1]) << 32);
+
+      word = (word & vmask) | newd;
+
+      Id[index] = (int) word;
+      Id[index + 1] = (int) (word >> 32);
+    } else {
+      int newd = (v & mask) << shift;
+      int vmask = ~(mask << shift);
+      Id[index] = (Id[index] & vmask) | newd;
+    }
+  }
+
+  /**
+   * Blits the Id into a target array.
+   *
+   * @param target an array of length at least IdBitLength/8 for the Id to be stored in.
+   */
+  public void blit(byte target[]) {
+    blit(target, 0);
+  }
+
+  /**
+    * Blits the distance into a target array, starting at the given offset.
+   *
+   * @param offset The offset to start at
+   * @param target an array of length at least IdBitLength/8 for the distance to be stored in.
+   */
+  public void blit(byte target[], int offset) {
+    for (int j = 0; j < IdBitLength / 8; j++) {
+      int k = Id[j / 4] >> ((j % 4) * 8);
+      target[offset+j] = (byte) (k & 0xff);
+    }
+  }
+
+  /**
+   * Copy the Id into a freshly generated array.
+   *
+   * @return a fresh copy of the Id material
+   */
+  public byte[] copy() {
+    byte target[] = new byte[IdBitLength / 8];
+    blit(target);
+    return target;
+  }
+
+
+  /**
+   * Equality operator for Ids.
+   *
+   * @param obj a Id object
+   * @return true if they are equal, false otherwise.
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if ((obj == null) || ! (obj instanceof Id nodeId))
+      return false;
+
+
+    for (int i = 0; i < nlen; i++) {
+      if (Id[i] != nodeId.Id[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Comparison operator for Ids. The comparison that occurs is a numerical comparison.
+   *
+   * @param obj the Id to compare with.
+   * @return negative if this &lt; obj, 0 if they are equal and positive if this &gt; obj.
+   */
+  @Override
+  public int compareTo(rice.p2p.commonapi.Id obj) {
+    Id oth = (Id) obj;
+
+    for (int i = nlen - 1; i >= 0; i--) {
+      if (Id[i] != oth.Id[i]) {
+        long ownWord = Id[i] & 0x0ffffffffL;
+        long peerWord = oth.Id[i] & 0x0ffffffffL;
+        if (ownWord < peerWord) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  /**
+   * Returns the byte array representation of this Id
+   *
+   * @return The byte array representation of this id
+   */
+  @Override
+  public byte[] toByteArray() {
+    return copy();
+  }
+
+  /**
+   * Stores the byte[] value of this Id in the provided byte array
+   *
+   * @param array the array to write to
+   * @param offset the index in array of the first byte to write
+   */
+  @Override
+  public void toByteArray(byte[] array, int offset) {
+    blit(array, offset);
+  }
+
+  /**
+    * Returns the length of the byte[] representing this Id
+   *
+   * @return The length of the byte[] representing this Id
+   */
+  @Override
+  public int getByteArrayLength() {
+    return (int) IdBitLength / 8;
+  }
+
+  /**
+   * Hash codes for Ids.
+   *
+   * @return a hash code.
+   */
+  @Override
+  public int hashCode() {
+    int h = 0;
+
+    /// Hash function is computed by XORing the bits of the Id.
+    for (int i = 0; i < nlen; i++) {
+      h ^= Id[i];
+    }
+
+    return h;
+  }
+
+  /**
+   * Returns an Id corresponding to this Id plus a given distance
+   *
+   * @param offset the distance to add
+   * @return the new Id
+   */
+  public Id add(Distance offset) {
+    int[] array = new int[nlen];
+    long x;
+    long y;
+    long sum;
+    int carry = 0;
+
+    for (int i = 0; i < nlen; i++) {
+      x = Id[i] & 0x0ffffffffL;
+      y = offset.difference[i] & 0x0ffffffffL;
+
+      sum = x + y + carry;
+
+      if (sum >= 0x100000000L) {
+        carry = 1;
+      } else {
+        carry = 0;
+      }
+
+      array[i] = (int) sum;
+    }
+
+    return build(array);
+  }
+
+  /**
+   * Returns the shorter numerical distance on the ring between a pair of Ids.
+   *
+   * @param nodeId the other node id.
+   * @return the distance between this and nid.
+   */
+  public Distance distance(Id nodeId) {
+    int[] dist = absDistance(nodeId);
+
+    if ((dist[nlen - 1] & 0x80000000) != 0) {
+      invert(dist);
+    }
+
+    Distance d = new Distance(dist);
+
+    return d;
+  }
+
+  public Distance distance(Id nodeId, Distance d) {
+    int[] dist = d.difference;
+    absDistance(nodeId, dist);
+
+    if ((dist[nlen - 1] & 0x80000000) != 0) {
+      invert(dist);
+    }
+
+    return d;
+  }
+
+  /**
+   * Returns the longer numerical distance on the ring between a pair of Ids.
+   *
+   * @param nodeId the other node id.
+   * @return the distance between this and nid.
+   */
+  public Distance longDistance(Id nodeId) {
+    int[] dist = absDistance(nodeId);
+
+    if ((dist[nlen - 1] & 0x80000000) == 0) {
+      invert(dist);
+    }
+
+    Distance d = new Distance(dist);
+
+    return d;
+  }
+
+
+  /**
+   * Checks to see if the Id nid is clockwise or counterclockwise from this, on the ring. An Id is
+   * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
+   * counter-clockwise from itself.
+   *
+   * @param nodeId The Id we are comparing to
+   * @return true if clockwise, false otherwise.
+   */
+  public boolean clockwise(Id nodeId) {
+    boolean diffMSB = ((Id[nlen - 1] & 0x80000000) != (nodeId.Id[nlen - 1] & 0x80000000));
+    int x;
+    int y;
+    int i;
+
+    if ((x = (Id[nlen - 1] & 0x7fffffff)) != (y = (nodeId.Id[nlen - 1] & 0x7fffffff))) {
+      return ((y > x) ^ diffMSB);
+    } else {
+      for (i = nlen - 2; i >= 0; i--) {
+        if (Id[i] != nodeId.Id[i]) {
+          break;
+        }
+      }
+
+      if (i < 0) {
+        return diffMSB;
+      } else {
+        long xl;
+        long yl;
+
+        xl = Id[i] & 0xffffffffL;
+        yl = nodeId.Id[i] & 0xffffffffL;
+
+        return ((yl > xl) ^ diffMSB);
+      }
+    }
+  }
+
+  /**
+   * Checks if the ith bit is flipped. i = 0 is the least significant bit.
+   *
+   * @param i which bit to check.
+   * @return true if the bit is set, false otherwise.
+   */
+  public boolean checkBit(int i) {
+    int index = i / 32;
+    int shift = i % 32;
+    int word = Id[index];
+    int mask = (1 << shift);
+
+    if ((word & mask) != 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Returns the index of the most significant differing bit (MSDB).
+   *
+   * @param nodeId another node id to compare with.
+   * @return the index of the msdb (0 is the least significant) / will return negative if they do
+   *      not differ.
+   */
+  public int indexOfMostSignificantDifferingBit(Id nodeId) {
+    for (int i = nlen - 1; i >= 0; i--) {
+      int cmp = Id[i] ^ nodeId.Id[i];
+
+      if (cmp != 0) {
+        int tmp;
+        int j = 0;
+        if ((tmp = cmp & 0xffff0000) != 0) {
+          cmp = tmp;
+          j += 16;
+        }
+        if ((tmp = cmp & 0xff00ff00) != 0) {
+          cmp = tmp;
+          j += 8;
+        }
+        if ((tmp = cmp & 0xf0f0f0f0) != 0) {
+          cmp = tmp;
+          j += 4;
+        }
+        if ((tmp = cmp & 0xcccccccc) != 0) {
+          cmp = tmp;
+          j += 2;
+        }
+        if ((tmp = cmp & 0xaaaaaaaa) != 0) {
+          cmp = tmp;
+          j += 1;
+        }
+        return 32 * i + j;
+      }
+    }
+
+    return -1;
+  }
+
+  /**
+   * Returns the index of the most significant different digit (MSDD) in a given base.
+   *
+   * @param nodeId another node id to compare with.
+   * @param base the base (as a power of two) to compare in.
+   * @return the index of the msdd (0 is the least significant) / will return negative if they do
+   *      not differ.
+   */
+  public int indexOfMostSignificantDifferingDigit(Id nodeId, int base) {
+    int ind = indexOfMostSignificantDifferingBit(nodeId);
+
+    // ignore trailing LSBs if (IdBitLength % base) > 0
+    ind -= IdBitLength % base;
+
+    if (ind < 0) {
+      return ind;
+    }
+    return ind / base;
+  }
+
+
+  /**
+   * Returns a string representation of the Id in base 16. The string is a byte string from most to
+   * least significant.
+   *
+   * This was updated by Jeff because it was becoming a performance bottleneck.
+   *
+   * @return A String representation of this Id, abbreviated
+   */
+  @Override
+  public String toString() {
+    StringBuilder buffer = new StringBuilder();
+    buffer.append("<0x");
+
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength-1; i >= hexLength-6; i--)
+      buffer.append(tran[getDigit(i, 4)]);
+
+    buffer.append("..>");
+
+    return buffer.toString();
+  }
+
+  /**
+   * Similar to toString(), but not wrapped by &lt;0x ..&gt;
+   */
+  public String toStringBare() {
+    StringBuilder buffer = new StringBuilder();
+
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength-1; i >= hexLength-6; i--)
+      buffer.append(tran[getDigit(i, 4)]);
+
+
+    return buffer.toString();
+  }
+
+  /**
+   * Returns the complete representation of this Id, in hex.
+   *
+   * @return The complete representation of this Id, in hexadecimal
+   */
+  @Override
+  public String toStringFull() {
+    StringBuilder buffer = new StringBuilder();
+
+    int hexLength = IdBitLength / 4;
+    for (int i = hexLength - 1; i >= 0; i--)
+      buffer.append(tran[getDigit(i, 4)]);
+
+    return buffer.toString();
+  }
+
+  /**
+   * Checks to see if the Id nid is clockwise or counterclockwise from this, on the ring. An Id is
+   * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
+   * counter-clockwise from itself.
+   *
+   * @param nodeId the other Id (must be a rice.pastry.Id)
+   * @return true if clockwise, false otherwise.
+   */
+  @Override
+  public boolean clockwise(rice.p2p.commonapi.Id nodeId) {
+    return clockwise((Id) nodeId);
+  }
+
+  /**
+   * Returns an Id corresponding to this Id plus a given distance
+   *
+   * @param offset the distance to add
+   * @return the new Id
+   */
+  @Override
+  public rice.p2p.commonapi.Id addToId(rice.p2p.commonapi.Id.Distance offset) {
+    return add((Id.Distance) offset);
+  }
+
+  /**
+   * Returns the shorter numerical distance on the ring between a pair of Ids.
+   *
+   * @param nodeId the other node id.
+   * @return the distance between this and nid.
+   */
+  @Override
+  public rice.p2p.commonapi.Id.Distance distanceFromId(rice.p2p.commonapi.Id nodeId) {
+    return distance((Id) nodeId);
+  }
+
+  /**
+   * Returns the longer numerical distance on the ring between a pair of Ids.
+   *
+   * @param nodeId the other node id.
+   * @return the distance between this and nid.
+   */
+  @Override
+  public rice.p2p.commonapi.Id.Distance longDistanceFromId(rice.p2p.commonapi.Id nodeId) {
+    return longDistance((Id) nodeId);
+  }
+
+  /**
+   * Returns the absolute numerical distance between a pair of Ids.
+   *
+   * @param nodeId the other node id.
+   * @return an int[] containing the distance between this and nid.
+   */
+  private int[] absDistance(Id nodeId) {
+    return absDistance(nodeId,new int[nlen]);
+  }
+  private int[] absDistance(Id nodeId, int dist[]) {
+    long x;
+    long y;
+    long diff;
+    int carry = 0;
+
+    if (compareTo(nodeId) > 0) {
+      for (int i = 0; i < nlen; i++) {
+        x = Id[i] & 0x0ffffffffL;
+        y = nodeId.Id[i] & 0x0ffffffffL;
+
+        diff = x - y - carry;
+
+        if (diff < 0) {
+          carry = 1;
+        } else {
+          carry = 0;
+        }
+
+        dist[i] = (int) diff;
+      }
+    } else {
+      for (int i = 0; i < nlen; i++) {
+        x = Id[i] & 0x0ffffffffL;
+        y = nodeId.Id[i] & 0x0ffffffffL;
+
+        diff = y - x - carry;
+
+        if (diff < 0) {
+          carry = 1;
+        } else {
+          carry = 0;
+        }
+
+        dist[i] = (int) diff;
+      }
+    }
+    return dist;
+  }
+
+  /**
+   * inverts the distance value stored in an integer array (computes 0-value)
+   *
+   * @param dist the distance value
+   */
+  private void invert(int[] dist) {
+    int carry = 0;
+    long diff;
+    for (int i = 0; i < nlen; i++) {
+      diff = dist[i] & 0x0ffffffffL;
+      diff = 0L - diff - carry;
+      if (diff < 0) {
+        carry = 1;
+      }
+      dist[i] = (int) diff;
+    }
+  }
+
+  /**
+   * A class for representing and manipulating the distance between two Ids on the circle.
+   *
+   * @version $Id: Id.java 4654 2009-01-08 16:33:07Z jeffh $
+   * @author amislove
+   */
+  public static class Distance implements rice.p2p.commonapi.Id.Distance {
+
+    private int difference[];
+
+    /**
+     * Constructor.
+     */
+    public Distance() {
+      difference = new int[nlen];
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param diff The different, as a byte array
+     */
+    public Distance(byte[] diff) {
+      difference = new int[nlen];
+
+      for (int j = 0; (j < IdBitLength / 8) && (j < diff.length); j++) {
+        int k = diff[j] & 0xff;
+        difference[j / 4] |= k << ((j % 4) * 8);
+      }
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param diff The difference, as an int array
+     */
+    public Distance(int[] diff) {
+      difference = diff;
+    }
+
+    /**
+     * Blits the distance into a target array.
+     *
+     * @param target an array of length at least IdBitLength/8 for the distance to be stored in.
+     */
+    public void blit(byte target[]) {
+      blit(target, 0);
+    }
+
+    /**
+     * Blits the distance into a target array, starting at the given offset.
+     *
+     * @param offset The offset to start at
+     * @param target an array of length at least IdBitLength/8 for the distance to be stored in.
+     */
+    public void blit(byte target[], int offset) {
+      for (int j = 0; j < IdBitLength / 8; j++) {
+        int k = difference[j / 4] >> ((j % 4) * 8);
+        target[offset+j] = (byte) (k & 0xff);
+      }
+    }
+
+    /**
+     * Copy the distance into a freshly generated array.
+     *
+     * @return a fresh copy of the distance material
+     */
+    public byte[] copy() {
+      byte target[] = new byte[IdBitLength / 8];
+      blit(target);
+      return target;
+    }
+
+    /**
+     * Comparison operator. The comparison that occurs is an absolute magnitude comparison.
+     *
+     * @param obj the Distance to compare with.
+     * @return negative if this &lt; obj, 0 if they are equal and positive if this &gt; obj.
+     */
+    @Override
+    public int compareTo(rice.p2p.commonapi.Id.Distance obj) {
+      Distance oth = (Distance) obj;
+
+      for (int i = nlen - 1; i >= 0; i--) {
+        if (difference[i] != oth.difference[i]) {
+          long ownWord = difference[i] & 0x0ffffffffL;
+          long peerWord = oth.difference[i] & 0x0ffffffffL;
+          if (ownWord < peerWord) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      }
+
+      return 0;
+    }
+
+    /**
+     * Equality operator.
+     *
+     * @param obj another Distance.
+     * @return true if they are the same, false otherwise.
+     */
+    @Override
+    public boolean equals(Object obj) {
+      if (compareTo((Id.Distance)obj) == 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    /**
+     * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
+     *
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
+     * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
+     * @return this
+     */
+    public Distance shift(int count, int fill) {
+      return shift(count, fill, false);
+    }
+
+
+    /**
+     * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
+     *
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
+     * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
+     * @param roundUp if true, round up the results after right shifting
+     * @return this
+     */
+    public Distance shift(int count, int fill, boolean roundUp) {
+      int carry;
+      int bit = 0;
+      int lsb = 0;
+
+      if (count > 0) {
+        for (int j = 0; j < count; j++) {
+          // shift right one bit
+          carry = (fill == 0) ? 0 : 0x80000000;
+          for (int i = nlen - 1; i >= 0; i--) {
+            bit = difference[i] & 1;
+            difference[i] = (difference[i] >>> 1) | carry;
+            carry = (bit == 0) ? 0 : 0x80000000;
+          }
+
+          if (j == 0) {
+            lsb = bit;
+          }
+        }
+
+        if (roundUp && lsb > 0) {
+          inc();
+        }
+      } else {
+        for (int j = 0; j < -count; j++) {
+          // shift left one bit
+          carry = (fill == 0) ? 0 : 1;
+          for (int i = 0; i < nlen; i++) {
+            bit = difference[i] & 0x80000000;
+            difference[i] = (difference[i] << 1) | carry;
+            carry = (bit == 0) ? 0 : 1;
+          }
+        }
+      }
+
+      return this;
+    }
+
+    /**
+     * Hash codes.
+     *
+     * @return a hash code.
+     */
+    @Override
+    public int hashCode() {
+      int h = 0;
+
+      // Hash function is computed by XORing the bits of the Id.
+      for (int i = 0; i < nlen; i++) {
+        h ^= difference[i];
+      }
+
+      return h;
+    }
+
+    /**
+     * Returns a string representation of the distance The string is a byte string from most to
+     * least significant.
+     *
+     * @return The string representation of this distance
+     */
+    @Override
+    public String toString() {
+      String description = "0x";
+
+      String tran[] = {"0", "1", "2", "3", "4", "5", "6", "7",
+        "8", "9", "A", "B", "C", "D", "E", "F"};
+
+      for (int j = IdBitLength / 8 - 1; j >= 0; j--) {
+        int k = difference[j / 4] >> ((j % 4) * 8);
+        description = description + tran[(k >> 4) & 0x0f] + tran[k & 0x0f];
+      }
+
+      return "< Id.distance " + description + " >";
+    }
+
+    // common API Support
+
+    /**
+     * Shift operator. shift(-1,0) multiplies value of this by two, shift(1,0) divides by 2
+     *
+     * @param count the number of bits to shift, negative shifts left, positive shifts right
+     * @param fill value of bit shifted in (0 if fill == 0, 1 otherwise)
+     * @return this
+     */
+    @Override
+    public rice.p2p.commonapi.Id.Distance shiftDistance(int count, int fill) {
+      return shift(count, fill);
+    }
+
+    /**
+     * increment this distance
+     */
+    private void inc() {
+      long x;
+      long sum;
+      int carry = 1;
+
+      // add one
+      for (int i = 0; i < nlen; i++) {
+        x = difference[i] & 0x0ffffffffL;
+        sum = x + carry;
+        if (sum >= 0x100000000L) {
+          carry = 1;
+        } else {
+          carry = 0;
+        }
+
+        difference[i] = (int) sum;
+      }
+    }
+  }
+
+  @Override
+  public short getType() {
+    return IdType.PASTRY_ID.id();
+  }
+
+  public static void main(String[] args) {
+    System.out.println(new Id(Half).getCCW().toStringFull());
+    System.out.println(new Id(Half).getCW().toStringFull());
+    System.out.println(new Id(Null).getCCW().toStringFull());
+    System.out.println(new Id(Null).getCW().toStringFull());
+    System.out.println(new Id(NegOne).getCCW().toStringFull());
+    System.out.println(new Id(NegOne).getCW().toStringFull());
+    System.out.println(new Id(One).getCCW().toStringFull());
+    System.out.println(new Id(One).getCW().toStringFull());
+
+  }
+
+}

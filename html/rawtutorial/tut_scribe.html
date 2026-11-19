@@ -26,14 +26,14 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <a name="scribe"><h1>Scribe</h1></a>
 <h2>Introducing Scribe.</h2>
 <h3>Download the tutorial files: 
-<a href="./src/scribe/MyScribeClient.java">MyScribeClient.java</a>,
-<a href="./src/scribe/MyScribeContent.java">MyScribeContent.java</a>,
-<a href="./src/scribe/ScribeTutorial.java">ScribeTutorial.java</a> into a directory called rice/tutorial/scribe/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/scribe/MyScribeClient.java">MyScribeClient.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/scribe/MyScribeContent.java">MyScribeContent.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/scribe/ScribeTutorial.java">ScribeTutorial.java</a> into a directory called rice/tutorial/scribe/.</h3>
 
 <p/>Scribe is an application that allows you to subscribe to groups and publish messages to that group.  This tutorial will show you how to get scribe up and running.  You will learn how to do the following:
 <ul>
  <li><a href="#l6Topic">Create a topic.</a></li>
- <li><a href="#l6Client">Create a ScribeClient.</a></li>
+ <li><a href="#l6Client">Create a ScribeMultiClient.</a></li>
  <li><a href="#l6Subscribe">Subscribe to a topic.</a></li>
  <li><a href="#l6Publish">Publish (Multicast) content.</a></li>
  <li><a href="#l6Receive">Receive content.</a></li>
@@ -47,9 +47,9 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
   <li><b>Scribe</b>&mdash;A scalable group communication system for topic-based publish-subscribe applications.<i>Scribe builds an efficient multicast tree for dissemination of events to a topic.</i></li>
   <li><b>Topic</b>&mdash;Group.  <i>A topic builds a hash of the group name which is used as a unique identifier for the topic, as well used as a rendezvous point in Pastry.</i></li>
   <li><b>IdFactory</b>&mdash;A hash function.  <i>An IdFactory implements a hash function to build Ids that are compatible with pastry.</i></li>
-  <li><b>PastryIdFactory</b>&mdash;A commonly used IdFactory in Pastry.  <i>The PastryIdFactory uses SHA1 as it's underlieing hash function.</i></li>
-  <li><b>ScribeContent</b>&mdash;A scribe message.</li>
-  <li><b>ScribeClient</b>&mdash;An application that receives ScribeContent.  <i>The client can subscribe to one or more topics.</i></li>
+  <li><b>PastryIdFactory</b>&mdash;A commonly used IdFactory in Pastry.  <i>The PastryIdFactory uses SHA-256, truncated to the 160 bits of an Id, as its underlying hash function.</i></li>
+  <li><b>ScribeContent</b>&mdash;A scribe message.  <i>It serializes itself to an OutputBuffer and is read back by the application's ScribeContentDeserializer.</i></li>
+  <li><b>ScribeMultiClient</b>&mdash;An application that receives ScribeContent.  <i>The client can subscribe to one or more topics.</i></li>
   <li><b>Multicast</b>&mdash;A broadcast received by everyone subscribed to the corresponding topic.</i></li>  
   <li><b>Anycast</b>&mdash;A message that is received by a single node in a group.  <i>Anycast is most commonly used to find a single available service provider.  The anycast message will be rejected until it finds a node willing to supply the service that is being requested.</i></li>  
   <li><b>ScribePolicy</b>&mdash;A policy to determine application specific details of Scribe.  <i>This includes formation and anycast selection.</i></li>  
@@ -59,85 +59,109 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <a name="l6Topic"></a><h3>Creating a topic.</h3>
 This is fairly straightforward, but each node will have to do this for each topic of interest.
 <pre>
-  Topic myTopic = new Topic(new PastryIdFactory(), "example topic");
+  Topic myTopic = new Topic(new PastryIdFactory(node.getEnvironment()), "example topic");
 </pre>
 This constructs a topic with the "common name" of "example topic".  It uses the PastryIdFactory to generate an 
 appropriate Id for this topic. 
 
-<a name="l6Client"></a><h3>Creating a ScribeClient.</h3>
-Let's take a look at MyScribeClient.  We are only going to subscribe to a single topic.  We are going to publish content every 5 seconds using the FreePastry timer.  See <a href="tut_timertask.html#timer">Timer</a> for more details on the timer.  The client is also going to implement rice.p2p.commonapi.Application in addition to rice.p2p.scribe.ScribeClient.  This will allow us to send and receive non-scribe messages should this be important.  Specifically it will allow us to receive messages queued on the timer.<br/><br/>
+<a name="l6Client"></a><h3>Creating a ScribeMultiClient.</h3>
+Let's take a look at MyScribeClient.  We are only going to subscribe to a single topic.  We are going to publish content every 5 seconds using the FreePastry timer.  See <a href="tut_timertask.html#timer">Timer</a> for more details on the timer.  The client is also going to implement rice.p2p.commonapi.Application in addition to rice.p2p.scribe.ScribeMultiClient.  This will allow us to send and receive non-scribe messages should this be important.  Specifically it will allow us to receive messages queued on the timer.<br/><br/>
 Here's the constructor and some member variables:
 <pre>
   Scribe myScribe;
   Topic myTopic;
-  protected Endpoint endpoint;
-  public MyScribeClient(PastryNode node) {
+  private final Endpoint endpoint;
+
+  public MyScribeClient(Node node) {
     // you should recognize this from lesson 3
     this.endpoint = node.buildEndpoint(this, "myinstance");
 
     // construct Scribe
     myScribe = new ScribeImpl(node,"myScribeInstance");
+    // tell Scribe how to read our content back from the wire
+    myScribe.setContentDeserializer((buf, ep, contentType) -&gt; {
+      if (contentType == MyScribeContent.TYPE) {
+        return new MyScribeContent(buf, ep);
+      }
+      throw new IOException("Unknown content type: " + contentType);
+    });
 
     // construct the topic
     myTopic = new Topic(new PastryIdFactory(node.getEnvironment()), "example topic");
     System.out.println("myTopic = "+myTopic);
-    
+
     // now we can receive messages
     endpoint.register();
   }
 </pre>
-The only thing that should be new here is the construction of the ScribeImpl and Topic.  The instance name "myScribeInstance" allows you to remain independent of other applications running on the 
-same ring who also use scribe.  They will have their own instance of Scribe that won't be confused with your instance.<br/>
+The new parts here are the construction of the ScribeImpl and Topic, and the content deserializer.  The instance name "myScribeInstance" allows you to remain independent of other applications running on the same ring who also use scribe.  They will have their own instance of Scribe that won't be confused with your instance.  Scribe carries your content over the wire in raw form, so you must give it a <code>ScribeContentDeserializer</code> that turns the bytes back into your <code>ScribeContent</code>, switching on the type that the content's <code>getType()</code> returns.  We'll look at <code>MyScribeContent</code> below.<br/>
 
 In this example, one of the nodes is going to publish content every 5 seconds.  We use the timer pattern described in the Timer tutorial.  Each time we are going to send 1 
 multicast, and 1 anycast.
 <pre>
-  class PublishContent implements Message {
+  static class PublishContent implements Message {
     public int getPriority() {
-      return 0;
+      return MAX_PRIORITY;
     }
   }
+
   public void startPublishTask() {
-    publishTask = endpoint.scheduleMessage(new PublishContent(), 5000, 5000);    
+    publishTask = endpoint.scheduleMessage(new PublishContent(), 5000, 5000);
   }
+
   public void deliver(Id id, Message message) {
     if (message instanceof PublishContent) {
-      sendMulticast(); 
+      sendMulticast();
       sendAnycast();
     }
   }
 </pre>
-In case you forgot, the <code>PublishContent</code> is similar to the Timer tutorial's <code>MessageToSelf</code>.  
+In case you forgot, the <code>PublishContent</code> is similar to the Timer tutorial's <code>MessageToSelf</code>.  It only goes to the local node, so it can be a plain <code>Message</code> and needs no serialization.
 The <code>startPublishTask()</code> method schedules this to be delivered locally every 5 seconds.
 The <code>deliver(id,message)</code> method calls <code>sendMulticast()</code> when the <code>PublishMethod</code> is received.  
 In your application you will likely have some other event that causes content to be published.
 We will look at <code>sendMulticast()</code> and <code>sendAnycast()</code> shortly.
 
 <a name="l6Subscribe"></a><h3>Subscribing to a group.</h3>
-Subscribing is very easy.  Just call <code>Scribe.subscribe()</code> and provide the topic, and your client.
+Subscribing is very easy.  Just call <code>Scribe.subscribe()</code> and provide the topic and your client.  The last two arguments are optional content to send along with the subscription and a hint for the first hop; we pass <code>null</code> for both.
 <pre>
   public void subscribe() {
-    myScribe.subscribe(myTopic, this); 
+    // no subscribe content, no hint
+    myScribe.subscribe(myTopic, this, (ScribeContent)null, null);
   }
 </pre>
 
 <a name="l6Publish"></a><h3>Multicasting content.</h3>
-First, we need some content to send.  MyScribeContent implements ScribeContent and takes 
-a NodeHandle sender, and an int sequence number.  These are just so the output of the 
-program is more interesting.
+First, we need some content to send.  MyScribeContent implements ScribeContent and takes a NodeHandle sender, and an int sequence number.  These are just so the output of the program is more interesting.  Like a <code>RawMessage</code> (see <a href="tut_raw_serialization.html#raw">Raw Serialization</a>), a <code>ScribeContent</code> has a <code>getType()</code> and writes itself in <code>serialize(OutputBuffer)</code>; the deserializing constructor reads the fields back in the same order.
 <pre>
 public class MyScribeContent implements ScribeContent {
+  public static final short TYPE = 1;
+
   NodeHandle from;
   int seq;
- 
+
   public MyScribeContent(NodeHandle from, int seq) {
     this.from = from;
     this.seq = seq;
   }
 
+  public MyScribeContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+    from = endpoint.readNodeHandle(buf);
+    seq = buf.readInt();
+  }
+
+  public short getType() {
+    return TYPE;
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    from.serialize(buf);
+    buf.writeInt(seq);
+  }
+
   public String toString() {
     return "MyScribeContent #"+seq+" from "+from;
-  }  
+  }
 }
 </pre>
 
@@ -148,7 +172,7 @@ sequence number.
   public void sendMulticast() {
     System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting "+seqNum);
     MyScribeContent myMessage = new MyScribeContent(endpoint.getLocalNodeHandle(), seqNum);
-    myScribe.publish(myTopic, myMessage); 
+    myScribe.publish(myTopic, myMessage);
     seqNum++;
   }
 </pre>
@@ -160,14 +184,17 @@ slightly different:
 <pre>
   public void deliver(Topic topic, ScribeContent content) {
     System.out.println("MyScribeClient.deliver("+topic+","+content+")");
+    if (((MyScribeContent)content).from == null) {
+      new Exception("Stack Trace").printStackTrace();
+    }
   }
 </pre>
 
-All we are doing here is printing output to stdout.
+All we are doing here is printing output to stdout (and a stack trace if the sender is missing).
 
 <a name="l6Anycast"></a><h3>Anycasting.</h3>
 Anycast will get called on your clients until one returns true.  This occurs on
-a call to <code>ScribeClient.anycast()</code>.  To make this interesting, we're going to only accept the message 
+a call to <code>ScribeMultiClient.anycast()</code>.  To make this interesting, we're going to only accept the message 
 1/3 of the time, randomly.  Your application will ususally want to do something more interesting, such as see 
 if a requested resource is available.<br/>
 Here is <code>sendAnycast()</code> which is nearly identical to <code>sendMulticast()</code> except for the call to 
@@ -177,7 +204,7 @@ Here is <code>sendAnycast()</code> which is nearly identical to <code>sendMultic
   public void sendAnycast() {
     System.out.println("Node "+endpoint.getLocalNodeHandle()+" anycasting "+seqNum);
     MyScribeContent myMessage = new MyScribeContent(endpoint.getLocalNodeHandle(), seqNum);
-    myScribe.anycast(myTopic, myMessage); 
+    myScribe.anycast(myTopic, myMessage);
     seqNum++;
   }
 </pre>
@@ -186,7 +213,7 @@ Here is the code that only accepts the anycast 1/3 of the time.  This will allow
 that the anycast message can be rejected and sent elsewhere.
 <pre>
   public boolean anycast(Topic topic, ScribeContent content) {
-    boolean returnValue = rng.nextInt(3) == 0;
+    boolean returnValue = myScribe.getEnvironment().getRandomSource().nextInt(3) == 0;
     System.out.println("MyScribeClient.anycast("+topic+","+content+"):"+returnValue);
     return returnValue;
   }
@@ -204,23 +231,25 @@ Because we are only going to run the application with a small number of nodes, t
 will most likely be only 1 level deep.  (The root being level 0).  However, this will show you how to print out your parent 
 and children.<br/><br/>  
 
-The first thing to note is that we have 3 accessor methods at the bottom of <code>MyScribeContent</code>:
+The first thing to note is that we have 3 accessor methods at the bottom of <code>MyScribeClient</code>:
 
 <pre>
   public boolean isRoot() {
     return myScribe.isRoot(myTopic);
   }
-  
+
   public NodeHandle getParent() {
-    return myScribe.getParent(myTopic); 
+    // NOTE: getParent() is part of the Scribe interface, so the cast to
+    // ScribeImpl is not needed.
+    return ((ScribeImpl)myScribe).getParent(myTopic);
   }
-  
+
   public NodeHandle[] getChildren() {
-    return myScribe.getChildren(myTopic); 
+    return myScribe.getChildrenOfTopic(myTopic).toArray(new NodeHandle[0]);
   }
 </pre>
 
-Note that these simply call through to the same method on myScribe, with the correct topic.<br/><br/>
+Note that these simply call through to myScribe, with the correct topic.<br/><br/>
 
 
 This code can be found in <code>ScribeTutorial.java</code><br/><br/>
@@ -233,19 +262,18 @@ This code can be found in <code>ScribeTutorial.java</code><br/><br/>
 </ol>
 
 <pre>
-  public static void printTree(Vector apps) {
+  public static void printTree(List&lt;MyScribeClient&gt; apps) {
     // build a hashtable of the apps, keyed by nodehandle
-    Hashtable appTable = new Hashtable();
-    Iterator i = apps.iterator();
-    while (i.hasNext()) {
-      MyScribeClient app = (MyScribeClient)i.next();
-      appTable.put(app.endpoint.getLocalNodeHandle(), app);
+    Map&lt;NodeHandle, MyScribeClient&gt; appTable = new HashMap&lt;NodeHandle, MyScribeClient&gt;();
+    for (MyScribeClient app : apps) {
+      appTable.put(app.getEndpoint().getLocalNodeHandle(), app);
     }
-    NodeHandle seed = ((MyScribeClient)apps.get(0)).endpoint.getLocalNodeHandle();
-    
-    // get the root 
+    NodeHandle seed = ((MyScribeClient) apps.get(0)).getEndpoint()
+        .getLocalNodeHandle();
+
+    // get the root
     NodeHandle root = getRoot(seed, appTable);
-    
+
     // print the tree from the root down
     recursivelyPrintChildren(root, 0, appTable);
   }
@@ -257,9 +285,10 @@ This code can be found in <code>ScribeTutorial.java</code><br/><br/>
  <li>Otherwise, it calls <code>getRoot()</code> on the parent.</li>
 </ol>
 <pre>
-  public static NodeHandle getRoot(NodeHandle seed, Hashtable appTable) {
-    MyScribeClient app = (MyScribeClient)appTable.get(seed);
-    if (app.isRoot()) return seed;
+  public static NodeHandle getRoot(NodeHandle seed, Map&lt;NodeHandle, MyScribeClient&gt; appTable) {
+    MyScribeClient app = (MyScribeClient) appTable.get(seed);
+    if (app.isRoot())
+      return seed;
     NodeHandle nextSeed = app.getParent();
     return getRoot(nextSeed, appTable);
   }
@@ -270,21 +299,22 @@ This code can be found in <code>ScribeTutorial.java</code><br/><br/>
  <li>Then calls recursivelyPrintChildren() on all children (if it has any)</li>  
 </ol>
 <pre>
-  public static void recursivelyPrintChildren(NodeHandle curNode, int recursionDepth, Hashtable appTable) {
+  public static void recursivelyPrintChildren(NodeHandle curNode,
+      int recursionDepth, Map&lt;NodeHandle, MyScribeClient&gt; appTable) {
     // print self at appropriate tab level
     String s = "";
     for (int numTabs = 0; numTabs &lt; recursionDepth; numTabs++) {
-      s+="  "; 
+      s += "  ";
     }
-    s+=curNode.getId().toString();
+    s += curNode.getId().toString();
     System.out.println(s);
-    
+
     // recursively print all children
-    MyScribeClient app = (MyScribeClient)appTable.get(curNode);
+    MyScribeClient app = (MyScribeClient) appTable.get(curNode);
     NodeHandle[] children = app.getChildren();
-    for (int curChild = 0; curChild &lt; children.length; curChild++) {
-      recursivelyPrintChildren(children[curChild], recursionDepth+1, appTable);
-    }    
+    for (NodeHandle nodeHandle : children) {
+      recursivelyPrintChildren(nodeHandle, recursionDepth + 1, appTable);
+    }
   }
 </pre>
 
@@ -294,103 +324,72 @@ The majority of the ScribeTutorial is identical to Lesson 4 where we ran multipl
 is listed below.  On each app, we call <code>subscribe()</code>, and on the first one we call <code>startPublishTask()</code>.  
 After that we wait a few seconds then print the tree.
 <pre>
-    Iterator i = apps.iterator();    
-    MyScribeClient app = (MyScribeClient)i.next();
+    // for the first app subscribe then start the publishtask
+    Iterator&lt;MyScribeClient&gt; i = apps.iterator();
+    MyScribeClient app = (MyScribeClient) i.next();
     app.subscribe();
     app.startPublishTask();
-    while(i.hasNext()) {
-      app = (MyScribeClient)i.next();
+    // for all the rest just subscribe
+    while (i.hasNext()) {
+      app = (MyScribeClient) i.next();
       app.subscribe();
     }
-    
-    env.getTimeSource().sleep(3000);
+
+    // now, print the tree
+    env.getTimeSource().sleep(5000);
     printTree(apps);
 </pre>
 
 <h3>Execution.</h3>
-The parameters are identical to those in Lesson 4: 
+Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  The parameters are identical to those in Lesson 4:
 <ol>
   <li>Local bind port.</li>
-  <li>Bootstrap host. (the local host address)</li>
+  <li>Bootstrap host. (the local host address, e.g. <code>127.0.0.1</code> when all nodes run on one machine)</li>
   <li>Bootstrap port. (usually whatever you passed in the first arg)</li>
   <li>The number of nodes to launch.</li>
 </ol>
 
-Your output will resemble:
+Run it with:
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.scribe.ScribeTutorial 9001 10.9.8.7 9001 10</span>
-<span class="output">:1122932166578:Error connecting to address /10.9.8.7:9001: java.net.ConnectException: Connection refused: no further information
-:1122932166578:No bootstrap node provided, starting a new ring...
-Finished creating new node SocketNodeHandle (&lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189])
-myTopic = [TOPIC &lt;0x19A8F5..&gt;]
-Finished creating new node SocketNodeHandle (&lt;0x8904D9..&gt;/FOO/10.9.8.7:9002 [4410881318286179245])
-myTopic = [TOPIC &lt;0x19A8F5..&gt;]
-Finished creating new node SocketNodeHandle (&lt;0x281817..&gt;/FOO/10.9.8.7:9003 [1144941711194723161])
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.scribe.ScribeTutorial 9001 127.0.0.1 9001 10</span>
+</pre>
 
+<p>For every node the program prints the topic (<code>myTopic = [TOPIC ...]</code>, the same on every node) and then a <code>Finished creating new node</code> line. The first node publishes a broadcast and an anycast message every few seconds, and after the last node has subscribed the program prints the multicast tree, starting at its root, one node id per line, indented by depth. Each node prints a <code>MyScribeClient.deliver(topic, content)</code> line for every message that is broadcast to the group, and a <code>MyScribeClient.anycast(topic, content):false</code> line for every node the anycast visits that does not accept it; the final anycast line ends in <code>:true</code> on the node that accepts it. The program runs until you stop it with Ctrl-C. With ten nodes the output looks like this (node ids, the tree shape and the order of the lines differ from run to run; repeated lines are trimmed):</p>
+
+<pre>
+<span class="output">myTopic = [TOPIC &lt;0xECC0D0..&gt;]
+Finished creating new node: PastryNode[SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001]
+myTopic = [TOPIC &lt;0xECC0D0..&gt;]
+Finished creating new node: PastryNode[SNH: &lt;0x286C9D..&gt;/myhost/192.168.88.204:9002]
 ...
-
-&lt;0x281817..&gt;
-  &lt;0x8904D9..&gt;
-  &lt;0x061BB8..&gt;
-  &lt;0x85DA64..&gt;
-  &lt;0x489BCB..&gt;
-  &lt;0x0A9FCC..&gt;
-  &lt;0x39CE29..&gt;
-  &lt;0xA20DF8..&gt;
-  &lt;0x7D350E..&gt;
-  &lt;0xCF76F1..&gt;
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 0
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 1
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #1 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #1 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #0 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 2
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 3
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #3 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #3 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #2 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] broadcasting 4
-Node [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]] anycasting 5
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x281817..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0xA20DF8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0xCF76F1..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x0A9FCC..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x7D350E..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x85DA64..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x489BCB..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.deliver([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #4 from [SNH: &lt;0x061BB8..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]])
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x39CE29..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):false
-MyScribeClient.anycast([TOPIC &lt;0x19A8F5..&gt;],MyScribeContent #5 from [SNH: &lt;0x8904D9..&gt; -&gt; &lt;0x489BCB..&gt;/FOO/10.9.8.7:9001 [3776408266594462189]]):true
+myTopic = [TOPIC &lt;0xECC0D0..&gt;]
+Finished creating new node: PastryNode[SNH: &lt;0xEECF9F..&gt;/myhost/192.168.88.204:9010]
+Node [SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001] broadcasting 0
+Node [SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001] anycasting 1
+&lt;0xEECF9F..&gt;
+  &lt;0x37B30D..&gt;
+  &lt;0xD769F6..&gt;
+  &lt;0xE68CB4..&gt;
+  &lt;0x64D511..&gt;
+  &lt;0x286C9D..&gt;
+  &lt;0x8A33DC..&gt;
+  &lt;0x3F5E0C..&gt;
+  &lt;0x580091..&gt;
+  &lt;0xAC8FA1..&gt;
+MyScribeClient.anycast([TOPIC &lt;0xECC0D0..&gt;],MyScribeContent #1 from [SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001]):false
+MyScribeClient.deliver([TOPIC &lt;0xECC0D0..&gt;],MyScribeContent #0 from [SNH: &lt;0xAC8FA1..&gt;//192.168.88.204:9001])
+...
+MyScribeClient.anycast([TOPIC &lt;0xECC0D0..&gt;],MyScribeContent #1 from [SNH: &lt;0xAC8FA1..&gt;//192.168.88.204:9001]):true
+Node [SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001] broadcasting 2
+Node [SNH: &lt;0xAC8FA1..&gt;/myhost/192.168.88.204:9001] anycasting 3
+...
 </span></pre>
 
-Note that the tree is only 1 level deep.<br/>
-Note how each publish message is delivered to each node in the group.<br/>
-Note that anycast is called on different nodes until a node returns true.<br/>  
+
+When you run it, look for the following.<br/>
+Each publish message is delivered to each node in the group.<br/>
+Anycast is called on different nodes until a node returns true.<br/>  
 
 <h3>Congratulations!  You have built and run your first scribe application!<br>
 

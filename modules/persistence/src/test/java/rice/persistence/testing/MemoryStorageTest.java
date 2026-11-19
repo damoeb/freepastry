@@ -1,0 +1,797 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.persistence.testing;
+
+/*
+ * @(#) MemoryStorageTest.java
+ *
+ * @author Ansley Post
+ * @author Alan Mislove
+ *
+ * @version $Id: MemoryStorageTest.java 4654 2009-01-08 16:33:07Z jeffh $
+ */
+import java.io.IOException;
+
+import rice.Continuation;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdSet;
+import rice.pastry.commonapi.PastryIdFactory;
+import rice.persistence.MemoryStorage;
+import rice.persistence.Storage;
+
+/**
+ * This class is a class which tests the Storage class
+ * in the rice.persistence package.
+ */
+@SuppressWarnings("unchecked")
+public class MemoryStorageTest extends Test {
+
+  private IdFactory FACTORY;
+
+  protected Storage storage;
+
+  protected boolean store;
+  private Id[] data;
+  private Integer[] metadata;
+
+  /**
+   * Builds a MemoryMemoryStorageTest
+   */
+  public MemoryStorageTest(boolean store, Environment env) {
+    super(env);
+    FACTORY = new PastryIdFactory(env);
+    storage = new MemoryStorage(FACTORY);
+    data  = new Id[500];
+    metadata = new Integer[500];
+    int[] idWords = new int[5];
+    for (int i = 0; i < 500; i ++){
+        idWords[3] = i;
+        data[i] = FACTORY.buildId(idWords);
+        metadata[i] = Integer.valueOf(i);
+    }
+    this.store = store;
+  }
+
+  public void setUp(final Continuation<Object, Exception> continuation) {
+    final Continuation<Object, Exception> put4 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Fourth object was not inserted.");
+          return;
+        }
+
+        sectionEnd();
+        continuation.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> put3 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Third object was not inserted.");
+          return;
+        }
+
+        stepStart("Storing Fourth Object");
+        storage.store(data[4], metadata[4], "Fourth Object", put4);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> put2 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Second object was not inserted.");
+          return;
+        }
+
+        stepStart("Storing Third Object");
+        storage.store(data[3], metadata[3], "Third Object", put3);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    Continuation<Object, Exception> put1 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "First object was not inserted.");
+          return;
+        }
+
+        stepStart("Storing Second Object");
+        storage.store(data[2], metadata[2], "Second Object", put2);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    sectionStart("Storing Objects");
+
+    stepStart("Storing First Object");
+    storage.store(data[1], metadata[1], "First Object", put1);
+  }
+
+  public void testRetrieval(final Continuation<Object, Exception> continuation) {
+    final Continuation<Object, Exception> get5 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Fifth object was returned (should not be present).");
+          return;
+        }
+
+        sectionEnd();
+        continuation.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> get4 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(FAILURE, "Returned object was null.");
+          return;
+        }
+
+        if (result.equals("Fourth Object")) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Returned object was not correct: " + result);
+          return;
+        }
+
+        stepStart("Attempting Fifth Object");
+        storage.getObject(data[5], get5);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> get3 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(FAILURE, "Returned object was null.");
+          return;
+        }
+
+        if (result.equals("Third Object")) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Returned object was not correct: " + result);
+          return;
+        }
+
+        stepStart("Retrieving Fourth Object");
+        storage.getObject(data[4], get4);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> get2 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(FAILURE, "Returned object was null.");
+          return;
+        }
+
+        if (result.equals("Second Object")) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Returned object was not correct: " + result);
+          return;
+        }
+
+        stepStart("Retrieving Third Object");
+        storage.getObject(data[3], get3);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> get1 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(FAILURE, "Returned object was null.");
+          return;
+        }
+
+        if (result.equals("First Object")) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE, "Returned object was not correct: " + result);
+          return;
+        }
+
+        stepStart("Retrieving Second Object");
+        storage.getObject(data[2], get2);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    Continuation<Object, Exception> get0 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          sectionStart("Retrieving Objects");
+
+          stepStart("Retrieving First Object");
+          storage.getObject(data[1], get1);
+        } else {
+          stepException(new RuntimeException("SetUp did not complete correctly."));
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    if (store) {
+      setUp(get0);
+    } else {
+      get1.receiveResult("First Object");
+    }
+  }
+
+  public void testExists(final Continuation<Object, Exception> continuation) {
+    testRetrieval(new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object previousResult) {
+        if (previousResult.equals(Boolean.valueOf(true))) {
+          sectionStart("Checking for Objects");
+          stepStart("Checking for First Object");
+          if (storage.exists(data[1])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Second Object");
+          if (storage.exists(data[2])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Third Object");
+          if (storage.exists(data[3])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Fourth Object");
+          if (storage.exists(data[4])) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Fifth Object");
+          if (! storage.exists(data[5])) stepDone(SUCCESS); else stepDone(FAILURE);
+          sectionEnd();
+
+          sectionStart("Checking for Metadata");
+          stepStart("Checking for First Object Metadata");
+          if (metadata[1].equals(storage.getMetadata(data[1]))) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Second Object Metadata");
+          if (metadata[2].equals(storage.getMetadata(data[2]))) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Third Object Metadata");
+          if (metadata[3].equals(storage.getMetadata(data[3]))) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Fourth Object Metadata");
+          if (metadata[4].equals(storage.getMetadata(data[4]))) stepDone(SUCCESS); else stepDone(FAILURE);
+          stepStart("Checking for Fifth Object Metadata");
+          if (! metadata[5].equals(storage.getMetadata(data[5]))) stepDone(SUCCESS); else stepDone(FAILURE);
+          sectionEnd();
+
+          sectionStart("Modifying Metadata");
+          stepStart("Changing Metadata");
+          storage.setMetadata(data[4], Integer.valueOf(5001), new Continuation<Object, Exception>() {
+            @Override
+            public void receiveResult(Object result) {
+              stepDone(SUCCESS);
+
+              stepStart("Checking for New Metadata");
+              if (Integer.valueOf(5001).equals(storage.getMetadata(data[4]))) stepDone(SUCCESS); else stepDone(FAILURE);
+              sectionEnd();
+
+              continuation.receiveResult(Boolean.valueOf(true));
+            }
+
+            @Override
+            public void receiveException(Exception e) {
+              stepException(e);
+            }
+          });
+        } else {
+          throw new RuntimeException("SetUp did not complete correctly!");
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    });
+  }
+
+  private void testRemoval(final Continuation<Object, Exception> continuation) {
+    final Continuation<Object, Exception> done1 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result == null) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE);
+        }
+
+        sectionEnd();
+
+        continuation.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+
+
+    final Continuation<Object, Exception> check1 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object previousResult) {
+        if (! store || previousResult.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE);
+        }
+
+        stepStart("Checking for First Object");
+        boolean result = storage.exists(data[1]);
+
+        if (! store || ! result) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE);
+        }
+
+        stepStart("Attempting to Retrieve First Object");
+        storage.getObject(data[1], done1);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    Continuation<Object, Exception> remove1 = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          sectionStart("Testing Removal");
+
+          stepStart("Removing First Object");
+          storage.unstore(data[1], check1);
+        } else {
+          stepException(new RuntimeException("Exists did not complete correctly."));
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    testExists(remove1);
+  }
+
+  private void testScan(final Continuation<Object, Exception> continuation) {
+    final Continuation<Object, Exception> handleBadScan = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        stepDone(FAILURE, "Query returned; should have thrown exception");
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepDone(SUCCESS);
+
+        sectionEnd();
+
+        continuation.receiveResult(Boolean.valueOf(true));
+      }
+    };
+
+    final Continuation<Object, Exception> query = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object previousResult) {
+        if (previousResult.equals(Boolean.valueOf(true))) {
+          stepDone(SUCCESS);
+        } else {
+          stepDone(FAILURE);
+        }
+
+        stepStart("Requesting Scan from 3 to 6");
+        IdSet result = storage.scan(FACTORY.buildIdRange(data[3], data[6]));
+
+        if (result.numElements() != 2) {
+          stepDone(FAILURE, "Result had " + result.numElements() + " elements, expected 2.");
+          return;
+        }
+
+
+        if (! (result.isMemberId(data[3]) && result.isMemberId(data[4]))) {
+          stepDone(FAILURE, "Result had incorrect elements " + data[0] + ", " + data[1] + ", expected 3 and 4.");
+          return;
+        }
+
+        stepDone(SUCCESS);
+
+        stepStart("Requesting Scan from 8 to 10");
+        result = storage.scan(FACTORY.buildIdRange(data[8], data[10]));
+
+        if (result.numElements() != 0) {
+          stepDone(FAILURE, "Result had " + result.numElements() + " elements, expected 0.");
+          return;
+        }
+
+        stepDone(SUCCESS);
+
+        stepStart("Requesting Scan from 'Monkey' to 9");
+        handleBadScan.receiveException(new Exception());
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    Continuation<Object, Exception> insertString = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          sectionStart("Testing Scan");
+
+          stepStart("Inserting String as Key");
+          storage.store(data[11], null, "Monkey", query);
+        } else {
+          stepException(new RuntimeException("Removal did not complete correctly."));
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    testRemoval(insertString);
+  }
+
+  private void testRandomInserts(final Continuation<Object, Exception> continuation) {
+
+    final int START_NUM = 10;
+    final int END_NUM = 98;
+    final int SKIP = 2;
+
+    final int NUM_ELEMENTS = 1 + ((END_NUM - START_NUM) / SKIP);
+
+    final Continuation<Object, Exception> checkRandom = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        stepStart("Checking object deletion");
+        int NUM_DELETED = ((Integer) result).intValue();
+        int length = storage.scan(FACTORY.buildIdRange(data[13 + START_NUM], data[13 + END_NUM + SKIP])).numElements();
+
+        int desired = NUM_ELEMENTS - NUM_DELETED;
+
+        if (length == desired) {
+          stepDone(SUCCESS);
+
+          sectionEnd();
+          continuation.receiveResult(Boolean.valueOf(true));
+        } else {
+          stepDone(FAILURE, "Expected " + desired + " objects after deletes, found " + length + ".");
+          return;
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+
+    final Continuation<Object, Exception> removeRandom = new Continuation<Object, Exception>() {
+
+      private int count = START_NUM;
+      private int num_deleted = 0;
+
+      @Override
+      public void receiveResult(Object result) {
+        if (count == START_NUM) {
+          stepStart("Removing random subset of objects");
+        }
+
+        if (result.equals(Boolean.valueOf(false))) {
+          stepDone(FAILURE, "Deletion of " + count + " failed.");
+          return;
+        }
+
+        if (count == END_NUM) {
+          stepDone(SUCCESS);
+          checkRandom.receiveResult(Integer.valueOf(num_deleted));
+          return;
+        }
+
+        if (environment.getRandomSource().nextBoolean()) {
+          num_deleted++;
+          storage.unstore(data[13 + (count += SKIP)], this);
+        } else {
+          count += SKIP;
+          receiveResult(Boolean.valueOf(true));
+        }
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> checkScan = new Continuation<Object, Exception>() {
+
+      @Override
+      public void receiveResult(Object previousResult) {
+          stepStart("Checking scans for all ranges");
+
+        for (int count = START_NUM; count <  END_NUM - SKIP; count+=SKIP) {
+          IdSet result = storage.scan(FACTORY.buildIdRange(data[13 + (count += SKIP)], data[13 + END_NUM]));
+
+          int i = NUM_ELEMENTS - ((count - START_NUM + SKIP) / SKIP) ;
+          if (result.numElements() != i){
+            stepDone(FAILURE, "Expected " + i + " found " + result.numElements() + " keys in scan from " + count + " to " + END_NUM + ".");
+            return;
+          }
+        }
+
+        stepDone(SUCCESS);
+        removeRandom.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> checkExists = new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        stepStart("Checking exists for all 50 objects");
+
+        for (int count = START_NUM; count < END_NUM; count+=SKIP) {
+          boolean exists = storage.exists(data[13 + count]);
+
+          if (! exists) {
+            stepDone(FAILURE, "Element " + count + " did exist (" + data[13+count].toStringFull() + ") - should not have (START " + START_NUM + " END " + END_NUM + ").");
+            return;
+          }
+        }
+
+        stepDone(SUCCESS);
+        checkScan.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+
+    final Continuation<Object, Exception> insert = new Continuation<Object, Exception>() {
+
+      private int count = START_NUM;
+
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
+          stepDone(FAILURE, "Insertion of " + count + " failed.");
+          return;
+        }
+
+        if (count == START_NUM) {
+          sectionStart("Stress Testing");
+          stepStart("Inserting 40 objects from 100 to 1000000 bytes");
+        }
+
+        if (count > END_NUM) {
+          stepDone(SUCCESS);
+          checkExists.receiveResult(Boolean.valueOf(true));
+          return;
+        }
+
+        int num = count;
+        count += SKIP;
+
+        storage.store(data[13 + num], null, new byte[num * num], this);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    testScan(insert);
+  }
+
+
+  private void testErrors(final Continuation<Object, Exception> continuation) {
+    final Continuation<Object, Exception> validateNullValue = new Continuation<Object, Exception>() {
+
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(FAILURE, "Null value should return false");
+          return;
+        }
+
+        stepDone(SUCCESS);
+        sectionEnd();
+
+        continuation.receiveResult(Boolean.valueOf(true));
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> insertNullValue = new Continuation<Object, Exception>() {
+
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(true))) {
+          stepDone(FAILURE, "Null key should return false");
+          return;
+        }
+
+        stepDone(SUCCESS);
+
+        stepStart("Inserting null value");
+
+        storage.store(data[12], null, null, validateNullValue);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    final Continuation<Object, Exception> insertNullKey = new Continuation<Object, Exception>() {
+
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
+          stepDone(FAILURE, "Randon insert tests failed.");
+          return;
+        }
+
+        sectionStart("Testing Error Cases");
+        stepStart("Inserting null key");
+
+        storage.store(null, null, "null key", insertNullValue);
+      }
+
+      @Override
+      public void receiveException(Exception e) {
+        stepException(e);
+      }
+    };
+
+    testRandomInserts(insertNullKey);
+  }
+
+  // A former "variable-length Ids" section stored a stub Id class (compareTo always 0, no distances, no bytes) in
+  // this storage. A storage keeps its Ids in an IdSet of its IdFactory, here rice.pastry.IdSet, which holds only
+  // rice.pastry.Ids, so that section failed with a ClassCastException. Even with another IdSet the stub could not
+  // work: its compareTo collapses all Ids in sorted maps. Storing Ids of another factory is not supported.
+  @Override
+  public void start() {
+    testErrors(new Continuation<Object, Exception>() {
+      @Override
+      public void receiveResult(Object result) {
+        if (result.equals(Boolean.valueOf(false))) {
+          stepDone(FAILURE, "Error tests failed");
+          return;
+        }
+        testsPassed();
+      }
+      @Override
+      public void receiveException(Exception e) { stepException(e); }
+    });
+  }
+
+  public static void main(String[] args) throws IOException {
+    runMain(new MemoryStorageTest(true, new Environment()));
+  }
+}

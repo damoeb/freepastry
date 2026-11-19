@@ -1,0 +1,399 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package org.mpisws.p2p.transport.priority;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.ErrorHandler;
+import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.P2PSocket;
+import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.TransportLayerCallback;
+import org.mpisws.p2p.transport.TransportLayerListener;
+import org.mpisws.p2p.transport.liveness.LivenessListener;
+import org.mpisws.p2p.transport.liveness.LivenessProvider;
+import org.mpisws.p2p.transport.liveness.LivenessTypes;
+import org.mpisws.p2p.transport.proximity.ProximityProvider;
+import org.mpisws.p2p.transport.util.DefaultErrorHandler;
+import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
+import org.slf4j.Logger;
+import rice.environment.Environment;
+import rice.selector.SelectorLoop;
+
+
+/**
+ * Does 3 things:
+ *  a) Sends messages on a Socket (depending on the options).
+ *  b) Prioritizes messages into queues.
+ *  c) calls sendFailed if there is a liveness change
+ *
+ * @author Jeff Hoye
+ */
+public class PriorityTransportLayer<Identifier>
+    implements LivenessListener<Identifier>, TransportLayerCallback<Identifier, ByteBuffer>, TransportLayer<Identifier, ByteBuffer> {
+  public static final String OPTION_PRIORITY = "OPTION_PRIORITY";
+  public static final byte MEDIUM_PRIORITY = 0;
+  public static final byte DEFAULT_PRIORITY = MEDIUM_PRIORITY;
+  public static final int STATUS_NOT_CONNECTED = 0;
+  public static final int STATUS_CONNECTING = 1;
+  public static final int STATUS_CONNECTED = 2;
+
+
+  TransportLayer<Identifier, ByteBuffer> tl;
+
+  public static final byte PASSTHROUGH_SOCKET_B = 0;
+  public static final byte PRIMARY_SOCKET_B = 1;
+  public static final byte BIG_MSG_SOCKET_B = 2;
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
+  public static final byte[] PASSTHROUGH_SOCKET = {PASSTHROUGH_SOCKET_B};
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
+  public static final byte[] PRIMARY_SOCKET = {PRIMARY_SOCKET_B};
+  @SuppressWarnings("MutablePublicArray") // a shared constant that callers do not modify
+  public static final byte[] BIG_MSG_SOCKET = {BIG_MSG_SOCKET_B};
+
+  private int MAX_MSG_SIZE = 10000;
+  private int MAX_QUEUE_SIZE = 30;
+
+  /**
+   * The biggest message size allowed when none is configured, see {@link PriorityConfig#maxBigMsgSize()}.
+   */
+  public static final int DEFAULT_MAX_BIG_MSG_SIZE = 4 * 1024 * 1024;
+
+  /**
+   * The most bytes the node buffers for BIG messages still arriving when none is configured, see
+   * {@link PriorityConfig#maxBigMsgInFlight()}.
+   */
+  public static final long DEFAULT_MAX_BIG_MSG_IN_FLIGHT = 64L * 1024 * 1024;
+
+  /**
+   * BIG messages open a socket especially for big messages.  This is the biggest message size allowed.
+   */
+  private final int MAX_BIG_MSG_SIZE;
+
+  private final Logger logger;
+
+  private final PeerMessageWriterRegistry<Identifier> entityManagers;
+
+  /**
+   * what each PeerMessageWriter needs from this layer
+   */
+  private final PeerMessageWriterContext<Identifier> entityManagerContext;
+
+  /**
+   * Never null: until the layer above calls {@link #setCallback}, (or after it passes null) this is
+   * a {@link MissingCallback} that logs and drops what arrives instead of throwing a NullPointerException
+   * on the selector thread.
+   */
+  private TransportLayerCallback<Identifier, ByteBuffer> callback = new MissingCallback();
+
+  private ErrorHandler<Identifier> errorHandler;
+
+  private final SelectorLoop selectorManager;
+  private final Environment environment;
+
+  private final ArrayList<PrimarySocketListener<Identifier>> primarySocketListeners = new ArrayList<PrimarySocketListener<Identifier>>();
+
+  /**
+   * Builds the layer with the maximum message size and queue length from {@code config}.
+   *
+   * @param env the environment
+   * @param config the priority parameters
+   */
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      PriorityConfig config,
+      ErrorHandler<Identifier> handler) {
+    this(transportLayer, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), config.maxBigMsgInFlight(), handler);
+  }
+
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      ErrorHandler<Identifier> handler) {
+    this(transportLayer, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, DEFAULT_MAX_BIG_MSG_SIZE, handler);
+  }
+
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      ErrorHandler<Identifier> handler) {
+    this(transportLayer, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, maxBigMsgSize, DEFAULT_MAX_BIG_MSG_IN_FLIGHT, handler);
+  }
+
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      long maxBigMsgInFlight,
+      ErrorHandler<Identifier> handler) {
+    this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
+    entityManagers = new PeerMessageWriterRegistry<Identifier>(this::newEntityManager);
+    this.logger = env.getLogManager().getLogger(PriorityTransportLayer.class, null);
+    this.selectorManager = env.getSelectorManager();
+    this.environment = env;
+    this.MAX_MSG_SIZE = maxMsgSize;
+    this.MAX_QUEUE_SIZE = maxQueueSize;
+    this.tl = transportLayer;
+    logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
+    this.entityManagerContext = new PeerMessageWriterContext<Identifier>(transportLayer, livenessProvider, proximityProvider,
+        selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
+        () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
+    transportLayer.setCallback(this);
+    livenessProvider.addLivenessListener(this);
+    this.errorHandler = handler;
+    if (this.errorHandler == null) {
+      this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
+    }
+  }
+
+  /**
+   * The first byte tells whether this is a passthrough (the layer higher than us asked to open it), a
+   * primary (our layer tried to open it) or a BIG message socket; see {@link IncomingSocketDispatcher}.
+   */
+  @Override
+  public void incomingSocket(final P2PSocket<Identifier> socket) throws IOException {
+    socket.register(true, false, new IncomingSocketDispatcher<Identifier>(socket, entityManagerContext));
+  }
+
+  @Override
+  public SocketRequestHandle<Identifier> openSocket(Identifier identifier, final SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
+    if (deliverSocketToMe == null) throw new IllegalArgumentException("No handle to return socket to! (deliverSocketToMe must be non-null!)");
+
+    final SocketRequestHandleImpl<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier, options, logger);
+    handle.setSubCancellable(tl.openSocket(identifier, new PassthroughSocketOpener<Identifier>(handle, deliverSocketToMe), options));
+
+    return handle;
+  }
+
+  @Override
+  public void acceptMessages(boolean enabled) {
+    tl.acceptMessages(enabled);
+  }
+
+  @Override
+  public void acceptSockets(boolean enabled) {
+    tl.acceptSockets(enabled);
+  }
+
+  @Override
+  public Identifier getLocalIdentifier() {
+    return tl.getLocalIdentifier();
+  }
+
+  @Override
+  public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+    assert selectorManager.isSelectorThread() : "transport callbacks run on the selector thread";
+    callback.messageReceived(identifier, msg, options);
+    notifyListenersRead(msg.remaining(), identifier, options);
+  }
+
+  @Override
+  public @Nullable MessageRequestHandle<Identifier, ByteBuffer> sendMessage(final Identifier identifier, ByteBuffer m, final @Nullable MessageCallback<Identifier, ByteBuffer> deliverAckToMe, @Nullable Map<String, Object> opts) {
+    logger.debug("sendMessage({},{},{},{})", identifier, m, deliverAckToMe, opts);
+    // callers may pass null options, but queued messages need non-null options (e.g. PeerMessageWriter.startLivenessChecker())
+    final @Nullable Map<String, Object> options = (opts == null) ? new HashMap<String, Object>() : opts;
+
+    // if it is to be sent UDP, just pass it through
+    if (options != null &&
+        options.containsKey(WireTransportLayer.OPTION_TRANSPORT_TYPE)) {
+        Integer transportType = (Integer)options.get(WireTransportLayer.OPTION_TRANSPORT_TYPE);
+        if (transportType != null &&
+            transportType.intValue() == WireTransportLayer.TRANSPORT_TYPE_DATAGRAM) {
+          final int originalSize = m.remaining();
+          return tl.sendMessage(identifier, m, new MessageCallback<Identifier, ByteBuffer>() {
+
+            @Override
+            public void ack(MessageRequestHandle<Identifier, ByteBuffer> msg) {
+              notifyListenersWrote(originalSize, identifier, options);
+              if (deliverAckToMe != null) deliverAckToMe.ack(msg);
+            }
+
+            @Override
+            public void sendFailed(
+                MessageRequestHandle<Identifier, ByteBuffer> msg,
+                Exception reason) {
+              notifyListenersDropped(originalSize, identifier, options);
+              if (deliverAckToMe != null) deliverAckToMe.sendFailed(msg, reason);
+            }
+
+          }, options);
+        }
+    }
+
+    return getEntityManager(identifier).send(identifier, m, deliverAckToMe, options);
+  }
+
+  @Override
+  public void setCallback(TransportLayerCallback<Identifier, ByteBuffer> callback) {
+    this.callback = (callback == null) ? new MissingCallback() : callback;
+  }
+
+  /**
+   * Stands in for the layer above while no callback is set: messages are logged and dropped,
+   * passthrough sockets are logged and closed (so they don't leak).
+   */
+  class MissingCallback implements TransportLayerCallback<Identifier, ByteBuffer> {
+    @Override
+    public void messageReceived(Identifier identifier, ByteBuffer msg, @Nullable Map<String, Object> options) throws IOException {
+      logger.warn("No TransportLayerCallback set, dropping message of size {} from {}", msg.remaining(), identifier);
+    }
+
+    @Override
+    public void incomingSocket(P2PSocket<Identifier> socket) throws IOException {
+      logger.warn("No TransportLayerCallback set, closing incoming socket {}", socket);
+      socket.close();
+    }
+  }
+
+  @Override
+  public void setErrorHandler(ErrorHandler<Identifier> handler) {
+    this.errorHandler = handler;
+  }
+
+  private boolean destroyed = false;
+  @Override
+  public void destroy() {
+    if (destroyed) return;
+    if (environment.getSelectorManager().isSelectorThread()) {
+      destroyed = true;
+      tl.destroy();
+    } else {
+      environment.getSelectorManager().invoke(() -> destroy());
+    }
+  }
+
+  private PeerMessageWriter<Identifier> newEntityManager(Identifier identifier) {
+    return new PeerMessageWriter<Identifier>(identifier, entityManagerContext);
+  }
+
+  protected PeerMessageWriter<Identifier> getEntityManager(Identifier identifier) {
+    return entityManagers.get(identifier, selectorManager.isSelectorThread());
+  }
+
+  @Override
+  public void livenessChanged(Identifier identifier, int liveness, @Nullable Map<String, Object> options) {
+    if (liveness >= LivenessTypes.LIVENESS_DEAD) {
+      getEntityManager(identifier).markDead();
+      if (selectorManager.isSelectorThread()) {
+        entityManagers.forgetIfIdle(identifier);
+      }
+    }
+  }
+
+  // *************************** Listeners *********************
+  private final TransportListeners<Identifier> listeners = new TransportListeners<Identifier>();
+
+  public void addTransportLayerListener(TransportLayerListener<Identifier> listener) {
+    listeners.addTransportLayerListener(listener);
+  }
+  public void removeTransportLayerListener(TransportLayerListener<Identifier> listener) {
+    listeners.removeTransportLayerListener(listener);
+  }
+
+  public void addPriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
+    listeners.addPriorityTransportLayerListener(listener);
+  }
+  public void removePriorityTransportLayerListener(PriorityTransportLayerListener<Identifier> listener) {
+    listeners.removePriorityTransportLayerListener(listener);
+  }
+
+  public void notifyListenersRead(int size, Identifier source,
+      @Nullable Map<String, Object> options) {
+    listeners.notifyRead(size, source, options);
+  }
+
+  public void notifyListenersWrote(int size, Identifier destination,
+      @Nullable Map<String, Object> options) {
+    listeners.notifyWrote(size, destination, options);
+  }
+
+  public void notifyListenersDropped(int size, Identifier destination,
+      @Nullable Map<String, Object> options) {
+    listeners.notifyDropped(size, destination, options);
+  }
+
+
+  /**
+   * Returns if there is a primary connection to the identifier
+   *
+   * @return STATUS_NOT_CONNECTED, STATUS_CONNECTING, STATUS_CONNECTED
+   */
+  public int connectionStatus(Identifier identifier) {
+    PeerMessageWriter<Identifier> manager = getEntityManager(identifier);
+    // this may not be thread safe, but ... who cares, it at least won't throw an exception.
+    if (manager.writingSocket != null) return STATUS_CONNECTED;
+    if (manager.pendingSocket != null) return STATUS_CONNECTING;
+    return STATUS_NOT_CONNECTED;
+  }
+
+  /**
+   * open a primary connection; PrimarySocketListeners are notified when it is open
+   */
+  public void openPrimaryConnection(Identifier identifier, @Nullable Map<String, Object> options) {
+    getEntityManager(identifier).openPrimarySocketHelper(identifier, options);
+  }
+
+  public void addPrimarySocketListener(PrimarySocketListener<Identifier> listener) {
+    primarySocketListeners.add(listener);
+  }
+
+  public void removePrimarySocketListener(PrimarySocketListener<Identifier> listener) {
+    primarySocketListeners.remove(listener);
+  }
+
+}

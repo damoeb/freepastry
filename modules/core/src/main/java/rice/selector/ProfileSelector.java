@@ -1,0 +1,326 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+/*
+ * Created on Jul 27, 2004
+ *
+ * To change the template for this generated file go to
+ * Window>Preferences>Java>Code Generation>Code and Comments
+ */
+package rice.selector;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jspecify.annotations.Nullable;
+import rice.environment.logging.LogManager;
+import rice.environment.random.RandomSource;
+import rice.environment.random.simple.SimpleRandomSource;
+import rice.environment.time.TimeSource;
+
+/**
+ * @author jeffh
+ *
+ * To change the template for this generated type comment go to
+ * Window>Preferences>Java>Code Generation>Code and Comments
+ */
+public class ProfileSelector extends SelectorLoop {
+  int HEART_BEAT_INTERVAL = 60000;
+  long lastHeartBeat = 0;
+
+  private volatile @Nullable String lastTaskType = null;
+  private volatile @Nullable String lastTaskClass = null;
+  private volatile @Nullable String lastTaskToString = null;
+  private volatile long lastTaskHash = 0;
+
+  int numInvocationsScheduled = 0;
+  int numInvocationsExecuted = 0;
+
+  public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand) {
+    this(instance, timeSource,log, rand, 60000);
+  }
+
+  /**
+   * The daemon thread that logs the last task every lastTaskTime millis, until this selector is destroyed.
+   */
+  final Thread watchdog;
+
+  /**
+   * Also starts a daemon watchdog thread that logs the last task every lastTaskTime millis, until
+   * {@link #destroy()} is called or the watchdog is interrupted.
+   */
+  public ProfileSelector(String instance, TimeSource timeSource, LogManager log, RandomSource rand, final int lastTaskTime) {
+    super(instance, timeSource, log, (rand == null)?new SimpleRandomSource(log):rand);
+    watchdog = Thread.ofPlatform()
+        .name(instance == null ? "FreePastry Selector Watchdog" : "FreePastry Selector Watchdog -- " + instance)
+        .daemon(true)
+        .start(() -> {
+          while (running) {
+            logger.info("LastTask: type:{} class:{} toString():{} hash:{}", lastTaskType, lastTaskClass, lastTaskToString, lastTaskHash);
+            try {
+              Thread.sleep(lastTaskTime);
+            } catch (InterruptedException ie) {
+              return; // destroy() interrupts the watchdog to stop it
+            }
+          }
+        });
+  }
+
+  /**
+   * Also stops the watchdog thread.
+   */
+  @Override
+  public void destroy() {
+    super.destroy();
+    watchdog.interrupt();
+  }
+
+  @Override
+  protected void onLoop() {
+    long curTime = timeSource.currentTimeMillis();
+    if ((curTime - lastHeartBeat) > HEART_BEAT_INTERVAL) {
+      logger.info("selector heartbeat {} maxInvokes:{} invokesSched:{} invokesExe:{} CurrentThread:{}@{}", DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.systemDefault())), maxInvokes, numInvocationsScheduled, numInvocationsExecuted, Thread.currentThread(), System.identityHashCode(Thread.currentThread()));
+      printStats();
+      lastHeartBeat = curTime;
+    }
+  }
+
+  int maxInvokes = 0;
+  @Override
+  public synchronized void invoke(Runnable task) {
+    synchronized(this) {
+      numInvocationsScheduled++;
+      super.invoke(task);
+    }
+    int numInvokes = getNumInvocations(); // null-safe after destroy()
+    if (numInvokes > maxInvokes) {
+      maxInvokes = numInvokes;
+    }
+  }
+
+  // *********************** debugging statistics ****************
+  /**
+   * Records how long it takes to receive each type of message.
+   * Written by the selector thread, but printStats() may be called from any thread, so it must be concurrent.
+   */
+  private final ConcurrentHashMap<String, Stat> stats = new ConcurrentHashMap<String, Stat>();
+
+  public void addStat(String statName, long time) {
+    stats.computeIfAbsent(statName, Stat::new).addTime(time);
+  }
+
+  public void printStats() {
+
+    // a weakly consistent snapshot, no lock needed
+    ArrayList<Stat> list = new ArrayList<Stat>(stats.values());
+
+    Collections.sort(list,(arg0, arg1) -> {
+      Stat stat1 = (Stat)arg0;
+      Stat stat2 = (Stat)arg1;
+
+      return Long.compare(stat2.totalTime, stat1.totalTime);
+    });
+    for (Stat stat : list) {
+      logger.info("  {}", stat);
+    }
+  }
+
+  @Override
+  protected boolean executeTask(TimerTask next) {
+    lastTaskType = "Executing "+next;
+    long startTime = timeSource.currentTimeMillis();
+    boolean ret = super.executeTask(next);
+    int time = (int)(timeSource.currentTimeMillis() - startTime);
+    lastTaskType = "Executing "+next+" Complete";
+    addStat("executing "+next.getClass(),time);
+    return ret;
+  }
+
+  @Override
+  protected void processSelectedKeys() throws IOException {
+    SelectionKey[] keys = selectedKeys();
+
+    for (SelectionKey key : keys) {
+      selector.selectedKeys().remove(key);
+
+      SelectionKeyHandler skh = (SelectionKeyHandler) key.attachment();
+
+      if (skh != null) {
+        // accept
+        if (key.isValid() && key.isAcceptable()) {
+          lastTaskType = "Accept";
+          lastTaskClass = skh.getClass().getName();
+          lastTaskToString = skh.toString();
+          lastTaskHash = System.identityHashCode(skh);
+          long startTime = timeSource.currentTimeMillis();
+          skh.accept(key);
+          int time = (int)(timeSource.currentTimeMillis() - startTime);
+          lastTaskType = "Accept Complete";
+          addStat("accepting",time);
+        }
+
+        // connect
+        if (key.isValid() && key.isConnectable()) {
+          lastTaskType = "Connect";
+          lastTaskClass = skh.getClass().getName();
+          lastTaskToString = skh.toString();
+          lastTaskHash = System.identityHashCode(skh);
+          long startTime = timeSource.currentTimeMillis();
+          skh.connect(key);
+          int time = (int)(timeSource.currentTimeMillis() - startTime);
+          lastTaskType = "Connect Complete";
+          addStat("connecting",time);
+        }
+
+        // read
+        if (key.isValid() && key.isReadable()) {
+          lastTaskType = "Read";
+          lastTaskClass = skh.getClass().getName();
+          lastTaskToString = skh.toString();
+          lastTaskHash = System.identityHashCode(skh);
+          skh.read(key);
+          lastTaskType = "Read Complete";
+        }
+
+        // write
+        if (key.isValid() && key.isWritable()) {
+          lastTaskType = "Write";
+          lastTaskClass = skh.getClass().getName();
+          lastTaskToString = skh.toString();
+          lastTaskHash = System.identityHashCode(skh);
+          skh.write(key);
+          lastTaskType = "Write Complete";
+        }
+      } else {
+        key.channel().close();
+        key.cancel();
+      }
+    }
+  }
+
+
+  /**
+   * Method which invokes all pending invocations. This method should *only* be
+   * called by the selector thread.
+   */
+  @Override
+  protected void doInvocations() {
+    Iterator<Runnable> iterator;
+    synchronized(this) {
+      List<Runnable> current = pendingInvocations();
+      iterator = new ArrayList<Runnable>(current).iterator();
+      current.clear();
+    }
+    Runnable run;
+    while (iterator.hasNext()) {
+      numInvocationsExecuted++;
+      run = (Runnable)iterator.next();
+      try {
+        lastTaskType = "Invocation";
+        lastTaskClass = run.getClass().getName();
+        lastTaskToString = run.toString();
+        lastTaskHash = System.identityHashCode(run);
+        run.run();
+        lastTaskType = "Invocation Complete";
+      } catch (Exception e) {
+        logger.error("Invoking runnable caused exception {} - continuing", e, e);
+      }
+    }
+
+    Iterator<SelectionKey> i2;
+    synchronized(this) {
+      i2 = new ArrayList<SelectionKey>(modifyKeys).iterator();
+      modifyKeys.clear();
+    }
+    SelectionKey key;
+    while (i2.hasNext()) {
+      key = (SelectionKey)i2.next();
+      if (key.isValid() && (key.attachment() != null)) {
+        SelectionKeyHandler skh = (SelectionKeyHandler) key.attachment();
+        lastTaskType = "ModifyKey";
+        lastTaskClass = skh.getClass().getName();
+        lastTaskHash = System.identityHashCode(skh);
+        lastTaskToString = skh.toString();
+        skh.modifyKey(key);
+        lastTaskType = "ModifyKey Complete";
+      }
+    }
+  }
+
+
+
+  /**
+   * A statistic as to how long user code is taking to process a particular message.
+   *
+   * @author Jeff Hoye
+   */
+  static class Stat {
+    int num = 0;
+    @Nullable String name = null;
+    long totalTime = 0;
+    long maxTime = 0;
+
+    public Stat(String name) {
+      this.name = name;
+    }
+
+    public void addTime(long millis) {
+      num++;
+      totalTime+=millis;
+      if (millis > maxTime) {
+        maxTime = millis;
+      }
+    }
+
+    @Override
+    public String toString() {
+      long avgTime = totalTime/num;
+      return name+"\t maxTime:"+maxTime+"\t avgTime:"+avgTime+"\t numInstances:"+num+"\t totalTime:"+totalTime;
+    }
+  }
+
+
+
+
+}

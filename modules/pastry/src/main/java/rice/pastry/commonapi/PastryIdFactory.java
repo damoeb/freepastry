@@ -1,0 +1,230 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry.commonapi;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.SortedMap;
+
+import rice.environment.Environment;
+import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.util.HashUtils;
+
+/**
+ * This class provides applications with a way of generating
+ * pastry Ids.
+ *
+ * @version $Id: PastryIdFactory.java 4232 2008-07-03 12:28:01Z jstewart $
+ *
+ * @author Alan Mislove
+ * @author Peter Druschel
+ */
+public class PastryIdFactory implements IdFactory {
+
+  /**
+   * Constructor
+   */
+  public PastryIdFactory(Environment env) {
+  }
+
+  /**
+   * Builds a protocol-specific Id given the source data.
+   *
+   * @param material The material to use
+   * @return The built Id.
+   */
+  @Override
+  public Id buildId(byte[] material) {
+    return rice.pastry.Id.build(material);
+  }
+
+  /**
+   * Builds a protocol-specific Id given the source data.
+   *
+   * @param material The material to use
+   * @return The built Id.
+   */
+  @Override
+  public Id buildId(int[] material) {
+    return rice.pastry.Id.build(material);
+  }
+
+  /**
+   * Builds a protocol-specific Id by using the hash of the given string as source data: SHA-256 of its UTF-8
+   * bytes, truncated to the 160 bits of an Id (see {@link HashUtils#hashToIdMaterial(byte[]...)}).
+   *
+   * @param string The string to use as source data
+   * @return The built Id.
+   */
+  @Override
+  public Id buildId(String string) {
+    return buildId(HashUtils.hashToIdMaterial(string.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  /**
+   * Builds a random protocol-specific Id.
+   *
+   * @param random A random number generator
+   * @return The built Id.
+   */
+  @Override
+  public rice.p2p.commonapi.Id buildRandomId(Random random) {
+    return rice.pastry.Id.makeRandomId(random);
+  }
+
+  @Override
+  public rice.p2p.commonapi.Id buildRandomId(RandomSource random) {
+    return rice.pastry.Id.makeRandomId(random);
+  }
+
+  /**
+   * Builds an Id by converting the given toString() output back to an Id.  Should
+   * not normally be used.
+   *
+   * @param string The toString() representation of an Id
+   * @return The built Id.
+   */
+  @Override
+  public Id buildIdFromString(String string) {
+    return rice.pastry.Id.build(string);
+  }
+
+  /**
+   * Builds an Id by converting the given toString() output back to an Id.  Should
+   * not normally be used.
+   *
+   * @param chars The character array
+   * @param offset The offset to start reading at
+   * @param length The length to read
+   * @return The built Id.
+   */
+  @Override
+  public Id buildIdFromString(char[] chars, int offset, int length) {
+    return rice.pastry.Id.build(chars, offset, length);
+  }
+
+  /**
+   * Builds an IdRange based on a prefix.  Any id which has this prefix should
+   * be inside this IdRange, and any id which does not share this prefix should
+   * be outside it.
+   *
+   * @param string The toString() representation of an Id
+   * @return The built Id.
+   */
+  @Override
+  public IdRange buildIdRangeFromPrefix(String string) {
+    rice.pastry.Id start = rice.pastry.Id.build(string);
+
+    rice.pastry.Id end = rice.pastry.Id.build(string + "ffffffffffffffffffffffffffffffffffffffff");
+
+    end = end.getCW();
+
+    return new rice.pastry.IdRange(start, end);
+  }
+
+  /**
+   * Returns the length a Id.toString should be.
+   *
+   * @return The correct length;
+   */
+  @Override
+  public int getIdStringLength() {
+    return rice.pastry.Id.IdBitLength/4;
+  }
+
+  /**
+   * Builds a protocol-specific Id.Distance given the source data.
+   *
+   * @param material The material to use
+   * @return The built Id.Distance.
+   */
+  @Override
+  public Id.Distance buildIdDistance(byte[] material) {
+    return new rice.pastry.Id.Distance(material);
+  }
+
+  /**
+   * Creates an IdRange given its two ends. The arguments are in the order of the IdRange constructor and of every
+   * caller: the counterclockwise end first, then the clockwise end (the IdFactory interface names them the other way
+   * round).
+   *
+   * @param counterClockwiseId The counterclockwise Id, the inclusive start of the range
+   * @param clockwiseId The clockwise Id, the exclusive end of the range
+   * @return An IdRange with the appropriate delimiters.
+   */
+  @Override
+  public IdRange buildIdRange(Id counterClockwiseId, Id clockwiseId) {
+    return new rice.pastry.IdRange((rice.pastry.Id) counterClockwiseId, (rice.pastry.Id) clockwiseId);
+  }
+
+  /**
+   * Creates an empty IdSet.
+   *
+   * @return an empty IdSet
+   */
+  @Override
+  public IdSet buildIdSet() {
+    return new rice.pastry.IdSet();
+  }
+
+  /**
+    * Creates an empty IdSet.
+   *
+   * @return an empty IdSet
+   */
+  @Override
+  public IdSet buildIdSet(SortedMap<Id, ?> map) {
+
+    return new rice.pastry.IdSet(map);
+  }
+
+  /**
+   * Creates an empty NodeHandleSet.
+   *
+   * @return an empty NodeHandleSet
+   */
+  @Override
+  public NodeHandleSet buildNodeHandleSet() {
+    return new rice.pastry.NodeSet();
+  }
+}

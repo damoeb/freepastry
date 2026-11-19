@@ -71,16 +71,15 @@ Table of contents:
   PastContent
   PastContentHandle  
 2.1.2: Past Messages 
-  CacheMessage    
   FetchHandleMessage 
   FetchMessage    
   InsertMessage
   LookupHandlesMessage
   LookupMessage    
-2.2: GCPast 
-2.2.1: GCPast Objects 
-  GCId 
-2.2.2: GCPast Messages 
+2.2: ExpiringPast 
+2.2.1: ExpiringPast Objects 
+  ExpiringId 
+2.2.2: ExpiringPast Messages 
   GCRefreshMessage
   GCInsertMessage
   GCLookupHandlesMessage  
@@ -306,7 +305,7 @@ Leafset
     specifies their locations. We do this because
     a NodeHandle takes up a lot more space than the index in the leafset, and 
     it may be in the leafset 1 or 2 times.    
-    A leafset consists of a clockwise and counterclockwise "SimilarSet"  If the ring is very small,
+    A leafset consists of a clockwise and counterclockwise "LeafSetHalf"  If the ring is very small,
     these values will overlap.
     
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -336,8 +335,8 @@ Leafset
 
   byte theSize // the total capacity of the leafset, not including the baseHandle  (usually 24)
   byte numUniqueHandles // the number of NodeHandles to read (in the next step, does not include the baseHandle)
-  byte cwSize // the number of elements of the clockwise SimilarSet
-  byte ccwSize // the number of elements of the counterclockwise SimilarSet    
+  byte cwSize // the number of elements of the clockwise LeafSetHalf
+  byte ccwSize // the number of elements of the counterclockwise LeafSetHalf    
   NodeHandle baseHandle
   // iterate numUniqueHandles times
     NodeHandle handle
@@ -557,7 +556,7 @@ LeafSetRequestMessage:
 
 LeafSetResponseMessage:
   type: 5
-  use: respond to a LeafSetRequest
+  use: respond to a ProximityLeafSetRequest
   format:
     byte version (0)
     LeafSet leafset
@@ -842,18 +841,6 @@ Chapter 2 CommonApi Apps ******************************************************
     format: user defined, no required fields, but must declare a type
   
 2.1.2 Past Messages ***********************************************************
-  CacheMessage:    
-    type 1
-    use: Pushes an object forward one hop in order to be cached.   
-    format:
-      byte version (0)
-      int id // unique id of this message
-      short idType // the type of the dest (next value)
-      Id dest // the destination of this request
-      NodeHandle source // the source of this request
-      boolean isResponse // if this is a response     
-      PastContent content // the content of this cache request
-      
   FetchHandleMessage:    
     type 2
     use: Request a PastContentHandle based on an Id (both request/response).   
@@ -962,25 +949,22 @@ Chapter 2 CommonApi Apps ******************************************************
         int errorLength 
         byte[errorLength] // platform dependent error message
                 
-      boolean hasHandle
-        NodeHandle handle // where this message has been        
       short idType // the type of the id (next value)
       Id id // the id to fetch
-      boolean cached // whether or not this message has been cached
   
-2.2 GCPast ********************************************************************
-2.2.1 GCPast Objects **********************************************************
-  GCId 
+2.2 ExpiringPast ********************************************************************
+2.2.1 ExpiringPast Objects **********************************************************
+  ExpiringId 
     type 3
     use: Holds an id and an expiration, used to refresh Ids
     short idType // the type of the id (next value)
     Id id
     time expiration
 
-2.2.2 GCPast Messages *********************************************************
+2.2.2 ExpiringPast Messages *********************************************************
   GCRefreshMessage:    
     type 11
-    use: A request to extend the lifetime of a set of keys stored in GCPast.   
+    use: A request to extend the lifetime of a set of keys stored in ExpiringPast.   
     format:
       byte version (0)
       int id // unique id of this message
@@ -1001,7 +985,7 @@ Chapter 2 CommonApi Apps ******************************************************
       int numKeys
       // for each numKey
         short idType // the type of the id (next value)
-        GCId gcid 
+        ExpiringId gcid 
         
         
   GCInsertMessage:    
@@ -1373,9 +1357,9 @@ appropriate ring.
                 
           
 2.6 Aggregation ***************************************************************
-Note that Aggregation doesn't define any new messages, but it does define a GCPastContent.
+Note that Aggregation doesn't define any new messages, but it does define a ExpiringPastContent.
 
-  Aggregate (A GCPastContent):
+  Aggregate (A ExpiringPastContent):
     use: convert lots of small GCPastContents into a larger one
     type 1
     format:
@@ -1387,10 +1371,10 @@ Note that Aggregation doesn't define any new messages, but it does define a GCPa
         Id pointer
       int numComponents
         short GCPastContentType
-        GCPastContent
+        ExpiringPastContent
         
-  NonAggregate (A GCPastContent):
-    use: wrap a GCPastContent (to prevent type space collision)
+  NonAggregate (A ExpiringPastContent):
+    use: wrap a ExpiringPastContent (to prevent type space collision)
     type 2
     format:
       byte version (0)

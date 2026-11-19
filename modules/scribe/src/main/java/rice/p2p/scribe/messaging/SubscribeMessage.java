@@ -1,0 +1,224 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.p2p.scribe.messaging;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.scribe.Topic;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
+import rice.p2p.util.rawserialization.WireLengths;
+
+/**
+ * The subscribe message.
+ *
+ * @version $Id: SubscribeMessage.java 3801 2007-07-18 15:04:40Z jeffh $
+ * @author Alan Mislove
+ */
+public final class SubscribeMessage extends AnycastMessage {
+  /**
+   * The original subscriber
+   */
+  private NodeHandle subscriber;
+
+  /**
+   * The id of this message
+   */
+  private final int id;
+
+  /**
+   * You can now subscribe to a bunch of Topics at the same time.
+   *
+   * This list must be sorted.
+   */
+  List<Topic> topics;
+
+  /**
+   * Constructor which takes a unique integer Id
+   *
+   * @param source The source address
+   * @param topics The topics must be sorted, this is not verified.  It will be routed to the first
+   * topic in the list.
+   * @param id The UID for this message
+   * @param content The content
+   */
+  public SubscribeMessage(NodeHandle source, List<Topic> topics, int id, ScribeContent content) {
+    super(source, topics.iterator().next(), content);
+    this.id = id;
+    this.subscriber = source;
+    this.topics = new ArrayList<Topic>(topics);
+  }
+
+  /**
+   * Returns the node who is trying to subscribe
+   *
+   * @return The node who is attempting to subscribe
+   */
+  public NodeHandle getSubscriber() {
+    return subscriber;
+  }
+
+  /**
+   * Returns this subscribe lost message's id
+   *
+   * @return The id of this subscribe message
+   */
+  public int getId() {
+    return id;
+  }
+
+  /**
+   * Returns a String represneting this message
+   *
+   * @return A String of this message
+   */
+  @Override
+  public String toString() {
+    return "[SubscribeMessage{"+System.identityHashCode(this)+"} " + topic + " subscriber " + subscriber + " ID " + id + "]";
+  }
+
+  /***************** Raw Serialization ***************************************/
+  @Override
+  public short getType() {
+    return ScribeMessageType.SUBSCRIBE.id();
+  }
+
+  @Override
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeByte((byte)1); // version
+    super.serializeHelper(buf);
+
+    buf.writeInt(id);
+    subscriber.serialize(buf);
+
+    int numTopics = topics.size();
+    buf.writeInt(numTopics);
+    if (numTopics > 1) {
+      Iterator<Topic> iterator = topics.iterator();
+
+      // for efficiency, don't serialize the first one
+      // we can get it from the super class
+      iterator.next();
+
+      while (iterator.hasNext()) {
+        iterator.next().serialize(buf);
+      }
+    }
+  }
+
+  public static SubscribeMessage readFrom(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scd) throws IOException {
+    byte version = buf.readByte();
+    switch(version) {
+      case 1:
+        return new SubscribeMessage(buf, endpoint, scd);
+      default:
+        throw new IOException("Unknown Version: "+version);
+    }
+  }
+
+  /**
+   * Private because it should only be called from build(), if you need to extend this,
+   * make sure to build a serializeHelper() like in AnycastMessage/SubscribeMessage, and properly handle the
+   * version number.
+   */
+  private SubscribeMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer contentDeserializer) throws IOException {
+    super(buf, endpoint, contentDeserializer);
+    id = buf.readInt();
+    subscriber = endpoint.readNodeHandle(buf);
+
+
+    int numTopics = buf.readInt();
+    // the first topic is not written again, see serialize()
+    WireLengths.check(buf, numTopics < 1 ? numTopics : numTopics - 1L, 2);
+    topics = new ArrayList<Topic>(numTopics);
+
+    // the first topic is the super's topic
+    topics.add(getTopic());
+
+    // note: make sure to start at 1 so we don't overflow
+    for (int i = 1; i < numTopics; i++) {
+      topics.add(new Topic(buf, endpoint));
+    }
+
+  }
+
+  /**
+   * Call this when you accept topics in the list.
+   *
+   * @param accepted the topics to remove from this message
+   */
+  public void removeTopics(Collection<Topic> accepted) {
+    topics.removeAll(accepted);
+
+    if (topics.isEmpty()) {
+      topic = null;
+    } else {
+      topic = topics.get(0);
+    }
+  }
+
+
+
+  public List<Topic> getTopics() {
+    return topics;
+  }
+
+  public boolean isEmpty() {
+    return topics.isEmpty();
+  }
+
+  /**
+   * Copies everything except changes the topics to the new list
+   *
+   */
+  public SubscribeMessage copy(List<Topic> newTopics, ScribeContent content) {
+    SubscribeMessage ret = new SubscribeMessage(getSource(), newTopics, getId(), content);
+    ret.visited = visited;
+    ret.toVisit = toVisit;
+    ret.subscriber = subscriber;
+    return ret;
+  }
+}

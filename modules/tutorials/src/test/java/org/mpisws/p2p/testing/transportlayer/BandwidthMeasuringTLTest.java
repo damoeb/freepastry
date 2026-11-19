@@ -1,0 +1,174 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package org.mpisws.p2p.testing.transportlayer;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Map;
+
+import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.bandwidthmeasure.BandwidthMeasuringTransportLayer;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import org.mpisws.p2p.transport.bandwidthmeasure.BandwidthMeasuringTransportLayer.BandwidthUsed;
+import rice.pastry.NodeIdFactory;
+import rice.pastry.PastryNode;
+import rice.pastry.commonapi.PastryEndpoint;
+import rice.pastry.socket.SocketPastryNodeFactory;
+import rice.pastry.standard.RandomNodeIdFactory;
+import rice.selector.TimerTask;
+import rice.tutorial.transportlayer.BandwidthLimitingTransportLayer;
+
+public class BandwidthMeasuringTLTest implements Application {
+
+  static class MyMsg implements RawMessage {
+    static final short TYPE = 1;
+
+    @Override
+    public int getPriority() {
+      return 0;
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    @Override
+    public void serialize(OutputBuffer buf) {
+      // no payload
+    }
+  }
+
+  static void registerWithDeserializer(PastryEndpoint ep) {
+    ep.setDeserializer((buf, type, priority, sender) -> {
+      if (type == MyMsg.TYPE) {
+        return new MyMsg();
+      }
+      throw new IOException("Unknown message type: " + type);
+    });
+    ep.register();
+  }
+
+  @Override
+  public void deliver(Id id, Message message) {
+  }
+
+  @Override
+  public boolean forward(RouteMessage message) {
+    return true;
+  }
+
+  @Override
+  public void update(NodeHandle handle, boolean joined) {
+
+  }
+
+
+
+  /**
+   */
+  public static void main(String[] args) throws Exception {
+    int bindPort = 9001;
+    Environment env = new Environment();
+
+    // Generate the NodeIds Randomly
+    NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
+
+    // construct the PastryNodeFactory, this is how we use rice.pastry.socket
+    SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindPort, env) {
+
+      @Override
+      protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(
+          InetSocketAddress innermostAddress, PastryNode pastryNode) throws IOException {
+        TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer = super.buildWireTransportLayer(innermostAddress, pastryNode);
+
+        final BandwidthLimitingTransportLayer<InetSocketAddress> limitingLayer = new BandwidthLimitingTransportLayer<InetSocketAddress>(wireTransportLayer,40000,1000,pastryNode.getEnvironment());
+
+        final BandwidthMeasuringTransportLayer<InetSocketAddress> measuringLayer = new BandwidthMeasuringTransportLayer<InetSocketAddress>(5000,limitingLayer,pastryNode.getEnvironment());
+
+        pastryNode.getEnvironment().getSelectorManager().schedule(new TimerTask() {
+
+          @Override
+          public void run() {
+            Map<InetSocketAddress, BandwidthUsed> bandwidthUsedByAddress = measuringLayer.getBandwidthUsed();
+            for (InetSocketAddress address : bandwidthUsedByAddress.keySet()) {
+              BandwidthUsed bandwidthUsed = bandwidthUsedByAddress.get(address);
+              System.out.println("Bandwidth for "+address+" d:"+bandwidthUsed.down()+" u:"+bandwidthUsed.up()+" saturated:"+bandwidthUsed.saturated());
+            }
+          }
+        }, 3000, 3000);
+
+
+        return measuringLayer;
+      }
+    };
+
+    PastryNode senderNode = factory.newNode();
+    BandwidthMeasuringTLTest senderApp = new BandwidthMeasuringTLTest();
+    PastryEndpoint senderEndpoint = (PastryEndpoint)senderNode.buildEndpoint(senderApp, null);
+    registerWithDeserializer(senderEndpoint);
+    senderNode.boot((Object)null);
+
+    PastryNode receiverNode = factory.newNode();
+    BandwidthMeasuringTLTest receiverApp = new BandwidthMeasuringTLTest();
+    PastryEndpoint receiverEndpoint = (PastryEndpoint)receiverNode.buildEndpoint(receiverApp, null);
+    registerWithDeserializer(receiverEndpoint);
+    receiverNode.boot(new InetSocketAddress(factory.getBindAddress(), bindPort));
+
+    Thread.sleep(5000);
+    System.out.println("Spamming messages.");
+
+    long startTime = System.currentTimeMillis();
+    while(System.currentTimeMillis() < startTime+5000) {
+      for (int ctr = 0; ctr < 100; ctr++) {
+        senderEndpoint.route(receiverNode.getNodeId(), new MyMsg(), null);
+      }
+      Thread.sleep(10);
+    }
+
+    System.out.println("Done spamming messages.");
+  }
+
+}

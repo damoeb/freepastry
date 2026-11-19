@@ -1,0 +1,1131 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.scribe.testing;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import rice.environment.Environment;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.commonapi.testing.CommonAPITest;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.ScribeImpl;
+import rice.p2p.scribe.ScribeMultiClient;
+import rice.p2p.scribe.ScribePolicy;
+import rice.p2p.scribe.Topic;
+import rice.pastry.PastryNode;
+import rice.pastry.transport.BootstrapAddressNodeHandle;
+
+/**
+ * Provides regression testing for the Scribe service using distributed
+ * nodes.
+ *
+ * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
+ * @author Alan Mislove
+ */
+
+public class ScribeRegrTest extends CommonAPITest {
+
+  // the instance name to use
+  public static String INSTANCE = "ScribeRegrTest";
+
+  // the scribe impls in the ring
+  protected ScribeImpl[] scribes;
+
+  /**
+   * The scribe policies
+   */
+  protected TestScribePolicy policies[];
+
+  /**
+   * Constructor which sets up all local variables
+   */
+  public ScribeRegrTest(Environment env) throws IOException {
+    super(env);
+    scribes = new ScribeImpl[NUM_NODES+1];
+    policies = new TestScribePolicy[NUM_NODES+1];
+  }
+
+  public TestScribeContent buildTestScribeContent(Topic topic, int numMessages) {
+    return new TestScribeContent(topic, numMessages);
+  }
+
+  @Override
+  public void setupParams(Environment env) {
+    super.setupParams(env);
+    // want to retry fast because of problems with isReady()
+    env.getParameters().setInt("p2p_scribe_message_timeout",3000);
+  }
+
+  /**
+   * Usage: ScribeRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (rmi|wire)]
+   * [-help]
+   */
+  public static void main(String args[]) throws IOException {
+    Environment env = parseArgs(args);
+
+    ScribeRegrTest scribeTest = new ScribeRegrTest(env);
+
+
+    scribeTest.start();
+    env.destroy();
+  }
+
+  /**
+   * Method which should process the given newly-created node
+   *
+   * @param node The newly created node
+   * @param num The number of this node
+   */
+  @Override
+  protected void processNode(int num, Node node) {
+    scribes[num] = new ScribeImpl(node, INSTANCE);
+    policies[num] = new TestScribePolicy(scribes[num]);
+    scribes[num].setPolicy(policies[num]);
+    scribes[num].setContentDeserializer((buf, endpoint, contentType) -> {
+      if (contentType == TestScribeContent.TYPE) {
+        return new TestScribeContent(buf, endpoint);
+      }
+      throw new IOException("Unknown content type: " + contentType);
+    });
+  }
+
+  /**
+   * Method which should run the test - this is called once all of the nodes have been created and
+   * are ready.
+   */
+  @Override
+  protected void runTest() {
+    if (NUM_NODES < 2) {
+      System.out.println("The DistScribeRegrTest must be run with at least 2 nodes for proper testing.  Use the '-nodes n' to specify the number of nodes.");
+      return;
+    }
+
+    // Run each test
+    testBasic(1, "Basic");
+    testBasic(2, "Partial (1)");
+    testBasic(4, "Partial (2)");
+    testMultiSubscribe(1, "Basic");
+    testSingleRoot("Single rooted Trees");
+    testAPI();
+    testFailureNotification();
+    testAddNode();
+    testMaintenance();
+
+  }
+
+  /*
+   *  ---------- Test methods and classes ----------
+   */
+
+  protected void testAddNode() {
+    Topic topic = new Topic(generateId());
+    Id id = topic.id();
+    TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
+
+    sectionStart("Test Add Node");
+    stepStart("Tree Construction id "+id);
+    for (int i = 0; i < NUM_NODES; i++) {
+      clients[i] = new TestScribeClient(scribes[i], topic, i);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
+      simulate();
+    }
+    stepDone(SUCCESS);
+
+    stepStart("Add New Root");
+    PastryNode pn;
+    try {
+      pn = factory.newNode((rice.pastry.Id)id);
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    rice.pastry.NodeHandle bootstrap = getBootstrap();
+    if (bootstrap instanceof BootstrapAddressNodeHandle bogusNodeHandle) {
+      // socket: the bootstrapper expects the addresses
+      pn.boot(bogusNodeHandle.getAddress());
+    } else {
+      pn.boot(bootstrap);
+    }
+    nodes[NUM_NODES] = pn;
+    processNode(NUM_NODES, pn);
+    logger.info("Adding new root: {}", pn);
+    synchronized(nodes[NUM_NODES]) {
+      while(!pn.isReady()) {
+        try { pn.wait(1000); } catch (InterruptedException ie) {return;}
+      }
+    }
+    Collection<NodeHandle> children = scribes[NUM_NODES].getChildrenOfTopic(topic);
+    if (children.size() >= 1) {
+      stepDone(SUCCESS);
+    } else {
+      stepDone(FAILURE, "Node should be the root, has "+children.size()+" children for topic "+topic+".");
+    }
+    sectionDone();
+  }
+
+  /**
+    * Tests basic functionality
+   */
+  protected void testBasic(int skip, String name) {
+    sectionStart(name + " Scribe Networks");
+    int NUM_MESSAGES = 5;
+    int SKIP = skip;
+    Topic topic = new Topic(generateId());
+    TestScribeClient[] clients = new TestScribeClient[NUM_NODES/SKIP];
+
+    stepStart(name + " Tree Construction");
+    for (int i = 0; i < NUM_NODES/SKIP; i++) {
+      clients[i] = new TestScribeClient(scribes[i], topic, i);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
+      simulate();
+    }
+    simulate(NUM_NODES/SKIP);
+
+    int numWithParent = 0;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      if (scribes[i].getParent(topic) != null)
+        numWithParent++;
+    }
+
+    if (numWithParent < (NUM_NODES/SKIP) - 1)
+      stepDone(FAILURE, "Expected at least " + (NUM_NODES/SKIP - 1) + " nodes with parents, found " + numWithParent);
+    else
+      stepDone(SUCCESS);
+
+    stepStart(name + " Publish");
+    ScribeImpl local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+      local.publish(topic, buildTestScribeContent(topic, i));
+      simulate();
+    }
+
+    boolean failed = false;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      if (clients[i].getPublishMessages().size() != NUM_MESSAGES) {
+        stepDone(FAILURE, "Expected client " + clients[i] + " to receive all "+NUM_MESSAGES+" messages, received " + clients[i].getPublishMessages().size());
+        failed = true;
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    stepStart(name + " Anycast - No Accept");
+    local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+
+    local.anycast(topic, buildTestScribeContent(topic, 59));
+    simulate(NUM_NODES);
+
+    failed = false;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      if (clients[i].getAnycastMessages().size() != 0) {
+        stepDone(FAILURE, "Expected no accepters for anycast, found one at " + scribes[i]);
+        failed = true;
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    /**
+     * This test sends an anycast ... (write more)
+     */
+    stepStart(name + " Anycast - 1 Accept");
+    TestScribeClient client = clients[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+    client.acceptAnycast(true);
+    local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+
+    local.anycast(topic, buildTestScribeContent(topic, 60));
+    simulate(NUM_NODES);
+
+    failed = false;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      if (clients[i].equals(client)) {
+        if (clients[i].getAnycastMessages().size() != 1) {
+          String text = "";
+          for (ScribeContent item : clients[i].getAnycastMessages()) {
+            text+=" "+item;
+          }
+
+          stepDone(FAILURE, "Expected node "+client.scribe+" to accept anycast at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+text);
+          failed = true;
+        }
+      } else {
+        if (clients[i].getAnycastMessages().size() != 0) {
+          stepDone(FAILURE, "Expected no accepters for anycast, found one at " + scribes[i]);
+          failed = true;
+        }
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    stepStart(name + " Anycast - All Accept");
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      clients[i].acceptAnycast(true);
+    }
+
+    local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+
+    local.anycast(topic, buildTestScribeContent(topic, 61));
+    simulate(NUM_NODES);
+
+    int total = 0;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      total += clients[i].getAnycastMessages().size();
+    }
+
+    if (total != 2) {
+      String str = "";
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        if (clients[i].getAnycastMessages().size() != 0) {
+          for (ScribeContent scribeContent : clients[i].getAnycastMessages()) {
+            str+="\n"+clients[i]+" "+scribeContent;
+          }
+        }
+      }
+
+      stepDone(FAILURE, "Expected 2 anycast messages to be found, found "+total+" l:"+str);
+    } else {
+      stepDone(SUCCESS);
+    }
+
+    stepStart(name + " Unsubscribe");
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      scribes[i].unsubscribe(topic, clients[i]);
+      simulate();
+    }
+
+    local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+    local.publish(topic, buildTestScribeContent(topic, 100));
+    simulate(NUM_NODES);
+
+    failed = false;
+    for (int i=0; i < NUM_NODES/SKIP; i++) {
+      if (clients[i].getPublishMessages().size() != NUM_MESSAGES) {
+        stepDone(FAILURE, "Expected client " + clients[i] + " to receive no additional messages, received " + clients[i].getPublishMessages().size());
+        failed = true;
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    stepStart(name + " Tree Completely Demolished");
+    failed = false;
+    for (int i=0; i < NUM_NODES; i++) {
+      if (scribes[i].getClientsByTopic(topic).size() > 0) {
+        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClientsByTopic(topic).size());
+        failed = true;
+      }
+
+      if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
+        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildrenOfTopic(topic).size());
+        failed = true;
+      }
+
+      if (scribes[i].getParent(topic) != null) {
+        stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no parent, had " + scribes[i].getParent(topic));
+        failed = true;
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    sectionDone();
+  }
+
+  /**
+   * Makes sure that if you subscribe to multiple topics at once that they end up on different nodes.
+   *
+   */
+  protected void testMultiSubscribe(int skip, String name) {
+      sectionStart(name + " MultiSubscription Scribe Network");
+      int NUM_MESSAGES = 5;
+      int SKIP = skip;
+      int NUM_TOPICS = 2;
+
+      // build antipodal topics so they are guaranteed to have different parents
+      TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
+      List<Topic> topics = new ArrayList<Topic>(NUM_TOPICS);
+      int[] id1 = {0, 0, 0, 0, 0x80000000};
+      int[] id2 = {0, 0, 0, 0, 0};
+      topics.add(new Topic(FACTORY.buildId(id1)));
+      topics.add(new Topic(FACTORY.buildId(id2)));
+
+      stepStart(name + " Tree Construction (Parent Independence)");
+      for (int i = 0; i < NUM_NODES; i++) {
+        clients[i] = new TestScribeClient(scribes[i], topics, i);
+        scribes[i].subscribe(topics, clients[i], (ScribeContent) null, null);
+        simulate();
+      }
+
+      for (int i=0; i < NUM_NODES; i++) {
+        if (Objects.equals(scribes[i].getParent(topics.get(0)), scribes[i].getParent(topics.get(1)))) {
+          stepDone(FAILURE, "Topics "+topics.get(0)+" and "+topics.get(1)+" had same parent "+scribes[i].getParent(topics.get(0))+" on node "+scribes[i].getEndpoint().getLocalNodeHandle());
+        }
+      }
+      stepDone(SUCCESS);
+
+      stepStart(name + " Publish");
+      ScribeImpl local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        for (Topic topic : topics) {
+          local.publish(topic, buildTestScribeContent(topic, i));
+        }
+        simulate();
+      }
+
+      boolean failed = false;
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        if (clients[i].getPublishMessages().size() != NUM_MESSAGES*NUM_TOPICS) {
+          stepDone(FAILURE, "Expected client " + clients[i] + " to receive all "+NUM_MESSAGES*NUM_TOPICS+" messages, received " + clients[i].getPublishMessages().size());
+          failed = true;
+        }
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+
+      stepStart(name + " Anycast - No Accept");
+      local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+
+      for (Topic topic : topics)
+        local.anycast(topic, buildTestScribeContent(topic, 62));
+      simulate(NUM_NODES*NUM_TOPICS);
+
+      failed = false;
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        if (clients[i].getAnycastMessages().size() != 0) {
+          stepDone(FAILURE, "Expected no accepters for anycast, found one at " + scribes[i]);
+          failed = true;
+        }
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+
+      /**
+       * This test sends an anycast on each topic, but only 1 client is allowed to accept the message
+       */
+      stepStart(name + " Anycast - 1 Accept");
+      TestScribeClient client = clients[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+      client.acceptAnycast(true);
+      local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+
+      for (Topic topic : topics)
+        local.anycast(topic, buildTestScribeContent(topic, 63));
+      simulate(NUM_NODES*NUM_TOPICS);
+
+      failed = false;
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        if (clients[i].equals(client)) {
+          if (clients[i].getAnycastMessages().size() != NUM_TOPICS) {
+            String text = "";
+            for (ScribeContent item : clients[i].getAnycastMessages()) {
+              text+=" "+item;
+            }
+            stepDone(FAILURE, "Expected node to accept "+NUM_TOPICS+" anycasts at " + client+" accepted "+clients[i].getAnycastMessages().size()+" local "+local+" "+text);
+            failed = true;
+          }
+        } else {
+          if (clients[i].getAnycastMessages().size() != 0) {
+            stepDone(FAILURE, "Expected no accepters for anycast, found one at " + scribes[i]);
+            failed = true;
+          }
+        }
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+
+      stepStart(name + " Anycast - All Accept");
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        clients[i].acceptAnycast(true);
+      }
+
+      local = scribes[environment.getRandomSource().nextInt(NUM_NODES/SKIP)];
+
+      for (Topic topic : topics)
+        local.anycast(topic, buildTestScribeContent(topic, 64));
+      simulate(NUM_TOPICS);
+
+      int total = 0;
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        total += clients[i].getAnycastMessages().size();
+      }
+
+      if (total != NUM_TOPICS*2) {
+        String str = "";
+        for (int i=0; i < NUM_NODES/SKIP; i++) {
+          if (clients[i].getAnycastMessages().size() != 0) {
+            for (ScribeContent scribeContent : clients[i].getAnycastMessages()) {
+              str+="\n"+clients[i]+" "+scribeContent;
+            }
+          }
+        }
+
+        stepDone(FAILURE, "Expected "+(NUM_TOPICS*2)+" anycast messages to be found, found "+total+" l:"+str);
+      } else {
+        stepDone(SUCCESS);
+      }
+
+      stepStart(name + " Unsubscribe");
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        for (Topic topic : topics) {
+          scribes[i].unsubscribe(topic, clients[i]);
+        }
+        simulate();
+      }
+
+      local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+      for (Topic topic : topics)
+        local.publish(topic, buildTestScribeContent(topic, 100));
+      simulate();
+
+      failed = false;
+      for (int i=0; i < NUM_NODES/SKIP; i++) {
+        if (clients[i].getPublishMessages().size() != NUM_MESSAGES*NUM_TOPICS) {
+          stepDone(FAILURE, "Expected client " + clients[i] + " to receive no additional messages, received " + clients[i].getPublishMessages().size());
+          failed = true;
+        }
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+
+      stepStart(name + " Tree Completely Demolished");
+      failed = false;
+      for (int i=0; i < NUM_NODES; i++) {
+        for (Topic topic : topics) {
+          if (scribes[i].getClientsByTopic(topic).size() > 0) {
+            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no clients, had " + scribes[i].getClientsByTopic(topic).size());
+            failed = true;
+          }
+
+          if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
+            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no children, had " + scribes[i].getChildrenOfTopic(topic).size());
+            failed = true;
+          }
+
+          if (scribes[i].getParent(topic) != null) {
+            stepDone(FAILURE, "Expected scribe " + scribes[i] + " to have no parent, had " + scribes[i].getParent(topic));
+            failed = true;
+          }
+        }
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+
+      sectionDone();
+    }
+
+
+  /**
+    * Tests basic publish functionality
+   */
+    protected void testAPI() {
+  sectionStart("Scribe API Functionality");
+    int NUM_MESSAGES = 5;
+    Topic topic = new Topic(generateId());
+    TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
+
+    stepStart("Tree Construction");
+    for(int i = 0; i < NUM_NODES; i++)
+  policies[i].selectAcceptedTopics(false);
+
+    for (int i = 0; i < NUM_NODES/2; i++) {
+      clients[i] = new TestScribeClient(scribes[i], topic, i);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
+      simulate();
+    }
+    simulate(NUM_NODES);
+
+    int numWithParent = 0;
+    for (int i=0; i < NUM_NODES; i++) {
+      if (scribes[i].getParent(topic) != null)
+        numWithParent++;
+    }
+
+    if (numWithParent < (NUM_NODES/2) - 1) {
+      String text = "";
+      for (int i=0; i < NUM_NODES; i++) {
+        if (scribes[i].getParent(topic) == null) {
+          text+=" "+scribes[i];
+        }
+      }
+
+      stepDone(FAILURE, "Expected at least " + (NUM_NODES/2 - 1) + " nodes with parents, found " + numWithParent+" "+text);
+    } else
+      if (numWithParent > (NUM_NODES/2))
+        stepDone(FAILURE, "Expected no more than " + (NUM_NODES/2) + " nodes with parents, due to policy, found " + numWithParent);
+      else
+        stepDone(SUCCESS);
+
+    stepStart("Drop Child");
+    // now, find a scribe with a child
+    ScribeImpl scribe = null;
+    TestScribePolicy policy = null;
+
+    for (int i=0; (i<NUM_NODES) && (scribe == null); i++) {
+      if (scribes[i].getChildrenOfTopic(topic).size() > 0) {
+        scribe = scribes[i];
+        policy = policies[i];
+      }
+    }
+
+    if (scribe == null) {
+      stepDone(FAILURE, "Could not find any scribes with children");
+    } else {
+      NodeHandle child = scribe.getChildrenOfTopic(topic).iterator().next();
+
+      // set this client to never allow subscribes
+      policy.neverAllowSubscribe(true);
+
+      // drop the handle now
+      scribe.removeChild(topic, child);
+      simulate();
+
+      ScribeImpl local = scribes[environment.getRandomSource().nextInt(NUM_NODES)];
+
+      for (int i = 0; i < NUM_MESSAGES; i++) {
+        local.publish(topic, buildTestScribeContent(topic, i));
+        simulate();
+      }
+
+      boolean failed = false;
+      for (int i=0; i < NUM_NODES/2; i++) {
+        if (clients[i].getPublishMessages().size() != NUM_MESSAGES) {
+          stepDone(FAILURE, "Expected client " + clients[i] + " to receive all "+NUM_MESSAGES+" messages, received " + clients[i].getPublishMessages().size());
+          failed = true;
+        }
+      }
+
+      Collection<NodeHandle> children = scribe.getChildrenOfTopic(topic);
+
+      if (children.contains(child)) {
+        stepDone(FAILURE, "Child resubscribed to previous node, policy should prevent this.");
+        failed = true;
+      }
+
+      if (! failed)
+        stepDone(SUCCESS);
+    }
+
+    stepStart("Reset Policies");
+    for (int i=0; i<NUM_NODES; i++) {
+      policies[i].selectAcceptedTopics(true);
+      policies[i].neverAllowSubscribe(false);
+    }
+    stepDone(SUCCESS);
+
+    sectionDone();
+  }
+
+  /**
+    * Tests failure notification
+   */
+  protected void testFailureNotification() {
+    sectionStart("Subscribe Failure Notification");
+    Topic topic = new Topic(generateId());
+    TestScribeClient client;
+
+    stepStart("Policy Change");
+    for (int i=0; i < NUM_NODES; i++) {
+      policies[i].neverAllowSubscribe(true);
+    }
+
+    stepDone(SUCCESS);
+
+    stepStart("Subscribe Attempt");
+    int i = environment.getRandomSource().nextInt(NUM_NODES-1);
+
+    while (scribes[i].isRoot(topic))
+      i = environment.getRandomSource().nextInt(NUM_NODES-1);
+
+    client = new TestScribeClient(scribes[i], topic, i);
+    scribes[i].subscribe(topic, client, (ScribeContent) null, null);
+    simulate();
+
+    stepDone(SUCCESS);
+
+    stepStart("Failure Notification Delivered");
+    if (! client.getSubscribeFailed())
+      stepDone(FAILURE, "Expected subscribe to fail, but did not.");
+    else
+      stepDone(SUCCESS);
+
+    stepStart("Policy Reset");
+    for (int j=0; j < NUM_NODES; j++) {
+      policies[j].neverAllowSubscribe(false);
+    }
+
+    stepDone(SUCCESS);
+
+    sectionDone();
+  }
+
+
+    protected void testSingleRoot(String name) {
+      sectionStart(name + "");
+      int numTrees = 10;
+
+  for(int num=0; num<numTrees; num ++) {
+      Topic topic = new Topic(generateId());
+      TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
+
+      stepStart(name + " TopicId=" + topic.id());
+      for (int i = 0; i < NUM_NODES; i++) {
+        clients[i] = new TestScribeClient(scribes[i], topic, i);
+        scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
+        simulate();
+      }
+
+      int numRoot = 0;
+      for (int i=0; i < NUM_NODES; i++) {
+    if (scribes[i].isRoot(topic)) {
+        numRoot++;
+    }
+      }
+
+      if (numRoot != 1) {
+    stepDone(FAILURE, "Number of roots= " + numRoot);
+      }
+      else
+    stepDone(SUCCESS);
+
+  }
+  sectionDone();
+
+    }
+
+
+
+  /**
+   * Tests basic publish functionality
+   */
+    protected void testMaintenance() {
+  sectionStart("Tree Maintenance Under Node Death");
+  int NUM_MESSAGES = 5;
+  Topic topic = new Topic(generateId());
+  TestScribeClient[] clients = new TestScribeClient[NUM_NODES];
+
+    stepStart("Tree Construction");
+    for (int i = 0; i < NUM_NODES; i++) {
+      clients[i] = new TestScribeClient(scribes[i], topic, i);
+      scribes[i].subscribe(topic, clients[i], (ScribeContent) null, null);
+      simulate();
+    }
+    simulate(NUM_NODES);
+
+    int numWithParent = 0;
+    for (int i=0; i < NUM_NODES; i++) {
+      if (scribes[i].getParent(topic) != null)
+        numWithParent++;
+    }
+
+    if (numWithParent < NUM_NODES-1)
+      stepDone(FAILURE, "Expected at least " + (NUM_NODES - 1) + " nodes with parents, found " + numWithParent);
+    else
+      stepDone(SUCCESS);
+
+    stepStart("Killing Nodes");
+    for (int i=0; i<NUM_NODES/2; i++) {
+      logger.info("Killing {}", nodes[i]);
+      scribes[i].destroy();
+      kill(i);
+      simulate(5);
+    }
+
+    waitToRecoverFromKilling(scribes[0].MESSAGE_TIMEOUT);
+    stepDone(SUCCESS);
+
+    stepStart("Tree Recovery");
+
+    int localIndex = environment.getRandomSource().nextInt(NUM_NODES/2) + NUM_NODES/2;
+    ScribeImpl local = scribes[localIndex];
+
+    for (int i = 0; i < NUM_MESSAGES; i++) {
+      local.publish(topic, buildTestScribeContent(topic, i));
+      simulate(5);
+    }
+
+    boolean failed = false;
+    for (int i=NUM_NODES/2; i < NUM_NODES; i++) {
+      if (clients[i].getPublishMessages().size() != NUM_MESSAGES) {
+        stepDone(FAILURE, "Expected client " + nodes[i] +":"+clients[i]+ " to receive all "+NUM_MESSAGES+" messages, received " + clients[i].getPublishMessages().size());
+        failed = true;
+      }
+    }
+
+    if (! failed)
+      stepDone(SUCCESS);
+
+    sectionDone();
+  }
+
+
+  /**
+   * Private method which generates a random Id
+   *
+   * @return A new random Id
+   */
+  private Id generateId() {
+    byte[] data = new byte[20];
+    environment.getRandomSource().nextBytes(data);
+    return FACTORY.buildId(data);
+  }
+
+  public static List<Topic> buildListOf1(Topic topic) {
+    List<Topic> ret = new ArrayList<Topic>(1);
+    ret.add(topic);
+    return ret;
+  }
+
+  /**
+   * Utility class for past content objects
+   *
+   * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
+   * @author amislove
+   */
+  protected static class TestScribeContent implements ScribeContent {
+
+    protected Topic topic;
+
+    protected int num;
+
+    /**
+     * Constructor for TestScribeContent.
+     */
+    public TestScribeContent(Topic topic, int num) {
+      this.topic = topic;
+      this.num = num;
+    }
+
+    public static final short TYPE = 1;
+
+    /**
+     * Deserializing constructor, the counterpart of {@link #serialize(OutputBuffer)}.
+     */
+    public TestScribeContent(InputBuffer buf, Endpoint endpoint) throws IOException {
+      this(new Topic(buf, endpoint), buf.readInt());
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    @Override
+    public void serialize(OutputBuffer buf) throws IOException {
+      topic.serialize(buf);
+      buf.writeInt(num);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (!(object instanceof TestScribeContent testScribeContent)) {
+        return false;
+      }
+
+      return (testScribeContent.topic.equals(topic) &&
+        testScribeContent.num == num);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(topic, num);
+    }
+
+    @Override
+    public String toString() {
+      return "TestScribeContent(" + topic + ", " + num + ")";
+    }
+  }
+
+  /**
+   * Utility class which simulates a route message
+   *
+   * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
+   * @author amislove
+   */
+  protected static class TestRouteMessage implements RouteMessage {
+
+    private Id id;
+
+    private NodeHandle nextHop;
+
+    private Message message;
+
+    /**
+     * Constructor for TestRouteMessage.
+     */
+    public TestRouteMessage(Id id, NodeHandle nextHop, Message message) {
+      this.id = id;
+      this.nextHop = nextHop;
+      this.message = message;
+    }
+
+    /**
+     * Gets the DestinationId attribute of the TestRouteMessage object
+     *
+     * @return The DestinationId value
+     */
+    @Override
+    public Id getDestinationId() {
+      return id;
+    }
+
+    /**
+     * Gets the NextHopHandle attribute of the TestRouteMessage object
+     *
+     * @return The NextHopHandle value
+     */
+    @Override
+    public NodeHandle getNextHopHandle() {
+      return nextHop;
+    }
+
+    @Override
+    public Message getMessage(MessageDeserializer messageDeserializer) {
+      return message;
+    }
+
+    /**
+     * Sets the DestinationId attribute of the TestRouteMessage object
+     *
+     * @param id The new DestinationId value
+     */
+    @Override
+    public void setDestinationId(Id id) {
+      this.id = id;
+    }
+
+    /**
+     * Sets the NextHopHandle attribute of the TestRouteMessage object
+     *
+     * @param nextHop The new NextHopHandle value
+     */
+    @Override
+    public void setNextHopHandle(NodeHandle nextHop) {
+      this.nextHop = nextHop;
+    }
+
+    /**
+     * Sets the Message attribute of the TestRouteMessage object
+     *
+     * @param message The new Message value
+     */
+    @Override
+    public void setMessage(RawMessage message) {
+      this.message = message;
+    }
+
+  }
+
+  /**
+   * A test client that records the publish and anycast messages it receives.
+   *
+   * @version $Id: ScribeRegrTest.java 4221 2008-05-19 16:41:19Z jeffh $
+   * @author amislove
+   */
+  protected static class TestScribeClient implements ScribeMultiClient {
+
+    protected Scribe scribe;
+
+    protected int i;
+
+    /**
+     * The publish messages received so far
+     */
+    protected CopyOnWriteArrayList<ScribeContent> publishMessages;
+
+    /**
+      * The anycast messages received so far
+     */
+    protected CopyOnWriteArrayList<ScribeContent> anycastMessages;
+
+    /**
+     * The topic this client is listening for
+     */
+    protected List<Topic> topics;
+
+    /**
+     * Whether or not this client should accept anycasts
+     */
+    protected boolean acceptAnycast;
+
+    /**
+     * Whether this client has had a subscribe fail
+     */
+    protected boolean subscribeFailed;
+
+    /**
+     * Constructor for TestScribeClient.
+     */
+    public TestScribeClient(Scribe scribe, Topic topic, int i) {
+      this(scribe, buildListOf1(topic), i);
+    }
+
+    public TestScribeClient(Scribe scribe, List<Topic> topics, int i) {
+      this.scribe = scribe;
+      this.i = i;
+      this.topics = topics;
+      this.publishMessages = new CopyOnWriteArrayList<ScribeContent>();
+      this.anycastMessages = new CopyOnWriteArrayList<ScribeContent>();
+      this.acceptAnycast = false;
+      this.subscribeFailed = false;
+    }
+
+    public List<ScribeContent> getPublishMessages() {
+      return publishMessages;
+    }
+
+    public List<ScribeContent> getAnycastMessages() {
+      return anycastMessages;
+    }
+
+    public void acceptAnycast(boolean value) {
+      this.acceptAnycast = value;
+    }
+
+    @Override
+    public boolean anycast(Topic topic, ScribeContent content) {
+      if (acceptAnycast)
+        anycastMessages.add(content);
+
+      return acceptAnycast;
+    }
+
+    @Override
+    public void deliver(Topic topic, ScribeContent content) {
+      publishMessages.add(content);
+    }
+
+    @Override
+    public void childAdded(Topic topic, NodeHandle child) {
+    }
+
+    @Override
+    public void childRemoved(Topic topic, NodeHandle child) {
+    }
+
+    @Override
+    public void subscribeFailed(Collection<Topic> topics) {
+      for (Topic topic : topics) {
+        subscribeFailed = true;
+        scribe.subscribe(topic, this, (ScribeContent) null, null);
+      }
+    }
+
+    @Override
+    public void subscribeSuccess(Collection<Topic> topics) {
+    }
+
+    public boolean getSubscribeFailed() {
+      return subscribeFailed;
+    }
+
+    @Override
+    public String toString() {
+      if (topics.size() == 1) {
+        return topics.get(0).toString();
+      }
+      String text = "";
+      for (Topic topic : topics) {
+        text+=topic.toString()+" ";
+      }
+      return text+scribe;
+    }
+  }
+
+  public static class TestScribePolicy extends ScribePolicy.DefaultScribePolicy {
+
+    protected Scribe scribe;
+
+    protected boolean allowSubscribe;
+
+    protected boolean neverAllowSubscribe;
+
+    public TestScribePolicy(Scribe scribe) {
+      super(scribe.getEnvironment());
+      this.scribe = scribe;
+      allowSubscribe = true;
+      neverAllowSubscribe = false;
+    }
+
+    public void selectAcceptedTopics(boolean allowSubscribe) {
+      this.allowSubscribe = allowSubscribe;
+    }
+
+    public void neverAllowSubscribe(boolean neverAllowSubscribe) {
+      this.neverAllowSubscribe = neverAllowSubscribe;
+    }
+
+    @Override
+    public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
+      Iterator<Topic> iterator = topics.iterator();
+      while (iterator.hasNext()) {
+        Topic topic = iterator.next();
+        if (!(! neverAllowSubscribe && (allowSubscribe || !scribe.getClientsByTopic(topic).isEmpty() || this.scribe.isRoot(topic)))) {
+          iterator.remove();
+        }
+      }
+      return topics;
+    }
+  }
+}

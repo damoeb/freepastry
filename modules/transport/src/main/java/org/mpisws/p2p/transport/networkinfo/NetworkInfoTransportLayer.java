@@ -1,0 +1,940 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package org.mpisws.p2p.transport.networkinfo;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.ClosedChannelException;
+import org.mpisws.p2p.transport.ErrorHandler;
+import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.P2PSocket;
+import org.mpisws.p2p.transport.P2PSocketReceiver;
+import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.TransportLayer;
+import org.mpisws.p2p.transport.TransportLayerCallback;
+import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
+import org.mpisws.p2p.transport.simpleidentity.InetSocketAddressSerializer;
+import org.mpisws.p2p.transport.util.BufferWriter;
+import org.mpisws.p2p.transport.util.DefaultErrorHandler;
+import org.mpisws.p2p.transport.util.InsufficientBytesException;
+import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
+import org.mpisws.p2p.transport.util.SocketBufferReader;
+import org.mpisws.p2p.transport.util.SocketInputBuffer;
+import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
+import org.slf4j.Logger;
+import rice.Continuation;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Cancellable;
+import rice.p2p.util.AttachableCancellable;
+import rice.p2p.util.rawserialization.SimpleOutputBuffer;
+
+/**
+ * Can open a TCP connection to a known node, and it will return your IP address.
+ *
+ * Use getMyIpAddress()
+ *
+ * header = 0; // bypass
+ * header = 1; // return IP
+ *
+ * Also holds a "serialized id."  This is an externally specified piece of information.  It can be a NodeHandle, a PublicKey etc,
+ * any information that any node should be able to query for and may need to do so w/o having a joined PastryNode.
+ *
+ *
+ * @author Jeff Hoye
+ */
+public class NetworkInfoTransportLayer implements
+    InetSocketAddressLookup,
+    Prober,
+    TransportLayer<InetSocketAddress, ByteBuffer>,
+    TransportLayerCallback<InetSocketAddress, ByteBuffer> {
+  private final Logger logger;
+  private final Environment environment;
+
+  @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
+  private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
+  private ErrorHandler<InetSocketAddress> errorHandler;
+  private final TransportLayer<InetSocketAddress, ByteBuffer> transportLayer;
+
+  private static final byte HEADER_PASSTHROUGH_BYTE = (byte)0;
+  private static final byte HEADER_IP_ADDRESS_REQUEST_BYTE = (byte)1;
+  private static final byte HEADER_PROBE_REQUEST_BYTE = (byte)2;
+  private static final byte HEADER_PROBE_RESPONSE_BYTE = (byte)3;
+  /** A probe response is the header byte and the 8-byte uid. */
+  private static final int PROBE_RESPONSE_LENGTH = 1 + Long.BYTES;
+  /** Most external addresses sent in one answer. */
+  private static final int MAX_EXTERNAL_ADDRESSES = 20;
+  /** Largest id, in bytes, that is accepted as the answer to an id request. */
+  static final int MAX_ID_SIZE = 64 * 1024;
+  private static final byte HEADER_NODES_REQUEST_BYTE = (byte)4;
+  private static final byte HEADER_ID_REQUEST_BYTE = (byte)5;
+  private static final byte[] HEADER_PASSTHROUGH = {HEADER_PASSTHROUGH_BYTE};
+  private static final byte[] HEADER_IP_ADDRESS_REQUEST = {HEADER_IP_ADDRESS_REQUEST_BYTE};
+  private static final byte[] HEADER_NODES_REQUEST = {HEADER_NODES_REQUEST_BYTE};
+
+  Map<Byte, byte[]> serializedIds = new HashMap<Byte, byte[]>();
+
+  public NetworkInfoTransportLayer(TransportLayer<InetSocketAddress, ByteBuffer> transportLayer,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler) {
+    this.logger = env.getLogManager().getLogger(NetworkInfoTransportLayer.class, null);
+    this.environment = env;
+    this.transportLayer= transportLayer;
+
+    this.errorHandler = errorHandler;
+
+    if (this.errorHandler == null) {
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
+    }
+
+    transportLayer.setCallback(this);
+  }
+
+  InetSocketAddressSerializer addrSerializer = new InetSocketAddressSerializer();
+
+  /**
+   * Reads the answer to a {@link #HEADER_ID_REQUEST_BYTE}: the size of the id, then the id.
+   *
+   * @throws InsufficientBytesException if the answer has not arrived completely, the buffer is rewound to read it again
+   * @throws IOException if the size is negative or more than {@link #MAX_ID_SIZE}
+   */
+  static byte[] readId(SocketInputBuffer sib) throws IOException {
+    int size = sib.readInt();
+    if (size < 0 || size > MAX_ID_SIZE) {
+      throw new IOException("Invalid id size: " + size + " (max: " + MAX_ID_SIZE + ")");
+    }
+    byte[] ret = new byte[size];
+    int read = sib.read(ret);
+    if (read < size) {
+      sib.reset();
+      throw new InsufficientBytesException(size, read);
+    }
+    return ret;
+  }
+
+  @Override
+  public Cancellable requestExternalAddress(InetSocketAddress bootstrap,
+      final Continuation<InetSocketAddress, IOException> continuation, @Nullable Map<String, Object> options) {
+    AttachableCancellable ret = new AttachableCancellable();
+    ret.attach(openSocket(bootstrap, HEADER_IP_ADDRESS_REQUEST, new SocketCallback<InetSocketAddress>() {
+
+      @Override
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
+          P2PSocket<InetSocketAddress> openedSocket) {
+        final SocketInputBuffer sib = new SocketInputBuffer(openedSocket);
+
+        try {
+          new P2PSocketReceiver<InetSocketAddress>() {
+
+            @Override
+            public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+                boolean canRead, boolean canWrite) throws IOException {
+              // read IP address
+              try {
+                InetSocketAddress address = addrSerializer.deserialize(sib, null, null);
+                continuation.receiveResult(address);
+              } catch (InsufficientBytesException ibe) {
+                socket.register(true, false, this);
+              } catch (IOException e) {
+                continuation.receiveException(e);
+              }
+            }
+
+            @Override
+            public void receiveException(P2PSocket<InetSocketAddress> socket,
+                Exception ioe) {
+              if (ioe instanceof IOException ioException) continuation.receiveException(ioException);
+              continuation.receiveException(new NetworkInfoIOException(ioe));
+            }
+
+          }.receiveSelectResult(openedSocket, true, false);
+        } catch (IOException ioe) {
+          continuation.receiveException(ioe);
+        }
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
+          Exception ex) {
+        if (ex instanceof IOException ioException) continuation.receiveException(ioException);
+        continuation.receiveException(new NetworkInfoIOException(ex));
+      }
+    }, options));
+    return ret;
+  }
+
+  public void setId(byte index, byte[] value) {
+    serializedIds.put(index, value);
+  }
+
+  public Cancellable getId(InetSocketAddress bootstrap, byte index,
+      final Continuation<byte[], IOException> continuation, @Nullable Map<String, Object> options) {
+    byte[] header = new byte[2];
+    header[0] = HEADER_ID_REQUEST_BYTE;
+    header[1] = index;
+
+    AttachableCancellable ret = new AttachableCancellable();
+    ret.attach(openSocket(bootstrap, header, new SocketCallback<InetSocketAddress>() {
+
+      @Override
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
+          P2PSocket<InetSocketAddress> openedSocket) {
+        final SocketInputBuffer sib = new SocketInputBuffer(openedSocket);
+
+        try {
+          new P2PSocketReceiver<InetSocketAddress>() {
+
+            @Override
+            public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+                boolean canRead, boolean canWrite) throws IOException {
+              try {
+                continuation.receiveResult(readId(sib));
+              } catch (InsufficientBytesException ibe) {
+                socket.register(true, false, this);
+              } catch (IOException e) {
+                continuation.receiveException(e);
+              }
+            }
+
+            @Override
+            public void receiveException(P2PSocket<InetSocketAddress> socket,
+                Exception ioe) {
+              if (ioe instanceof IOException ioException) continuation.receiveException(ioException);
+              continuation.receiveException(new NetworkInfoIOException(ioe));
+            }
+
+          }.receiveSelectResult(openedSocket, true, false);
+        } catch (IOException ioe) {
+          continuation.receiveException(ioe);
+        }
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
+          Exception ex) {
+        if (ex instanceof IOException ioException) continuation.receiveException(ioException);
+        continuation.receiveException(new NetworkInfoIOException(ex));
+      }
+    }, options));
+    return ret;
+  }
+
+  @Override
+  public Cancellable getExternalNodes(InetSocketAddress bootstrap,
+      final Continuation<Collection<InetSocketAddress>, IOException> continuation, @Nullable Map<String, Object> options) {
+    AttachableCancellable ret = new AttachableCancellable();
+    ret.attach(openSocket(bootstrap, HEADER_NODES_REQUEST, new SocketCallback<InetSocketAddress>() {
+
+      @Override
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
+          P2PSocket<InetSocketAddress> openedSocket) {
+        final SocketInputBuffer sib = new SocketInputBuffer(openedSocket);
+
+        try {
+          new P2PSocketReceiver<InetSocketAddress>() {
+
+            @Override
+            public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+                boolean canRead, boolean canWrite) throws IOException {
+              // read IP address
+              try {
+                ArrayList<InetSocketAddress> ret = new ArrayList<InetSocketAddress>();
+                byte numAddrs = sib.readByte();
+                if (numAddrs < 0 || numAddrs > MAX_EXTERNAL_ADDRESSES) {
+                  throw new IOException("Invalid number of external addresses: " + numAddrs + " (max: " + MAX_EXTERNAL_ADDRESSES + ")");
+                }
+                for (int ctr = 0; ctr < numAddrs; ctr++) {
+                  InetSocketAddress address = addrSerializer.deserialize(sib, null, null);
+                  ret.add(address);
+                }
+                continuation.receiveResult(ret);
+              } catch (InsufficientBytesException ibe) {
+                socket.register(true, false, this);
+              } catch (IOException e) {
+                continuation.receiveException(e);
+              }
+            }
+
+            @Override
+            public void receiveException(P2PSocket<InetSocketAddress> socket,
+                Exception ioe) {
+              if (ioe instanceof IOException ioException) continuation.receiveException(ioException);
+              continuation.receiveException(new NetworkInfoIOException(ioe));
+            }
+
+          }.receiveSelectResult(openedSocket, true, false);
+        } catch (IOException ioe) {
+          continuation.receiveException(ioe);
+        }
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
+          Exception ex) {
+        if (ex instanceof IOException ioException) continuation.receiveException(ioException);
+        continuation.receiveException(new NetworkInfoIOException(ex));
+      }
+    }, options));
+    return ret;
+  }
+
+  @Override
+  public SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress address,
+      SocketCallback<InetSocketAddress> deliverSocketToMe,
+      @Nullable Map<String, Object> options) {
+    logger.info("openSocket({},{},{})", address, deliverSocketToMe, options);
+
+    return openSocket(address,HEADER_PASSTHROUGH,deliverSocketToMe,options);
+  }
+
+  public SocketRequestHandle<InetSocketAddress> openSocket(final InetSocketAddress address, final byte[] header,
+      final SocketCallback<InetSocketAddress> deliverSocketToMe,
+      @Nullable Map<String, Object> options) {
+    logger.trace("openSocket({},{})", address, header.length);
+
+    if (deliverSocketToMe == null) throw new IllegalArgumentException("deliverSocketToMe must be non-null!");
+
+    final SocketRequestHandleImpl<InetSocketAddress> cancellable = new SocketRequestHandleImpl<InetSocketAddress>(address, options, logger);
+
+    cancellable.setSubCancellable(transportLayer.openSocket(address, new SocketCallback<InetSocketAddress>(){
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> request, final P2PSocket<InetSocketAddress> result) {
+        if (cancellable.getSubCancellable() != null && request != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+request+" sub:"+cancellable.getSubCancellable());
+
+        cancellable.setSubCancellable(() -> {
+          result.close();
+          return true;
+        });
+
+        result.register(false, true, new P2PSocketReceiver<InetSocketAddress>(){
+          ByteBuffer buf = ByteBuffer.wrap(header);
+          @Override
+          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
+            if (canRead) throw new IOException("Never asked to read!");
+            if (!canWrite) throw new IOException("Can't write!");
+            long ret = socket.write(buf);
+            if (ret < 0) {
+              socket.close();
+              return;
+            }
+            logger.trace("openSocket({},{}) wrote {}.  Remaining:{}", address, header.length, ret, buf.remaining());
+
+            if (buf.hasRemaining()) {
+              socket.register(false, true, this);
+            } else {
+              deliverSocketToMe.receiveResult(cancellable, socket);
+            }
+          }
+          @Override
+          public void receiveException(P2PSocket<InetSocketAddress> socket, Exception e) {
+            deliverSocketToMe.receiveException(cancellable, e);
+          }
+        });
+      }
+      @Override
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
+      public void receiveException(SocketRequestHandle<InetSocketAddress> c, Exception exception) {
+        if (cancellable.getSubCancellable() != null && c != cancellable.getSubCancellable()) throw new RuntimeException("c != cancellable.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+cancellable.getSubCancellable());
+        deliverSocketToMe.receiveException(cancellable, exception);
+      }
+    }, options));
+
+    return cancellable;
+  }
+
+  @Override
+  public void incomingSocket(final P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
+    logger.trace("incomingSocket({})", incomingSocket);
+    new P2PSocketReceiver<InetSocketAddress>() {
+      ByteBuffer bb = ByteBuffer.allocate(HEADER_PASSTHROUGH.length);
+      @Override
+      public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+          boolean canRead, boolean canWrite) throws IOException {
+        long bytesRead = socket.read(bb);
+        logger.trace("incomingSocket({}): bytesRead = {} remaining:{}", incomingSocket, bytesRead, bb.remaining());
+        if (bytesRead < 0) {
+          socket.close();
+          return;
+        }
+        if(bb.hasRemaining()) {
+          socket.register(true, false, this);
+          return;
+        }
+
+        // read the array
+        byte[] ret = bb.array();
+        if (ret.length > 1) throw new RuntimeException("Make this work over the array, implementation expectes header to be 1 byte.");
+        logger.trace("incomingSocket({}): type = {}", incomingSocket, ret[0]);
+        switch (ret[0]) {
+        case HEADER_PASSTHROUGH_BYTE:
+          callback.incomingSocket(socket);
+          return;
+        case HEADER_IP_ADDRESS_REQUEST_BYTE:
+          handleIpRequest(socket);
+          return;
+        case HEADER_NODES_REQUEST_BYTE:
+          handleNodesRequest(socket);
+          return;
+        case HEADER_PROBE_REQUEST_BYTE:
+          handleProbeRequest(socket);
+          return;
+        case HEADER_PROBE_RESPONSE_BYTE:
+          handleProbeResponse(socket);
+          return;
+        case HEADER_ID_REQUEST_BYTE:
+          handleIdRequest(socket);
+          return;
+        default:
+          // header didn't match up
+          errorHandler.receivedUnexpectedData(socket.getIdentifier(), ret, 0, socket.getOptions());
+        }
+
+      }
+
+      @Override
+      public void receiveException(P2PSocket<InetSocketAddress> socket,
+          Exception ioe) {
+        errorHandler.receivedException(socket.getIdentifier(), ioe);
+      }
+    }.receiveSelectResult(incomingSocket, true, false);
+  }
+
+  public void handleIpRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
+    // write out the caller's ip address
+    SimpleOutputBuffer sob = new SimpleOutputBuffer();
+    logger.info("HEADER_IP_ADDRESS_REQUEST_BYTE serializing {}", socket.getIdentifier());
+    addrSerializer.serialize(socket.getIdentifier(), sob);
+    final ByteBuffer writeMe = sob.getByteBuffer();
+    new P2PSocketReceiver<InetSocketAddress>() {
+      @Override
+      public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+          boolean canRead, boolean canWrite) throws IOException {
+        if (socket.write(writeMe) < 0) {
+          socket.close();
+        }
+        if (writeMe.hasRemaining()) {
+          socket.register(false, true, this);
+        } else {
+          socket.close();
+        }
+      }
+
+      @Override
+      public void receiveException(P2PSocket<InetSocketAddress> socket,
+          Exception ioe) {
+        // do nothing
+      }
+
+    }.receiveSelectResult(socket, false, true);
+
+  }
+
+  public void handleNodesRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
+    // write out the caller's ip address
+    SimpleOutputBuffer sob = new SimpleOutputBuffer();
+    Collection<InetSocketAddress> ret = probeStrategy.getExternalAddresses();
+    logger.info("serializing {} external addresses for {}", ret.size(), socket.getIdentifier());
+
+    // only take the first MAX_EXTERNAL_ADDRESSES
+    if (ret.size() > MAX_EXTERNAL_ADDRESSES) {
+      ArrayList<InetSocketAddress> temp = new ArrayList<InetSocketAddress>(MAX_EXTERNAL_ADDRESSES);
+      int ctr = 0;
+      for (InetSocketAddress foo : ret) {
+        temp.add(foo);
+        ctr++;
+        if (ctr >= MAX_EXTERNAL_ADDRESSES) break;
+      }
+      ret = temp;
+    }
+
+    sob.writeByte(ret.size());
+    for (InetSocketAddress foo : ret) {
+      addrSerializer.serialize(foo, sob);
+    }
+    final ByteBuffer writeMe = sob.getByteBuffer();
+    new P2PSocketReceiver<InetSocketAddress>() {
+      @Override
+      public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+          boolean canRead, boolean canWrite) throws IOException {
+        if (socket.write(writeMe) < 0) {
+          socket.close();
+        }
+        if (writeMe.hasRemaining()) {
+          socket.register(false, true, this);
+        } else {
+          socket.close();
+        }
+      }
+
+      @Override
+      public void receiveException(P2PSocket<InetSocketAddress> socket,
+          Exception ioe) {
+        // do nothing
+      }
+
+    }.receiveSelectResult(socket, false, true);
+  }
+
+  public void handleIdRequest(final P2PSocket<InetSocketAddress> socket) throws IOException {
+    // read the index
+    new SocketBufferReader<InetSocketAddress>(socket,new Continuation<ByteBuffer, Exception>() {
+
+      @Override
+      public void receiveResult(ByteBuffer result) {
+        byte index = result.get();
+        if (serializedIds.get(index) == null) {
+          // consider returning an error
+          socket.close();
+          return;
+        }
+        new BufferWriter<InetSocketAddress>(ByteBuffer.wrap(serializedIds.get(index)),socket,null);
+      }
+
+      @Override
+      public void receiveException(Exception exception) {
+        socket.close();
+      }
+    },1);
+  }
+
+  public void handleProbeRequest(final P2PSocket<InetSocketAddress> socket) {
+    // read addr, uid
+    try {
+      new P2PSocketReceiver<InetSocketAddress>() {
+        SocketInputBuffer sib = new SocketInputBuffer(socket);
+
+        @Override
+        public void receiveSelectResult(final P2PSocket<InetSocketAddress> socket,
+            boolean canRead, boolean canWrite) throws IOException {
+          // try to read the stuff until it works or fails
+          try {
+            MultiInetSocketAddress address = MultiInetSocketAddress.build(sib);
+            long uid = sib.readLong();
+            Continuation<Boolean, Exception> reply = new Continuation<Boolean, Exception>() {
+              @Override
+              public void receiveResult(Boolean result) {
+                returnResult(result.booleanValue());
+              }
+
+              @Override
+              public void receiveException(Exception exception) {
+                returnResult(false);
+              }
+
+              void returnResult(boolean ret) {
+                final ByteBuffer writeMe = ByteBuffer.allocate(1);
+                writeMe.put(ret ? (byte)1 : (byte)0);
+                writeMe.flip();
+
+                try {
+                  new P2PSocketReceiver<InetSocketAddress>() {
+                    @Override
+                    public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+                        boolean canRead, boolean canWrite) throws IOException {
+                      long bytesWritten = socket.write(writeMe);
+                      if (bytesWritten < 0) {
+                        socket.close();
+                        return;
+                      }
+                      if (writeMe.hasRemaining()) {
+                        socket.register(false, true, this);
+                      } else {
+                        socket.close();
+                      }
+                    }
+
+                    @Override
+                    public void receiveException(P2PSocket<InetSocketAddress> socket,
+                        Exception ioe) {
+                      socket.close();
+                    }
+                  }.receiveSelectResult(socket, false, true);
+                } catch (IOException ioe) {
+                  socket.close();
+                }
+              }
+            };
+            if (isRequestersOwnHost(address, socket.getIdentifier())) {
+              probeStrategy.requestProbe(address, uid, reply);
+            } else {
+              logger.info("Refusing to have {} probed for {}, it is not the requester's host", address, socket.getIdentifier());
+              reply.receiveResult(false);
+            }
+          } catch (InsufficientBytesException ibe) {
+            socket.register(true, false, this);
+          }
+        }
+
+        @Override
+        public void receiveException(P2PSocket<InetSocketAddress> socket,
+            Exception ioe) {
+          socket.close();
+        }
+
+      }.receiveSelectResult(socket, true, false);
+    } catch (IOException ioe) {
+      errorHandler.receivedException(socket.getIdentifier(), ioe);
+      socket.close();
+    }
+  }
+
+  /**
+   * A probe request asks a neighbour to contact an address, so only the requester's own host may be named: the
+   * outermost address of the request must have the IP the request came from. The port may differ, the request comes
+   * from an ephemeral port.
+   */
+  static boolean isRequestersOwnHost(MultiInetSocketAddress probeMe, InetSocketAddress requester) {
+    InetAddress probeIp = probeMe.getOutermostAddress().getAddress();
+    return probeIp != null && probeIp.equals(requester.getAddress());
+  }
+
+  public void handleProbeResponse(final P2PSocket<InetSocketAddress> socket) {
+    // read addr, uid
+    try {
+      new P2PSocketReceiver<InetSocketAddress>() {
+        SocketInputBuffer sib = new SocketInputBuffer(socket);
+
+        @Override
+        public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+            boolean canRead, boolean canWrite) throws IOException {
+          // try to read the stuff until it works or fails
+          try {
+            long uid = sib.readLong();
+            ConnectivityResult request = verifyConnectionRequests.get(uid);
+            // null if the request was cancelled or already answered
+            if (request != null) request.tcpSuccess(socket.getIdentifier(), socket.getOptions());
+          } catch (InsufficientBytesException ibe) {
+            socket.register(true, false, this);
+          }
+        }
+
+        @Override
+        public void receiveException(P2PSocket<InetSocketAddress> socket,
+            Exception ioe) {
+
+        }
+
+      }.receiveSelectResult(socket, true, false);
+    } catch (IOException ioe) {
+      errorHandler.receivedException(socket.getIdentifier(), ioe);
+      socket.close();
+    }
+  }
+
+  @Override
+  public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
+    this.callback = callback;
+  }
+
+  @Override
+  public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
+    if (handler == null) {
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
+      return;
+    }
+    this.errorHandler = handler;
+  }
+
+  @Override
+  public void acceptMessages(boolean enabled) {
+    transportLayer.acceptMessages(enabled);
+  }
+
+  @Override
+  public void acceptSockets(boolean enabled) {
+    transportLayer.acceptSockets(enabled);
+  }
+
+  @Override
+  public InetSocketAddress getLocalIdentifier() {
+    return transportLayer.getLocalIdentifier();
+  }
+
+  /**
+   * Set the PASSTHROUGH header
+   */
+  @Override
+  public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
+      InetSocketAddress address, ByteBuffer m,
+      final @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
+
+    final MessageRequestHandleImpl<InetSocketAddress, ByteBuffer> ret = new MessageRequestHandleImpl<InetSocketAddress, ByteBuffer>(address,m,options);
+
+    ByteBuffer passThrough = ByteBuffer.allocate(m.remaining()+1);
+    passThrough.put(HEADER_PASSTHROUGH_BYTE);
+    passThrough.put(m);
+    passThrough.flip();
+
+    MessageCallback<InetSocketAddress, ByteBuffer> myCallback = null;
+    if (deliverAckToMe != null) {
+      myCallback = new MessageCallback<InetSocketAddress, ByteBuffer>() {
+
+        @Override
+        public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
+          deliverAckToMe.ack(ret);
+        }
+
+        @Override
+        public void sendFailed(
+            MessageRequestHandle<InetSocketAddress, ByteBuffer> msg,
+            Exception reason) {
+          deliverAckToMe.sendFailed(ret, reason);
+        }
+      };
+    }
+    ret.setSubCancellable(transportLayer.sendMessage(address, passThrough, myCallback, options));
+    return ret;
+  }
+
+  @Override
+  public void messageReceived(InetSocketAddress address, ByteBuffer msg,
+      @Nullable Map<String, Object> options) throws IOException {
+    if (!msg.hasRemaining()) {
+      throw new IOException("Empty message from " + address);
+    }
+    byte header = msg.get();
+    switch(header) {
+    case HEADER_PASSTHROUGH_BYTE:
+      callback.messageReceived(address, msg, options);
+      return;
+    case HEADER_PROBE_RESPONSE_BYTE:
+      if (msg.remaining() < Long.BYTES) {
+        throw new IOException("Probe response from " + address + " is too short for its uid: " + msg.remaining() + " bytes");
+      }
+      long uid = msg.getLong();
+      // No need to remove them from the table, this will get done in destroy()
+      ConnectivityResult request = verifyConnectionRequests.get(uid);
+      // null if the request was cancelled or already answered
+      if (request != null) request.udpSuccess(address, null);
+    }
+  }
+
+  @Override
+  public void destroy() {
+    verifyConnectionRequests.clear();
+    transportLayer.destroy();
+  }
+
+  /**
+   * Ask this strategy to probe a requesting node, but from a 3rd party node
+   */
+  @SuppressWarnings("NullAway.Init") // set by setProbeStrategy() before probing
+  private ProbeStrategy probeStrategy;
+  public void setProbeStrategy(ProbeStrategy probeStrategy) {
+    this.probeStrategy = probeStrategy;
+  }
+
+  final Map<Long, ConnectivityResult> verifyConnectionRequests = new HashMap<Long, ConnectivityResult>();
+
+  /**
+   * ask probeAddress to call probeStrategy.requestProbe()
+   */
+  @Override
+  public @Nullable Cancellable verifyConnectivity(final MultiInetSocketAddress local,
+      final InetSocketAddress probeAddress,
+      final ConnectivityResult deliverResultToMe,
+      @Nullable Map<String, Object> options) {
+    AttachableCancellable ret = new AttachableCancellable();
+
+    final long uid = environment.getRandomSource().nextLong();
+
+    logger.debug("verifyConnectivity({},{}):{}", local, probeAddress, uid);
+
+    synchronized(verifyConnectionRequests) {
+      verifyConnectionRequests.put(uid, deliverResultToMe);
+    }
+
+    // header has the PROBE_REQUEST and uid
+    SimpleOutputBuffer sob = new SimpleOutputBuffer();
+    try {
+      sob.writeByte(HEADER_PROBE_REQUEST_BYTE);
+      local.serialize(sob);
+      sob.writeLong(uid);
+    } catch (IOException ioe) {
+      // shouldn't happen
+      synchronized(verifyConnectionRequests) {
+        verifyConnectionRequests.remove(uid);
+      }
+      deliverResultToMe.receiveException(ioe);
+      return null;
+    }
+
+    // if they cancel, pull it from the table
+    ret.attach(() -> {
+      synchronized(verifyConnectionRequests) {
+        verifyConnectionRequests.remove(uid);
+      }
+      return true;
+    });
+
+    ret.attach(openSocket(probeAddress, sob.getBytes(), new SocketCallback<InetSocketAddress>() {
+      @Override
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
+          P2PSocket<InetSocketAddress> openedSocket) {
+        // maybe we should read a response here, but I don't think it's important, just read to close
+
+        openedSocket.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+          ByteBuffer readMe = ByteBuffer.allocate(1);
+
+          @Override
+          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket,
+              boolean canRead, boolean canWrite) throws IOException {
+            // read result
+            long bytesRead = socket.read(readMe);
+
+            if (bytesRead < 0) {
+              deliverResultToMe.receiveException(new ClosedChannelException("Channel closed before reporting success/failure"));
+              socket.close();
+              return;
+            }
+
+            if (readMe.hasRemaining()) {
+              socket.register(true,false,this);
+              return;
+            }
+
+            readMe.flip();
+            byte ret = readMe.get();
+            if (ret == 1) {
+              // true
+            } else {
+              deliverResultToMe.receiveException(new CantVerifyConnectivityException(probeAddress+" can't verify our connectivity for address "+local));
+              return;
+            }
+          }
+
+          @Override
+          public void receiveException(P2PSocket<InetSocketAddress> socket,
+              Exception ioe) {
+            deliverResultToMe.receiveException(ioe);
+          }
+        });
+
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
+          Exception ex) {
+        deliverResultToMe.receiveException(ex);
+      }
+    }, options));
+    return ret;
+  }
+
+  @Override
+  public Cancellable probe(final InetSocketAddress address, final long uid, final Continuation<Long, Exception> deliverResponseToMe, final @Nullable Map<String, Object> options) {
+    logger.debug("probe({},{},{},{})", address, uid, deliverResponseToMe, options);
+    // udp
+    final AttachableCancellable ret = new AttachableCancellable();
+    ByteBuffer msg = ByteBuffer.allocate(PROBE_RESPONSE_LENGTH); // header+uid
+    msg.put(HEADER_PROBE_RESPONSE_BYTE);
+    msg.putLong(uid);
+    msg.flip();
+
+    // 0 = udp 1 = tcp
+    // no need to synchronize, this should all be done on the selector
+    final boolean[] success = new boolean[2];
+    success[0] = false;
+    success[1] = false;
+
+    MessageCallback<InetSocketAddress, ByteBuffer> messageCallback = null;
+    if (deliverResponseToMe != null) {
+      messageCallback = new MessageCallback<InetSocketAddress, ByteBuffer>() {
+        @Override
+        public void ack(MessageRequestHandle<InetSocketAddress, ByteBuffer> msg) {
+          logger.trace("probe({},{},{},{}).udpSuccess()", address, uid, deliverResponseToMe, options);
+          success[0] = true;
+          if (success[1]) {
+            deliverResponseToMe.receiveResult(uid);
+          }
+        }
+
+        @Override
+        public void sendFailed(
+            MessageRequestHandle<InetSocketAddress, ByteBuffer> msg, Exception reason) {
+          logger.trace("probe({},{},{},{}).udpFailure()", address, uid, deliverResponseToMe, options);
+
+          ret.cancel();
+          deliverResponseToMe.receiveException(reason);
+        }
+
+      };
+    }
+
+    ret.attach(transportLayer.sendMessage(address, msg, messageCallback, options));
+
+
+    // tcp
+    final ByteBuffer writeMe = ByteBuffer.allocate(PROBE_RESPONSE_LENGTH);
+    writeMe.put(HEADER_PROBE_RESPONSE_BYTE);
+    writeMe.putLong(uid);
+    writeMe.flip();
+    ret.attach(openSocket(address, writeMe.array(), new SocketCallback<InetSocketAddress>() {
+      @Override
+      public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable,
+          P2PSocket<InetSocketAddress> socket) {
+        // maybe we should read a response here, but I don't think it's important, just read to close
+        logger.atTrace().log(() -> "probe("+address+","+uid+","+deliverResponseToMe+","+options+").receiveResult("+socket+")");
+        success[1] = true;
+        if (success[0]) {
+          deliverResponseToMe.receiveResult(uid);
+        }
+        socket.close();
+
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<InetSocketAddress> request,
+          Exception ex) {
+        logger.atTrace().log(() -> "probe("+address+","+uid+","+deliverResponseToMe+","+options+").tcpFailure2() "+ex);
+        if (deliverResponseToMe != null) deliverResponseToMe.receiveException(ex);
+      }
+    }, options));
+    return ret;
+  }
+}

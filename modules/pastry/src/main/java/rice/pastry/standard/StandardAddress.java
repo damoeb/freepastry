@@ -1,0 +1,117 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry.standard;
+
+import java.nio.charset.StandardCharsets;
+
+import rice.environment.Environment;
+import rice.p2p.util.HashUtils;
+
+/**
+ * Constructs an address for a specific class and instance name.
+ *
+ * @version $Id: StandardAddress.java 4654 2009-01-08 16:33:07Z jeffh $
+ *
+ * @author Alan Mislove
+ */
+public class StandardAddress {
+
+  /**
+   * Returns the address of an application: the first two bytes of the SHA-256 hash of its class, followed by the
+   * first two bytes of the SHA-256 hash of its instance name (or two zero bytes if there is none).
+   *
+   * @param clazz The application class
+   * @param instance The instance name, or null
+   * @param env The environment (unused)
+   * @return The address
+   */
+  public static int getAddress(Class<?> clazz, String instance, Environment env) {
+    byte[] digest = new byte[4];
+
+    // each half is two bytes of ONE digest; this used to call MessageDigest.digest() once per byte, and as
+    // digest() resets, the second byte was always that of the hash of nothing
+    byte[] classHash = HashUtils.hash(clazz.toString().getBytes(StandardCharsets.UTF_8));
+    digest[0] = classHash[0];
+    digest[1] = classHash[1];
+
+    if ((instance == null) || instance.equals("")) {
+      // digest 2,3 == 0
+    } else {
+      byte[] instanceHash = HashUtils.hash(instance.getBytes(StandardCharsets.UTF_8));
+      digest[2] = instanceHash[0];
+      digest[3] = instanceHash[1];
+    }
+
+    int myCode = shift(digest[0],24) | shift(digest[1],16) |
+             shift(digest[2],8) | shift(digest[3],0);
+
+    return myCode;
+  }
+
+  /**
+   * Returns the short prefix to look for.
+   *
+   */
+  public static short getAddress(Class<?> clazz, Environment env) {
+    int myCode = getAddress(clazz, null, env);
+
+    short code = (short)unshift(myCode, 16);
+    return code;
+  }
+
+  private static int shift(int n, int s) {
+    return (n & 0xff) << s;
+  }
+
+  private static int unshift(int n, int s) {
+    return n >> s;
+  }
+
+
+  public static void main(String[] args) {
+    Class<?> clazz = StandardAddress.class;
+
+    int a = getAddress(clazz, null, null);
+    int b = getAddress(clazz, "b", null);
+    short a1 = getAddress(clazz, null);
+
+    System.out.println(a+" "+Integer.toBinaryString(a)+" "+a1+" "+Integer.toBinaryString(a1));
+    System.out.println(b+" "+Integer.toBinaryString(b));
+  }
+
+}

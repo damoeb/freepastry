@@ -48,36 +48,36 @@ Let's look at the <code>rice.Continuation</code> interface.
  * call becomes available, the receiveResult method on this command
  * is called.
  *
- * @version $Id: index.html 2716 2005-08-10 17:42:38 +0200 (Wed, 10 Aug 2005) jeffh $
- *
  * @author Alan Mislove
  * @author Andreas Haeberlen
  */
-public interface Continuation {
+public interface Continuation&lt;R, E extends Exception&gt; {
 
   /**
-   * Called when a previously requested result is now availble.
+   * Called when a previously requested result is now available.
    *
    * @param result The result of the command.
    */
-  public void receiveResult(Object result);
+  public void receiveResult(R result);
 
   /**
-   * Called when an execption occured as a result of the
+   * Called when an exception occurred as a result of the
    * previous command.
    *
-   * @param result The exception which was caused.
+   * @param exception The exception which was caused.
    */
-  public void receiveException(Exception result);
+  public void receiveException(E exception);
+
+  ...
 }
 </pre>
+
+The type parameters say what the continuation receives: <code>R</code> is the type of the result and <code>E</code> the type of the exception.  The interface also contains helper classes such as <code>StandardContinuation</code> and <code>ExternalContinuation</code>, which you can ignore for now.<br/><br/>
 
 In Past (the DHT that runs on top of FreePastry) the code to do a lookup looks like this:
 
 <pre>
-  public void lookup(Id id, Continuation command) {
-    // non-blocking network call
-  }
+  public void lookup(Id id, Continuation&lt;? super PastContent, Exception&gt; command);
 </pre>
 
 Note the differences between this call and the alternative approach mentioned before: 
@@ -86,18 +86,17 @@ Note the differences between this call and the alternative approach mentioned be
   <li>There is no return value.</li>
 </ol>
 
-When the result arrives, Past will call <code>command.receiveResult()</code> with the response.  Inside the continuation, you can complete the task that required the lookup.  If instead, an error occurs, Past will call <code>command.receiveException()</code>.  Note that because <code>receiveResult()</code> is called with an Object, you must cast the result to what you are expecting from the lookup.<br/><br/>
+When the result arrives, Past will call <code>command.receiveResult()</code> with the response.  Inside the continuation, you can complete the task that required the lookup.  If instead, an error occurs, Past will call <code>command.receiveException()</code>.  Because the continuation is typed, <code>receiveResult()</code> receives a <code>PastContent</code> and you do not need to cast it.<br/><br/>
 
-Here is an example implementation of a continuation <a href="./src/lesson0a/MyContinuation.java">MyContinuation.java</a>:<br/><br/>
+Here is an example implementation of a continuation <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/MyContinuation.java">MyContinuation.java</a>:<br/><br/>
 
 First, create the continuation :
 <pre>
-class MyContinuation implements Continuation {
+class MyContinuation implements Continuation&lt;PastContent, Exception&gt; {
   /**
    * Called when the result arrives.
    */
-  public void receiveResult(Object result) {
-    PastContent pc = (PastContent)result;
+  public void receiveResult(PastContent pc) {
     System.out.println("Received a "+pc);
   }
 
@@ -105,28 +104,29 @@ class MyContinuation implements Continuation {
    * Called if there is an error.
    */
   public void receiveException(Exception result) {
-    System.out.println("There was an error: "+result);      
+    System.out.println("There was an error: "+result);
   }
 }
 </pre>
 
-Note that the continuation has 2 methods it must implement: <code>receiveResult()</code> and <code>receiveException()</code>.  This continuation will print "Received a <i>blah</i>" when the result comes in.  Note that we need to cast the result to what we should be expecting.  In the case of Past, we know that the result will be a PastContent.  If there is an error, we will print "There was an error: <i>Description of the error</i>"<br/><br/>
+Note that the continuation has 2 methods it must implement: <code>receiveResult()</code> and <code>receiveException()</code>.  This continuation will print "Received a <i>blah</i>" when the result comes in.  In the case of Past, the result is a PastContent.  If there is an error, we will print "There was an error: <i>Description of the error</i>"<br/><br/>
 
-Here is the code to use our continuation.  Note that this code will not run, because Past and Id have not been initialized.  (You will learn how to do that in <a href="#lesson7">Lesson 7</a>).<br/><br/>  
+Here is the code to use our continuation.  Note that this code will not run, because Past and Id have not been initialized.  (You will learn how to do that in the <a href="tut_past.html#past">Past tutorial</a>).<br/><br/>  
 
-Download the code here: <a href="./src/lesson0a/TestContinuation.java">TestContinuation.java</a>
+Download the code here: <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/TestContinuation.java">TestContinuation.java</a>
 
 <pre>
 public class TestContinuation {
+
   public static void main(String[] args) {
     Past past = null; // generated elsewhere
     Id id = null; // generated elsewhere
-    
+
     // create the continuation
-    Continuation command = new MyContinuation();    
-    
+    Continuation&lt;PastContent, Exception&gt; command = new MyContinuation();
+
     // make the call with the continuation
-    past.lookup(id, command);    
+    past.lookup(id, command);
   }
 }
 </pre>
@@ -135,7 +135,7 @@ This code calls lookup with the continuation.  When the result arrives, <code>co
 
 <h3>Anonymous inner classes</h3>
 Java hackers love anonymous inner classes, so here is the same code as an anonymous inner class, rather than a seperate class.  This is handy because it flows a bit more like a typical blocking program.  <i>First do a <code>past.lookup()</code> then <code>System.out.println()</code>.</i><br/><br/>
-Download the code here: <a href="./src/lesson0a/TestContinuationAnon.java">TestContinuationAnon.java</a>
+Download the code here: <a href="../../modules/tutorials/src/main/java/rice/tutorial/lesson0a/TestContinuationAnon.java">TestContinuationAnon.java</a>
 
 <pre>
 public class TestContinuationAnon {
@@ -143,20 +143,19 @@ public class TestContinuationAnon {
   public static void main(String[] args) {
     Past past = null; // generated elsewhere
     Id id = null; // generated elsewhere
-    
+
     // same code as TestContinuation and MyContinuation combined
-    past.lookup(id, new Continuation() {
+    past.lookup(id, new Continuation&lt;PastContent, Exception&gt;() {
       // will be called if success in the lookup
-      public void receiveResult(Object result) {
-        PastContent pc = (PastContent)result;
-        System.out.println("Received a "+pc);        
+      public void receiveResult(PastContent pc) {
+        System.out.println("Received a "+pc);
       }
 
       // will be called if failure in the lookup
       public void receiveException(Exception result) {
-        System.out.println("There was an error: "+result);      
+        System.out.println("There was an error: "+result);
       }
-    });    
+    });
   }
 }
 </pre>

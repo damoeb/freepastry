@@ -356,8 +356,8 @@ proto_register_gcpast(void)
 
   if (proto_gcpast == -1) {
     proto_gcpast = proto_register_protocol (
-      "GCPast Common API Application",	/* name */
-      "GCPast", /* short name */
+      "ExpiringPast Common API Application",	/* name */
+      "ExpiringPast", /* short name */
       "gcpast"	/* abbrev */
       );
   }
