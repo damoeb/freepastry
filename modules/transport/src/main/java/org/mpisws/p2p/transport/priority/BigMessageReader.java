@@ -48,21 +48,40 @@ import rice.p2p.util.MathUtils;
 /**
  * Reads the messages that arrive on a BIG message socket: a 4-byte size, then the message, repeated
  * until the remote node closes the socket.
+ *
+ * <p>The buffer grows with the bytes that actually arrive (doubling from {@link #INITIAL_CHUNK}) instead
+ * of being allocated at the announced size, and every byte it holds is reserved from the node's
+ * {@link BigMessageBudget}; a socket that would exceed the budget is closed. The reservation ends when
+ * the message is handed to the callback or the socket is closed.
  */
 final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier> {
+  /** the buffer size reserved when a size header arrives, before any of the message has */
+  static final int INITIAL_CHUNK = 8 * 1024;
+
   private final EntityManagerContext<Identifier> ctx;
   byte[] sizeBytes = new byte[Integer.BYTES];
   ByteBuffer sizeBuf = ByteBuffer.wrap(sizeBytes);
   @Nullable ByteBuffer msgBuf = null;
+  /** the announced size of the message being read */
+  private int announced;
+  /** the bytes of {@link #msgBuf} reserved from the budget */
+  private long reserved;
 
   BigMessageReader(EntityManagerContext<Identifier> ctx) {
     this.ctx = ctx;
   }
 
+  private void closeAndRelease(P2PSocket<Identifier> socket) {
+    ctx.bigMsgBudget.release(reserved);
+    reserved = 0;
+    msgBuf = null;
+    socket.close();
+  }
+
   @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
     ctx.errorHandler.get().receivedException(socket.getIdentifier(), ioe);
-    socket.close();
+    closeAndRelease(socket);
   }
 
   @Override
@@ -71,7 +90,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
     if (sizeBuf.hasRemaining()) {
       long ret = socket.read(sizeBuf);
       if (ret == -1) {
-        socket.close();
+        closeAndRelease(socket);
         return;
       }
       if (sizeBuf.hasRemaining()) {
@@ -81,35 +100,61 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
         int size = MathUtils.byteArrayToInt(sizeBytes);
         if (size <= 0 || size > ctx.maxBigMsgSize) {
           ctx.logger.warn("Closing socket, BIG message of size:{} is invalid or too big! (max:{}) from:{}", size, ctx.maxBigMsgSize, socket);
-          socket.close();
+          closeAndRelease(socket);
           return;
         }
-        msgBuf = ByteBuffer.allocate(size);
+        int initial = Math.min(size, INITIAL_CHUNK);
+        if (!ctx.bigMsgBudget.tryReserve(initial)) {
+          ctx.logger.warn("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", size, socket);
+          closeAndRelease(socket);
+          return;
+        }
+        reserved = initial;
+        announced = size;
+        msgBuf = ByteBuffer.allocate(initial);
         ctx.logger.trace("Receiving BIG message of size:{} from:{}", size, socket);
       }
     }
 
     ByteBuffer msgBuf = Objects.requireNonNull(this.msgBuf, "the size header is read first");
-    if (msgBuf.hasRemaining()) {
+    while (true) {
       long ret = socket.read(msgBuf);
       if (ret == -1) {
-        socket.close();
+        closeAndRelease(socket);
         return;
       }
       if (msgBuf.hasRemaining()) {
         socket.register(true, false, this);
         return;
-      } else {
-        // done with this msg
-        ctx.logger.debug("Received BIG message of size:{} from:{}", msgBuf.capacity(), socket);
-        msgBuf.flip();
-        sizeBuf.clear();
-        ctx.listeners.notifyRead(msgBuf.remaining(), socket.getIdentifier(), socket.getOptions());
-        ctx.callback.get().messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
-        this.msgBuf = null;
-        socket.register(true, false, this);
-        return;
       }
+      if (msgBuf.capacity() < announced) {
+        // the buffer is full and more is coming: grow it, within the budget
+        int grown = (int) Math.min((long) announced, 2L * msgBuf.capacity());
+        if (!ctx.bigMsgBudget.tryReserve(grown - msgBuf.capacity())) {
+          ctx.logger.warn("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", announced, socket);
+          closeAndRelease(socket);
+          return;
+        }
+        reserved = grown;
+        ByteBuffer bigger = ByteBuffer.allocate(grown);
+        msgBuf.flip();
+        bigger.put(msgBuf);
+        msgBuf = bigger;
+        this.msgBuf = bigger;
+        continue;
+      }
+      // done with this msg
+      ctx.logger.debug("Received BIG message of size:{} from:{}", msgBuf.capacity(), socket);
+      msgBuf.flip();
+      sizeBuf.clear();
+      // the callback owns the message from here on
+      ctx.bigMsgBudget.release(reserved);
+      reserved = 0;
+      this.msgBuf = null;
+      ctx.listeners.notifyRead(msgBuf.remaining(), socket.getIdentifier(), socket.getOptions());
+      ctx.callback.get().messageReceived(socket.getIdentifier(), msgBuf, socket.getOptions());
+      socket.register(true, false, this);
+      return;
     }
   }
 }

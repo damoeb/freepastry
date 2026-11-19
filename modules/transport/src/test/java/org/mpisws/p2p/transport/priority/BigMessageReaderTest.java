@@ -27,6 +27,14 @@ class BigMessageReaderTest {
   }
 
   private BigMessageReader<String> reader(int max) {
+    return reader(max, 64L * 1024 * 1024);
+  }
+
+  private BigMessageReader<String> reader(int max, long budget) {
+    return new BigMessageReader<>(context(max, budget));
+  }
+
+  private EntityManagerContext<String> context(int max, long budget) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
       public void messageReceived(String i, ByteBuffer m, Map<String, Object> options) {
@@ -37,9 +45,9 @@ class BigMessageReaderTest {
       public void incomingSocket(P2PSocket<String> s) {}
     };
     EntityManagerContext<String> ctx = new EntityManagerContext<>(null, null, null, null,
-        LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, max, List.of(), listeners,
+        LoggerFactory.getLogger(BigMessageReaderTest.class), 10, 10, max, budget, List.of(), listeners,
         () -> null, () -> callback, () -> false, id -> null);
-    return new BigMessageReader<>(ctx);
+    return ctx;
   }
 
   private static byte[] size(int size) {
@@ -129,5 +137,52 @@ class BigMessageReaderTest {
     }
 
     assertTrue(pinned < 4L * 1024 * 1024, "pinned " + pinned + " bytes for " + sockets + " idle sockets");
+  }
+
+  @Test
+  @DisplayName("a socket that would exceed the budget of BIG messages in flight is closed")
+  void exceedingTheBudgetClosesTheSocket() throws Exception {
+    int max = 4 * 1024 * 1024;
+    EntityManagerContext<String> ctx = context(max, BigMessageReader.INITIAL_CHUNK);
+    FakeSocket first = new FakeSocket(size(max));
+    FakeSocket second = new FakeSocket(size(max));
+
+    new BigMessageReader<>(ctx).receiveSelectResult(first, true, false);
+    new BigMessageReader<>(ctx).receiveSelectResult(second, true, false);
+
+    assertFalse(first.closed);
+    assertTrue(second.closed);
+    assertEquals(BigMessageReader.INITIAL_CHUNK, ctx.bigMsgBudget.reserved());
+  }
+
+  @Test
+  @DisplayName("the budget is released when a message is delivered")
+  void deliveringReleasesTheBudget() throws Exception {
+    EntityManagerContext<String> ctx = context(MAX, 100);
+    byte[] body = {1, 2, 3};
+    ByteBuffer wire = ByteBuffer.allocate(Integer.BYTES + body.length).putInt(body.length).put(body);
+
+    new BigMessageReader<>(ctx).receiveSelectResult(new FakeSocket(wire.array()), true, false);
+
+    assertEquals(0, ctx.bigMsgBudget.reserved());
+  }
+
+  @Test
+  void aMessageLargerThanTheInitialChunkRoundTrips() throws Exception {
+    int body = 100_000;
+    byte[] payload = new byte[body];
+    for (int n = 0; n < body; n++) {
+      payload[n] = (byte) n;
+    }
+    BigMessageReader<String> target = reader(1 << 20);
+    FakeSocket socket = new FakeSocket(ByteBuffer.allocate(Integer.BYTES + body).putInt(body).put(payload).array());
+
+    target.receiveSelectResult(socket, true, false);
+
+    assertEquals(1, delivered.size());
+    byte[] actual = new byte[body];
+    delivered.get(0).get(actual);
+    org.junit.jupiter.api.Assertions.assertArrayEquals(payload, actual);
+    assertFalse(socket.closed);
   }
 }

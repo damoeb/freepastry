@@ -65,6 +65,8 @@ final class EntityManagerContext<Identifier> {
   final int maxMsgSize;
   final int maxQueueSize;
   final int maxBigMsgSize;
+  /** the memory all BIG message readers of the node may hold together for messages still arriving */
+  final BigMessageBudget bigMsgBudget;
   final List<PrimarySocketListener<Identifier>> primarySocketListeners;
   final TransportListeners<Identifier> listeners;
   final Supplier<ErrorHandler<Identifier>> errorHandler;
@@ -90,6 +92,26 @@ final class EntityManagerContext<Identifier> {
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
       Function<Identifier, EntityManager<Identifier>> entityManagers) {
+    this(tl, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
+        maxBigMsgSize, PriorityTransportLayer.DEFAULT_MAX_BIG_MSG_IN_FLIGHT, primarySocketListeners, listeners,
+        errorHandler, callback, destroyed, entityManagers);
+  }
+
+  EntityManagerContext(TransportLayer<Identifier, ByteBuffer> tl,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      SelectorManager selectorManager,
+      Logger logger,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      long maxBigMsgInFlight,
+      List<PrimarySocketListener<Identifier>> primarySocketListeners,
+      TransportListeners<Identifier> listeners,
+      Supplier<ErrorHandler<Identifier>> errorHandler,
+      Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
+      BooleanSupplier destroyed,
+      Function<Identifier, EntityManager<Identifier>> entityManagers) {
     this.tl = tl;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;
@@ -98,6 +120,7 @@ final class EntityManagerContext<Identifier> {
     this.maxMsgSize = maxMsgSize;
     this.maxQueueSize = maxQueueSize;
     this.maxBigMsgSize = maxBigMsgSize;
+    this.bigMsgBudget = new BigMessageBudget(maxBigMsgInFlight);
     this.primarySocketListeners = primarySocketListeners;
     this.listeners = listeners;
     this.errorHandler = errorHandler;

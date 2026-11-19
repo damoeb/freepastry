@@ -74,6 +74,8 @@ pastry_socket_writer_max_queue_length = 30
 pastry_socket_writer_max_msg_size = 20480
 # the largest message, in bytes, that is sent or accepted on a socket of its own; a peer announcing a bigger one is disconnected
 pastry_socket_writer_max_big_msg_size = 4194304
+# the most bytes, in total, that the node buffers for big messages that are still arriving (the buffer grows with the bytes received, not with the announced size); a socket that would exceed it is disconnected
+pastry_socket_writer_max_big_msg_in_flight = 67108864
 # the time before it will retry a route that was already found dead
 pastry_socket_srm_check_dead_throttle = 300000
 pastry_socket_srm_default_rto = 3000

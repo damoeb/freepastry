@@ -103,6 +103,12 @@ public class PriorityTransportLayer<Identifier>
   public static final int DEFAULT_MAX_BIG_MSG_SIZE = 4 * 1024 * 1024;
 
   /**
+   * The most bytes the node buffers for BIG messages still arriving when none is configured, see
+   * {@link PriorityConfig#maxBigMsgInFlight()}.
+   */
+  public static final long DEFAULT_MAX_BIG_MSG_IN_FLIGHT = 64L * 1024 * 1024;
+
+  /**
    * BIG messages open a socket especially for big messages.  This is the biggest message size allowed.
    */
   private final int MAX_BIG_MSG_SIZE;
@@ -142,7 +148,7 @@ public class PriorityTransportLayer<Identifier>
       Environment env,
       PriorityConfig config,
       ErrorHandler<Identifier> handler) {
-    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), handler);
+    this(tl, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), config.maxBigMsgInFlight(), handler);
   }
 
   public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
@@ -163,6 +169,18 @@ public class PriorityTransportLayer<Identifier>
       int maxQueueSize,
       int maxBigMsgSize,
       ErrorHandler<Identifier> handler) {
+    this(tl, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, maxBigMsgSize, DEFAULT_MAX_BIG_MSG_IN_FLIGHT, handler);
+  }
+
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> tl,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      long maxBigMsgInFlight,
+      ErrorHandler<Identifier> handler) {
     this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
     entityManagers = new EntityManagerRegistry<Identifier>(this::newEntityManager);
     this.logger = env.getLogManager().getLogger(PriorityTransportLayer.class, null);
@@ -173,7 +191,7 @@ public class PriorityTransportLayer<Identifier>
     this.tl = tl;
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
     this.entityManagerContext = new EntityManagerContext<Identifier>(tl, livenessProvider, proximityProvider,
-        selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, primarySocketListeners, listeners,
+        selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
         () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
     tl.setCallback(this);
     livenessProvider.addLivenessListener(this);
