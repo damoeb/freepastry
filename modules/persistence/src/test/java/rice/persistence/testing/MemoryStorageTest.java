@@ -80,10 +80,10 @@ public class MemoryStorageTest extends Test {
     storage = new MemoryStorage(FACTORY);
     data  = new Id[500];
     metadata = new Integer[500];
-    int[] x = new int[5];
+    int[] idWords = new int[5];
     for (int i = 0; i < 500; i ++){
-        x[3] = i;
-        data[i] = FACTORY.buildId(x);
+        idWords[3] = i;
+        data[i] = FACTORY.buildId(idWords);
         metadata[i] = Integer.valueOf(i);
     }
     this.store = store;

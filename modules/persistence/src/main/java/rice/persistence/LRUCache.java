@@ -90,10 +90,10 @@ public class LRUCache implements Cache {
     this.storage = storage;
     this.maximumSize = maximumSize;
 
-    Iterator<Id> i = storage.scan().getIterator();
+    Iterator<Id> idIterator = storage.scan().getIterator();
 
-    while (i.hasNext())
-      touch(i.next());
+    while (idIterator.hasNext())
+      touch(idIterator.next());
   }
 
   /** Marks the id as the most recently used one; a null id is accepted. */

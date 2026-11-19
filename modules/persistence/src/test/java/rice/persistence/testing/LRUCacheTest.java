@@ -100,11 +100,11 @@ public class LRUCacheTest extends Test {
     cache = new LRUCache(new MemoryStorage(FACTORY), CACHE_SIZE, env);
 
     data  = new Id[500];
-    int[] x = new int[5];
+    int[] idWords = new int[5];
 
     for (int i = 0; i < 500; i ++){
-        x[3] = i;
-        data[i] = FACTORY.buildId(x);
+        idWords[3] = i;
+        data[i] = FACTORY.buildId(idWords);
     }
 
     int stressSize = 0;

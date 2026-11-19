@@ -155,8 +155,8 @@ public abstract class Test {
       test.start();
       test.await(MAIN_TIMEOUT_MILLIS);
       status = 0;
-    } catch (Throwable t) {
-      t.printStackTrace();
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
     } finally {
       test.environment.destroy();
     }

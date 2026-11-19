@@ -179,13 +179,13 @@ final class StorageRecovery {
     for (int i=0; i<files.length; i++) {
       try {
         Id id = layout.readKey(files[i]);
-        long len = StorageFiles.getFileLength(files[i]);
+        long fileLength = StorageFiles.getFileLength(files[i]);
 
         if (id == null)
           logger.info("READING {} RETURNED NULL!", files[i]);
 
-        if (len > 0) {
-          quota.increaseUsedSpace(len);
+        if (fileLength > 0) {
+          quota.increaseUsedSpace(fileLength);
 
           /* if the file is newer than the metadata file, update the metadata
           if we don't have the metadata for this file, update it */
@@ -220,26 +220,26 @@ final class StorageRecovery {
    * Resolves a conflict between the two provided files by picking the
    * newer one and renames it to the given output file.
    *
-   * @param file1 The first file
-   * @param file2 The second file
+   * @param firstFile The first file
+   * @param secondFile The second file
    * @param output The file to store the result in
    */
-  private void resolveConflict(Path file1, Path file2, Path output) throws IOException {
-    if (! Files.exists(file2)) {
-      StorageFiles.renameFile(file1, output);
-    } else if (! Files.exists(file1)) {
-      StorageFiles.renameFile(file2, output);
-    } else if (file1.equals(file2)) {
-      StorageFiles.renameFile(file1, output);
+  private void resolveConflict(Path firstFile, Path secondFile, Path output) throws IOException {
+    if (! Files.exists(secondFile)) {
+      StorageFiles.renameFile(firstFile, output);
+    } else if (! Files.exists(firstFile)) {
+      StorageFiles.renameFile(secondFile, output);
+    } else if (firstFile.equals(secondFile)) {
+      StorageFiles.renameFile(firstFile, output);
     } else {
-      logger.debug("resolving conflict between {} and {}", file1, file2);
+      logger.debug("resolving conflict between {} and {}", firstFile, secondFile);
 
-      if (format.readVersion(file1) < format.readVersion(file2)) {
-        layout.moveToLost(file1);
-        StorageFiles.renameFile(file2, output);
+      if (format.readVersion(firstFile) < format.readVersion(secondFile)) {
+        layout.moveToLost(firstFile);
+        StorageFiles.renameFile(secondFile, output);
       } else {
-        layout.moveToLost(file2);
-        StorageFiles.renameFile(file1, output);
+        layout.moveToLost(secondFile);
+        StorageFiles.renameFile(firstFile, output);
       }
     }
   }
@@ -255,14 +255,14 @@ final class StorageRecovery {
   private void moveFileToCorrectDirectory(Path parent, String name) throws IOException {
     Path file = parent.resolve(name);
     Id id = format.readKeyFromFile(file);
-    Path dest = layout.getDirectoryForId(id);
+    Path correctDirectory = layout.getDirectoryForId(id);
 
     /* if it's in the wrong directory, then move it and resolve the conflict if necessary */
-    if (! dest.equals(parent)) {
-      logger.debug("moving file {} to correct directory {} from {}", file, dest, parent);
-      Path other = dest.resolve(id.toStringFull().substring(layout.getPrefix(dest).length()));
-      resolveConflict(file, other, other);
-      layout.checkDirectory(dest);
+    if (! correctDirectory.equals(parent)) {
+      logger.debug("moving file {} to correct directory {} from {}", file, correctDirectory, parent);
+      Path targetFile = correctDirectory.resolve(id.toStringFull().substring(layout.getPrefix(correctDirectory).length()));
+      resolveConflict(file, targetFile, targetFile);
+      layout.checkDirectory(correctDirectory);
     }
   }
 }

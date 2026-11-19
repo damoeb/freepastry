@@ -165,8 +165,8 @@ final class ObjectFileFormat {
       serializer.writeObject(obj, buf);
     }
 
-    try (OutputStream fout = Files.newOutputStream(file)) {
-      fout.write(gzip(buf));
+    try (OutputStream output = Files.newOutputStream(file)) {
+      output.write(gzip(buf));
     }
 
     appendMetadata(file, metadata);
@@ -208,9 +208,9 @@ final class ObjectFileFormat {
     trailer.writeLong(PersistentStorage.PERSISTENCE_REVISION_3_0);
     trailer.writeLong(section.length);
 
-    try (OutputStream fout = Files.newOutputStream(file, CREATE, APPEND)) {
-      fout.write(section);
-      fout.write(trailer.getBytes(), 0, trailer.getWritten());
+    try (OutputStream output = Files.newOutputStream(file, CREATE, APPEND)) {
+      output.write(section);
+      output.write(trailer.getBytes(), 0, trailer.getWritten());
     }
   }
 

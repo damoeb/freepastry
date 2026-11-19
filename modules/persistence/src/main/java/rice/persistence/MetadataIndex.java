@@ -300,8 +300,8 @@ final class MetadataIndex {
       }
     }
 
-    try (OutputStream fout = Files.newOutputStream(file.resolve(METADATA_FILENAME))) {
-      fout.write(buf.getBytes(), 0, buf.getWritten());
+    try (OutputStream output = Files.newOutputStream(file.resolve(METADATA_FILENAME))) {
+      output.write(buf.getBytes(), 0, buf.getWritten());
     }
   }
 }

@@ -68,20 +68,20 @@ final class StorageQuota {
    *
    * Increases the amount of storage recorded as used
    *
-   * @param i the amount to increase usage by
+   * @param sizeBytes the amount to increase usage by
    */
-  void increaseUsedSpace(long i){
-     usedSize = usedSize + i;
+  void increaseUsedSpace(long sizeBytes){
+     usedSize = usedSize + sizeBytes;
   }
 
   /**
    *
    * decreases the amount of storage recorded as used
    *
-   * @param i the amount to decrease usage by
+   * @param sizeBytes the amount to decrease usage by
    */
-  void decreaseUsedSpace(long i){
-     usedSize = usedSize - i;
+  void decreaseUsedSpace(long sizeBytes){
+     usedSize = usedSize - sizeBytes;
   }
 
   /**

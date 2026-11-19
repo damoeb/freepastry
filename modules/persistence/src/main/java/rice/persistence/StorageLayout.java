@@ -594,12 +594,12 @@ final class StorageLayout {
    * @return The key that was read in
    */
   Id readKey(Path file) {
-    String s = getPrefix(file.getParent()) + file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, "");
+    String idString = getPrefix(file.getParent()) + file.getFileName().toString().replaceAll(ZERO_LENGTH_NAME, "");
 
-    if (s.indexOf(".") >= 0) {
-      return factory.buildIdFromString(s.toCharArray(), 0, s.indexOf("."));
+    if (idString.indexOf(".") >= 0) {
+      return factory.buildIdFromString(idString.toCharArray(), 0, idString.indexOf("."));
     } else {
-      return factory.buildIdFromString(s.toCharArray(), 0, s.length());
+      return factory.buildIdFromString(idString.toCharArray(), 0, idString.length());
     }
   }
 
