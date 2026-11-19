@@ -65,6 +65,7 @@ import rice.p2p.past.ObjectNotFoundException;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastPolicy;
+import rice.environment.params.ConfigChecks;
 import rice.p2p.past.RefreshFailedException;
 import rice.p2p.past.messaging.GCCollectMessage;
 import rice.p2p.past.messaging.GCInsertMessage;
@@ -98,6 +99,9 @@ public class GCPastImpl extends PastImpl implements GCPast {
    * The real factory, which is not wrapped with a GCIdFactory
    */
   private final IdFactory realFactory;
+
+  /** The longest time from now a refresh may extend the lease of an object to, p2p_past_gc_max_lease, in milliseconds */
+  private final long maxLease;
 
   // internal tracing stats
   private int refreshed = 0;
@@ -142,6 +146,7 @@ public class GCPastImpl extends PastImpl implements GCPast {
   public GCPastImpl(Node node, StorageManager manager, Cache backup, int replicas, String instance, PastPolicy policy, long collectionInterval, StorageManager trash) {
     super(new GCNode(node), manager, backup, replicas, instance, policy, trash);
     this.realFactory = node.getIdFactory();
+    this.maxLease = ConfigChecks.positive("p2p_past_gc_max_lease", getEnvironment().getParameters().getLong("p2p_past_gc_max_lease"));
 
     getEndpoint().scheduleMessage(new GCCollectMessage(0, getLocalNodeHandle(), node.getId()), collectionInterval, collectionInterval);
     getEndpoint().setDeserializer(new GCPastDeserializer());
@@ -437,6 +442,8 @@ public class GCPastImpl extends PastImpl implements GCPast {
 
               if (i.hasNext()) {
                 final GCId id = i.next();
+                /* nobody can lease an object for longer than the maximum lease from now */
+                final long expiration = Math.min(id.expiration(), getEnvironment().getTimeSource().currentTimeMillis() + maxLease);
 
                 /* skip the object if we don't have it yet */
                 if (storage.exists(id.id())) {
@@ -444,38 +451,18 @@ public class GCPastImpl extends PastImpl implements GCPast {
 
                   if (metadata != null) {
                     /* only allow the lifetime to be extended, otherwise skip */
-                    if (metadata.expiration() < id.expiration()) {
-                      storage.setMetadata(id.id(), metadata.setExpiration(id.expiration()), this);
+                    if (metadata.expiration() < expiration) {
+                      storage.setMetadata(id.id(), metadata.setExpiration(expiration), this);
                     } else {
                       /* already refreshed to a later expiration, which counts as success */
                       receiveResult(true);
                     }
                   } else {
-                    setMissingMetadata(id.id(), id.expiration(), this);
+                    setMissingMetadata(id.id(), expiration, this);
                   }
                 } else {
-                  /* but first check and see if it's in the trash, so we can uncollect it */
-                  if (trash != null) {
-                    trash.getObject(id.id(), new StandardContinuation<Object, Object, Exception>(this) {
-                      @Override
-                      public void receiveResult(Object o) {
-                        if ((o != null) && (o instanceof GCPastContent content)) {
-                          logger.debug("GCREFRESH: Restoring object {} from trash!", id);
-
-                          storage.store(id.id(), content.getMetadata(id.expiration()), content, new StandardContinuation<Boolean, Object, Exception>(parent) {
-                            @Override
-                            public void receiveResult(Boolean o) {
-                              trash.unstore(id.id(), parent);
-                            }
-                          });
-                        } else {
-                          parent.receiveResult(false);
-                        }
-                      }
-                    });
-                  } else {
-                    receiveResult(false);
-                  }
+                  /* a refresh carries no proof of ownership, so it must not bring back what the collection removed */
+                  receiveResult(false);
                 }
               } else {
                 parent.receiveResult(result.toArray(new Boolean[0]));
