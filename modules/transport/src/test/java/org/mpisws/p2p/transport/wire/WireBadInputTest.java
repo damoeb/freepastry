@@ -145,7 +145,10 @@ class WireBadInputTest {
             public void receiveResult(SocketRequestHandle<InetSocketAddress> cancellable, P2PSocket<InetSocketAddress> sock) {
               sock.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
                 @Override
-                public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) {
+                public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
+                  // consume the crafted bytes first: closing a socket with unread input makes the kernel send a reset
+                  // instead of an orderly close, and the peer then sees "Connection reset" instead of the end of the stream
+                  socket.read(ByteBuffer.allocate(16));
                   throw new IllegalStateException("a reader that crafted bytes make throw");
                 }
 
