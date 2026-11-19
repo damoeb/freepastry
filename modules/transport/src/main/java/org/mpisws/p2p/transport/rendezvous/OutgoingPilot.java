@@ -172,19 +172,19 @@ class OutgoingPilot<Identifier, HighIdentifier extends RendezvousContact> extend
   @Override
   protected void read() throws IOException {
     try {
-      byte msgType = sib().readByte();
+      byte msgType = socketInputBuffer().readByte();
       switch(msgType) {
       case PILOT_PONG:
         logger.trace("{} received pong", this);
-        sib().clear();
+        socketInputBuffer().clear();
         read(); // read the next thing, or re-register if there isn't enough to read
         break;
       case PILOT_REQUEST:
-        HighIdentifier requestor = serializer.deserialize(sib());
-        int uid = sib().readInt();
+        HighIdentifier requestor = serializer.deserialize(socketInputBuffer());
+        int uid = socketInputBuffer().readInt();
         logger.trace("Received socket request: requestor:{} middleman:{} uid:{}", requestor, i, uid);
         layer.openAcceptSocket(requestor, getIdentifier(), uid);
-        sib().clear();
+        socketInputBuffer().clear();
         read();
         break;
       }

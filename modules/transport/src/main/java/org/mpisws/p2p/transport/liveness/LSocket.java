@@ -121,8 +121,8 @@ class LSocket<Identifier> extends SocketWrapperSocket<Identifier, Identifier> {
         }
       };
     } // sync
-    logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.rto()+" millis if we don't write.");
-    layer.timer.schedule(livenessCheckerTimer, (long) manager.rto()*LivenessTransportLayer.IDLE_CHECK_RTO_MULTIPLIER, LivenessTransportLayer.IDLE_CHECK_PERIOD_MILLIS);
+    logger.atTrace().log(() -> "Checking liveness on "+manager.identifier.get()+" in "+manager.retransmissionTimeoutMillis()+" millis if we don't write.");
+    layer.timer.schedule(livenessCheckerTimer, (long) manager.retransmissionTimeoutMillis()*LivenessTransportLayer.IDLE_CHECK_RTO_MULTIPLIER, LivenessTransportLayer.IDLE_CHECK_PERIOD_MILLIS);
   }
 
   public void stopLivenessCheckerTimer() {

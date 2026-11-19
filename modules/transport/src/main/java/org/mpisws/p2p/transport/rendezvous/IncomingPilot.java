@@ -125,13 +125,13 @@ class IncomingPilot<Identifier, HighIdentifier extends RendezvousContact> extend
     if (i == null) {
       // only do this the first time
       try {
-        i = serializer.deserialize(sib());
+        i = serializer.deserialize(socketInputBuffer());
         logger.trace("Received incoming Pilot from {}", i);
       } catch (InsufficientBytesException ibe) {
         socket().register(true, false, this);
         return;
       }
-      sib().clear();
+      socketInputBuffer().clear();
       incomingPilots.put(i,this);
       layer.notifyIncomingPilotAdded(i);
 
@@ -140,11 +140,11 @@ class IncomingPilot<Identifier, HighIdentifier extends RendezvousContact> extend
     }
 
     try {
-      byte msgType = sib().readByte();
+      byte msgType = socketInputBuffer().readByte();
       switch(msgType) {
       case PILOT_PING:
         logger.trace("{} received ping", this);
-        sib().clear();
+        socketInputBuffer().clear();
         enqueue(ByteBuffer.wrap(PILOT_PONG_BYTES));
         read();  // read the next thing, or re-register if there isn't enough to read
         break;

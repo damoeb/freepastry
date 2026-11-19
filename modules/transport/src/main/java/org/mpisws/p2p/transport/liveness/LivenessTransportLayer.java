@@ -180,7 +180,7 @@ public class LivenessTransportLayer<Identifier>
   @Override
   public void clearState(Identifier i) {
     logger.debug("clearState({})", i);
-    deleteManager(i);
+    removeTracker(i);
   }
 
   @Override
@@ -233,11 +233,11 @@ public class LivenessTransportLayer<Identifier>
     if (managers.size() > maxTrackers) {
       Identifier eldest = managers.keySet().iterator().next();
       logger.warn("{} liveness trackers in use; forgetting the least recently used one, {}", managers.size(), eldest);
-      deleteManager(eldest);
+      removeTracker(eldest);
     }
   }
 
-  public @Nullable LivenessTracker<Identifier> deleteManager(Identifier i) {
+  public @Nullable LivenessTracker<Identifier> removeTracker(Identifier i) {
     synchronized(managers) {
       LivenessTracker<Identifier> manager = managers.remove(i);
       if (manager != null) {

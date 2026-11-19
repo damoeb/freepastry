@@ -169,7 +169,7 @@ public class LivenessTracker<Identifier> {
     }
   }
 
-  public int rto() {
+  public int retransmissionTimeoutMillis() {
     return (int)RTO;
   }
 
@@ -309,7 +309,7 @@ public class LivenessTracker<Identifier> {
       if ((this.liveness < LIVENESS_DEAD) ||
           (this.updated < now - layer.CHECK_DEAD_THROTTLE)) {
         this.updated = now;
-        rto = rto();
+        rto = retransmissionTimeoutMillis();
         this.setPending(layer.new DeadChecker(this, layer.NUM_PING_TRIES, rto, options));
         ret = true;
       } else {

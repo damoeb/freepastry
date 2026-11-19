@@ -104,7 +104,7 @@ import org.slf4j.Logger;
       return "MD["+msg+":"+from+"=>"+node+":"+seq+"]";
     }
 
-    public MessageType getMsg() {
+    public MessageType getMessage() {
       return msg;
     }
 

@@ -133,7 +133,7 @@ abstract class AbstractPilot<Identifier, HighIdentifier extends RendezvousContac
     return Objects.requireNonNull(socket, "the pilot is not connected yet");
   }
 
-  protected SocketInputBuffer sib() {
+  protected SocketInputBuffer socketInputBuffer() {
     return Objects.requireNonNull(sib, "the pilot is not connected yet");
   }
 
