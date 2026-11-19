@@ -373,7 +373,7 @@ final class AggregationDebugCommands {
     Id id = factory.buildIdFromString(keyArg);
     long expiration = environment.getTimeSource().currentTimeMillis() + Long.parseLong(expirationArg);
 
-    AggregateDescriptor aggr = (AggregateDescriptor) aggregateList.getADC(id);
+    AggregateDescriptor aggr = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
     if (aggr != null) {
       aggregateList.setAggregateLifetime(aggr, Math.min(aggr.getCurrentLifetime(), expiration));
       for (int i=0; i<aggr.getObjects().length; i++) {

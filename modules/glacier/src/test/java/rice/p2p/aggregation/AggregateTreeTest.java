@@ -84,7 +84,7 @@ class AggregateTreeTest {
     testObj.setHandle(root, new Continuation<Boolean, Exception>() {
       @Override
       public void receiveResult(Boolean result) {
-        completedWithAllAggregates.add(aggregateList.getADC(root) != null && aggregateList.getADC(left) != null && aggregateList.getADC(right) != null);
+        completedWithAllAggregates.add(aggregateList.getAggregateDescriptor(root) != null && aggregateList.getAggregateDescriptor(left) != null && aggregateList.getAggregateDescriptor(right) != null);
       }
       @Override
       public void receiveException(Exception e) {

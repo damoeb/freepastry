@@ -94,7 +94,7 @@ final class ObjectRetriever {
   }
 
   private void lookupInAggregate(Id id, Continuation<? super PastContent, Exception> command) {
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
+    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
     if (adc!=null) {
       logger.debug("NL: Must retrieve from aggregate");
 
@@ -116,7 +116,7 @@ final class ObjectRetriever {
   void lookup(final Id id, final long version, final Continuation<? super PastContent, Exception> command) {
     logger.info("lookup({}, version={})", id, version);
 
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(new VersionKey(id, version));
+    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(id, version));
     if (adc!=null) {
       logger.debug("VL: Retrieving from aggregate");
 
@@ -224,7 +224,7 @@ final class ObjectRetriever {
    * handles in the object store again.
    */
   private void lookupHandlesInAggregate(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
-    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
+    AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
     if (adc==null) {
       logger.info("lookupHandles: {} is neither in object store nor in aggregate list", id);
       /* Note that we have to give up here... even if the object has not been

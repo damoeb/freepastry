@@ -270,7 +270,7 @@ public class AggregateList {
     rootKey = null;
   }
 
-  public AggregateDescriptor getADC(Id id) {
+  public AggregateDescriptor getAggregateDescriptor(Id id) {
     return (AggregateDescriptor) aggregateList.get(id);
   }
 

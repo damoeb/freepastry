@@ -93,7 +93,7 @@ final class AggregateTree {
       return;
     }
 
-    if (aggregateList.getADC(handle) != null) {
+    if (aggregateList.getAggregateDescriptor(handle) != null) {
       logger.info("Rebuild: Handle {} is already covered by current root", handle);
       command.receiveResult(Boolean.valueOf(true));
       return;

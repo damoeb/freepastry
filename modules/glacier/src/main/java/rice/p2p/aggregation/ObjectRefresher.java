@@ -118,7 +118,7 @@ final class ObjectRefresher {
     for (int i=0; i<ids.length; i++) {
       logger.info("Refresh({}v{}, expiration={})", ids[i], versions[i], expirations[i]);
 
-      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(new VersionKey(ids[i], versions[i]));
+      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(new VersionKey(ids[i], versions[i]));
       if (adc!=null) {
         int objDescIndex = adc.lookupSpecific(ids[i], versions[i]);
         if (objDescIndex < 0) {
@@ -266,7 +266,7 @@ final class ObjectRefresher {
 
       /* In the common case, the aggregate is in the list, and we can simply update its lifetime there */
 
-      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(id);
+      AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(id);
       if (adc!=null)
         return refreshInAggregateList(adc, id, expiration);
 

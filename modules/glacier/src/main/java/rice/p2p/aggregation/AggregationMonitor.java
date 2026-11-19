@@ -188,7 +188,7 @@ final class AggregationMonitor {
           result.append(currentId.toStringFull() + " - OS ");
           result.append((handle==null) ? "--" : ""+(handle.getExpiration()-now));
 
-          AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getADC(currentId);
+          AggregateDescriptor adc = (AggregateDescriptor) aggregateList.getAggregateDescriptor(currentId);
           if (adc != null) {
             result.append(" AD " + (adc.getCurrentLifetime() - now));
 
