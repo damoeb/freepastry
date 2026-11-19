@@ -109,6 +109,13 @@ public class SSLTransportLayer<Identifier, MessageType>
    *     this test (certified node ids pass one that requires the CN to be a node id); the default accepts any CN
    */
   public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
+    this(tl, keyStore, new char[0], trustStore, clientAuth, subjectValidator, env);
+  }
+
+  /**
+   * @param keyPassword the password of the private key entry in keyStore (blank if it has none)
+   */
+  public SSLTransportLayer(TransportLayer<Identifier, MessageType> tl, KeyStore keyStore, char[] keyPassword, KeyStore trustStore, int clientAuth, Predicate<String> subjectValidator, Environment env) throws IOException {
     this.subjectValidator = subjectValidator;
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
 

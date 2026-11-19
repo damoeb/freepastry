@@ -132,12 +132,17 @@ public class SSLTest {
 
   /** a PKCS12 store with a new key signed by signer (if non-null) and trusting trusted (if non-null) */
   static KeyStore store(String cn, CATool signer, CATool trusted) throws Exception {
+    return store(cn, signer, trusted, NO_PASSWORD);
+  }
+
+  /** like {@link #store(String, CATool, CATool)}, with the given password on the private key entry */
+  static KeyStore store(String cn, CATool signer, CATool trusted, char[] keyPassword) throws Exception {
     KeyStore store = KeyStore.getInstance(CATool.DEFAULT_KEYSTORE_TYPE);
     store.load(null, null);
     if (signer != null) {
       KeyPair pair = CATool.generateKeyPair();
       X509Certificate cert = signer.sign(cn, pair.getPublic());
-      store.setKeyEntry("private", pair.getPrivate(), NO_PASSWORD, new Certificate[] {cert});
+      store.setKeyEntry("private", pair.getPrivate(), keyPassword, new Certificate[] {cert});
     }
     if (trusted != null) store.setCertificateEntry("cert", trusted.getCertificate());
     return store;
@@ -167,9 +172,13 @@ public class SSLTest {
   }
 
   SSLTransportLayer<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, KeyStore trust, int clientAuth, Predicate<String> subjectValidator) throws IOException {
+    return layer(name, port, keys, NO_PASSWORD, trust, clientAuth, subjectValidator);
+  }
+
+  SSLTransportLayer<InetSocketAddress, ByteBuffer> layer(String name, int port, KeyStore keys, char[] keyPassword, KeyStore trust, int clientAuth, Predicate<String> subjectValidator) throws IOException {
     Environment env = rootEnv.cloneEnvironment(name);
     WireTransportLayer wire = new WireTransportLayer(new InetSocketAddress(addr, port), env, null);
-    SSLTransportLayer<InetSocketAddress, ByteBuffer> ret = new SSLTransportLayer<InetSocketAddress, ByteBuffer>(wire, keys, trust, clientAuth, subjectValidator, env);
+    SSLTransportLayer<InetSocketAddress, ByteBuffer> ret = new SSLTransportLayer<InetSocketAddress, ByteBuffer>(wire, keys, keyPassword, trust, clientAuth, subjectValidator, env);
     layers.add(ret);
     environments.put(ret, env);
     return ret;
@@ -256,6 +265,19 @@ public class SSLTest {
       }
     });
     return opened;
+  }
+
+  @Test
+  @DisplayName("a key entry with a password is used with that password")
+  void keyPasswordOfTheKeyStoreIsUsed() throws Exception {
+    char[] keyPassword = "x".toCharArray();
+    SSLTransportLayer<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), ca(false), keyPassword), keyPassword, store("alice", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED, subject -> true);
+    SSLTransportLayer<InetSocketAddress, ByteBuffer> bob = layer("bob", bobPort, store("bob", ca(false), null, keyPassword), keyPassword, store("bob", null, ca(false)), SSLTransportLayer.CLIENT_AUTH_REQUIRED, subject -> true);
+    acceptOn(alice);
+
+    sendPayload(bob, new InetSocketAddress(addr, alicePort)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+    assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
   }
 
   @Test

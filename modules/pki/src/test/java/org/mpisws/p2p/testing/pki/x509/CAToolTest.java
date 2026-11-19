@@ -2,7 +2,10 @@ package org.mpisws.p2p.testing.pki.x509;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
@@ -13,8 +16,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mpisws.p2p.pki.x509.CATool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * CATool's defaults are accepted by JDK 25's TLS constraints, and its CA store round-trips as PKCS12.
@@ -58,5 +63,23 @@ public class CAToolTest {
 
     IOException e = assertThrows(IOException.class, () -> CATool.getCATool(cn, "wrong".toCharArray()));
     assertTrue(e.getMessage().contains("PKCS12"), e.getMessage());
+  }
+
+  @Test
+  void caStoreIsOwnerOnly() throws Exception {
+    assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+    String cn = new File(dir.toFile(), "TestCA").getPath();
+
+    CATool.getCATool(cn, "pw".toCharArray());
+
+    assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(Path.of(cn + "-store")));
+  }
+
+  @Test
+  void emptyCaPasswordIsRefused() {
+    String cn = new File(dir.toFile(), "TestCA").getPath();
+
+    assertThrows(IllegalArgumentException.class, () -> CATool.getCATool(cn, new char[0]));
+    assertFalse(new File(cn + "-store").exists());
   }
 }
