@@ -72,8 +72,8 @@ public class GCIdSet implements IdSet {
   /**
    * Constructor
    */
-  protected GCIdSet(IdSet set, SortedMap<Id, Object> timeouts) {
-    this.ids = set;
+  protected GCIdSet(IdSet idSet, SortedMap<Id, Object> timeouts) {
+    this.ids = idSet;
     this.timeouts = timeouts;
   }
 
@@ -91,10 +91,10 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public void addId(Id id) {
-    ExpiringId gcid = (ExpiringId) id;
+    ExpiringId expiringId = (ExpiringId) id;
 
-    ids.addId(gcid.id());
-    timeouts.put(gcid.id(), new ExpiringPastMetadata(gcid.expiration()));
+    ids.addId(expiringId.id());
+    timeouts.put(expiringId.id(), new ExpiringPastMetadata(expiringId.expiration()));
   }
 
   /**
@@ -103,9 +103,9 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public void removeId(Id id) {
-    ExpiringId gcid = (ExpiringId) id;
-    ids.removeId(gcid.id());
-    timeouts.remove(gcid.id());
+    ExpiringId expiringId = (ExpiringId) id;
+    ids.removeId(expiringId.id());
+    timeouts.remove(expiringId.id());
   }
 
   /**
@@ -115,8 +115,8 @@ public class GCIdSet implements IdSet {
    */
   @Override
   public boolean isMemberId(Id id) {
-    ExpiringId gcid = (ExpiringId) id;
-    return ids.isMemberId(gcid.id());
+    ExpiringId expiringId = (ExpiringId) id;
+    return ids.isMemberId(expiringId.id());
   }
 
   /**
@@ -184,12 +184,12 @@ public class GCIdSet implements IdSet {
   /**
    * Determines equality
    *
-   * @param o To compare to
+   * @param object To compare to
    * @return Equals
    */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof GCIdSet other))
+  public boolean equals(Object object) {
+    if (!(object instanceof GCIdSet other))
       return false;
 
     if (numElements() != other.numElements())

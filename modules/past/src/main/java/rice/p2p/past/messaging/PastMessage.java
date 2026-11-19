@@ -151,9 +151,9 @@ public sealed abstract class PastMessage implements RawMessage
   /**
    * Method by which this message is supposed to return it's response.
    *
-   * @param c The continuation to return the reponse to.
+   * @param continuation The continuation to return the reponse to.
    */
-  public abstract void returnResponse(Continuation<Object, Exception> c, Environment env, String instance);
+  public abstract void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance);
 
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     id = buf.readInt();

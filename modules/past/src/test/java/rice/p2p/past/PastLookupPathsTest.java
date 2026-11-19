@@ -30,12 +30,12 @@ class PastLookupPathsTest {
   private static final int CACHE_BYTES = 512 * 1024;
 
   private SocketRing ring;
-  private PastryIdFactory idf;
+  private PastryIdFactory idFactory;
 
   @BeforeEach
   void setUp() {
     ring = new SocketRing();
-    idf = new PastryIdFactory(ring.env);
+    idFactory = new PastryIdFactory(ring.env);
   }
 
   @AfterEach
@@ -48,8 +48,8 @@ class PastLookupPathsTest {
   }
 
   private PastImpl newPast(PastryNode node) {
-    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
-        new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), 1, "lookup");
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idFactory, new MemoryStorage(idFactory),
+        new LRUCache(new MemoryStorage(idFactory), CACHE_BYTES, node.getEnvironment())), 1, "lookup");
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {
         return new DistPastTestContent(buf, endpoint);
@@ -60,18 +60,18 @@ class PastLookupPathsTest {
   }
 
   private void put(PastImpl past, DistPastTestContent content) throws Exception {
-    await(FutureContinuation.<Boolean>call(c -> past.storage.getStorage().store(content.getId(), null, content, c)));
+    await(FutureContinuation.<Boolean>call(continuation -> past.storage.getStorage().store(content.getId(), null, content, continuation)));
   }
 
   private PastContent lookup(PastImpl past, DistPastTestContent content, boolean cache) throws Exception {
-    return await(FutureContinuation.<PastContent>call(c -> past.lookup(content.getId(), cache, c)));
+    return await(FutureContinuation.<PastContent>call(continuation -> past.lookup(content.getId(), cache, continuation)));
   }
 
   @Test
   @DisplayName("a lookup of a locally stored object answers from the local store")
   void lookupFindsLocalObject() throws Exception {
     List<PastImpl> pasts = ring.boot(3, this::newPast);
-    DistPastTestContent content = new DistPastTestContent(ring.env, idf, "local");
+    DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "local");
     put(pasts.get(0), content);
 
     PastContent found = lookup(pasts.get(0), content, false);
@@ -83,7 +83,7 @@ class PastLookupPathsTest {
   @DisplayName("a lookup of a remote object returns it and caches it when asked to")
   void lookupOfRemoteObjectCachesWhenAsked() throws Exception {
     List<PastImpl> pasts = ring.boot(3, this::newPast);
-    DistPastTestContent content = new DistPastTestContent(ring.env, idf, "remote");
+    DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "remote");
     put(pasts.get(1), content);
     put(pasts.get(2), content);
 
@@ -97,7 +97,7 @@ class PastLookupPathsTest {
   @DisplayName("a lookup of a remote object does not cache it when not asked to")
   void lookupOfRemoteObjectDoesNotCacheWhenNotAsked() throws Exception {
     List<PastImpl> pasts = ring.boot(3, this::newPast);
-    DistPastTestContent content = new DistPastTestContent(ring.env, idf, "remote");
+    DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "remote");
     put(pasts.get(1), content);
     put(pasts.get(2), content);
 
@@ -112,6 +112,6 @@ class PastLookupPathsTest {
   void lookupOfMissingObjectAnswersNull() throws Exception {
     List<PastImpl> pasts = ring.boot(3, this::newPast);
 
-    assertNull(lookup(pasts.get(0), new DistPastTestContent(ring.env, idf, "missing"), true));
+    assertNull(lookup(pasts.get(0), new DistPastTestContent(ring.env, idFactory, "missing"), true));
   }
 }

@@ -84,12 +84,12 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
     * Method which builds a response for this message, using the provided
    * object as a result.
    *
-   * @param o The object argument
+   * @param result The object argument
    */
   @Override
-  public void receiveResult(Object o) {
+  public void receiveResult(Object result) {
     setResponse();
-    response = o;
+    response = result;
   }
 
   /**
@@ -107,14 +107,14 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
   /**
     * Method by which this message is supposed to return it's response.
    *
-   * @param c The continuation to return the reponse to.
+   * @param continuation The continuation to return the reponse to.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
+  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
     if (exception == null)
-      c.receiveResult(response);
+      continuation.receiveResult(response);
     else
-      c.receiveException(exception);
+      continuation.receiveException(exception);
   }
 
   /**

@@ -202,18 +202,18 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     @Override
     public Message deserialize(InputBuffer buf, short type, int priority,
         NodeHandle sender) throws IOException {
-      PastMessageType t = PastMessageType.find(type);
-      if (t == null) {
+      PastMessageType messageType = PastMessageType.find(type);
+      if (messageType == null) {
         throw unknownType(type);
       }
       try {
-        return switch (t) {
+        return switch (messageType) {
           case FETCH_HANDLE -> FetchHandleMessage.build(buf, endpoint, contentHandleDeserializer);
           case FETCH -> FetchMessage.build(buf, endpoint, contentDeserializer, contentHandleDeserializer);
           case INSERT -> InsertMessage.build(buf, endpoint, contentDeserializer);
           case LOOKUP_HANDLES -> LookupHandlesMessage.build(buf, endpoint);
           case LOOKUP -> LookupMessage.build(buf, endpoint, contentDeserializer);
-          case GC_INSERT, GC_LOOKUP_HANDLES, GC_REFRESH -> deserializeGC(buf, t);
+          case GC_INSERT, GC_LOOKUP_HANDLES, GC_REFRESH -> deserializeGC(buf, messageType);
           // local messages, never sent
           case MESSAGE_LOST, GC_COLLECT -> throw unknownType(type);
         };
@@ -296,49 +296,49 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           boolean canWrite) {
         logger.trace("Reading from {}", socket);
         try {
-          ByteBuffer[] bb = pendingSocketTransactions.get(socket);
-          if (bb == null) {
+          ByteBuffer[] buffers = pendingSocketTransactions.get(socket);
+          if (buffers == null) {
             // this is a new message
 
             // read the size
-            bb = new ByteBuffer[1];
-            bb[0] = ByteBuffer.allocate(Integer.BYTES);
-            if (socket.read(bb[0]) == -1) {
+            buffers = new ByteBuffer[1];
+            buffers[0] = ByteBuffer.allocate(Integer.BYTES);
+            if (socket.read(buffers[0]) == -1) {
               close(socket);
               return;
             }
 
             // TODO: handle a partial read of the 4-byte size header
-            byte[] sizeArr = bb[0].array();
+            byte[] sizeArr = buffers[0].array();
             int size = MathUtils.byteArrayToInt(sizeArr);
 
             logger.trace("Found object of size {} from {}", size, socket);
 
             // allocate a buffer to store the object, save it in the pst
-            bb[0] = ByteBuffer.allocate(size);
-            pendingSocketTransactions.put(socket,bb);
+            buffers[0] = ByteBuffer.allocate(size);
+            pendingSocketTransactions.put(socket,buffers);
           }
 
           // now we have a bb
 
           // read some bytes
-          if (socket.read(bb[0]) == -1) {
+          if (socket.read(buffers[0]) == -1) {
             close(socket);
           }
 
           // deserialize or reregister
-          if (bb[0].remaining() == 0) {
+          if (buffers[0].remaining() == 0) {
             // make sure to clear things up so we can keep receiving
             pendingSocketTransactions.remove(socket);
 
-            logger.trace("bb[0].limit() {} bb[0].remaining() {} from {}", bb[0].limit(), bb[0].remaining(), socket);
+            logger.trace("bb[0].limit() {} bb[0].remaining() {} from {}", buffers[0].limit(), buffers[0].remaining(), socket);
 
             // deserialize the object
-            SimpleInputBuffer sib = new SimpleInputBuffer(bb[0].array());
+            SimpleInputBuffer inputBuffer = new SimpleInputBuffer(buffers[0].array());
 
-            short type = sib.readShort();
+            short type = inputBuffer.readShort();
 
-            PastMessage result = (PastMessage)endpoint.getDeserializer().deserialize(sib,type,(byte)0,null);
+            PastMessage result = (PastMessage)endpoint.getDeserializer().deserialize(inputBuffer,type,(byte)0,null);
             deliver(null,result);
 
           }
@@ -349,8 +349,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
             socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
 
             // no recursive call to read the next object: calling read when not ready throws an exception
-        } catch (IOException ioe) {
-          receiveException(socket, ioe);
+        } catch (IOException e) {
+          receiveException(socket, e);
         }
       }
 
@@ -418,19 +418,19 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   protected Continuation<Object, Exception> getResponseContinuation(final PastMessage msg) {
     logger.trace("Getting the Continuation to respond to the message {}", msg);
-    final ContinuationMessage cmsg = (ContinuationMessage) msg;
+    final ContinuationMessage continuationMessage = (ContinuationMessage) msg;
 
     return new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        cmsg.receiveResult(o);
-        endpoint.route(null, cmsg, msg.getSource());
+      public void receiveResult(Object result) {
+        continuationMessage.receiveResult(result);
+        endpoint.route(null, continuationMessage, msg.getSource());
       }
 
       @Override
       public void receiveException(Exception e) {
-        cmsg.receiveException(e);
-        endpoint.route(null, cmsg, msg.getSource());
+        continuationMessage.receiveException(e);
+        endpoint.route(null, continuationMessage, msg.getSource());
       }
     };
   }
@@ -439,24 +439,24 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * Do like above, but use a socket
    */
   protected Continuation<Object, Exception> getFetchResponseContinuation(final PastMessage msg) {
-    final ContinuationMessage cmsg = (ContinuationMessage) msg;
+    final ContinuationMessage continuationMessage = (ContinuationMessage) msg;
 
     return new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        cmsg.receiveResult(o);
-        PastContent content = (PastContent)o;
+      public void receiveResult(Object result) {
+        continuationMessage.receiveResult(result);
+        PastContent content = (PastContent)result;
         if (socketStrategy.sendAlongSocket(SocketStrategy.TYPE_FETCH, content)) {
-          sendViaSocket(msg.getSource(), cmsg, null);
+          sendViaSocket(msg.getSource(), continuationMessage, null);
         } else {
-          endpoint.route(null, cmsg, msg.getSource());
+          endpoint.route(null, continuationMessage, msg.getSource());
         }
       }
 
       @Override
       public void receiveException(Exception e) {
-        cmsg.receiveException(e);
-        endpoint.route(null, cmsg, msg.getSource());
+        continuationMessage.receiveException(e);
+        endpoint.route(null, continuationMessage, msg.getSource());
       }
     };
   }
@@ -468,58 +468,58 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   WeakHashMap<AppSocket, ByteBuffer[]> pendingSocketTransactions = new WeakHashMap<AppSocket, ByteBuffer[]>();
 
-  private void sendViaSocket(final NodeHandle handle, final PastMessage m, final Continuation<?, Exception> c) {
-    if (c != null) {
-      CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(m.getUID(), getLocalNodeHandle(), null, m, handle), MESSAGE_TIMEOUT);
-      insertPending(m.getUID(), timer, c);
+  private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
+    if (continuation != null) {
+      CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(msg.getUID(), getLocalNodeHandle(), null, msg, handle), MESSAGE_TIMEOUT);
+      insertPending(msg.getUID(), timer, continuation);
     }
 
     // create a bb[] to be written
-    SimpleOutputBuffer sob = new SimpleOutputBuffer();
+    SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
     try {
-      sob.writeInt(0); // place holder for size...
-      sob.writeShort(m.getType());
-      m.serialize(sob);
-    } catch (IOException ioe) {
-      if (c != null) c.receiveException(ioe);
+      outputBuffer.writeInt(0); // place holder for size...
+      outputBuffer.writeShort(msg.getType());
+      msg.serialize(outputBuffer);
+    } catch (IOException e) {
+      if (continuation != null) continuation.receiveException(e);
     }
 
     // add the size back to the beginning...
-    int size = sob.getWritten()-Integer.BYTES; // remove the size of the size :)
-    logger.trace("Sending size of {} to {} to send {}", size, handle, m);
-    byte[] bytes = sob.getBytes();
+    int size = outputBuffer.getWritten()-Integer.BYTES; // remove the size of the size :)
+    logger.trace("Sending size of {} to {} to send {}", size, handle, msg);
+    byte[] bytes = outputBuffer.getBytes();
     MathUtils.intToByteArray(size,bytes,0);
 
     // prepare the bytes for writing
-    final ByteBuffer[] bb = new ByteBuffer[1];
-    bb[0] = ByteBuffer.wrap(bytes, 0, sob.getWritten()); // the whole thing
+    final ByteBuffer[] buffers = new ByteBuffer[1];
+    buffers[0] = ByteBuffer.wrap(bytes, 0, outputBuffer.getWritten()); // the whole thing
 
 
-    logger.debug("Opening socket to {} to send {}", handle, m);
+    logger.debug("Opening socket to {} to send {}", handle, msg);
     endpoint.connect(handle, new AppSocketReceiver() {
 
       @Override
       public void receiveSocket(AppSocket socket) {
-        logger.trace("Opened socket to {}:{} to send {}", handle, socket, m);
+        logger.trace("Opened socket to {}:{} to send {}", handle, socket, msg);
         socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
       }
 
       @Override
       public void receiveSelectResult(AppSocket socket, boolean canRead,
           boolean canWrite) {
-        logger.trace("Writing to {}:{} to send {}", handle, socket, m);
+        logger.trace("Writing to {}:{} to send {}", handle, socket, msg);
 
 
         try {
-          socket.write(bb[0]);
-        } catch (IOException ioe) {
-          if (c != null)
-            c.receiveException(ioe);
+          socket.write(buffers[0]);
+        } catch (IOException e) {
+          if (continuation != null)
+            continuation.receiveException(e);
           else
-            logger.warn("Error sending {}", m, ioe);
+            logger.warn("Error sending {}", msg, e);
           return; // don't continue to try to send
         }
-        if (bb[0].remaining() > 0) {
+        if (buffers[0].remaining() > 0) {
           socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
         } else {
           socket.close();
@@ -528,7 +528,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
       @Override
       public void receiveException(AppSocket socket, Exception e) {
-        if (c != null) c.receiveException(e);
+        if (continuation != null) continuation.receiveException(e);
       }
     },
     SOCKET_TIMEOUT_MILLIS);
@@ -630,10 +630,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param command The command to call with the result (NodeHandle[])
    */
   protected void getHandles(Id id, final int max, Continuation<? super NodeHandleSet, Exception> command) {
-    NodeHandleSet set = endpoint.replicaSet(id, max);
+    NodeHandleSet nodeHandleSet = endpoint.replicaSet(id, max);
 
-    if (set.size() == max) {
-      command.receiveResult(set);
+    if (nodeHandleSet.size() == max) {
+      command.receiveResult(nodeHandleSet);
     } else {
       sendRequest(id, new LookupHandlesMessage(nextRequestId(), id, max, getLocalNodeHandle(), id), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
         @Override
@@ -744,12 +744,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
         for (int i=0; i<replicas.size(); i++) {
           NodeHandle handle = replicas.getHandle(i);
-          PastMessage m = builder.buildMessage();
-          Continuation<Object, Exception> c = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multi.getSubContinuation(i));
+          PastMessage msg = builder.buildMessage();
+          Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multi.getSubContinuation(i));
           if (useSocket) {
-            sendViaSocket(handle, m, c);
+            sendViaSocket(handle, msg, continuation);
           } else {
-            sendRequest(handle, m, c);
+            sendRequest(handle, msg, continuation);
           }
         }
       }
@@ -780,7 +780,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
       public void receiveResult(final Boolean[] array) {
         cache(obj, new SimpleContinuation()  {
           @Override
-          public void receiveResult(Object o) {
+          public void receiveResult(Object result) {
             parent.receiveResult(array);
           }
           @Override
@@ -835,9 +835,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     storage.getObject(id, new StandardContinuation<Object, PastContent, Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
-        if (o != null && isAuthentic(id, (PastContent) o)) {
-          command.receiveResult((PastContent) o);
+      public void receiveResult(Object result) {
+        if (result != null && isAuthentic(id, (PastContent) result)) {
+          command.receiveResult((PastContent) result);
         } else {
           lookupViaMessage(id, cache, command);
         }
@@ -852,9 +852,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
     sendRequest(id, new LookupMessage(nextRequestId(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
       @Override
-      public void receiveResult(final PastContent o) {
-        if (o != null && isAuthentic(id, o)) {
-          cacheAndReply(o, cache, command);
+      public void receiveResult(final PastContent content) {
+        if (content != null && isAuthentic(id, content)) {
+          cacheAndReply(content, cache, command);
         } else {
           lookupViaReplicas(id, cache, command);
         }
@@ -879,8 +879,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           if (handle != null) {
             fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(command) {
               @Override
-              public void receiveResult(final PastContent o) {
-                cacheAndReply(o, cache, command);
+              public void receiveResult(final PastContent content) {
+                cacheAndReply(content, cache, command);
               }
             });
 
@@ -895,22 +895,22 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /** Tries to cache a looked-up object locally for future use, and answers with it whether or not caching worked. */
-  private void cacheAndReply(final PastContent o, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+  private void cacheAndReply(final PastContent content, final boolean cache, final Continuation<? super PastContent, Exception> command) {
     if (!cache) {
-      command.receiveResult(o);
+      command.receiveResult(content);
       return;
     }
 
-    cache(o, new SimpleContinuation() {
+    cache(content, new SimpleContinuation() {
       @Override
       public void receiveResult(Object object) {
-        command.receiveResult(o);
+        command.receiveResult(content);
       }
 
       @Override
       public void receiveException(Exception e) {
         logger.warn("Caching after lookup failed, continuing", e);
-        command.receiveResult(o);
+        command.receiveResult(content);
       }
     });
   }
@@ -997,7 +997,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     logger.atTrace().log(() -> "Fetching object under id " + handle.getId().toStringFull() +  " on " + handle.getNodeHandle());
 
-    NodeHandle han = handle.getNodeHandle();
+    NodeHandle nodeHandle = handle.getNodeHandle();
     // the node that holds the object may be forging it
     Continuation<PastContent, Exception> checked = new StandardContinuation<PastContent, PastContent, Exception>(command) {
       @Override
@@ -1009,7 +1009,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         }
       }
     };
-    sendRequest(han, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), han.getId()),
+    sendRequest(nodeHandle, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), nodeHandle.getId()),
                 new NamedContinuation<PastContent, Exception>("FetchMessage to " + handle.getNodeHandle() + " for " + handle.getId(), checked));
   }
 
@@ -1053,8 +1053,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     Message internal;
     try {
       internal = message.getMessage(endpoint.getDeserializer());
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
 
     if (internal instanceof LookupMessage lmsg) {
@@ -1107,32 +1107,32 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           // if the data is here, we send the reply; the requester caches it (see lookup())
           storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
             @Override
-            public void receiveResult(Object o) {
-              logger.debug("Received object {} for id {}", o, lmsg.getId());
+            public void receiveResult(Object result) {
+              logger.debug("Received object {} for id {}", result, lmsg.getId());
 
               // send result back
-              parent.receiveResult(o);
+              parent.receiveResult(result);
             }
           });
         }
         case LookupHandlesMessage lmsg -> {
-          NodeHandleSet set = endpoint.replicaSet(lmsg.getId(), lmsg.getMax());
-          logger.trace("Returning replica set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), endpoint.getId());
-          getResponseContinuation(msg).receiveResult(set);
+          NodeHandleSet nodeHandleSet = endpoint.replicaSet(lmsg.getId(), lmsg.getMax());
+          logger.trace("Returning replica set {} for lookup handles of id {} max {} at {}", nodeHandleSet, lmsg.getId(), lmsg.getMax(), endpoint.getId());
+          getResponseContinuation(msg).receiveResult(nodeHandleSet);
         }
         case FetchMessage fmsg -> {
-          Continuation<Object, Exception> c;
-          c = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
+          Continuation<Object, Exception> continuation;
+          continuation = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
 
-          storage.getObject(fmsg.getHandle().getId(), c);
+          storage.getObject(fmsg.getHandle().getId(), continuation);
         }
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
 
           storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
             @Override
-            public void receiveResult(Object o) {
-              PastContent content = (PastContent) o;
+            public void receiveResult(Object result) {
+              PastContent content = (PastContent) result;
 
               if (content != null) {
                 logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
@@ -1153,28 +1153,28 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * Handles an insert at the destination node: the payload must be authentic and the policy must allow the insert,
    * before {@link #storeInsert(InsertMessage)} stores it.
    */
-  protected void deliverInsert(InsertMessage imsg) {
-    if (!isAuthentic(null, imsg.getContent())) {
-      getResponseContinuation(imsg).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
-    } else if (policy.isInsertAllowed(imsg.getContent())) {
-      storeInsert(imsg);
+  protected void deliverInsert(InsertMessage insertMessage) {
+    if (!isAuthentic(null, insertMessage.getContent())) {
+      getResponseContinuation(insertMessage).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
+    } else if (policy.isInsertAllowed(insertMessage.getContent())) {
+      storeInsert(insertMessage);
     } else {
-      getResponseContinuation(imsg).receiveResult(Boolean.valueOf(false));
+      getResponseContinuation(insertMessage).receiveResult(Boolean.valueOf(false));
     }
   }
 
   /** Stores an authentic, allowed insert under the lock of its id. Subclasses override this for another store step. */
-  protected void storeInsert(final InsertMessage imsg) {
+  protected void storeInsert(final InsertMessage insertMessage) {
     inserts++;
-    final Id msgid = imsg.getContent().getId();
+    final Id msgid = insertMessage.getContent().getId();
 
-    lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(imsg)) {
+    lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(insertMessage)) {
       @Override
       public void receiveResult(Object result) {
-        checkAndStore(imsg, content -> null, new StandardContinuation<Boolean, Object, Exception>(parent) {
+        checkAndStore(insertMessage, content -> null, new StandardContinuation<Boolean, Object, Exception>(parent) {
           @Override
           public void receiveResult(Boolean result) {
-            getResponseContinuation(imsg).receiveResult(result);
+            getResponseContinuation(insertMessage).receiveResult(result);
             lockManager.unlock(msgid);
           }
         });
@@ -1186,14 +1186,14 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * Lets the inserted object check the insert against what is stored, and then stores what it returns, with the
    * metadata that the function derives from it; a refusal by the object goes to the continuation as an exception.
    */
-  protected void checkAndStore(final InsertMessage imsg, final Function<PastContent, Object> metadata, Continuation<? super Boolean, Exception> command) {
-    final Id id = imsg.getContent().getId();
+  protected void checkAndStore(final InsertMessage insertMessage, final Function<PastContent, Object> metadata, Continuation<? super Boolean, Exception> command) {
+    final Id id = insertMessage.getContent().getId();
 
     storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         try {
-          PastContent content = imsg.getContent().checkInsert(id, (PastContent) o);
+          PastContent content = insertMessage.getContent().checkInsert(id, (PastContent) result);
           storage.store(id, metadata.apply(content), content, parent);
         } catch (PastException e) {
           parent.receiveException(e);
@@ -1231,16 +1231,16 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     policy.fetch(id, hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
-        if (o == null) {
+      public void receiveResult(Object result) {
+        if (result == null) {
           logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, instance);
           parent.receiveResult(Boolean.valueOf(false));
         } else {
           logger.trace("inserting replica of id {}", id);
 
           // the peer that answered is not trusted: store only what was asked for, never another id's object
-          if (!(o instanceof PastContent content)) {
-            logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, o.getClass().getName());
+          if (!(result instanceof PastContent content)) {
+            logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, result.getClass().getName());
             parent.receiveResult(Boolean.valueOf(false));
           } else if (!id.equals(content.getId())) {
             logger.warn("Dropping fetched replica of id {}: it carries the id {}", id, content.getId());
@@ -1284,10 +1284,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     if (backup != null) {
       storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
-        public void receiveResult(Object o) {
-          backup.cache(id, storage.getMetadata(id), o, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
+        public void receiveResult(Object storedObject) {
+          backup.cache(id, storage.getMetadata(id), storedObject, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
             @Override
-            public void receiveResult(Boolean o) {
+            public void receiveResult(Boolean result) {
               storage.unstore(id, parent);
             }
           });
@@ -1343,8 +1343,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
     storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(final Object o) {
-        insert((PastContent)o, new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
+      public void receiveResult(final Object storedObject) {
+        insert((PastContent)storedObject, new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
           @Override
           public void receiveResult(Boolean[] result) {
             Boolean results[] = result;

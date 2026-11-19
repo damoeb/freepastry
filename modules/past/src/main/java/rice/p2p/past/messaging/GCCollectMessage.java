@@ -72,11 +72,11 @@ public final class GCCollectMessage extends PastMessage {
    * in this case, it lets the continuation know that a the message was
    * lost via the receiveException method.
    *
-   * @param c The continuation to return the reponse to.
+   * @param continuation The continuation to return the reponse to.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
-    c.receiveException(new PastException("Should not be called!"));
+  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
+    continuation.receiveException(new PastException("Should not be called!"));
   }
 
   /**

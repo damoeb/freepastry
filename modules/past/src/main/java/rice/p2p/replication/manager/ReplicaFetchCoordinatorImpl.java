@@ -182,12 +182,12 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
 
     client.fetch(id, hint, new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        if (! Boolean.TRUE.equals(o)) {
-          if (o instanceof Throwable throwable) {
+      public void receiveResult(Object result) {
+        if (! Boolean.TRUE.equals(result)) {
+          if (result instanceof Throwable throwable) {
             logger.warn("Fetching of id {} failed with ", id, throwable);
           } else {
-            logger.warn("Fetching of id {} failed with {}", id, o);
+            logger.warn("Fetching of id {} failed with {}", id, result);
           }
         }
 
@@ -348,7 +348,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
     /**
      * The set of keys we have yet to fetch
      */
-    private final IdSet set;
+    private final IdSet idSet;
 
     /**
      * The next message UID which is available
@@ -364,7 +364,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * Constructor
      */
     public ReplicationManagerHelper() {
-      set = factory.buildIdSet();
+      idSet = factory.buildIdSet();
       hints = new HashMap<Id, NodeHandle>();
       state = STATE_NOTHING;
     }
@@ -380,15 +380,15 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
       while (i.hasNext()) {
         Id id = (Id) i.next();
 
-        if (! (set.isMemberId(id) ||
+        if (! (idSet.isMemberId(id) ||
                client.exists(id) ||
                ((current != null) && id.equals(current)))) {
-          set.addId(id);
+          idSet.addId(id);
           hints.put(id, hint);
         }
       }
 
-      if ((state == STATE_NOTHING) && (set.numElements() > 0)) {
+      if ((state == STATE_NOTHING) && (idSet.numElements() > 0)) {
         send();
       }
     }
@@ -403,12 +403,12 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
       IdRange notRange = range.getComplementRange();
 
       /* first, we remove any non-relevant keys from the list of pending keys */
-      Iterator<Id> i = set.subSet(notRange).getIterator();
+      Iterator<Id> i = idSet.subSet(notRange).getIterator();
 
       /* now look for any matching ids */
       while (i.hasNext()) {
         Id id = (Id) i.next();
-        set.removeId(id);
+        idSet.removeId(id);
         hints.remove(id);
       }
     }
@@ -417,7 +417,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * Method which determines if a message should be sent, and if so, sends it
      */
     protected synchronized void send() {
-      if ((state != STATE_WAITING) && (set.numElements() > 0)) {
+      if ((state != STATE_WAITING) && (idSet.numElements() > 0)) {
         Id id = getNextId();
         NodeHandle hint = (NodeHandle) hints.remove(id);
 
@@ -439,13 +439,13 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * @return The next key to be fetched
      */
     protected synchronized Id getNextId() {
-      if (set.numElements() == 0) {
+      if (idSet.numElements() == 0) {
         logger.warn("GetNextId called without any ids available - aborting");
         return null;
       }
 
-      current = (Id) set.getIterator().next();
-      set.removeId(current);
+      current = (Id) idSet.getIterator().next();
+      idSet.removeId(current);
 
       logger.trace("Returing next id to fetch {}", current);
 
@@ -478,7 +478,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
     /**
      * The set of ids we are responsible for deleting
      */
-    private final IdSet set;
+    private final IdSet idSet;
 
     /**
      * Whether or not we are waiting for a response
@@ -489,7 +489,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * Bulds a new one
      */
     public ReplicationManagerDeleter() {
-      set = factory.buildIdSet();
+      idSet = factory.buildIdSet();
     }
 
     /**
@@ -509,14 +509,14 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
         Id next = (Id) i.next();
 
         if ((id == null) || ! id.equals(next))
-          set.addId(next);
+          idSet.addId(next);
       }
 
       // next, we remove and ids from the to-delete list which are not in the range
-      Iterator<Id> j = set.subSet(range).getIterator();
+      Iterator<Id> j = idSet.subSet(range).getIterator();
 
       while (j.hasNext())
-        set.removeId((Id) j.next());
+        idSet.removeId((Id) j.next());
 
       go();
     }
@@ -525,9 +525,9 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
      * Internal method which starts the deleting, if it's not already started
      */
     protected synchronized void go() {
-      if ((id == null) && (set.numElements() > 0)) {
-        id = (Id) set.getIterator().next();
-        set.removeId(id);
+      if ((id == null) && (idSet.numElements() > 0)) {
+        id = (Id) idSet.getIterator().next();
+        idSet.removeId(id);
 
         logger.trace("Deciding whether to remove {}", id);
 
@@ -563,15 +563,15 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
     /**
      * Implementation of continuation
      *
-     * @param o The result
+     * @param result The result
      */
     @Override
-    public synchronized void receiveResult(Boolean o) {
+    public synchronized void receiveResult(Boolean result) {
       if (id == null)
-        logger.error("ERROR: RMImpl.deleter Received result {} unexpectedly!", o);
+        logger.error("ERROR: RMImpl.deleter Received result {} unexpectedly!", result);
 
-      if (! Boolean.TRUE.equals(o))
-        logger.error("ERROR: RMImpl.deleter Unstore of {} did not succeed '{}'!", id, o);
+      if (! Boolean.TRUE.equals(result))
+        logger.error("ERROR: RMImpl.deleter Unstore of {} did not succeed '{}'!", id, result);
 
       id = null;
       go();

@@ -69,8 +69,8 @@ class PastWireRoundTripTest {
   private static final long EXPIRATION = 123_456_789L;
 
   private static Environment env;
-  private static SocketNode sn;
-  private static IdFactory idf;
+  private static SocketNode socketNode;
+  private static IdFactory idFactory;
   private static NodeHandle local;
   private static NodeHandle remote;
   private static ExpiringPastImpl gcPast;
@@ -83,17 +83,17 @@ class PastWireRoundTripTest {
   @BeforeAll
   static void setUp() throws Exception {
     env = new Environment();
-    sn = SocketNode.create(env, "4000");
-    idf = sn.node.getIdFactory();
-    local = sn.local();
-    remote = sn.handle("8000");
+    socketNode = SocketNode.create(env, "4000");
+    idFactory = socketNode.node.getIdFactory();
+    local = socketNode.local();
+    remote = socketNode.handle("8000");
 
-    PastImpl past = new PastImpl(sn.node, storage(), REPLICAS, "past-wire");
+    PastImpl past = new PastImpl(socketNode.node, storage(), REPLICAS, "past-wire");
     past.setContentDeserializer(TestContentReader.INSTANCE);
     pastEndpoint = past.getEndpoint();
     pastDeserializer = pastEndpoint.getDeserializer();
 
-    gcPast = new ExpiringPastImpl(sn.node, storage(), null, REPLICAS, "gcpast-wire", new PastPolicy.DefaultPastPolicy(),
+    gcPast = new ExpiringPastImpl(socketNode.node, storage(), null, REPLICAS, "gcpast-wire", new PastPolicy.DefaultPastPolicy(),
         COLLECTION_INTERVAL, null);
     gcPast.setContentDeserializer(TestContentReader.INSTANCE);
     // SocketNode.route wraps the message for the pastry endpoint underneath the GC wrapper
@@ -102,7 +102,7 @@ class PastWireRoundTripTest {
     gcInner = (Endpoint) inner.get(gcPast.getEndpoint());
     gcDeserializer = gcPast.getEndpoint().getDeserializer();
 
-    content = new DistPastTestContent(env, idf, "some content");
+    content = new DistPastTestContent(env, idFactory, "some content");
   }
 
   @AfterAll
@@ -111,7 +111,7 @@ class PastWireRoundTripTest {
   }
 
   private static CachedStorageImpl storage() {
-    return new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf));
+    return new CachedStorageImpl(idFactory, new MemoryStorage(idFactory), new NoOpCache(idFactory));
   }
 
   private enum TestContentReader implements PastContentDeserializer {
@@ -132,11 +132,11 @@ class PastWireRoundTripTest {
   }
 
   /** Reads the message as a hop would and sends it on; then the same routed inside a route message. */
-  private static <M extends RawMessage> M wire(M message, MessageDeserializer md, Endpoint routeEndpoint)
+  private static <M extends RawMessage> M wire(M message, MessageDeserializer messageDeserializer, Endpoint routeEndpoint)
       throws IOException {
-    M copy = WireRoundTrip.roundTrip(message, md, local);
-    sn.route(routeEndpoint, dest(), message, local, false);
-    sn.route(routeEndpoint, dest(), message, local, true);
+    M copy = WireRoundTrip.roundTrip(message, messageDeserializer, local);
+    socketNode.route(routeEndpoint, dest(), message, local, false);
+    socketNode.route(routeEndpoint, dest(), message, local, true);
     return copy;
   }
 
@@ -149,12 +149,12 @@ class PastWireRoundTripTest {
   }
 
   /** The replica reads the request and answers it: the response is given and sent back, read again by the requester. */
-  private static <M extends PastMessage> M respond(M request, MessageDeserializer md, Endpoint routeEndpoint,
+  private static <M extends PastMessage> M respond(M request, MessageDeserializer messageDeserializer, Endpoint routeEndpoint,
       Consumer<M> answer) throws IOException {
-    M atReplica = WireRoundTrip.roundTrip(request, md, local);
+    M atReplica = WireRoundTrip.roundTrip(request, messageDeserializer, local);
     answer.accept(atReplica);
     assertTrue(atReplica.isResponse());
-    return wire(atReplica, md, routeEndpoint);
+    return wire(atReplica, messageDeserializer, routeEndpoint);
   }
 
   private static <M extends PastMessage> M respond(M request, Consumer<M> answer) throws IOException {
@@ -178,8 +178,8 @@ class PastWireRoundTripTest {
     Object[] result = new Object[2];
     message.returnResponse(new Continuation<Object, Exception>() {
       @Override
-      public void receiveResult(Object o) {
-        result[0] = o;
+      public void receiveResult(Object response) {
+        result[0] = response;
       }
 
       @Override
@@ -197,11 +197,11 @@ class PastWireRoundTripTest {
   }
 
   private static NodeSet nodes(NodeHandle... handles) {
-    NodeSet set = new NodeSet();
-    for (NodeHandle h : handles) {
-      set.putHandle(h);
+    NodeSet nodeSet = new NodeSet();
+    for (NodeHandle handle : handles) {
+      nodeSet.putHandle(handle);
     }
-    return set;
+    return nodeSet;
   }
 
   // ---- insert ----
@@ -228,7 +228,7 @@ class PastWireRoundTripTest {
   @ValueSource(booleans = {true, false})
   @DisplayName("an insert response with a Boolean is read at the requester and sent on")
   void insertResponseBoolean(boolean answer) throws IOException {
-    InsertMessage copy = respond(new InsertMessage(7, content, local, dest()), m -> m.receiveResult(answer));
+    InsertMessage copy = respond(new InsertMessage(7, content, local, dest()), msg -> msg.receiveResult(answer));
 
     assertEquals(answer, outcome(copy)[0]);
     assertNull(copy.getContent());
@@ -237,7 +237,7 @@ class PastWireRoundTripTest {
   @Test
   void insertResponseException() throws IOException {
     InsertMessage copy = respond(new InsertMessage(7, content, local, dest()),
-        m -> m.receiveException(new IllegalStateException("no room")));
+        msg -> msg.receiveException(new IllegalStateException("no room")));
 
     assertRemoteException(copy, IllegalStateException.class.getName(), "no room");
   }
@@ -245,14 +245,14 @@ class PastWireRoundTripTest {
   @Test
   void insertResponseExceptionWithoutMessage() throws IOException {
     InsertMessage copy = respond(new InsertMessage(7, content, local, dest()),
-        m -> m.receiveException(new IllegalStateException()));
+        msg -> msg.receiveException(new IllegalStateException()));
 
     assertRemoteException(copy, IllegalStateException.class.getName(), null);
   }
 
   @Test
   void insertResponseNull() throws IOException {
-    InsertMessage copy = respond(new InsertMessage(7, content, local, dest()), m -> m.receiveResult(null));
+    InsertMessage copy = respond(new InsertMessage(7, content, local, dest()), msg -> msg.receiveResult(null));
 
     assertNull(outcome(copy)[0]);
     assertNull(outcome(copy)[1]);
@@ -273,7 +273,7 @@ class PastWireRoundTripTest {
   @Test
   @DisplayName("a lookup response with a found content is read at the requester and sent on")
   void lookupResponseContent() throws IOException {
-    LookupMessage copy = respond(new LookupMessage(8, content.getId(), local, dest()), m -> m.receiveResult(content));
+    LookupMessage copy = respond(new LookupMessage(8, content.getId(), local, dest()), msg -> msg.receiveResult(content));
 
     assertEquals(content.getId(), ((PastContent) outcome(copy)[0]).getId());
     assertEquals(content.getId(), copy.getId());
@@ -282,7 +282,7 @@ class PastWireRoundTripTest {
   @Test
   @DisplayName("a lookup response for a content that was not found is read and sent on")
   void lookupResponseNotFound() throws IOException {
-    LookupMessage copy = respond(new LookupMessage(8, content.getId(), local, dest()), m -> m.receiveResult(null));
+    LookupMessage copy = respond(new LookupMessage(8, content.getId(), local, dest()), msg -> msg.receiveResult(null));
 
     assertNull(outcome(copy)[0]);
     assertNull(outcome(copy)[1]);
@@ -291,7 +291,7 @@ class PastWireRoundTripTest {
   @Test
   void lookupResponseException() throws IOException {
     LookupMessage copy = respond(new LookupMessage(8, content.getId(), local, dest()),
-        m -> m.receiveException(new RuntimeException("boom")));
+        msg -> msg.receiveException(new RuntimeException("boom")));
 
     assertRemoteException(copy, RuntimeException.class.getName(), "boom");
   }
@@ -311,9 +311,9 @@ class PastWireRoundTripTest {
 
   @Test
   void lookupHandlesResponse() throws IOException {
-    NodeSet three = nodes(local, remote, sn.handle("C000"));
+    NodeSet three = nodes(local, remote, socketNode.handle("C000"));
     LookupHandlesMessage copy = respond(new LookupHandlesMessage(9, content.getId(), 5, local, dest()),
-        m -> m.receiveResult(three));
+        msg -> msg.receiveResult(three));
 
     assertEquals(3, ((NodeHandleSet) outcome(copy)[0]).size());
     assertEquals(5, copy.getMax());
@@ -322,7 +322,7 @@ class PastWireRoundTripTest {
   @Test
   void lookupHandlesResponseEmptySet() throws IOException {
     LookupHandlesMessage copy = respond(new LookupHandlesMessage(9, content.getId(), 0, local, dest()),
-        m -> m.receiveResult(nodes()));
+        msg -> msg.receiveResult(nodes()));
 
     assertEquals(0, ((NodeHandleSet) outcome(copy)[0]).size());
   }
@@ -330,11 +330,11 @@ class PastWireRoundTripTest {
   @Test
   void lookupHandlesResponseExceptionAndNull() throws IOException {
     LookupHandlesMessage failed = respond(new LookupHandlesMessage(9, content.getId(), 5, local, dest()),
-        m -> m.receiveException(new Exception("down")));
+        msg -> msg.receiveException(new Exception("down")));
     assertRemoteException(failed, Exception.class.getName(), "down");
 
     LookupHandlesMessage none = respond(new LookupHandlesMessage(9, content.getId(), 5, local, dest()),
-        m -> m.receiveResult(null));
+        msg -> msg.receiveResult(null));
     assertNull(outcome(none)[0]);
   }
 
@@ -369,7 +369,7 @@ class PastWireRoundTripTest {
 
   @Test
   void fetchResponseContent() throws IOException {
-    FetchMessage copy = respond(new FetchMessage(10, handle(), local, dest()), m -> m.receiveResult(content));
+    FetchMessage copy = respond(new FetchMessage(10, handle(), local, dest()), msg -> msg.receiveResult(content));
 
     assertEquals(content.getId(), ((PastContent) outcome(copy)[0]).getId());
     assertEquals(handle(), copy.getHandle());
@@ -377,11 +377,11 @@ class PastWireRoundTripTest {
 
   @Test
   void fetchResponseNullAndException() throws IOException {
-    FetchMessage none = respond(new FetchMessage(10, handle(), local, dest()), m -> m.receiveResult(null));
+    FetchMessage none = respond(new FetchMessage(10, handle(), local, dest()), msg -> msg.receiveResult(null));
     assertNull(outcome(none)[0]);
 
     FetchMessage failed = respond(new FetchMessage(10, handle(), local, dest()),
-        m -> m.receiveException(new PastException("gone")));
+        msg -> msg.receiveException(new PastException("gone")));
     assertRemoteException(failed, PastException.class.getName(), "gone");
   }
 
@@ -398,7 +398,7 @@ class PastWireRoundTripTest {
   @Test
   void fetchHandleResponse() throws IOException {
     FetchHandleMessage copy = respond(new FetchHandleMessage(11, content.getId(), local, dest()),
-        m -> m.receiveResult(handle()));
+        msg -> msg.receiveResult(handle()));
 
     assertEquals(handle(), outcome(copy)[0]);
   }
@@ -406,11 +406,11 @@ class PastWireRoundTripTest {
   @Test
   void fetchHandleResponseNullAndException() throws IOException {
     FetchHandleMessage none = respond(new FetchHandleMessage(11, content.getId(), local, dest()),
-        m -> m.receiveResult(null));
+        msg -> msg.receiveResult(null));
     assertNull(outcome(none)[0]);
 
     FetchHandleMessage failed = respond(new FetchHandleMessage(11, content.getId(), local, dest()),
-        m -> m.receiveException(new Exception()));
+        msg -> msg.receiveException(new Exception()));
     assertRemoteException(failed, Exception.class.getName(), null);
   }
 
@@ -433,11 +433,11 @@ class PastWireRoundTripTest {
   // ---- GC messages ----
 
   private static GCIdSet gcIds(long... expirations) {
-    GCIdSet set = (GCIdSet) new GCIdFactory(idf).buildIdSet();
+    GCIdSet gcIdSet = (GCIdSet) new GCIdFactory(idFactory).buildIdSet();
     for (int i = 0; i < expirations.length; i++) {
-      set.addId(new ExpiringId(Id.build(String.format("%04X", 0x1000 + 0x111 * i)), expirations[i]));
+      gcIdSet.addId(new ExpiringId(Id.build(String.format("%04X", 0x1000 + 0x111 * i)), expirations[i]));
     }
-    return set;
+    return gcIdSet;
   }
 
   @Test
@@ -453,17 +453,17 @@ class PastWireRoundTripTest {
 
   @Test
   void gcInsertResponses() throws IOException {
-    GCInsertMessage ok = gcRespond(new GCInsertMessage(12, content, EXPIRATION, local, dest()),
-        m -> m.receiveResult(true));
-    assertEquals(true, outcome(ok)[0]);
-    assertEquals(EXPIRATION, ok.getExpiration());
+    GCInsertMessage response = gcRespond(new GCInsertMessage(12, content, EXPIRATION, local, dest()),
+        msg -> msg.receiveResult(true));
+    assertEquals(true, outcome(response)[0]);
+    assertEquals(EXPIRATION, response.getExpiration());
 
     GCInsertMessage failed = gcRespond(new GCInsertMessage(12, content, EXPIRATION, local, dest()),
-        m -> m.receiveException(new RuntimeException("full")));
+        msg -> msg.receiveException(new RuntimeException("full")));
     assertRemoteException(failed, RuntimeException.class.getName(), "full");
 
     GCInsertMessage none = gcRespond(new GCInsertMessage(12, content, EXPIRATION, local, dest()),
-        m -> m.receiveResult(null));
+        msg -> msg.receiveResult(null));
     assertNull(outcome(none)[0]);
   }
 
@@ -476,10 +476,10 @@ class PastWireRoundTripTest {
     assertHeader(request, copy);
     assertEquals(Integer.MAX_VALUE, copy.getMax());
 
-    GCLookupHandlesMessage response = gcRespond(request, m -> m.receiveResult(nodes(local, remote)));
+    GCLookupHandlesMessage response = gcRespond(request, msg -> msg.receiveResult(nodes(local, remote)));
     assertEquals(2, ((NodeHandleSet) outcome(response)[0]).size());
 
-    GCLookupHandlesMessage failed = gcRespond(request, m -> m.receiveException(new Exception("x")));
+    GCLookupHandlesMessage failed = gcRespond(request, msg -> msg.receiveException(new Exception("x")));
     assertRemoteException(failed, Exception.class.getName(), "x");
   }
 
@@ -517,7 +517,7 @@ class PastWireRoundTripTest {
     }
 
     GCRefreshMessage copy = gcRespond(new GCRefreshMessage(14, gcIds(expirations(count)), local, dest()),
-        m -> m.receiveResult(answers));
+        msg -> msg.receiveResult(answers));
 
     assertArrayEquals(answers, (Boolean[]) outcome(copy)[0]);
     assertEquals(count, copy.getKeys().length);
@@ -526,10 +526,10 @@ class PastWireRoundTripTest {
   @Test
   void gcRefreshResponseExceptionAndNull() throws IOException {
     GCRefreshMessage failed = gcRespond(new GCRefreshMessage(14, gcIds(EXPIRATION), local, dest()),
-        m -> m.receiveException(new RuntimeException("busy")));
+        msg -> msg.receiveException(new RuntimeException("busy")));
     assertRemoteException(failed, RuntimeException.class.getName(), "busy");
 
-    GCRefreshMessage none = gcRespond(new GCRefreshMessage(14, gcIds(), local, dest()), m -> m.receiveResult(null));
+    GCRefreshMessage none = gcRespond(new GCRefreshMessage(14, gcIds(), local, dest()), msg -> msg.receiveResult(null));
     assertNull(outcome(none)[0]);
   }
 
@@ -569,8 +569,8 @@ class PastWireRoundTripTest {
 
   @Test
   void gcIdRange() throws IOException {
-    for (rice.p2p.commonapi.IdRange range : List.of(idf.buildIdRange(Id.build("1000"), Id.build("2000")),
-        idf.buildIdRange(Id.build("F000"), Id.build("1000")), idf.buildIdRange(Id.build("3000"), Id.build("3000")))) {
+    for (rice.p2p.commonapi.IdRange range : List.of(idFactory.buildIdRange(Id.build("1000"), Id.build("2000")),
+        idFactory.buildIdRange(Id.build("F000"), Id.build("1000")), idFactory.buildIdRange(Id.build("3000"), Id.build("3000")))) {
       GCIdRange gcRange = new GCIdRange(range);
 
       GCIdRange copy = WireRoundTrip.roundTrip(gcRange, GCIdRange::serialize,
@@ -591,11 +591,11 @@ class PastWireRoundTripTest {
   @Test
   void idBloomFilters() throws IOException {
     for (int count : new int[] {0, 1, 63, 64, 65, 200, 1000}) {
-      IdSet set = new IdSet();
+      IdSet idSet = new IdSet();
       for (int i = 0; i < count; i++) {
-        set.addId(Id.build(String.format("%04X", i * 37 + 1)));
+        idSet.addId(Id.build(String.format("%04X", i * 37 + 1)));
       }
-      IdBloomFilter filter = new IdBloomFilter(set);
+      IdBloomFilter filter = new IdBloomFilter(idSet);
 
       IdBloomFilter copy = WireRoundTrip.roundTrip(filter, IdBloomFilter::serialize, IdBloomFilter::new);
 
@@ -614,11 +614,11 @@ class PastWireRoundTripTest {
       filter.add(new byte[] {(byte) i, (byte) (i * 7)});
     }
 
-    for (BloomFilter f : List.of(filter, new BloomFilter(2, length))) {
-      BloomFilter copy = WireRoundTrip.roundTrip(f, BloomFilter::serialize, BloomFilter::new);
+    for (BloomFilter bloomFilter : List.of(filter, new BloomFilter(2, length))) {
+      BloomFilter copy = WireRoundTrip.roundTrip(bloomFilter, BloomFilter::serialize, BloomFilter::new);
       for (int i = 0; i < 20; i++) {
         byte[] probe = {(byte) i, (byte) (i * 7)};
-        assertEquals(f.check(probe), copy.check(probe));
+        assertEquals(bloomFilter.check(probe), copy.check(probe));
       }
     }
   }

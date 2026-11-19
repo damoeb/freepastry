@@ -107,18 +107,18 @@ public final class GCInsertMessage extends InsertMessage {
     buf.writeLong(expiration);
   }
 
-  public static GCInsertMessage readFrom(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  public static GCInsertMessage readFrom(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new GCInsertMessage(buf, endpoint, pcd);
+        return new GCInsertMessage(buf, endpoint, contentDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private GCInsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
-    super(buf, endpoint, pcd);
+  private GCInsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+    super(buf, endpoint, contentDeserializer);
     expiration = buf.readLong();
   }
 }

@@ -467,13 +467,13 @@ public class RawPastRegrTest extends CommonAPITest {
   protected void testFetch() {
     final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     final PastImpl remote1 = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
-    PastImpl tmp = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    PastImpl randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
 
-    while (tmp == remote1) {
-      tmp = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    while (randomPast == remote1) {
+      randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
     }
 
-    final PastImpl remote2 = tmp;
+    final PastImpl remote2 = randomPast;
 
     final Id id = pasts[environment.getRandomSource().nextInt(NUM_NODES)].getLocalNodeHandle().getId();
     final PastContent file1 = new VersionedTestPastContent(id, 1);
@@ -737,11 +737,11 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Insert file
             stepStart("Caching Mutable Object");
-            final LookupMessage lmsg = new LookupMessage(1, id2, local.getLocalNodeHandle(), id2);
-            lmsg.receiveResult(file2);
+            final LookupMessage lookupMessage = new LookupMessage(1, id2, local.getLocalNodeHandle(), id2);
+            lookupMessage.receiveResult(file2);
 
             assertTrue("Message should continue to be routed",
-                       local.forward(new TestRouteMessage(id2, null, lmsg)));
+                       local.forward(new TestRouteMessage(id2, null, lookupMessage)));
 
             stepDone();
 
@@ -757,9 +757,9 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 stepStart("Caching Non-Mutable Object");
 
-                lmsg.receiveResult(file3);
+                lookupMessage.receiveResult(file3);
                 assertTrue("Message should continue to be routed",
-                           local.forward(new TestRouteMessage(id2, null, lmsg)));
+                           local.forward(new TestRouteMessage(id2, null, lookupMessage)));
 
                 stepDone();
 
@@ -811,17 +811,17 @@ public class RawPastRegrTest extends CommonAPITest {
       ArrayDeque<File> delme = new ArrayDeque<File>();
       delme.add(new File("FreePastry-Storage-Root"));
       while(!delme.isEmpty()) {
-        File f = (File)delme.removeFirst();
-        if (f.isDirectory()) {
-          File[] subs = f.listFiles();
+        File file = (File)delme.removeFirst();
+        if (file.isDirectory()) {
+          File[] subs = file.listFiles();
           if (subs.length == 0) {
-            f.delete();
+            file.delete();
           } else {
             delme.addAll(Arrays.asList(subs));
-            delme.addLast(f);
+            delme.addLast(file);
           }
         } else {
-          f.delete();
+          file.delete();
         }
       }
 
@@ -912,8 +912,8 @@ public class RawPastRegrTest extends CommonAPITest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (! (o instanceof TestPastContent testPastContent)) return false;
+    public boolean equals(Object object) {
+      if (! (object instanceof TestPastContent testPastContent)) return false;
 
       return testPastContent.id.equals(id);
     }
@@ -934,11 +934,11 @@ public class RawPastRegrTest extends CommonAPITest {
       return TYPE;
     }
 
-    public TestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+    public TestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
       id = endpoint.readId(buf, buf.readShort());
       if (buf.readBoolean()) {
         short contentType = buf.readShort();
-        existing = (PastContent)pcd.deserializePastContent(buf, endpoint, contentType);
+        existing = (PastContent)contentDeserializer.deserializePastContent(buf, endpoint, contentType);
       }
     }
 
@@ -967,8 +967,8 @@ public class RawPastRegrTest extends CommonAPITest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (! (o instanceof VersionedTestPastContent versionedTestPastContent)) return false;
+    public boolean equals(Object object) {
+      if (! (object instanceof VersionedTestPastContent versionedTestPastContent)) return false;
 
       return (versionedTestPastContent.id.equals(id) &&
               (versionedTestPastContent.version == version));
@@ -984,8 +984,8 @@ public class RawPastRegrTest extends CommonAPITest {
       return TYPE;
     }
 
-    public VersionedTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
-      super(buf, endpoint, pcd);
+    public VersionedTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+      super(buf, endpoint, contentDeserializer);
       version = buf.readInt();
     }
 
@@ -1018,14 +1018,14 @@ public class RawPastRegrTest extends CommonAPITest {
       return TYPE;
     }
 
-    public NonOverwritingTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
-      super(buf, endpoint, pcd);
+    public NonOverwritingTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+      super(buf, endpoint, contentDeserializer);
     }
 
 
     @Override
-    public boolean equals(Object o) {
-      if (! (o instanceof NonOverwritingTestPastContent nonOverwritingTestPastContent)) return false;
+    public boolean equals(Object object) {
+      if (! (object instanceof NonOverwritingTestPastContent nonOverwritingTestPastContent)) return false;
 
       return (nonOverwritingTestPastContent.id.equals(id) &&
               (nonOverwritingTestPastContent.version == version));
@@ -1044,8 +1044,8 @@ public class RawPastRegrTest extends CommonAPITest {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (! (o instanceof NonMutableTestPastContent nonMutableTestPastContent)) return false;
+    public boolean equals(Object object) {
+      if (! (object instanceof NonMutableTestPastContent nonMutableTestPastContent)) return false;
 
       return nonMutableTestPastContent.id.equals(id);
     }
@@ -1122,7 +1122,7 @@ public class RawPastRegrTest extends CommonAPITest {
     }
 
     @Override
-    public Message getMessage(MessageDeserializer md) {
+    public Message getMessage(MessageDeserializer messageDeserializer) {
       return message;
     }
 

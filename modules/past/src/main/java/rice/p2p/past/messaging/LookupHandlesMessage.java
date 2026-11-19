@@ -126,9 +126,9 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
   protected void serializeHelper(OutputBuffer buf) throws IOException {
     if (response != null && response instanceof NodeHandleSet) {
       super.serialize(buf, true);
-      NodeHandleSet set = (NodeHandleSet)response;
-      buf.writeShort(set.getType());
-      set.serialize(buf);
+      NodeHandleSet nodeHandleSet = (NodeHandleSet)response;
+      buf.writeShort(nodeHandleSet.getType());
+      nodeHandleSet.serialize(buf);
     } else {
       super.serialize(buf, false);
     }

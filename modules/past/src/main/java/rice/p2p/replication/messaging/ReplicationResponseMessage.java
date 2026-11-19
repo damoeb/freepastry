@@ -68,15 +68,15 @@ public final class ReplicationResponseMessage extends ReplicationMessage {
    *
    * @param source The source address
    * @param ranges The ranges being answered
-   * @param setA The keys in each range that the requester should fetch, one set per range
+   * @param idSets The keys in each range that the requester should fetch, one set per range
    */
-  public ReplicationResponseMessage(NodeHandle source, IdRange[] ranges, IdSet[] setA) {
+  public ReplicationResponseMessage(NodeHandle source, IdRange[] ranges, IdSet[] idSets) {
     super(source);
 
     this.ranges = ranges;
-    ids = new Id[setA.length][];
-    for (int i = 0; i < setA.length; i++) {
-      ids[i] = setA[i].asArray();
+    ids = new Id[idSets.length][];
+    for (int i = 0; i < idSets.length; i++) {
+      ids[i] = idSets[i].asArray();
     }
   }
 

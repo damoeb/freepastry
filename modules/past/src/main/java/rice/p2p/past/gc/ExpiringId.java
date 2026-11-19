@@ -73,12 +73,12 @@ public record ExpiringId(Id id, long expiration) implements Id {
    * clockwise if it is within the half circle clockwise from this on the ring. An Id is considered
    * counter-clockwise from itself.
    *
-   * @param nid The id to compare to
+   * @param nodeId The id to compare to
    * @return true if clockwise, false otherwise.
    */
   @Override
-  public boolean clockwise(Id nid) {
-    return id.clockwise(((ExpiringId) nid).id());
+  public boolean clockwise(Id nodeId) {
+    return id.clockwise(((ExpiringId) nodeId).id());
   }
 
   /**
@@ -95,23 +95,23 @@ public record ExpiringId(Id id, long expiration) implements Id {
   /**
    * Returns the shorter numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
   @Override
-  public Distance distanceFromId(Id nid) {
-    return id.distanceFromId(((ExpiringId) nid).id());
+  public Distance distanceFromId(Id nodeId) {
+    return id.distanceFromId(((ExpiringId) nodeId).id());
   }
 
   /**
    * Returns the longer numerical distance on the ring between a pair of Ids.
    *
-   * @param nid the other node id.
+   * @param nodeId the other node id.
    * @return the distance between this and nid.
    */
   @Override
-  public Distance longDistanceFromId(Id nid) {
-    return id.longDistanceFromId(((ExpiringId) nid).id());
+  public Distance longDistanceFromId(Id nodeId) {
+    return id.longDistanceFromId(((ExpiringId) nodeId).id());
   }
 
   /**
@@ -153,12 +153,12 @@ public record ExpiringId(Id id, long expiration) implements Id {
   /**
    * Returns whether or not this object is equal to the provided one
    *
-   * @param o The object to compare to
+   * @param object The object to compare to
    * @return Whether or not this is object is equal
    */
   @Override
-  public boolean equals(Object o) {
-    if (! (o instanceof ExpiringId gcId))
+  public boolean equals(Object object) {
+    if (! (object instanceof ExpiringId gcId))
       return false;
 
     return gcId.id.equals(id);
@@ -200,8 +200,8 @@ public record ExpiringId(Id id, long expiration) implements Id {
    * @return The comparison
    */
   @Override
-  public int compareTo(Id o) {
-    return id.compareTo(((ExpiringId) o).id);
+  public int compareTo(Id expiringId) {
+    return id.compareTo(((ExpiringId) expiringId).id);
   }
 
   /***************** Raw Serialization ***************************************/

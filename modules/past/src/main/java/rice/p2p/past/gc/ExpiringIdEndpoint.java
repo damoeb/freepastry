@@ -170,11 +170,11 @@ public class ExpiringIdEndpoint implements Endpoint {
    * @param id The object's id.
    * @param maxRank The number of desired replicas.
    * @param root The root handle of the remove set
-   * @param set The set of other nodes around the root handle
+   * @param nodeHandleSet The set of other nodes around the root handle
    */
   @Override
-  public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
-    return endpoint.replicaSet(id, maxRank, root, set);
+  public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet nodeHandleSet) {
+    return endpoint.replicaSet(id, maxRank, root, nodeHandleSet);
   }
 
   /**
@@ -309,8 +309,8 @@ public class ExpiringIdEndpoint implements Endpoint {
   }
 
   @Override
-  public void setDeserializer(MessageDeserializer md) {
-    endpoint.setDeserializer(md);
+  public void setDeserializer(MessageDeserializer messageDeserializer) {
+    endpoint.setDeserializer(messageDeserializer);
   }
 
   @Override
@@ -357,18 +357,18 @@ public class ExpiringIdEndpoint implements Endpoint {
   }
 
   @Override
-  public int proximity(NodeHandle nh) {
-    return endpoint.proximity(nh);
+  public int proximity(NodeHandle nodeHandle) {
+    return endpoint.proximity(nodeHandle);
   }
 
   @Override
-  public boolean isAlive(NodeHandle nh) {
-    return endpoint.isAlive(nh);
+  public boolean isAlive(NodeHandle nodeHandle) {
+    return endpoint.isAlive(nodeHandle);
   }
 
   @Override
-  public void setRoutingConsistencyRequired(boolean val) {
-    endpoint.setRoutingConsistencyRequired(val);
+  public void setRoutingConsistencyRequired(boolean isRequired) {
+    endpoint.setRoutingConsistencyRequired(isRequired);
   }
 
   @Override

@@ -95,14 +95,14 @@ public final class MessageLostMessage extends PastMessage {
    * in this case, it lets the continuation know that a the message was
    * lost via the receiveException method.
    *
-   * @param c The continuation to return the reponse to.
+   * @param continuation The continuation to return the reponse to.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> c, Environment env, String instance) {
+  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
     Logger logger = env.getLogManager().getLogger(getClass(), instance);
     Exception e = new PastException("Outgoing message '" + messageString + "' to " + id + "/" + hint + " was lost - please try again.");
     logger.warn("ERROR: Outgoing PAST message {} with UID {} was lost", messageString, getUID(), e);
-    c.receiveException(e);
+    continuation.receiveException(e);
   }
 
   /**

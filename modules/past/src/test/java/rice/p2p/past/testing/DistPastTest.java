@@ -68,12 +68,12 @@ public class DistPastTest {
 
       // Generate the NodeIds Randomly
       NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-      Past p = null;
+      Past localPast = null;
       Storage stor = null;
 
       // used for generating PastContent object Ids.
       // this implements the "hash function" for our DHT
-      PastryIdFactory idf = new rice.pastry.commonapi.PastryIdFactory(env);
+      PastryIdFactory idFactory = new rice.pastry.commonapi.PastryIdFactory(env);
 
       // construct the PastryNodeFactory, this is how we use rice.pastry.socket
       PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
@@ -94,9 +94,9 @@ public class DistPastTest {
 
 
         final PastImpl[] past = new PastImpl[1];
-        stor = new PersistentStorage(idf, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
-          p = past[0] = new PastImpl(node, new CachedStorageImpl(idf,stor,new LRUCache(new MemoryStorage(idf),512*1024,node.getEnvironment())), 3, "");
-          p.setContentDeserializer((buf, endpoint, contentType) -> {
+        stor = new PersistentStorage(idFactory, new PastStorageSerializer(() -> past[0]), ".",4*1024*1024,node.getEnvironment());
+          localPast = past[0] = new PastImpl(node, new CachedStorageImpl(idFactory,stor,new LRUCache(new MemoryStorage(idFactory),512*1024,node.getEnvironment())), 3, "");
+          localPast.setContentDeserializer((buf, endpoint, contentType) -> {
             if (contentType == DistPastTestContent.TYPE) {
               return new DistPastTestContent(buf, endpoint);
             }
@@ -106,9 +106,9 @@ public class DistPastTest {
       Thread.sleep(5000);
 
       String s = "test" + env.getRandomSource().nextInt();
-      PastContent dptc = new DistPastTestContent(env,idf,s);
-      System.out.println("Inserting "+dptc);
-      p.insert(dptc, new Continuation<Boolean[], Exception>() {
+      PastContent testContent = new DistPastTestContent(env,idFactory,s);
+      System.out.println("Inserting "+testContent);
+      localPast.insert(testContent, new Continuation<Boolean[], Exception>() {
         @Override
         public void receiveResult(Boolean[] result) {
           Boolean[] results = result;
@@ -126,7 +126,7 @@ public class DistPastTest {
 
       Thread.sleep(5000);
 
-      p.lookup(dptc.getId(), new Continuation<PastContent, Exception>() {
+      localPast.lookup(testContent.getId(), new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           System.out.println("Got a "+result);

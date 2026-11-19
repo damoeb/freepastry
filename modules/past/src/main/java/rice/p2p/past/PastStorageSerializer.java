@@ -71,11 +71,11 @@ public class PastStorageSerializer implements StorageSerializer {
 
   @Override
   public Object readObject(InputBuffer buf) throws IOException {
-    PastImpl p = past.get();
-    if (p == null) {
+    PastImpl currentPast = past.get();
+    if (currentPast == null) {
       throw new IOException("No Past to read the stored content with");
     }
-    return p.getContentDeserializer().deserializePastContent(buf, p.getEndpoint(), buf.readShort());
+    return currentPast.getContentDeserializer().deserializePastContent(buf, currentPast.getEndpoint(), buf.readShort());
   }
 
   @Override

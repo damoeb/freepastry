@@ -108,9 +108,9 @@ public final class FetchHandleMessage extends ContinuationMessage {
     buf.writeByte((byte)0); // version
     if (response != null && response instanceof PastContentHandle) {
       super.serialize(buf, true);
-      PastContentHandle rpch = (PastContentHandle)response;
-      buf.writeShort(rpch.getType());
-      rpch.serialize(buf);
+      PastContentHandle contentHandle = (PastContentHandle)response;
+      buf.writeShort(contentHandle.getType());
+      contentHandle.serialize(buf);
     } else {
       super.serialize(buf, false);
     }
@@ -118,22 +118,22 @@ public final class FetchHandleMessage extends ContinuationMessage {
     id.serialize(buf);
   }
 
-  public static FetchHandleMessage build(InputBuffer buf, Endpoint endpoint, PastContentHandleDeserializer pchd) throws IOException {
+  public static FetchHandleMessage build(InputBuffer buf, Endpoint endpoint, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new FetchHandleMessage(buf, endpoint, pchd);
+        return new FetchHandleMessage(buf, endpoint, contentHandleDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private FetchHandleMessage(InputBuffer buf, Endpoint endpoint, PastContentHandleDeserializer pchd) throws IOException {
+  private FetchHandleMessage(InputBuffer buf, Endpoint endpoint, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     super(buf, endpoint);
     // if called super.serializer(x, true) these will be set
     if (serType == S_SUB) {
       short type = buf.readShort();
-      response = pchd.deserializePastContentHandle(buf, endpoint, type);
+      response = contentHandleDeserializer.deserializePastContentHandle(buf, endpoint, type);
     }
     id = endpoint.readId(buf, buf.readShort());
   }

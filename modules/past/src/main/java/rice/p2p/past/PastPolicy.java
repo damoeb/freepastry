@@ -104,15 +104,15 @@ public interface PastPolicy {
       } else {
         past.lookup(id, false, new StandardContinuation<PastContent, Object, Exception>(command) {
           @Override
-          public void receiveResult(PastContent o) {
-            if (o != null)
-              parent.receiveResult(o);
+          public void receiveResult(PastContent content) {
+            if (content != null)
+              parent.receiveResult(content);
             else
               past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
                 @Override
-                public void receiveResult(PastContentHandle o) {
-                  if (o != null)
-                    past.fetch(o, parent);
+                public void receiveResult(PastContentHandle handle) {
+                  if (handle != null)
+                    past.fetch(handle, parent);
                   else
                     parent.receiveResult(null);
                 }

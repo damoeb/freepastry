@@ -54,10 +54,10 @@ public record ReplicationManagerConfig(int fetchDelay, int timeoutDelay, int num
   /**
    * @throws IllegalArgumentException if the fetch delay is negative or another value is not positive
    */
-  public static ReplicationManagerConfig fromParameters(Parameters p) {
+  public static ReplicationManagerConfig fromParameters(Parameters parameters) {
     return new ReplicationManagerConfig(
-      requireNonNegative("p2p_replication_manager_fetch_delay", p.getInt("p2p_replication_manager_fetch_delay")),
-      requirePositive("p2p_replication_manager_timeout_delay", p.getInt("p2p_replication_manager_timeout_delay")),
-      requirePositive("p2p_replication_manager_num_delete_at_once", p.getInt("p2p_replication_manager_num_delete_at_once")));
+      requireNonNegative("p2p_replication_manager_fetch_delay", parameters.getInt("p2p_replication_manager_fetch_delay")),
+      requirePositive("p2p_replication_manager_timeout_delay", parameters.getInt("p2p_replication_manager_timeout_delay")),
+      requirePositive("p2p_replication_manager_num_delete_at_once", parameters.getInt("p2p_replication_manager_num_delete_at_once")));
   }
 }

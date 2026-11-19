@@ -287,9 +287,9 @@ public class ReplicationRegrTest extends CommonAPITest {
     @Override
     public void setRange(IdRange range) {
       IdRange notRange = range.getComplementRange();
-      IdSet set = storage.scan(notRange);
+      IdSet idSet = storage.scan(notRange);
 
-      Iterator<Id> i = set.getIterator();
+      Iterator<Id> i = idSet.getIterator();
 
       while (i.hasNext()) {
         Id next = (Id) i.next();

@@ -33,12 +33,12 @@ class PastForgedContentTest {
   private static final int REPLICAS = 1;
 
   private SocketRing ring;
-  private PastryIdFactory idf;
+  private PastryIdFactory idFactory;
 
   @BeforeEach
   void setUp() {
     ring = new SocketRing();
-    idf = new PastryIdFactory(ring.env);
+    idFactory = new PastryIdFactory(ring.env);
   }
 
   @AfterEach
@@ -51,8 +51,8 @@ class PastForgedContentTest {
   }
 
   private PastImpl newPast(PastryNode node, PastPolicy policy) {
-    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
-        new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), REPLICAS, "forged", policy);
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idFactory, new MemoryStorage(idFactory),
+        new LRUCache(new MemoryStorage(idFactory), CACHE_BYTES, node.getEnvironment())), REPLICAS, "forged", policy);
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {
         return new DistPastTestContent(buf, endpoint);
@@ -68,15 +68,15 @@ class PastForgedContentTest {
 
   /** Content that claims the hash of {@code claimedPayload} but carries {@code realPayload}. */
   private DistPastTestContent forged(String claimedPayload, String realPayload) {
-    return new DistPastTestContent(idf.buildId(claimedPayload), realPayload, 0);
+    return new DistPastTestContent(idFactory.buildId(claimedPayload), realPayload, 0);
   }
 
   private void put(PastImpl past, DistPastTestContent content) throws Exception {
-    await(FutureContinuation.<Boolean>call(c -> past.storage.getStorage().store(content.getId(), null, content, c)));
+    await(FutureContinuation.<Boolean>call(continuation -> past.storage.getStorage().store(content.getId(), null, content, continuation)));
   }
 
   private PastContent stored(PastImpl past, Id id) throws Exception {
-    return (PastContent) await(FutureContinuation.<Object>call(c -> past.storage.getObject(id, c)));
+    return (PastContent) await(FutureContinuation.<Object>call(continuation -> past.storage.getObject(id, continuation)));
   }
 
   @Test
@@ -86,7 +86,7 @@ class PastForgedContentTest {
     DistPastTestContent evil = forged("victim", "evil");
 
     assertThrows(ExecutionException.class,
-        () -> await(FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(evil, c))));
+        () -> await(FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(evil, continuation))));
 
     for (PastImpl past : pasts) {
       assertNull(stored(past, evil.getId()), "forged content stored on a replica");
@@ -104,7 +104,7 @@ class PastForgedContentTest {
 
     PastContent found = null;
     try {
-      found = await(FutureContinuation.<PastContent>call(c -> pasts.get(0).lookup(evil.getId(), true, c)));
+      found = await(FutureContinuation.<PastContent>call(continuation -> pasts.get(0).lookup(evil.getId(), true, continuation)));
     } catch (ExecutionException expected) {
       // refusing with an exception is as good as returning nothing
     }
@@ -119,7 +119,7 @@ class PastForgedContentTest {
     List<PastImpl> pasts = boot(1);
     DistPastTestContent evil = forged("victim", "evil");
 
-    await(FutureContinuation.<Boolean>call(c -> pasts.get(0).cache(evil, c)));
+    await(FutureContinuation.<Boolean>call(continuation -> pasts.get(0).cache(evil, continuation)));
 
     assertNull(stored(pasts.get(0), evil.getId()), "forged content was cached");
   }

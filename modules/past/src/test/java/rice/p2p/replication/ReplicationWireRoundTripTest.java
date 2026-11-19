@@ -34,7 +34,7 @@ class ReplicationWireRoundTripTest {
   private static final int REPLICAS = 3;
 
   private static Environment env;
-  private static SocketNode sn;
+  private static SocketNode socketNode;
   private static NodeHandle local;
   private static Endpoint endpoint;
   private static MessageDeserializer deserializer;
@@ -42,12 +42,12 @@ class ReplicationWireRoundTripTest {
   @BeforeAll
   static void setUp() throws Exception {
     env = new Environment();
-    sn = SocketNode.create(env, "4000");
-    local = sn.local();
+    socketNode = SocketNode.create(env, "4000");
+    local = socketNode.local();
     ReplicationClient client = (ReplicationClient) Proxy.newProxyInstance(
         ReplicationWireRoundTripTest.class.getClassLoader(), new Class<?>[] {ReplicationClient.class},
         (proxy, method, args) -> null);
-    ReplicationImpl replication = new ReplicationImpl(sn.node, client, REPLICAS, "replication-wire");
+    ReplicationImpl replication = new ReplicationImpl(socketNode.node, client, REPLICAS, "replication-wire");
     Field field = ReplicationImpl.class.getDeclaredField("endpoint");
     field.setAccessible(true);
     endpoint = (Endpoint) field.get(replication);
@@ -61,21 +61,21 @@ class ReplicationWireRoundTripTest {
 
   private static <M extends rice.p2p.commonapi.rawserialization.RawMessage> M wire(M message) throws IOException {
     M copy = WireRoundTrip.roundTrip(message, deserializer, local);
-    sn.route(endpoint, Id.build("9000"), message, local, false);
-    sn.route(endpoint, Id.build("9000"), message, local, true);
+    socketNode.route(endpoint, Id.build("9000"), message, local, false);
+    socketNode.route(endpoint, Id.build("9000"), message, local, true);
     return copy;
   }
 
   private static IdRange range(String ccw, String cw) {
-    return sn.node.getIdFactory().buildIdRange(Id.build(ccw), Id.build(cw));
+    return socketNode.node.getIdFactory().buildIdRange(Id.build(ccw), Id.build(cw));
   }
 
   private static IdSet set(String... ids) {
-    IdSet set = sn.node.getIdFactory().buildIdSet();
+    IdSet idSet = socketNode.node.getIdFactory().buildIdSet();
     for (String id : ids) {
-      set.addId(Id.build(id));
+      idSet.addId(Id.build(id));
     }
-    return set;
+    return idSet;
   }
 
   private static IdBloomFilter filter(String... ids) {

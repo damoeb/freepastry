@@ -39,12 +39,12 @@ class GCPastInsertTest {
   private static final long EXPIRATION = 1_000_000_000_000L;
 
   private SocketRing ring;
-  private PastryIdFactory idf;
+  private PastryIdFactory idFactory;
 
   @BeforeEach
   void setUp() {
     ring = new SocketRing();
-    idf = new PastryIdFactory(ring.env);
+    idFactory = new PastryIdFactory(ring.env);
   }
 
   @AfterEach
@@ -53,7 +53,7 @@ class GCPastInsertTest {
   }
 
   private ExpiringPastImpl newPast(PastryNode node) {
-    ExpiringPastImpl past = new ExpiringPastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf), new NoOpCache(idf)), null, 1,
+    ExpiringPastImpl past = new ExpiringPastImpl(node, new CachedStorageImpl(idFactory, new MemoryStorage(idFactory), new NoOpCache(idFactory)), null, 1,
         "gc-insert", new PastPolicy.DefaultPastPolicy(), 100_000_000L, null);
     past.setContentDeserializer((buf, endpoint, type) -> new Content(buf, endpoint));
     past.setContentHandleDeserializer((buf, endpoint, type) -> {
@@ -70,9 +70,9 @@ class GCPastInsertTest {
   @DisplayName("an insert stores the object with the expiration of the insert as its metadata")
   void insertStoresTheObjectWithItsExpiration() throws Exception {
     List<ExpiringPastImpl> pasts = boot();
-    Content content = new Content(idf.buildId("gc"), false);
+    Content content = new Content(idFactory.buildId("gc"), false);
 
-    Boolean[] result = FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, EXPIRATION, c)).get(SECONDS, TimeUnit.SECONDS);
+    Boolean[] result = FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(content, EXPIRATION, continuation)).get(SECONDS, TimeUnit.SECONDS);
 
     assertTrue(result[0]);
     int holders = 0;
@@ -89,10 +89,10 @@ class GCPastInsertTest {
   @DisplayName("an object whose checkInsert refuses is not stored")
   void insertRefusedByCheckInsertStoresNothing() throws Exception {
     List<ExpiringPastImpl> pasts = boot();
-    Content content = new Content(idf.buildId("refused"), true);
+    Content content = new Content(idFactory.buildId("refused"), true);
 
     assertThrows(ExecutionException.class,
-        () -> FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, EXPIRATION, c)).get(SECONDS, TimeUnit.SECONDS));
+        () -> FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(content, EXPIRATION, continuation)).get(SECONDS, TimeUnit.SECONDS));
 
     for (ExpiringPastImpl past : pasts) {
       assertFalse(past.storage.exists(content.getId()), "refused object stored");

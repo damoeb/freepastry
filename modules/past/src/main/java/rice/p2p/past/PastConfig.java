@@ -53,9 +53,9 @@ public record PastConfig(int messageTimeout, double successfulInsertThreshold) {
   /**
    * @throws IllegalArgumentException if the timeout is not positive or the threshold is outside [0, 1]
    */
-  public static PastConfig fromParameters(Parameters p) {
+  public static PastConfig fromParameters(Parameters parameters) {
     return new PastConfig(
-      requirePositive("p2p_past_messageTimeout", p.getInt("p2p_past_messageTimeout")),
-      inRange("p2p_past_successfulInsertThreshold", p.getDouble("p2p_past_successfulInsertThreshold"), 0, 1));
+      requirePositive("p2p_past_messageTimeout", parameters.getInt("p2p_past_messageTimeout")),
+      inRange("p2p_past_successfulInsertThreshold", parameters.getDouble("p2p_past_successfulInsertThreshold"), 0, 1));
   }
 }

@@ -53,9 +53,9 @@ public record ReplicationConfig(int maintenanceInterval, int maxKeysInMessage) {
   /**
    * @throws IllegalArgumentException if a value is not positive
    */
-  public static ReplicationConfig fromParameters(Parameters p) {
+  public static ReplicationConfig fromParameters(Parameters parameters) {
     return new ReplicationConfig(
-      requirePositive("p2p_replication_maintenance_interval", p.getInt("p2p_replication_maintenance_interval")),
-      requirePositive("p2p_replication_max_keys_in_message", p.getInt("p2p_replication_max_keys_in_message")));
+      requirePositive("p2p_replication_maintenance_interval", parameters.getInt("p2p_replication_maintenance_interval")),
+      requirePositive("p2p_replication_max_keys_in_message", parameters.getInt("p2p_replication_max_keys_in_message")));
   }
 }

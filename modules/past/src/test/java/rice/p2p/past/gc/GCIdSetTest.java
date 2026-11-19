@@ -33,25 +33,25 @@ class GCIdSetTest {
 
   @Test
   void equalsOnlyMatchingGCIdSets() {
-    GCIdSet set = new GCIdSet(idFactory);
+    GCIdSet gcIdSet = new GCIdSet(idFactory);
 
-    assertEquals(new GCIdSet(idFactory), set);
-    assertNotEquals(set, "not a set");
-    assertNotEquals(set, null);
+    assertEquals(new GCIdSet(idFactory), gcIdSet);
+    assertNotEquals(gcIdSet, "not a set");
+    assertNotEquals(gcIdSet, null);
   }
 
   @Test
   void equalsComparesTheMembersOfNonEmptySets() {
-    Id a = idFactory.buildId("a");
-    Id b = idFactory.buildId("b");
+    Id firstId = idFactory.buildId("a");
+    Id secondId = idFactory.buildId("b");
     GCIdSet left = new GCIdSet(idFactory);
     GCIdSet right = new GCIdSet(idFactory);
-    left.addId(new ExpiringId(a, 100));
-    right.addId(new ExpiringId(a, 100));
+    left.addId(new ExpiringId(firstId, 100));
+    right.addId(new ExpiringId(firstId, 100));
 
     assertEquals(right, left);
 
-    right.addId(new ExpiringId(b, 100));
+    right.addId(new ExpiringId(secondId, 100));
     left.addId(new ExpiringId(idFactory.buildId("c"), 100));
 
     assertNotEquals(right, left);
@@ -59,18 +59,18 @@ class GCIdSetTest {
 
   @Test
   void copyHasItsOwnIdsAndExpirations() {
-    Id a = idFactory.buildId("a");
-    Id b = idFactory.buildId("b");
+    Id firstId = idFactory.buildId("a");
+    Id secondId = idFactory.buildId("b");
     GCIdSet original = new GCIdSet(idFactory);
-    original.addId(new ExpiringId(a, 100));
+    original.addId(new ExpiringId(firstId, 100));
 
     GCIdSet copy = original.copy();
-    copy.addId(new ExpiringId(b, 200));
-    copy.addId(new ExpiringId(a, 300));
+    copy.addId(new ExpiringId(secondId, 200));
+    copy.addId(new ExpiringId(firstId, 300));
 
     assertEquals(1, original.numElements());
-    assertFalse(original.isMemberId(new ExpiringId(b, 200)));
-    assertEquals(new ExpiringId(a, 100), original.getIterator().next());
+    assertFalse(original.isMemberId(new ExpiringId(secondId, 200)));
+    assertEquals(new ExpiringId(firstId, 100), original.getIterator().next());
     assertEquals(2, copy.numElements());
   }
 }

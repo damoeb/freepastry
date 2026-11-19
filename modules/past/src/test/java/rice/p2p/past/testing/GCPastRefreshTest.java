@@ -82,7 +82,7 @@ class GCPastRefreshTest {
       sectionStart("ExpiringPast refresh");
 
       stepStart("Insert");
-      Object inserted = await(done -> local.insert(new Content(existing), FAR_FUTURE / 2, done));
+      Object inserted = await(continuation -> local.insert(new Content(existing), FAR_FUTURE / 2, continuation));
       assertTrue("insert should succeed", inserted instanceof Boolean[]);
       stepDone();
 
@@ -115,7 +115,7 @@ class GCPastRefreshTest {
     private Object[] refresh(ExpiringPast past, Id[] ids, long expiration) {
       long[] expirations = new long[ids.length];
       java.util.Arrays.fill(expirations, expiration);
-      Object result = await(done -> past.refresh(ids, expirations, done));
+      Object result = await(continuation -> past.refresh(ids, expirations, continuation));
       return assertInstanceOf(Object[].class, result);
     }
 

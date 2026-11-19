@@ -196,8 +196,8 @@ public class ReplicationImpl implements Replication, Application, Destructible {
   protected IdRange getTotalRange() {
     try {
       return endpoint.range(handle, replicationFactor, handle.getId(), true);
-    } catch (RangeCannotBeDeterminedException rcbde) {
-      logger.atWarn().log(() -> "ReplicationImpl.getTotalRange():"+rcbde+" returning null.");
+    } catch (RangeCannotBeDeterminedException e) {
+      logger.atWarn().log(() -> "ReplicationImpl.getTotalRange():"+e+" returning null.");
       return null;
     }
   }
@@ -225,9 +225,9 @@ public class ReplicationImpl implements Replication, Application, Destructible {
       int total = 0;
 
       @Override
-      public void receiveResult(IdBloomFilter o) {
+      public void receiveResult(IdBloomFilter bloomFilter) {
         if (destroyed) return;
-        final IdBloomFilter ourFilter = (IdBloomFilter) o;
+        final IdBloomFilter ourFilter = (IdBloomFilter) bloomFilter;
 
         for (int i=0; i<handles.size(); i++) {
           final NodeHandle handle = handles.getHandle(i);
@@ -238,8 +238,8 @@ public class ReplicationImpl implements Replication, Application, Destructible {
             if ((range != null) && ! range.intersectRange(getTotalRange()).isEmpty()) {
               endpoint.process(new BloomFilterExecutable(range), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
                 @Override
-                public void receiveResult(IdBloomFilter o) {
-                  IdBloomFilter filter = (IdBloomFilter) o;
+                public void receiveResult(IdBloomFilter rangeBloomFilter) {
+                  IdBloomFilter filter = (IdBloomFilter) rangeBloomFilter;
 
                   ReplicationImpl.this.logger.debug("COUNT: Sending request to {} for range {}, {} in instance {}", handle, range, ourRange, instance);
 
@@ -298,18 +298,18 @@ public class ReplicationImpl implements Replication, Application, Destructible {
 
         MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
           @Override
-          public void receiveResult(Object[] o) {
-            Object[] array = (Object[]) o;
+          public void receiveResult(Object[] responses) {
+            Object[] array = (Object[]) responses;
             IdSet[] result = new IdSet[array.length];
             if ((array.length > 0) && (array[0] instanceof Throwable)) {
               logger.error("Errors in Multicontinuation:", (Throwable)array[0]);
             } else {
               try {
                 System.arraycopy(array, 0, result, 0, array.length);
-              } catch (ArrayStoreException ase) {
+              } catch (ArrayStoreException e) {
                 if (array.length > 0) {
-                  logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, ase);
-                  throw ase;
+                  logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, e);
+                  throw e;
                 }
               }
             }
@@ -325,10 +325,10 @@ public class ReplicationImpl implements Replication, Application, Destructible {
             public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
             @Override
             public Object execute() {
-              IdSet set = factory.buildIdSet();
-              rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), set, MAX_KEYS_IN_MESSAGE);
+              IdSet idSet = factory.buildIdSet();
+              rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), idSet, MAX_KEYS_IN_MESSAGE);
 
-              return set;
+              return idSet;
             }
           }, continuation.getSubContinuation(i));
         }

@@ -117,27 +117,27 @@ public final class LookupMessage extends ContinuationMessage {
     id.serialize(buf);
   }
 
-  public static LookupMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  public static LookupMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new LookupMessage(buf, endpoint, pcd);
+        return new LookupMessage(buf, endpoint, contentDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private LookupMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  private LookupMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     super(buf, endpoint);
     if (serType == S_SUB) {
       short contentType = buf.readShort();
-      response = pcd.deserializePastContent(buf, endpoint, contentType);
+      response = contentDeserializer.deserializePastContent(buf, endpoint, contentType);
     }
     try {
       id = endpoint.readId(buf, buf.readShort());
-    } catch (IllegalArgumentException iae) {
-      endpoint.getEnvironment().getLogManager().getLogger(LookupMessage.class, null).atWarn().log(() -> iae+" "+this+" serType:"+serType+" UID:"+getUID()+" d:"+getDestination()+" s:"+getSource());
-      throw iae;
+    } catch (IllegalArgumentException e) {
+      endpoint.getEnvironment().getLogManager().getLogger(LookupMessage.class, null).atWarn().log(() -> e+" "+this+" serType:"+serType+" UID:"+getUID()+" d:"+getDestination()+" s:"+getSource());
+      throw e;
     }
   }
 }

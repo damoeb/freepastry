@@ -62,8 +62,8 @@ public record ExpiringPastMetadata(long expiration) implements Comparable<Expiri
   }
 
   @Override
-  public boolean equals(Object o) {
-    return o instanceof ExpiringPastMetadata other && other.expiration == expiration;
+  public boolean equals(Object object) {
+    return object instanceof ExpiringPastMetadata other && other.expiration == expiration;
   }
 
   @Override

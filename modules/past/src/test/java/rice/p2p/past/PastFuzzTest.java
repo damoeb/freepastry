@@ -45,8 +45,8 @@ class PastFuzzTest {
     ExpiringPastImpl gcPast = new ExpiringPastImpl(node,
         new CachedStorageImpl(factory, new MemoryStorage(factory), new NoOpCache(factory)), null, REPLICAS, "past-fuzz",
         new PastPolicy.DefaultPastPolicy(), COLLECTION_INTERVAL, null);
-    gcPast.setContentDeserializer((buf, ep, type) -> switch (type) {
-      case DistPastTestContent.TYPE -> new DistPastTestContent(buf, ep);
+    gcPast.setContentDeserializer((buf, endpoint, type) -> switch (type) {
+      case DistPastTestContent.TYPE -> new DistPastTestContent(buf, endpoint);
       default -> throw new IOException("Unknown content type: " + type);
     });
     past = gcPast.getEndpoint().getDeserializer();

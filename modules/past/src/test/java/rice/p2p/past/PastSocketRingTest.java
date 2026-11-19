@@ -49,10 +49,10 @@ class PastSocketRingTest {
   @Test
   @DisplayName("on a six node socket ring contents inserted at one node are stored on every replica and found from all")
   void insertAndLookup() throws Exception {
-    PastryIdFactory idf = new PastryIdFactory(ring.env);
+    PastryIdFactory idFactory = new PastryIdFactory(ring.env);
     List<Past> pasts = ring.boot(NODES, node -> {
-      PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
-          new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), REPLICAS, "socket-ring");
+      PastImpl past = new PastImpl(node, new CachedStorageImpl(idFactory, new MemoryStorage(idFactory),
+          new LRUCache(new MemoryStorage(idFactory), CACHE_BYTES, node.getEnvironment())), REPLICAS, "socket-ring");
       past.setContentDeserializer((buf, endpoint, type) -> {
         if (type == DistPastTestContent.TYPE) {
           return new DistPastTestContent(buf, endpoint);
@@ -63,26 +63,26 @@ class PastSocketRingTest {
     });
 
     for (int i = 0; i < NODES; i++) {
-      DistPastTestContent content = new DistPastTestContent(ring.env, idf, "content " + i);
+      DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "content " + i);
       Past inserter = pasts.get(i);
-      Boolean[] stored = await(FutureContinuation.<Boolean[]>call(c -> inserter.insert(content, c)));
+      Boolean[] stored = await(FutureContinuation.<Boolean[]>call(continuation -> inserter.insert(content, continuation)));
       assertEquals(REPLICAS + 1, stored.length, "replicas asked to store content " + i);
       assertEquals(REPLICAS + 1, Arrays.stream(stored).filter(Boolean::booleanValue).count(),
           "replicas that stored content " + i + ": " + Arrays.toString(stored));
 
       for (int j = 0; j < NODES; j++) {
         Past at = pasts.get((i + j + 1) % NODES);
-        PastContent found = await(FutureContinuation.<PastContent>call(c -> at.lookup(content.getId(), false, c)));
+        PastContent found = await(FutureContinuation.<PastContent>call(continuation -> at.lookup(content.getId(), false, continuation)));
         assertNotNull(found, "content " + i + " found from node " + j);
         assertEquals(content.getContent(), ((DistPastTestContent) found).getContent());
       }
 
       Past other = pasts.get((i + 3) % NODES);
       PastContentHandle[] handles = await(FutureContinuation.<PastContentHandle[]>call(
-          c -> other.lookupHandles(content.getId(), REPLICAS + 1, c)));
-      assertEquals(REPLICAS + 1, Arrays.stream(handles).filter(h -> h != null).count(),
+          continuation -> other.lookupHandles(content.getId(), REPLICAS + 1, continuation)));
+      assertEquals(REPLICAS + 1, Arrays.stream(handles).filter(handle -> handle != null).count(),
           "handles of content " + i + ": " + Arrays.toString(handles));
-      PastContent fetched = await(FutureContinuation.<PastContent>call(c -> other.fetch(handles[0], c)));
+      PastContent fetched = await(FutureContinuation.<PastContent>call(continuation -> other.fetch(handles[0], continuation)));
       assertEquals(content.getContent(), ((DistPastTestContent) fetched).getContent());
     }
     ring.assertNoExceptions();

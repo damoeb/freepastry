@@ -222,14 +222,14 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   public void refresh(final Id[] array, long[] expirations, Continuation<? super Object[], Exception> command) {
     logger.debug("Refreshing {} data elements", array.length);
 
-    GCIdSet set = new GCIdSet(realFactory);
+    GCIdSet gcIdSet = new GCIdSet(realFactory);
     for (int i=0; i<array.length; i++)
-      set.addId(new ExpiringId(array[i], expirations[i]));
+      gcIdSet.addId(new ExpiringId(array[i], expirations[i]));
 
     final Map<Id, Boolean> outcome = new HashMap<>();
-    refresh(set, outcome, new StandardContinuation<Object, Object[], Exception>(command) {
+    refresh(gcIdSet, outcome, new StandardContinuation<Object, Object[], Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object result) {
         parent.receiveResult(collectRefreshResults(array, outcome));
       }
     });
@@ -293,11 +293,11 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
     sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id()),
                 new NamedContinuation<Object, Exception>("GCLookupHandles for " + start.id(), command) {
       @Override
-      public void receiveResult(Object o) {
-        final NodeHandleSet set = (NodeHandleSet) o;
+      public void receiveResult(Object response) {
+        final NodeHandleSet nodeHandleSet = (NodeHandleSet) response;
         final ReplicaMap map = new ReplicaMap();
 
-        logger.debug("REFRESH: GOT {} SET OF HANDLES!", set);
+        logger.debug("REFRESH: GOT {} SET OF HANDLES!", nodeHandleSet);
 
         getEndpoint().process(() -> {
           logger.debug("REFRESH: ON PROCESSING THREAD!");
@@ -305,10 +305,10 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           for (int i=0; i<array.length; i++) {
             ExpiringId id = (ExpiringId) array[i];
 
-            NodeHandleSet replicas = getEndpoint().replicaSet(id.id(), getReplicationFactor()+1, set.getHandle(set.size()-1), set);
+            NodeHandleSet replicas = getEndpoint().replicaSet(id.id(), getReplicationFactor()+1, nodeHandleSet.getHandle(nodeHandleSet.size()-1), nodeHandleSet);
 
             // if we have all of the replicas, go ahead and refresh this item
-            if ((replicas != null) && ((replicas.size() == set.size()) || (replicas.size() == getReplicationFactor()+1))) {
+            if ((replicas != null) && ((replicas.size() == nodeHandleSet.size()) || (replicas.size() == getReplicationFactor()+1))) {
               for (int j=0; j<replicas.size(); j++)
                 map.addReplica(replicas.getHandle(j), id);
 
@@ -322,14 +322,14 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           return null;
         }, new StandardContinuation<Object, Object, Exception>(parent) {
           @Override
-          public void receiveResult(Object o) {
+          public void receiveResult(Object previousResult) {
             logger.debug("REFRESH: BACK ON NORMAL THREAD!");
 
             final Iterator<NodeHandle> iterator = map.getReplicas();
 
             Continuation<Object, Exception> send = new StandardContinuation<Object, Object, Exception>(parent) {
               @Override
-              public void receiveResult(Object o) {
+              public void receiveResult(Object result) {
                 if (iterator.hasNext()) {
                   NodeHandle next = iterator.next();
                   GCIdSet sent = map.getIds(next);
@@ -389,20 +389,20 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
         return true;
       else
         return super.forward(message);
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
   /** Stores an authentic, allowed insert, without the lock of PastImpl, with the expiration of the insert as metadata. */
   @Override
-  protected void storeInsert(InsertMessage imsg) {
-    Id theId = imsg.getContent().getId();
+  protected void storeInsert(InsertMessage insertMessage) {
+    Id theId = insertMessage.getContent().getId();
     if (theId == null) {
-      logger.error("Error: null Id from {} from {} in {}", imsg.getContent(), imsg, this);
+      logger.error("Error: null Id from {} from {} in {}", insertMessage.getContent(), insertMessage, this);
     }
-    long expiration = ((GCInsertMessage) imsg).getExpiration();
-    checkAndStore(imsg, content -> ((ExpiringPastContent) content).getMetadata(expiration), getResponseContinuation(imsg));
+    long expiration = ((GCInsertMessage) insertMessage).getExpiration();
+    checkAndStore(insertMessage, content -> ((ExpiringPastContent) content).getMetadata(expiration), getResponseContinuation(insertMessage));
   }
 
   /**
@@ -434,10 +434,10 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
             private boolean started;
 
             @Override
-            public void receiveResult(Object o) {
+            public void receiveResult(Object answer) {
               // one answer per key, in order, so the caller can match them up: the first call only starts the chain
               if (started)
-                result.add(Boolean.TRUE.equals(o));
+                result.add(Boolean.TRUE.equals(answer));
               started = true;
 
               if (i.hasNext()) {
@@ -473,12 +473,12 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           process.receiveResult(null);
         }
         case GCLookupHandlesMessage lmsg -> {
-          NodeHandleSet set = getEndpoint().neighborSet(lmsg.getMax());
-          set.removeHandle(getLocalNodeHandle().getId());
-          set.putHandle(getLocalNodeHandle());
+          NodeHandleSet nodeHandleSet = getEndpoint().neighborSet(lmsg.getMax());
+          nodeHandleSet.removeHandle(getLocalNodeHandle().getId());
+          nodeHandleSet.putHandle(getLocalNodeHandle());
 
-          logger.trace("Returning neighbor set {} for lookup handles of id {} max {} at {}", set, lmsg.getId(), lmsg.getMax(), getEndpoint().getId());
-          getResponseContinuation(msg).receiveResult(set);
+          logger.trace("Returning neighbor set {} for lookup handles of id {} max {} at {}", nodeHandleSet, lmsg.getId(), lmsg.getMax(), getEndpoint().getId());
+          getResponseContinuation(msg).receiveResult(nodeHandleSet);
         }
         case GCCollectMessage cmsg -> {
           // get all ids which expiration before now
@@ -490,8 +490,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
 
           storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
             @Override
-            public void receiveResult(Object o) {
-              ExpiringPastContent content = (ExpiringPastContent) o;
+            public void receiveResult(Object result) {
+              ExpiringPastContent content = (ExpiringPastContent) result;
 
               if (content != null) {
                 logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
@@ -523,18 +523,18 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
 
     Continuation<Object, Exception> remove = new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
+      public void receiveResult(Object previousResult) {
         if (i.hasNext()) {
           final Id gid = i.next();
 
           if (trash != null) {
             storage.getObject(gid, new StandardContinuation<Object, Object, Exception>(this) {
               @Override
-              public void receiveResult(Object o) {
-                if (o != null) {
-                  trash.store(gid, storage.getMetadata(gid), o, new StandardContinuation<Boolean, Object, Exception>(parent) {
+              public void receiveResult(Object storedObject) {
+                if (storedObject != null) {
+                  trash.store(gid, storage.getMetadata(gid), storedObject, new StandardContinuation<Boolean, Object, Exception>(parent) {
                     @Override
-                    public void receiveResult(Boolean o) {
+                    public void receiveResult(Boolean result) {
                       storage.unstore(gid, parent);
                     }
                   });
@@ -569,37 +569,37 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   @Override
   public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
     logger.trace("Sending out replication fetch request for the id {}", id);
-    final ExpiringId gcid = (ExpiringId) id;
+    final ExpiringId expiringId = (ExpiringId) id;
 
-    if (gcid.expiration() < getEnvironment().getTimeSource().currentTimeMillis()) {
+    if (expiringId.expiration() < getEnvironment().getTimeSource().currentTimeMillis()) {
       command.receiveResult(Boolean.TRUE);
-    } else if (storage.exists(gcid.id())) {
-      ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(gcid.id());
+    } else if (storage.exists(expiringId.id())) {
+      ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(expiringId.id());
 
       if (metadata == null) {
-        setMissingMetadata(gcid.id(), gcid.expiration(), command);
-      } else if (metadata.expiration() < gcid.expiration()) {
-        storage.setMetadata(gcid.id(), metadata.setExpiration(gcid.expiration()), command);
+        setMissingMetadata(expiringId.id(), expiringId.expiration(), command);
+      } else if (metadata.expiration() < expiringId.expiration()) {
+        storage.setMetadata(expiringId.id(), metadata.setExpiration(expiringId.expiration()), command);
       } else {
         command.receiveResult(Boolean.TRUE);
       }
     } else {
-      policy.fetch(gcid.id(), hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
+      policy.fetch(expiringId.id(), hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
-        public void receiveResult(Object o) {
-          if (o == null) {
+        public void receiveResult(Object result) {
+          if (result == null) {
             logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
             parent.receiveResult(Boolean.valueOf(false));
           } else {
             // the peer that answered is not trusted: store only what was asked for
-            if (!(o instanceof ExpiringPastContent content) || !gcid.id().equals(content.getId())) {
-              logger.warn("Dropping fetched replica of id {}: not ExpiringPastContent for that id: {}", id, o);
+            if (!(result instanceof ExpiringPastContent content) || !expiringId.id().equals(content.getId())) {
+              logger.warn("Dropping fetched replica of id {}: not ExpiringPastContent for that id: {}", id, result);
               parent.receiveResult(Boolean.valueOf(false));
               return;
             }
             logger.trace("inserting replica of id {}", id);
 
-            storage.getStorage().store(gcid.id(), content.getMetadata(gcid.expiration()), content, parent);
+            storage.getStorage().store(expiringId.id(), content.getMetadata(expiringId.expiration()), content, parent);
           }
         }
       });
@@ -659,8 +659,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   private void setMissingMetadata(Id id, long expiration, Continuation<? super Boolean, Exception> command) {
     storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
-      public void receiveResult(Object o) {
-        storage.setMetadata(id, ((ExpiringPastContent) o).getMetadata(expiration), parent);
+      public void receiveResult(Object result) {
+        storage.setMetadata(id, ((ExpiringPastContent) result).getMetadata(expiration), parent);
       }
     });
   }
@@ -671,8 +671,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       // what if the ExpiringId's expiration is different than the metadata's?
       storage.getObject(gcId.id(), new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
-        public void receiveResult(final Object o) {
-          insert((PastContent)o, gcId.expiration(), new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
+        public void receiveResult(final Object storedObject) {
+          insert((PastContent)storedObject, gcId.expiration(), new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
             @Override
             public void receiveResult(Boolean[] result) {
               Boolean results[] = result;
@@ -701,14 +701,14 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   protected class ReplicaMap {
     private final HashMap<NodeHandle, IdSet> map = new HashMap<NodeHandle, IdSet>();
     public void addReplica(NodeHandle handle, ExpiringId id) {
-      IdSet set = (IdSet) map.get(handle);
+      IdSet idSet = (IdSet) map.get(handle);
 
-      if (set == null) {
-        set = new GCIdSet(realFactory);
-        map.put(handle, set);
+      if (idSet == null) {
+        idSet = new GCIdSet(realFactory);
+        map.put(handle, idSet);
       }
 
-      set.addId(id);
+      idSet.addId(id);
     }
 
     public Iterator<NodeHandle> getReplicas() {

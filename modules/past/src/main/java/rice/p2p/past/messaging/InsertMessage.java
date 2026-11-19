@@ -91,11 +91,11 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
    * Method which builds a response for this message, using the provided
    * object as a result.
    *
-   * @param o The object argument
+   * @param result The object argument
    */
   @Override
-  public void receiveResult(Object o) {
-    super.receiveResult(o);
+  public void receiveResult(Object result) {
+    super.receiveResult(result);
     content = null;
   }
 
@@ -151,17 +151,17 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
     }
   }
 
-  public static InsertMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  public static InsertMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new InsertMessage(buf, endpoint, pcd);
+        return new InsertMessage(buf, endpoint, contentDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  protected InsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd) throws IOException {
+  protected InsertMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     super(buf, endpoint);
 
     if (serType == S_SUB) {
@@ -171,7 +171,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     if (buf.readBoolean()) {
       short contentType = buf.readShort();
-      content = pcd.deserializePastContent(buf, endpoint, contentType);
+      content = contentDeserializer.deserializePastContent(buf, endpoint, contentType);
     }
   }
 }

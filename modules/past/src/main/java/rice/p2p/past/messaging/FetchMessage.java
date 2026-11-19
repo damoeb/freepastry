@@ -126,27 +126,27 @@ public final class FetchMessage extends ContinuationMessage {
     handle.serialize(buf);
   }
 
-  public static FetchMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd, PastContentHandleDeserializer pchd) throws IOException {
+  public static FetchMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
       case 0:
-        return new FetchMessage(buf, endpoint, pcd, pchd);
+        return new FetchMessage(buf, endpoint, contentDeserializer, contentHandleDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);
     }
   }
 
-  private FetchMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer pcd, PastContentHandleDeserializer pchd) throws IOException {
+  private FetchMessage(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     super(buf, endpoint);
     // if called super.serializer(x, true) these will be set
     if (serType == S_SUB) {
       short type2 = buf.readShort();
-      response = pcd.deserializePastContent(buf, endpoint, type2);
+      response = contentDeserializer.deserializePastContent(buf, endpoint, type2);
     }
 
     cached = buf.readBoolean();
 
     short type = buf.readShort();
-    handle = pchd.deserializePastContentHandle(buf, endpoint, type);
+    handle = contentHandleDeserializer.deserializePastContentHandle(buf, endpoint, type);
   }
 }

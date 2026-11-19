@@ -32,12 +32,12 @@ class PastReplicationFetchTest {
   private static final int CACHE_BYTES = 512 * 1024;
 
   private SocketRing ring;
-  private PastryIdFactory idf;
+  private PastryIdFactory idFactory;
 
   @BeforeEach
   void setUp() {
     ring = new SocketRing();
-    idf = new PastryIdFactory(ring.env);
+    idFactory = new PastryIdFactory(ring.env);
   }
 
   @AfterEach
@@ -50,8 +50,8 @@ class PastReplicationFetchTest {
   }
 
   private PastImpl newPast(PastryNode node, PastPolicy policy) {
-    PastImpl past = new PastImpl(node, new CachedStorageImpl(idf, new MemoryStorage(idf),
-        new LRUCache(new MemoryStorage(idf), CACHE_BYTES, node.getEnvironment())), 1, "fetch", policy);
+    PastImpl past = new PastImpl(node, new CachedStorageImpl(idFactory, new MemoryStorage(idFactory),
+        new LRUCache(new MemoryStorage(idFactory), CACHE_BYTES, node.getEnvironment())), 1, "fetch", policy);
     past.setContentDeserializer((buf, endpoint, type) -> {
       if (type == DistPastTestContent.TYPE) {
         return new DistPastTestContent(buf, endpoint);
@@ -77,23 +77,23 @@ class PastReplicationFetchTest {
   }
 
   private void put(PastImpl past, DistPastTestContent content) throws Exception {
-    await(FutureContinuation.<Boolean>call(c -> past.storage.getStorage().store(content.getId(), null, content, c)));
+    await(FutureContinuation.<Boolean>call(continuation -> past.storage.getStorage().store(content.getId(), null, content, continuation)));
   }
 
   private PastContent stored(PastImpl past, Id id) throws Exception {
-    return (PastContent) await(FutureContinuation.<Object>call(c -> past.storage.getObject(id, c)));
+    return (PastContent) await(FutureContinuation.<Object>call(continuation -> past.storage.getObject(id, continuation)));
   }
 
   @Test
   @DisplayName("a replication fetch whose reply carries another id leaves the object under that id alone")
   void replicationFetchWithOtherIdDoesNotOverwrite() throws Exception {
-    DistPastTestContent legit = new DistPastTestContent(ring.env, idf, "legit");
+    DistPastTestContent legit = new DistPastTestContent(ring.env, idFactory, "legit");
     DistPastTestContent evil = new DistPastTestContent(legit.getId(), "evil", 0);
-    Id requested = idf.buildId("requested");
+    Id requested = idFactory.buildId("requested");
     PastImpl past = bootReplying(evil);
     put(past, legit);
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(c -> past.fetch(requested, null, c)));
+    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(requested, null, continuation)));
 
     assertFalse(fetched, "a reply for another id counts as a successful fetch");
     assertEquals("legit", ((DistPastTestContent) stored(past, legit.getId())).getContent());
@@ -104,9 +104,9 @@ class PastReplicationFetchTest {
   @DisplayName("a replication fetch whose reply is not PastContent is dropped")
   void replicationFetchOfNonContentIsDropped() throws Exception {
     PastImpl past = bootReplying("not content");
-    Id requested = idf.buildId("requested");
+    Id requested = idFactory.buildId("requested");
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(c -> past.fetch(requested, null, c)));
+    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(requested, null, continuation)));
 
     assertFalse(fetched);
     assertFalse(past.storage.exists(requested));
@@ -115,10 +115,10 @@ class PastReplicationFetchTest {
   @Test
   @DisplayName("a replication fetch whose reply carries the requested id stores it")
   void replicationFetchOfRequestedIdIsStored() throws Exception {
-    DistPastTestContent good = new DistPastTestContent(ring.env, idf, "good");
+    DistPastTestContent good = new DistPastTestContent(ring.env, idFactory, "good");
     PastImpl past = bootReplying(good);
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(c -> past.fetch(good.getId(), null, c)));
+    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(good.getId(), null, continuation)));
 
     assertTrue(fetched);
     assertEquals("good", ((DistPastTestContent) stored(past, good.getId())).getContent());
