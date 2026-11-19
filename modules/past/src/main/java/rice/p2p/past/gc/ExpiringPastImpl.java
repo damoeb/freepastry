@@ -394,6 +394,11 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
     }
   }
 
+  /** The expiration as far as the maximum lease allows, counted from now: whoever asks for a lease, it ends no later. */
+  private long cappedExpiration(long requestedExpiration) {
+    return Math.min(requestedExpiration, getEnvironment().getTimeSource().currentTimeMillis() + maxLease);
+  }
+
   /** Stores an authentic, allowed insert, without the lock of PastImpl, with the expiration of the insert as metadata. */
   @Override
   protected void storeInsert(InsertMessage insertMessage) {
@@ -401,7 +406,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
     if (theId == null) {
       logger.error("Error: null Id from {} from {} in {}", insertMessage.getContent(), insertMessage, this);
     }
-    long expiration = ((GCInsertMessage) insertMessage).getExpiration();
+    long expiration = cappedExpiration(((GCInsertMessage) insertMessage).getExpiration());
     checkAndStore(insertMessage, content -> ((ExpiringPastContent) content).getMetadata(expiration), getResponseContinuation(insertMessage));
   }
 
@@ -443,7 +448,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
               if (expiringIdIterator.hasNext()) {
                 final ExpiringId id = expiringIdIterator.next();
                 /* nobody can lease an object for longer than the maximum lease from now */
-                final long expiration = Math.min(id.expiration(), getEnvironment().getTimeSource().currentTimeMillis() + maxLease);
+                final long expiration = cappedExpiration(id.expiration());
 
                 /* skip the object if we don't have it yet */
                 if (storage.exists(id.id())) {
@@ -570,16 +575,18 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
     logger.trace("Sending out replication fetch request for the id {}", id);
     final ExpiringId expiringId = (ExpiringId) id;
+    // the peer names the expiration: it counts only up to the maximum lease, like that of an insert
+    final long expiration = cappedExpiration(expiringId.expiration());
 
-    if (expiringId.expiration() < getEnvironment().getTimeSource().currentTimeMillis()) {
+    if (expiration < getEnvironment().getTimeSource().currentTimeMillis()) {
       command.receiveResult(Boolean.TRUE);
     } else if (storage.exists(expiringId.id())) {
       ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(expiringId.id());
 
       if (metadata == null) {
-        setMissingMetadata(expiringId.id(), expiringId.expiration(), command);
-      } else if (metadata.expiration() < expiringId.expiration()) {
-        storage.setMetadata(expiringId.id(), metadata.setExpiration(expiringId.expiration()), command);
+        setMissingMetadata(expiringId.id(), expiration, command);
+      } else if (metadata.expiration() < expiration) {
+        storage.setMetadata(expiringId.id(), metadata.setExpiration(expiration), command);
       } else {
         command.receiveResult(Boolean.TRUE);
       }
@@ -599,7 +606,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
             }
             logger.trace("inserting replica of id {}", id);
 
-            storage.getStorage().store(expiringId.id(), content.getMetadata(expiringId.expiration()), content, parent);
+            storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content, parent);
           }
         }
       });
