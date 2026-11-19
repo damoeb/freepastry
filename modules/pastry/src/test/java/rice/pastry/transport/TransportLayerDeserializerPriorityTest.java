@@ -105,6 +105,11 @@ class TransportLayerDeserializerPriorityTest {
     }
 
     @Override
+    public void setPriority(int priority) {
+      this.priority = priority;
+    }
+
+    @Override
     public short getType() {
       return APPLICATION_TYPE;
     }

@@ -140,6 +140,8 @@ public class PastryEndpointMessage extends PastryRawMessage {
     setSender(sender);
     message = deserializer.deserialize(buf, type, priority, sender);
     if (message == null) throw new IOException("PEM.deserialize() message = null type:"+type+" md:"+deserializer);
+    setPriority(priority);
+    message.setPriority(priority);
   }
 
 }

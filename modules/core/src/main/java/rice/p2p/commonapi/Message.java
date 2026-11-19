@@ -73,4 +73,18 @@ public interface Message {
    */
   public int getPriority();
 
+  /**
+   * Gives a message that was read from the wire the priority it was sent with, so that an application which
+   * sends the received object on directly sends it at that priority again. The transport calls this once for
+   * every message it deserializes; a deserializer or a message constructor need not apply the priority itself.
+   *
+   * <p>The default does nothing, which is right for a message whose priority is fixed by its class (it returns
+   * a constant from {@link #getPriority()}): its priority on the wire is the one it has anyway. A message that
+   * stores its priority overrides this method.
+   *
+   * @param priority the priority the message was sent with
+   */
+  default void setPriority(int priority) {
+  }
+
 }

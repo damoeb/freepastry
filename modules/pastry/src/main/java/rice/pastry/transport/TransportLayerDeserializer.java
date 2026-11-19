@@ -81,6 +81,8 @@ public class TransportLayerDeserializer implements RawMessageDeserializer, Deser
     if (msg == null) {
       throw new IOException("Deserialized message to null! d:"+deserializer+" a:"+address+" t:"+type+" p:"+priority);
     }
+    // the deserializers build the message at its constructor's priority; a message sent on keeps the one it was sent with
+    msg.setPriority(priority);
     logger.trace("deserialize():{}", msg);
     return (RawMessage)msg;
   }

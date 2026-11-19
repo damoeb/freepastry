@@ -157,6 +157,7 @@ public class RingMessage implements ScribeContent {
     byte priority = buf.readByte();
     // the sender is not serialized, so the inner message is deserialized without one
     message = (RawMessage)messageDeserializer.deserialize(buf, type, priority, null);
+    message.setPriority(priority);
   }
 
 }

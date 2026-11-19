@@ -189,7 +189,7 @@ public final class WireRoundTrip {
       RawMessage copy = read(first, from);
       assertEquals(message.getClass(), copy.getClass());
       byte[] second = wire(copy);
-      // a message read from the wire does not keep the priority it was sent with, which only the sender uses
+      // the priority byte is not compared here; TransportLayerDeserializerPriorityTest pins it
       assertArrayEquals(withoutPriority(first), withoutPriority(second),
           () -> "the copy of " + message + " is sent on as the same bytes");
       return (M) read(second, from);
