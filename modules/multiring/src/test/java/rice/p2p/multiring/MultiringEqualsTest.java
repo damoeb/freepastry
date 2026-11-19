@@ -56,11 +56,11 @@ class MultiringEqualsTest {
 
   @Test
   void idRangeEqualsOnlyMatchingIdRanges() {
-    Id cw = idFactory.buildId("cw");
+    Id id = idFactory.buildId("cw");
     Id ccw = idFactory.buildId("ccw");
-    MultiringIdRange range = new MultiringIdRange(ringId, idFactory.buildIdRange(cw, ccw));
+    MultiringIdRange range = new MultiringIdRange(ringId, idFactory.buildIdRange(id, ccw));
 
-    assertEquals(new MultiringIdRange(ringId, idFactory.buildIdRange(cw, ccw)), range);
+    assertEquals(new MultiringIdRange(ringId, idFactory.buildIdRange(id, ccw)), range);
     assertNotEquals(range, "not a range");
     assertNotEquals(range, null);
   }

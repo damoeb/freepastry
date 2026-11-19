@@ -87,9 +87,9 @@ public class SplitStreamDistTest {
     String outfileString = "ss.txt"+suffix;
 
     // setup output
-    PrintStream ps = new PrintStream(new FileOutputStream(outfileString, true));
-    System.setErr(ps);
-    System.setOut(ps);
+    PrintStream printStream = new PrintStream(new FileOutputStream(outfileString, true));
+    System.setErr(printStream);
+    System.setOut(printStream);
 
     // setup environment
     final Environment env = new Environment();

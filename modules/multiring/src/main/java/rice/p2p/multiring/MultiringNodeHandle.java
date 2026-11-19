@@ -122,11 +122,11 @@ public class MultiringNodeHandle extends NodeHandle implements NodeHandleListene
   /**
    * Listener callback on the wrapped handle.  Simply rebroadcasts
    *
-   * @param h the updated handle
+   * @param nodeHandle the updated handle
    * @param obj The paramter
    */
   @Override
-  public void nodeHandleUpdate(NodeHandle h, Object obj) {
+  public void nodeHandleUpdate(NodeHandle nodeHandle, Object obj) {
     notifyNodeHandleListeners(obj);
   }
 

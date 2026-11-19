@@ -49,7 +49,7 @@ class MultiringWireRoundTripTest {
   private static SocketNode local;
   private static Endpoint endpoint;
   private static NodeHandle self;
-  private static NodeHandle a;
+  private static NodeHandle nodeHandle;
   private static NodeHandle b;
 
   @BeforeAll
@@ -69,7 +69,7 @@ class MultiringWireRoundTripTest {
       }
     });
     self = local.local();
-    a = local.handle("1000");
+    nodeHandle = local.handle("1000");
     b = local.handle("8000");
   }
 
@@ -93,7 +93,7 @@ class MultiringWireRoundTripTest {
   @Test
   @DisplayName("MultiringNodeHandle")
   void multiringNodeHandle() throws IOException {
-    for (NodeHandle handle : List.of(self, a, b)) {
+    for (NodeHandle handle : List.of(self, nodeHandle, b)) {
       MultiringNodeHandle target = new MultiringNodeHandle(RING, handle);
 
       MultiringNodeHandle copy = WireRoundTrip.roundTrip(target, MultiringNodeHandle::serialize, buf -> new MultiringNodeHandle(buf, endpoint));
@@ -108,14 +108,14 @@ class MultiringWireRoundTripTest {
   @DisplayName("MultiringNodeHandleSet")
   void multiringNodeHandleSet() throws IOException {
     NodeSet empty = new NodeSet();
-    NodeSet one = new NodeSet();
-    one.put((rice.pastry.NodeHandle) a);
+    NodeSet nodeSet = new NodeSet();
+    nodeSet.put((rice.pastry.NodeHandle) nodeHandle);
     NodeSet many = new NodeSet();
     many.put((rice.pastry.NodeHandle) self);
-    many.put((rice.pastry.NodeHandle) a);
+    many.put((rice.pastry.NodeHandle) nodeHandle);
     many.put((rice.pastry.NodeHandle) b);
 
-    for (NodeSet set : List.of(empty, one, many)) {
+    for (NodeSet set : List.of(empty, nodeSet, many)) {
       MultiringNodeHandleSet target = new MultiringNodeHandleSet(RING, set);
 
       MultiringNodeHandleSet copy =
@@ -205,7 +205,7 @@ class MultiringWireRoundTripTest {
 
   private static rice.p2p.scribe.ScribeContent contentOf(RawMessage carrier) {
     return switch (carrier) {
-      case PublishMessage m -> m.getContent();
+      case PublishMessage msg -> msg.getContent();
       case PublishRequestMessage m -> m.getContent();
       case AnycastMessage m -> m.getRawContent();
       default -> throw new IllegalArgumentException(String.valueOf(carrier));

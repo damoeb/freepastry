@@ -62,14 +62,14 @@ public record SplitStreamConfig(
   /**
    * @throws IllegalArgumentException if stripeBaseBitLength is not positive or another value is negative
    */
-  public static SplitStreamConfig fromParameters(Parameters p) {
+  public static SplitStreamConfig fromParameters(Parameters parameters) {
     return new SplitStreamConfig(
       requireNonNegative("p2p_splitStream_policy_default_maximum_children",
-          p.getInt("p2p_splitStream_policy_default_maximum_children")),
+          parameters.getInt("p2p_splitStream_policy_default_maximum_children")),
       requireNonNegative("p2p_splitStream_stripe_max_failed_subscription",
-          p.getInt("p2p_splitStream_stripe_max_failed_subscription")),
-      requirePositive("p2p_splitStream_stripeBaseBitLength", p.getInt("p2p_splitStream_stripeBaseBitLength")),
+          parameters.getInt("p2p_splitStream_stripe_max_failed_subscription")),
+      requirePositive("p2p_splitStream_stripeBaseBitLength", parameters.getInt("p2p_splitStream_stripeBaseBitLength")),
       requireNonNegative("p2p_splitStream_stripe_max_failed_subscription_retry_delay",
-          p.getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay")));
+          parameters.getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay")));
   }
 }

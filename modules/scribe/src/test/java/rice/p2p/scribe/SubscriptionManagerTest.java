@@ -80,70 +80,70 @@ class SubscriptionManagerTest {
 
   @Test
   void multiTopicAckReportsSubscribeSuccessOnce() {
-    Topic a = ScribeTestSupport.topic(1);
+    Topic topic = ScribeTestSupport.topic(1);
     Topic b = ScribeTestSupport.topic(2);
     Topic c = ScribeTestSupport.topic(3);
-    int id = subscribe(new ArrayList<>(List.of(a, b, c)));
-    for (Topic t : List.of(a, b, c)) registry.create(t);
+    int id = subscribe(new ArrayList<>(List.of(topic, b, c)));
+    for (Topic t : List.of(topic, b, c)) registry.create(t);
 
-    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a, b, c)), emptyPaths(3), id));
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic, b, c)), emptyPaths(3), id));
 
     assertEquals(1, successes.size());
   }
 
   @Test
   void replacedParentIsUnsubscribedOnce() {
-    Topic a = ScribeTestSupport.topic(1);
+    Topic topic = ScribeTestSupport.topic(1);
     Topic b = ScribeTestSupport.topic(2);
     Handle oldParent = new Handle(3);
-    int id = subscribe(new ArrayList<>(List.of(a, b)));
-    for (Topic t : List.of(a, b)) registry.create(t).setParent(oldParent, new ArrayList<>());
+    int id = subscribe(new ArrayList<>(List.of(topic, b)));
+    for (Topic t : List.of(topic, b)) registry.create(t).setParent(oldParent, new ArrayList<>());
 
-    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a, b)), emptyPaths(2), id));
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic, b)), emptyPaths(2), id));
 
     List<Routed> unsubscribes = unsubscribes();
     assertEquals(1, unsubscribes.size());
     assertEquals(oldParent, unsubscribes.get(0).hint());
-    assertEquals(List.of(a, b), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+    assertEquals(List.of(topic, b), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
   }
 
   @Test
   void ackForUnknownTopicIsAnsweredWithUnsubscribe() {
-    Topic a = ScribeTestSupport.topic(1);
-    int id = subscribe(new ArrayList<>(List.of(a)));
-    registry.remove(a);
+    Topic topic = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(topic)));
+    registry.remove(topic);
 
-    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), emptyPaths(1), id));
 
     List<Routed> unsubscribes = unsubscribes();
     assertEquals(1, unsubscribes.size());
     assertEquals(fake.remote, unsubscribes.get(0).hint());
-    assertEquals(List.of(a), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+    assertEquals(List.of(topic), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
   }
 
   @Test
   void ackForRootTopicIsAnsweredWithUnsubscribe() {
-    Topic a = ScribeTestSupport.topic(1);
-    int id = subscribe(new ArrayList<>(List.of(a)));
-    registry.create(a);
-    fake.rootTopics.add(a);
+    Topic topic = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(topic)));
+    registry.create(topic);
+    fake.rootTopics.add(topic);
 
-    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), emptyPaths(1), id));
 
     List<Routed> unsubscribes = unsubscribes();
     assertEquals(1, unsubscribes.size());
     assertEquals(fake.remote, unsubscribes.get(0).hint());
-    assertEquals(List.of(a), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
+    assertEquals(List.of(topic), ((UnsubscribeMessage) unsubscribes.get(0).message()).topics());
   }
 
   @Test
   void lostMessageForCompletedSubscribeIsIgnored() {
-    Topic a = ScribeTestSupport.topic(1);
-    int id = subscribe(new ArrayList<>(List.of(a)));
-    registry.create(a);
-    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(a)), emptyPaths(1), id));
+    Topic topic = ScribeTestSupport.topic(1);
+    int id = subscribe(new ArrayList<>(List.of(topic)));
+    registry.create(topic);
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), emptyPaths(1), id));
 
     // the timer already fired for an ack that completed the subscribe: must not throw
-    manager.lostMessageReceived(new rice.p2p.scribe.messaging.SubscribeLostMessage(local, List.of(a), id, client));
+    manager.lostMessageReceived(new rice.p2p.scribe.messaging.SubscribeLostMessage(local, List.of(topic), id, client));
   }
 }

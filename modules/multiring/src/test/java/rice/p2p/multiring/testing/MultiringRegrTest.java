@@ -288,15 +288,15 @@ public class MultiringRegrTest {
    * @return The created node
    */
   protected MultiringNode createNode(Id ringId, MultiringNode bootstrap) {
-    MultiringNode mn;
+    MultiringNode multiringNode;
 
     if (bootstrap == null) {
-      mn = new MultiringNode(ringId, newBootedNode(null, null));
+      multiringNode = new MultiringNode(ringId, newBootedNode(null, null));
     } else {
-      mn = new MultiringNode(ringId, newBootedNode(getBootstrap(bootstrap.getNode()), null));
+      multiringNode = new MultiringNode(ringId, newBootedNode(getBootstrap(bootstrap.getNode()), null));
     }
 
-    PastryNode pn = (PastryNode)mn.getNode();
+    PastryNode pn = (PastryNode)multiringNode.getNode();
     synchronized(pn) {
       while(!pn.isReady()) {
         try {
@@ -309,7 +309,7 @@ public class MultiringRegrTest {
         System.out.println("Still waiting for node "+pn+" in ring "+ringId+" to be ready.");
       }
     }
-    return mn;
+    return multiringNode;
   }
 
   /**

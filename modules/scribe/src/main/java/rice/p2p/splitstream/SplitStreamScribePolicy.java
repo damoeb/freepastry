@@ -159,13 +159,13 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
    */
   @Override
   public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
-    Iterator<Topic> i = topics.iterator();
-    while(i.hasNext()) {
-      Topic topic = i.next();
+    Iterator<Topic> iterator = topics.iterator();
+    while(iterator.hasNext()) {
+      Topic topic = iterator.next();
       // the subscriber is also the source of the request here
       if (!selectAcceptedTopics(topic, source, source, content,
           new ArrayList<NodeHandle>(scribe.getChildrenOfTopic(topic)))) {
-        i.remove();
+        iterator.remove();
       }
     }
     return topics;
@@ -392,14 +392,14 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     // c) have at least one child
     List<Id> candidateStripes = new ArrayList<Id>();
     Id victimStripeId = null;
-    Topic tp;
+    Topic topic;
 
     /* find all candidate stripes */
     for (Stripe stripe : stripes){
-      tp = new Topic(stripe.getStripeId().id());
+      topic = new Topic(stripe.getStripeId().id());
       if (!channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id()) &&
-          !this.scribe.isRoot(tp) &&
-          !scribe.getChildrenOfTopic(tp).isEmpty()) {
+          !this.scribe.isRoot(topic) &&
+          !scribe.getChildrenOfTopic(topic).isEmpty()) {
         candidateStripes.add(stripe.getStripeId().id());
       }
     }
@@ -407,9 +407,9 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
     /* if there are no candidates, find somewhere where i am the root*/
     if(candidateStripes.size() == 0) {
       for (Stripe stripe : stripes){
-        tp = new Topic(stripe.getStripeId().id());
+        topic = new Topic(stripe.getStripeId().id());
         if (! channel.getPrimaryStripe().getStripeId().id().equals(stripe.getStripeId().id()) &&
-            !scribe.getChildrenOfTopic(tp).isEmpty() &&
+            !scribe.getChildrenOfTopic(topic).isEmpty() &&
             ! stripe.getStripeId().id().equals(stripeId)) {
           candidateStripes.add(stripe.getStripeId().id());
         }
@@ -454,10 +454,10 @@ public class SplitStreamScribePolicy extends DefaultScribePolicy /*implements Sc
 
     /* find all potential victims */
     List<NodeHandle> victims = new ArrayList<NodeHandle>();
-    for(NodeHandle c : children){
-      int match = getPrefixMatch(stripeId, c.getId(), channel.getStripeBase());
+    for(NodeHandle nodeHandle : children){
+      int match = getPrefixMatch(stripeId, nodeHandle.getId(), channel.getStripeBase());
       if(match < minPrefixMatch){
-        victims.add(c);
+        victims.add(nodeHandle);
       }
     }
 

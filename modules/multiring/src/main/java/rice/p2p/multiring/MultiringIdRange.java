@@ -158,9 +158,9 @@ public record MultiringIdRange(Id ringId, IdRange range) implements IdRange {
    */
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MultiringIdRange other))
+    if (!(o instanceof MultiringIdRange multiringIdRange))
       return false;
-    return (other.range().equals(range) && other.ringId.equals(ringId));
+    return (multiringIdRange.range().equals(range) && multiringIdRange.ringId.equals(ringId));
   }
 
   /**

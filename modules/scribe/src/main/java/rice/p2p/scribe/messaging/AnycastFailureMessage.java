@@ -103,12 +103,12 @@ public final class AnycastFailureMessage extends ScribeMessage {
    * make sure to build a serializeHelper() like in AnycastMessage/SubscribeMessage, and properly handle the
    * version number.
    */
-  private AnycastFailureMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer cd) throws IOException {
+  private AnycastFailureMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scribeContentDeserializer) throws IOException {
     super(buf, endpoint);
 
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     short contentType = buf.readShort();
-    content = cd.deserializeScribeContent(buf, endpoint, contentType);
+    content = scribeContentDeserializer.deserializeScribeContent(buf, endpoint, contentType);
 
   }
 }

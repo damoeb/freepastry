@@ -68,11 +68,11 @@ public class RendezvousScribeTest {
 
     Environment env = ScribeRegrTest.parseArgs(args);
 
-    Parameters p = env.getParameters();
+    Parameters parameters = env.getParameters();
 
-    p.setBoolean("rendezvous_test_firewall", true);
-    p.setBoolean("rendezvous_test_makes_bootstrap", true);
-    p.setFloat("rendezvous_test_num_firewalled", 0.5f);
+    parameters.setBoolean("rendezvous_test_firewall", true);
+    parameters.setBoolean("rendezvous_test_makes_bootstrap", true);
+    parameters.setFloat("rendezvous_test_num_firewalled", 0.5f);
 
     ScribeRegrTest scribeTest = new ScribeRegrTest(env);
 

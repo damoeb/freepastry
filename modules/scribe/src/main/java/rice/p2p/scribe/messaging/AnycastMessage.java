@@ -238,8 +238,8 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
     initialRequestor.serialize(buf);
 
     buf.writeInt(toVisit.size());
-    for (NodeHandle nh : toVisit) {
-      nh.serialize(buf);
+    for (NodeHandle nodeHandle : toVisit) {
+      nodeHandle.serialize(buf);
     }
 
     buf.writeInt(visited.size());
@@ -271,7 +271,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
    * numbers correct.
    *
    */
-  protected AnycastMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer cd) throws IOException {
+  protected AnycastMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scribeContentDeserializer) throws IOException {
     super(buf, endpoint);
 
     initialRequestor = endpoint.readNodeHandle(buf);
@@ -291,7 +291,7 @@ public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessag
     // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
     if (buf.readBoolean()) {
       short contentType = buf.readShort();
-      content = cd.deserializeScribeContent(buf, endpoint, contentType);
+      content = scribeContentDeserializer.deserializeScribeContent(buf, endpoint, contentType);
     }
   }
 

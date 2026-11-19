@@ -137,14 +137,14 @@ public final class SubscribeMessage extends AnycastMessage {
     int numTopics = topics.size();
     buf.writeInt(numTopics);
     if (numTopics > 1) {
-      Iterator<Topic> i = topics.iterator();
+      Iterator<Topic> iterator = topics.iterator();
 
       // for efficiency, don't serialize the first one
       // we can get it from the super class
-      i.next();
+      iterator.next();
 
-      while (i.hasNext()) {
-        i.next().serialize(buf);
+      while (iterator.hasNext()) {
+        iterator.next().serialize(buf);
       }
     }
   }

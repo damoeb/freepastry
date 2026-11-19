@@ -50,7 +50,7 @@ public record MultiringConfig(int base) {
   /**
    * @throws IllegalArgumentException if base is not positive
    */
-  public static MultiringConfig fromParameters(Parameters p) {
-    return new MultiringConfig(requirePositive("p2p_multiring_base", p.getInt("p2p_multiring_base")));
+  public static MultiringConfig fromParameters(Parameters parameters) {
+    return new MultiringConfig(requirePositive("p2p_multiring_base", parameters.getInt("p2p_multiring_base")));
   }
 }

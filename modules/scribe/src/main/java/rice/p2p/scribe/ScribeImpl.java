@@ -356,12 +356,12 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     anycasts.recvAnycastFail(topic, failedAtNode, content);
   }
 
-  protected void addToAllParents(Topic t, NodeHandle parent) {
-    registry.addToAllParents(t, parent);
+  protected void addToAllParents(Topic topic, NodeHandle parent) {
+    registry.addToAllParents(topic, parent);
   }
 
-  public boolean allParentsContains(Topic t, NodeHandle parent) {
-    return registry.allParentsContains(t, parent);
+  public boolean allParentsContains(Topic topic, NodeHandle parent) {
+    return registry.allParentsContains(topic, parent);
   }
 
   public boolean allParentsContainsParent(NodeHandle parent) {

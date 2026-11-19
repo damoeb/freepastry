@@ -52,9 +52,9 @@ public record ScribeConfig(int maintenanceInterval, int messageTimeout) {
   /**
    * @throws IllegalArgumentException if a time is not positive
    */
-  public static ScribeConfig fromParameters(Parameters p) {
+  public static ScribeConfig fromParameters(Parameters parameters) {
     return new ScribeConfig(
-      requirePositive("p2p_scribe_maintenance_interval", p.getInt("p2p_scribe_maintenance_interval")),
-      requirePositive("p2p_scribe_message_timeout", p.getInt("p2p_scribe_message_timeout")));
+      requirePositive("p2p_scribe_maintenance_interval", parameters.getInt("p2p_scribe_maintenance_interval")),
+      requirePositive("p2p_scribe_message_timeout", parameters.getInt("p2p_scribe_message_timeout")));
   }
 }

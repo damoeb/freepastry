@@ -50,8 +50,8 @@ public interface SplitStreamClient {
    * Is called when data is received on a stripe which this client has registered interest
    *
    * @param data The data that was received
-   * @param s The stripe the data as received on
+   * @param stripe The stripe the data as received on
    */
-  public void deliver(Stripe s, byte[] data);
+  public void deliver(Stripe stripe, byte[] data);
 
 }

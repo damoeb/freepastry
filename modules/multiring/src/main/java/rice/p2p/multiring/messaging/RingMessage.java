@@ -151,12 +151,12 @@ public class RingMessage implements ScribeContent {
     if (endpoint == null) {
       throw new IOException("Couldn't find application:"+application);
     }
-    MessageDeserializer md = endpoint.getDeserializer();
+    MessageDeserializer messageDeserializer = endpoint.getDeserializer();
 
     short type = buf.readShort();
     byte priority = buf.readByte();
     // the sender is not serialized, so the inner message is deserialized without one
-    message = (RawMessage)md.deserialize(buf, type, priority, null);
+    message = (RawMessage)messageDeserializer.deserialize(buf, type, priority, null);
   }
 
 }

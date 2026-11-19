@@ -366,8 +366,8 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   @Override
-  public void setDeserializer(MessageDeserializer md) {
-    endpoint.setDeserializer(md);
+  public void setDeserializer(MessageDeserializer messageDeserializer) {
+    endpoint.setDeserializer(messageDeserializer);
   }
 
   @Override
@@ -421,23 +421,23 @@ public class MultiringEndpoint implements Endpoint {
   }
 
   @Override
-  public int proximity(NodeHandle nh) {
-    return endpoint.proximity(unwrap(nh));
+  public int proximity(NodeHandle nodeHandle) {
+    return endpoint.proximity(unwrap(nodeHandle));
   }
 
   @Override
-  public boolean isAlive(NodeHandle nh) {
-    return endpoint.isAlive(unwrap(nh));
+  public boolean isAlive(NodeHandle nodeHandle) {
+    return endpoint.isAlive(unwrap(nodeHandle));
   }
 
   /**
    * The underlying endpoint only understands the wrapped handles.
    */
-  private NodeHandle unwrap(NodeHandle nh) {
-    if (nh instanceof MultiringNodeHandle multiringNodeHandle) {
+  private NodeHandle unwrap(NodeHandle nodeHandle) {
+    if (nodeHandle instanceof MultiringNodeHandle multiringNodeHandle) {
       return multiringNodeHandle.getHandle();
     }
-    return nh;
+    return nodeHandle;
   }
 
   @Override

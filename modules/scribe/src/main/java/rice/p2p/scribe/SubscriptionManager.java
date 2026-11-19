@@ -456,9 +456,9 @@ final class SubscriptionManager {
     // the ack covers all of its topics, so it is processed once, not once per topic
     ackMessageReceived(saMessage);
 
-    Iterator<List<Id>> i = saMessage.getPathsToRoot().iterator();
+    Iterator<List<Id>> iterator = saMessage.getPathsToRoot().iterator();
     for (Topic topic : saMessage.getTopics()) {
-      List<Id> pathToRoot = i.next();
+      List<Id> pathToRoot = iterator.next();
       TopicTreeState manager = registry.get(topic);
 
       logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);

@@ -20,7 +20,7 @@ import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 class ScribeMessageLengthTest {
   private static final byte VERSION = 1;
 
-  private static final Id ID = (Id) Proxy.newProxyInstance(Id.class.getClassLoader(), new Class<?>[] {Id.class},
+  private static final Id id = (Id) Proxy.newProxyInstance(Id.class.getClassLoader(), new Class<?>[] {Id.class},
       (proxy, method, args) -> {
         throw new UnsupportedOperationException(method.getName());
       });
@@ -28,7 +28,7 @@ class ScribeMessageLengthTest {
   /** An endpoint whose ids and node handles take no bytes, so a test only writes the counts. */
   private static final Endpoint ENDPOINT = (Endpoint) Proxy.newProxyInstance(Endpoint.class.getClassLoader(),
       new Class<?>[] {Endpoint.class}, (proxy, method, args) -> switch (method.getName()) {
-        case "readId" -> ID;
+        case "readId" -> id;
         case "readNodeHandle" -> null;
         default -> throw new UnsupportedOperationException(method.getName());
       });

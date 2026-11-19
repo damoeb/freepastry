@@ -275,12 +275,12 @@ public class MultiringIdFactory implements IdFactory {
    * Creates an IdRange given the CCW and CW ids.
    *
    * @param ccw The counterclockwise Id, the inclusive start of the range
-   * @param cw The clockwise Id, the exclusive end of the range
+   * @param id The clockwise Id, the exclusive end of the range
    * @return An IdRange with the appropriate delimiters.
    */
   @Override
-  public IdRange buildIdRange(Id ccw, Id cw) {
-    return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) ccw).getId(), ((RingId) cw).getId()));
+  public IdRange buildIdRange(Id ccw, Id id) {
+    return new MultiringIdRange(getRingId(), factory.buildIdRange(((RingId) ccw).getId(), ((RingId) id).getId()));
   }
 
   /**
@@ -389,13 +389,13 @@ public class MultiringIdFactory implements IdFactory {
     public boolean isEmpty() { throw new UnsupportedOperationException("isEmpty not supported!"); }
     @Override
     public Iterator<Map.Entry<Id, V>> iterator() { return new Iterator<Map.Entry<Id, V>>() {
-      private final Iterator<Map.Entry<Id, V>> i = set.iterator();
+      private final Iterator<Map.Entry<Id, V>> iterator = set.iterator();
       @Override
-      public boolean hasNext() { return i.hasNext(); }
+      public boolean hasNext() { return iterator.hasNext(); }
       @Override
-      public Map.Entry<Id, V> next() { return new MultiringMapEntry<V>(i.next()); }
+      public Map.Entry<Id, V> next() { return new MultiringMapEntry<V>(iterator.next()); }
       @Override
-      public void remove() { i.remove(); }
+      public void remove() { iterator.remove(); }
     };
     }
     @Override
@@ -421,7 +421,7 @@ public class MultiringIdFactory implements IdFactory {
     }
 
     @Override
-    public boolean add(Id o) { throw new UnsupportedOperationException("add not supported!"); }
+    public boolean add(Id id) { throw new UnsupportedOperationException("add not supported!"); }
     @Override
     public boolean addAll(Collection<? extends Id> c) { throw new UnsupportedOperationException("addAll not supported!"); }
     @Override
@@ -458,22 +458,22 @@ public class MultiringIdFactory implements IdFactory {
     @Override
     public Object[] toArray() {
       Object[] result = new Object[set.size()];
-      Iterator<Id> i = set.iterator();
+      Iterator<Id> iterator = set.iterator();
       int j = 0;
 
-      while (i.hasNext())
-        result[j++] = ((RingId) i.next()).getId();
+      while (iterator.hasNext())
+        result[j++] = ((RingId) iterator.next()).getId();
 
       return result;
     }
     @Override
     public <T> T[] toArray(T[] a) {
       T[] result = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), set.size());
-      Iterator<Id> i = set.iterator();
+      Iterator<Id> iterator = set.iterator();
       int j = 0;
 
-      while (i.hasNext())
-        result[j++] = (T) ((RingId) i.next()).getId();
+      while (iterator.hasNext())
+        result[j++] = (T) ((RingId) iterator.next()).getId();
 
       return result;
     }

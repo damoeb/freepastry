@@ -330,8 +330,8 @@ public class ScribeRegrTest extends CommonAPITest {
       String str = "";
       for (int i=0; i < NUM_NODES/SKIP; i++) {
         if (clients[i].getAnycastMessages().size() != 0) {
-          for (ScribeContent sc : clients[i].getAnycastMessages()) {
-            str+="\n"+clients[i]+" "+sc;
+          for (ScribeContent scribeContent : clients[i].getAnycastMessages()) {
+            str+="\n"+clients[i]+" "+scribeContent;
           }
         }
       }
@@ -512,8 +512,8 @@ public class ScribeRegrTest extends CommonAPITest {
         String str = "";
         for (int i=0; i < NUM_NODES/SKIP; i++) {
           if (clients[i].getAnycastMessages().size() != 0) {
-            for (ScribeContent sc : clients[i].getAnycastMessages()) {
-              str+="\n"+clients[i]+" "+sc;
+            for (ScribeContent scribeContent : clients[i].getAnycastMessages()) {
+              str+="\n"+clients[i]+" "+scribeContent;
             }
           }
         }
@@ -941,7 +941,7 @@ public class ScribeRegrTest extends CommonAPITest {
     }
 
     @Override
-    public Message getMessage(MessageDeserializer md) {
+    public Message getMessage(MessageDeserializer messageDeserializer) {
       return message;
     }
 
@@ -1118,11 +1118,11 @@ public class ScribeRegrTest extends CommonAPITest {
 
     @Override
     public List<Topic> selectAcceptedTopics(Scribe scribe, NodeHandle source, List<Topic> topics, ScribeContent content) {
-      Iterator<Topic> i = topics.iterator();
-      while (i.hasNext()) {
-        Topic topic = i.next();
+      Iterator<Topic> iterator = topics.iterator();
+      while (iterator.hasNext()) {
+        Topic topic = iterator.next();
         if (!(! neverAllowSubscribe && (allowSubscribe || !scribe.getClientsByTopic(topic).isEmpty() || this.scribe.isRoot(topic)))) {
-          i.remove();
+          iterator.remove();
         }
       }
       return topics;

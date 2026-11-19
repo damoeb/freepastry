@@ -66,7 +66,7 @@ public class MySplitStreamClient implements SplitStreamClient {
    * The underlying common api node
    *
    */
-  private PastryNode n = null;
+  private PastryNode pastryNode = null;
 
   /**
    * The stripes for a channel
@@ -84,21 +84,21 @@ public class MySplitStreamClient implements SplitStreamClient {
    * The SplitStream service for this node
    *
    */
-  private SplitStream ss;
+  private SplitStream splitStream;
 
   TimerTask publishTask;
 
   int curSeq = 0;
 
-  public MySplitStreamClient(PastryNode n, String instance) {
-    this.n = n;
-    this.ss = new SplitStreamImpl(n, instance);
+  public MySplitStreamClient(PastryNode pastryNode, String instance) {
+    this.pastryNode = pastryNode;
+    this.splitStream = new SplitStreamImpl(pastryNode, instance);
   }
 
   public void attachChannel(ChannelId cid) {
-    System.out.println("Attaching to Channel " + cid + " at "+n.getEnvironment().getTimeSource().currentTimeMillis());
+    System.out.println("Attaching to Channel " + cid + " at "+pastryNode.getEnvironment().getTimeSource().currentTimeMillis());
     if (channel == null)
-      channel = ss.attachChannel(cid);
+      channel = splitStream.attachChannel(cid);
     getStripes(); // implicitly sets the stripes parameter
   }
 
@@ -115,7 +115,7 @@ public class MySplitStreamClient implements SplitStreamClient {
 
   public boolean shouldPublish() {
     try {
-      IdRange range = n.getLeafSet().range(n.getLocalHandle(), 0);
+      IdRange range = pastryNode.getLeafSet().range(pastryNode.getLocalHandle(), 0);
 
       return range.containsId(rice.pastry.Id.build());
     } catch (RangeCannotBeDeterminedException rcbde) {
@@ -125,13 +125,13 @@ public class MySplitStreamClient implements SplitStreamClient {
 
   public void publishNext() {
     if (shouldPublish()) {
-      publish(n.getId(), curSeq);
+      publish(pastryNode.getId(), curSeq);
       curSeq++;
     }
   }
 
   public void publish(Id id, int seq) {
-    System.out.println("MSSC.publish("+id+":"+seq+"):"+n.getEnvironment().getTimeSource().currentTimeMillis());
+    System.out.println("MSSC.publish("+id+":"+seq+"):"+pastryNode.getEnvironment().getTimeSource().currentTimeMillis());
     byte[] msg = new byte[msgSize];
     byte[] head = MathUtils.intToByteArray(seq);
     System.arraycopy(head, 0, msg, 0, 4);
@@ -141,22 +141,22 @@ public class MySplitStreamClient implements SplitStreamClient {
     publishAll(msg);
   }
 
-  public void publishAll(byte[] b) {
+  public void publishAll(byte[] bytes) {
     for (Stripe stripe : stripes) {
-      publish(b, stripe);
+      publish(bytes, stripe);
     }
   }
 
-  public void publish(byte[] b, Stripe s) {
-    s.publish(b);
+  public void publish(byte[] bytes, Stripe stripe) {
+    stripe.publish(bytes);
   }
 
-  public void joinFailed(Stripe s) {
-    System.out.println("MSSC.joinFailed("+s+"):"+n.getEnvironment().getTimeSource().currentTimeMillis());
+  public void joinFailed(Stripe stripe) {
+    System.out.println("MSSC.joinFailed("+stripe+"):"+pastryNode.getEnvironment().getTimeSource().currentTimeMillis());
   }
 
   @Override
-  public void deliver(Stripe s, byte[] data) {
+  public void deliver(Stripe stripe, byte[] data) {
     byte[] theInt = new byte[4];
     System.arraycopy(data, 0, theInt, 0, 4);
     int seq = MathUtils.byteArrayToInt(theInt);
@@ -165,9 +165,9 @@ public class MySplitStreamClient implements SplitStreamClient {
     System.arraycopy(data, 4, material, 0, 20);
     Id publisher = rice.pastry.Id.build(material);
 
-    Id stripeId = (rice.pastry.Id) s.getStripeId().id();
+    Id stripeId = (rice.pastry.Id) stripe.getStripeId().id();
     String stripeStr = stripeId.toString().substring(3, 4);
-    System.out.println("deliver("+stripeStr+","+publisher+","+seq+"):"+n.getEnvironment().getTimeSource().currentTimeMillis()+" from "+s.getParent());
+    System.out.println("deliver("+stripeStr+","+publisher+","+seq+"):"+pastryNode.getEnvironment().getTimeSource().currentTimeMillis()+" from "+stripe.getParent());
   }
 
   /**
@@ -180,6 +180,6 @@ public class MySplitStreamClient implements SplitStreamClient {
         publishNext();
       }
     };
-    n.getEnvironment().getSelectorManager().getTimer().schedule(publishTask, SEND_PERIOD, SEND_PERIOD);
+    pastryNode.getEnvironment().getSelectorManager().getTimer().schedule(publishTask, SEND_PERIOD, SEND_PERIOD);
   }
 }

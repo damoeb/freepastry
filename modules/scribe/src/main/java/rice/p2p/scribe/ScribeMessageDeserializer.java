@@ -78,22 +78,22 @@ final class ScribeMessageDeserializer implements MessageDeserializer {
 
   @Override
   public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
-    ScribeContentDeserializer cd = contentDeserializer.get();
+    ScribeContentDeserializer scribeContentDeserializer = contentDeserializer.get();
     try {
       return switch (ScribeMessageType.find(type)) {
-        case ANYCAST -> AnycastMessage.build(buf, endpoint, cd);
-        case SUBSCRIBE -> SubscribeMessage.readFrom(buf, endpoint, cd);
+        case ANYCAST -> AnycastMessage.build(buf, endpoint, scribeContentDeserializer);
+        case SUBSCRIBE -> SubscribeMessage.readFrom(buf, endpoint, scribeContentDeserializer);
         case SUBSCRIBE_ACK -> SubscribeAckMessage.build(buf, endpoint);
         case SUBSCRIBE_FAILED -> SubscribeFailedMessage.build(buf, endpoint);
         case DROP -> DropMessage.build(buf, endpoint);
-        case PUBLISH -> PublishMessage.build(buf, endpoint, cd);
-        case PUBLISH_REQUEST -> PublishRequestMessage.build(buf, endpoint, cd);
+        case PUBLISH -> PublishMessage.build(buf, endpoint, scribeContentDeserializer);
+        case PUBLISH_REQUEST -> PublishRequestMessage.build(buf, endpoint, scribeContentDeserializer);
         case UNSUBSCRIBE -> UnsubscribeMessage.build(buf, endpoint);
-        case ANYCAST_FAILURE -> AnycastFailureMessage.build(buf, endpoint, cd);
+        case ANYCAST_FAILURE -> AnycastFailureMessage.build(buf, endpoint, scribeContentDeserializer);
         case null -> throw new IOException("Unknown type:" + type);
       };
     } catch (IOException e) {
-      logger.atError().log(() -> "Exception in deserializer in "+endpoint.toString()+":"+instance+" "+cd+" "+e);
+      logger.atError().log(() -> "Exception in deserializer in "+endpoint.toString()+":"+instance+" "+scribeContentDeserializer+" "+e);
       throw e;
     }
   }

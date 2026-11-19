@@ -343,18 +343,18 @@ public class SplitStreamRegrTest extends CommonAPITest {
      * The SplitStream service for this node
      *
      */
-    private SplitStream ss;
+    private SplitStream splitStream;
 
     private int numMesgsReceived = 0;
 
-    SplitStreamTestClient(Node n, SplitStream ss) {
-      this.n = n;
-      this.ss = ss;
-      log("Client Created " + n);
+    SplitStreamTestClient(Node node, SplitStream splitStream) {
+      this.n = node;
+      this.splitStream = splitStream;
+      log("Client Created " + node);
     }
 
     void destroy() {
-      ss.destroy();
+      splitStream.destroy();
     }
 
     Channel getChannel() {
@@ -362,20 +362,20 @@ public class SplitStreamRegrTest extends CommonAPITest {
     }
 
     @Override
-    public void deliver(Stripe s, byte[] data) {
-      log("Data recieved on " + s);
+    public void deliver(Stripe stripe, byte[] data) {
+      log("Data recieved on " + stripe);
       numMesgsReceived++;
     }
 
     void createChannel(ChannelId cid) {
       log("Channel " + cid + " created.");
-      channel = ss.createChannel(cid);
+      channel = splitStream.createChannel(cid);
     }
 
     void attachChannel(ChannelId cid) {
       log("Attaching to Channel " + cid + ".");
       if (channel == null)
-        channel = ss.attachChannel(cid);
+        channel = splitStream.attachChannel(cid);
     }
 
     Stripe[] getStripes() {
@@ -391,16 +391,16 @@ public class SplitStreamRegrTest extends CommonAPITest {
       }
     }
 
-    void publishAll(byte[] b) {
+    void publishAll(byte[] bytes) {
       log("Publishing to all Stripes.");
       for (Stripe stripe : stripes) {
-        publish(b, stripe);
+        publish(bytes, stripe);
       }
     }
 
-    void publish(byte[] b, Stripe s) {
-      log("Publishing to " + s);
-      s.publish(b);
+    void publish(byte[] bytes, Stripe stripe) {
+      log("Publishing to " + stripe);
+      stripe.publish(bytes);
     }
 
     int getNumMesgs() {

@@ -144,50 +144,50 @@ public class MultiringNodeCollection {
   /**
    * This method returns the length of the given ringId
    *
-   * @param a The ring Id
+   * @param ringId The ring Id
    * @return The number of shared bytes
    */
-  protected int getLength(RingId a) {
-    byte[] ba = a.getRingId().toByteArray();
+  protected int getLength(RingId ringId) {
+    byte[] bytes = ringId.getRingId().toByteArray();
 
-    for (int i=0; i<ba.length / BASE; i++) {
+    for (int i=0; i<bytes.length / BASE; i++) {
       boolean zero = true;
 
       for (int j=0; j<BASE; j++)
-       if (ba[ba.length - 1 - (BASE * i + j)] != 0)
+       if (bytes[bytes.length - 1 - (BASE * i + j)] != 0)
          zero = false;
 
       if (zero)
         return i;
     }
 
-    return (ba.length/BASE);
+    return (bytes.length/BASE);
   }
 
   /**
    * This method returns the length of the shared prefix, in bytes, of the
    * two provided ringIds by comparing the ring values.
    *
-   * @param a The first Id
+   * @param ringId The first Id
    * @param b The second Id
    * @return The number of shared bytes
    */
-  protected int getLengthOfSharedPrefix(RingId a, RingId b) {
-    byte[] ba = a.getRingId().toByteArray();
+  protected int getLengthOfSharedPrefix(RingId ringId, RingId b) {
+    byte[] bytes = ringId.getRingId().toByteArray();
     byte[] bb = b.getRingId().toByteArray();
 
-    for (int i=0; i<ba.length / BASE; i++) {
+    for (int i=0; i<bytes.length / BASE; i++) {
       boolean same = true;
 
       for (int j=0; j<BASE; j++)
-        if (ba[ba.length - 1 - (BASE * i + j)] != bb[ba.length - 1 - (BASE * i + j)])
+        if (bytes[bytes.length - 1 - (BASE * i + j)] != bb[bytes.length - 1 - (BASE * i + j)])
           same = false;
 
       if (! same)
         return i;
     }
 
-    return (ba.length/BASE);
+    return (bytes.length/BASE);
   }
 
   public int getBase() {

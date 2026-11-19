@@ -56,7 +56,7 @@ final class ScribeTestSupport {
 
     @Override
     public boolean equals(Object o) {
-      return o instanceof Handle h && h.id.equals(id);
+      return o instanceof Handle handle && handle.id.equals(id);
     }
 
     @Override

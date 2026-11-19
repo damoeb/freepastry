@@ -334,8 +334,8 @@ public class MultiringNode implements Node, ScribeMultiClient {
    */
   @Override
   public boolean anycast(Topic topic, ScribeContent content) {
-    if (content instanceof RingMessage rm) {
-      collection.route(rm.getId(), rm.getRawMessage(), rm.getApplication(), null, null);
+    if (content instanceof RingMessage ringMessage) {
+      collection.route(ringMessage.getId(), ringMessage.getRawMessage(), ringMessage.getApplication(), null, null);
     } else {
       logger.warn("Received unrecognized message {}", content);
     }

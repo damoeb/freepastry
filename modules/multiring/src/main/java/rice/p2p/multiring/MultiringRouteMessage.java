@@ -98,8 +98,8 @@ public class MultiringRouteMessage implements RouteMessage {
   }
 
   @Override
-  public Message getMessage(MessageDeserializer md) throws IOException {
-    return message.getMessage(md);
+  public Message getMessage(MessageDeserializer messageDeserializer) throws IOException {
+    return message.getMessage(messageDeserializer);
   }
 
   /**

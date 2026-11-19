@@ -19,7 +19,7 @@ class TopicRegistryTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(TopicRegistryTest.class);
 
   private final Handle local = new Handle(1);
-  private final Handle other = new Handle(3);
+  private final Handle handle = new Handle(3);
   private TopicRegistry registry;
 
   @BeforeEach
@@ -30,38 +30,38 @@ class TopicRegistryTest {
 
   @Test
   void topicsByParentIsASnapshot() {
-    Topic a = ScribeTestSupport.topic(1);
-    registry.addToAllParents(a, other);
+    Topic topic = ScribeTestSupport.topic(1);
+    registry.addToAllParents(topic, handle);
 
-    Collection<Topic> snapshot = registry.getTopicsByParent(other);
-    registry.removeFromAllParents(a, other);
+    Collection<Topic> snapshot = registry.getTopicsByParent(handle);
+    registry.removeFromAllParents(topic, handle);
 
     assertEquals(1, snapshot.size());
-    assertTrue(registry.getTopicsByParent(other).isEmpty());
+    assertTrue(registry.getTopicsByParent(handle).isEmpty());
   }
 
   @Test
   void topicsByChildIsASnapshot() {
-    Topic a = ScribeTestSupport.topic(1);
-    registry.addToAllChildren(a, other);
+    Topic topic = ScribeTestSupport.topic(1);
+    registry.addToAllChildren(topic, handle);
 
-    Collection<Topic> snapshot = registry.getTopicsByChild(other);
-    registry.removeFromAllChildren(a, other);
+    Collection<Topic> snapshot = registry.getTopicsByChild(handle);
+    registry.removeFromAllChildren(topic, handle);
 
     assertEquals(1, snapshot.size());
-    assertTrue(registry.getTopicsByChild(other).isEmpty());
+    assertTrue(registry.getTopicsByChild(handle).isEmpty());
   }
 
   @Test
   void destroyForgetsParentsAndChildren() {
-    Topic a = ScribeTestSupport.topic(1);
-    registry.addToAllParents(a, other);
-    registry.addToAllChildren(a, other);
+    Topic topic = ScribeTestSupport.topic(1);
+    registry.addToAllParents(topic, handle);
+    registry.addToAllChildren(topic, handle);
 
     registry.destroy();
 
-    assertTrue(registry.getTopicsByParent(other).isEmpty());
-    assertTrue(registry.getTopicsByChild(other).isEmpty());
+    assertTrue(registry.getTopicsByParent(handle).isEmpty());
+    assertTrue(registry.getTopicsByChild(handle).isEmpty());
     assertEquals(new ArrayList<Topic>(), new ArrayList<>(registry.topics()));
   }
 }

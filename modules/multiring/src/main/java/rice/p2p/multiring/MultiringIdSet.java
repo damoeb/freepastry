@@ -142,21 +142,21 @@ public class MultiringIdSet implements IdSet {
   @Override
   public Iterator<Id> getIterator() {
     return new Iterator<Id>() {
-      private final Iterator<Id> i = set.getIterator();
+      private final Iterator<Id> iterator = set.getIterator();
 
       @Override
       public boolean hasNext() {
-        return i.hasNext();
+        return iterator.hasNext();
       }
 
       @Override
       public Id next() {
-        return RingId.build(ringId, (Id) i.next());
+        return RingId.build(ringId, (Id) iterator.next());
       }
 
       @Override
       public void remove() {
-        i.remove();
+        iterator.remove();
       }
     };
   }
@@ -193,9 +193,9 @@ public class MultiringIdSet implements IdSet {
    */
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MultiringIdSet other))
+    if (!(o instanceof MultiringIdSet multiringIdSet))
       return false;
-    return (other.getSet().equals(set) && other.ringId.equals(ringId));
+    return (multiringIdSet.getSet().equals(set) && multiringIdSet.ringId.equals(ringId));
   }
 
   /**

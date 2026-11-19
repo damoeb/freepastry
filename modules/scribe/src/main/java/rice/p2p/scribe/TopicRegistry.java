@@ -220,8 +220,8 @@ final class TopicRegistry {
    * Need to be holding lock: topicManagers
    *
    */
-  void addToAllChildren(Topic t, NodeHandle child) {
-    logger.info("addToAllChildren({},{})", t, child);
+  void addToAllChildren(Topic topic, NodeHandle child) {
+    logger.info("addToAllChildren({},{})", topic, child);
 
     // Child added
     Collection<Topic> topics = allChildren.get(child);
@@ -230,13 +230,13 @@ final class TopicRegistry {
       if (endpoint.isAlive(child)) {
         if (!allParents.containsKey(child)) child.addNodeHandleListener(livenessListener);
       } else {
-        logger.warn("addToAllChildren({},{}) child.isAlive() == false", t, child, new Exception("Stack Trace"));
+        logger.warn("addToAllChildren({},{}) child.isAlive() == false", topic, child, new Exception("Stack Trace"));
       }
       topics = new ArrayList<Topic>();
       allChildren.put(child, topics);
     }
-    if (!topics.contains(t)) {
-      topics.add(t);
+    if (!topics.contains(topic)) {
+      topics.add(topic);
     }
   }
 
@@ -244,8 +244,8 @@ final class TopicRegistry {
    * Need to be holding lock: topicManagers
    *
    */
-  void removeFromAllChildren(Topic t, NodeHandle child) {
-    logger.info("removeFromAllChildren({},{})", t, child);
+  void removeFromAllChildren(Topic topic, NodeHandle child) {
+    logger.info("removeFromAllChildren({},{})", topic, child);
 
     // Child added
     Collection<Topic> topics = allChildren.get(child);
@@ -253,7 +253,7 @@ final class TopicRegistry {
     if (topics == null) {
       return;
     }
-    topics.remove(t);
+    topics.remove(topic);
 
     if (topics.isEmpty()) {
       allChildren.remove(child);
@@ -265,12 +265,12 @@ final class TopicRegistry {
   // This method should be invoked after the state change in the Topic Manager
   // has been made. This helps us to know the current state of the system and
   // thus generate WARNING messages only in cases of redundancy
-  void addToAllParents(Topic t, NodeHandle parent) {
-    logger.info("addToAllParents({},{})", t, parent);
+  void addToAllParents(Topic topic, NodeHandle parent) {
+    logger.info("addToAllParents({},{})", topic, parent);
 
     if (parent == null || parent.equals(localHandle)) {
-      if (isRoot(t)) {
-        roots.add(t);
+      if (isRoot(topic)) {
+        roots.add(topic);
       }
       // This could very well be the case, but in such instances we need not do
       // anything
@@ -283,25 +283,25 @@ final class TopicRegistry {
       if (endpoint.isAlive(parent)) {
         if (!allChildren.containsKey(parent)) parent.addNodeHandleListener(livenessListener);
       } else {
-        logger.warn("addToAllParents({},{}) parent.isAlive() == false", t, parent, new Exception("Stack Trace"));
+        logger.warn("addToAllParents({},{}) parent.isAlive() == false", topic, parent, new Exception("Stack Trace"));
       }
       topics = new ArrayList<Topic>();
       allParents.put(parent, topics);
     }
 
-    if (!topics.contains(t)) {
-      topics.add(t);
+    if (!topics.contains(topic)) {
+      topics.add(topic);
     }
   }
 
-  void removeFromAllParents(Topic t, NodeHandle parent) {
-    logger.info("removeFromAllParents({},{})", t, parent);
+  void removeFromAllParents(Topic topic, NodeHandle parent) {
+    logger.info("removeFromAllParents({},{})", topic, parent);
 
     if (parent == null || parent.equals(localHandle)) {
       // This could very well be the case, but in such instances we need not do
       // anything
-      roots.remove(t);
-      pending.remove(t);
+      roots.remove(topic);
+      pending.remove(topic);
 
       return;
     }
@@ -312,7 +312,7 @@ final class TopicRegistry {
     if (topics == null) {
       return;
     }
-    topics.remove(t);
+    topics.remove(topic);
 
     if (topics.isEmpty()) {
       allParents.remove(parent);
@@ -320,13 +320,13 @@ final class TopicRegistry {
     }
   }
 
-  boolean allParentsContains(Topic t, NodeHandle parent) {
+  boolean allParentsContains(Topic topic, NodeHandle parent) {
     if (parent == null) {
       return false;
     }
     if (allParents.containsKey(parent)) {
       Collection<Topic> topics = allParents.get(parent);
-      if (topics.contains(t)) {
+      if (topics.contains(topic)) {
         return true;
       } else {
         return false;

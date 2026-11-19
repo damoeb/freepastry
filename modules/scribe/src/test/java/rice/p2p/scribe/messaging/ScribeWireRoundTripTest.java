@@ -58,7 +58,7 @@ class ScribeWireRoundTripTest {
     }
   }
 
-  private static final Topic T1 = new Topic(Id.build("1111"));
+  private static final Topic topic = new Topic(Id.build("1111"));
   private static final Topic T2 = new Topic(Id.build("2222"));
   private static final Topic T3 = new Topic(Id.build("3333"));
 
@@ -67,7 +67,7 @@ class ScribeWireRoundTripTest {
   private static Endpoint endpoint;
   private static MessageDeserializer deserializer;
   private static NodeHandle self;
-  private static NodeHandle a;
+  private static NodeHandle nodeHandle;
   private static NodeHandle b;
   private static NodeHandle c;
 
@@ -85,7 +85,7 @@ class ScribeWireRoundTripTest {
     endpoint = scribe.getEndpoint();
     deserializer = endpoint.getDeserializer();
     self = local.local();
-    a = local.handle("1000");
+    nodeHandle = local.handle("1000");
     b = local.handle("8000");
     c = local.handle("C000");
   }
@@ -133,7 +133,7 @@ class ScribeWireRoundTripTest {
 
   private static NodeHandle named(String name) {
     return switch (name) {
-      case "a" -> a;
+      case "a" -> nodeHandle;
       case "b" -> b;
       default -> c;
     };
@@ -141,17 +141,17 @@ class ScribeWireRoundTripTest {
 
   private static AnycastMessage anycast(List<String> toVisit, List<String> visited, boolean keepSource,
       ScribeContent content) {
-    AnycastMessage m = new AnycastMessage(self, T1, content);
+    AnycastMessage msg = new AnycastMessage(self, topic, content);
     for (String name : toVisit) {
-      m.addLast(named(name));
+      msg.addLast(named(name));
     }
     for (String name : visited) {
-      m.addVisited(named(name));
+      msg.addVisited(named(name));
     }
     if (!keepSource) {
-      m.remove(self);
+      msg.remove(self);
     }
-    return m;
+    return msg;
   }
 
   private static void assertAnycast(AnycastMessage expected, AnycastMessage actual) throws IOException {
@@ -180,21 +180,21 @@ class ScribeWireRoundTripTest {
   @DisplayName("AnycastMessage")
   void anycastRoundTrip(String name, List<String> toVisit, List<String> visited, boolean keepSource,
       ScribeContent content) throws IOException {
-    AnycastMessage m = anycast(toVisit, visited, keepSource, content);
+    AnycastMessage msg = anycast(toVisit, visited, keepSource, content);
 
-    for (AnycastMessage copy : copies(m)) {
-      assertAnycast(m, copy);
+    for (AnycastMessage copy : copies(msg)) {
+      assertAnycast(msg, copy);
     }
   }
 
   @Test
   @DisplayName("AnycastMessage read at a hop is sent on with the hop as its source")
   void anycastSentOnWithNewSource() throws IOException {
-    AnycastMessage m = anycast(List.of("a", "b"), List.of("c"), true, new TestContent("x"));
-    AnycastMessage read = WireRoundTrip.roundTrip(m, deserializer, self);
+    AnycastMessage msg = anycast(List.of("a", "b"), List.of("c"), true, new TestContent("x"));
+    AnycastMessage read = WireRoundTrip.roundTrip(msg, deserializer, self);
 
-    read.setSource(a);
-    read.addVisited(a);
+    read.setSource(nodeHandle);
+    read.addVisited(nodeHandle);
     read.addFirst(c);
     AnycastMessage again = WireRoundTrip.roundTrip(read, deserializer, self);
 
@@ -205,7 +205,7 @@ class ScribeWireRoundTripTest {
   @Test
   @DisplayName("AnycastMessage rejects a null source")
   void anycastNullSource() {
-    assertThrows(NullPointerException.class, () -> new AnycastMessage(null, T1, new TestContent("x")));
+    assertThrows(NullPointerException.class, () -> new AnycastMessage(null, topic, new TestContent("x")));
   }
 
   @Test
@@ -231,9 +231,9 @@ class ScribeWireRoundTripTest {
 
   static Stream<Arguments> subscribes() {
     return Stream.of(
-        Arguments.of("single topic", List.of(T1), List.of(), new TestContent("x")),
-        Arguments.of("single topic, null content", List.of(T1), List.of(), null),
-        Arguments.of("two topics", List.of(T1, T2), List.of("a"), new SplitStreamSubscribeContent(1)),
+        Arguments.of("single topic", List.of(topic), List.of(), new TestContent("x")),
+        Arguments.of("single topic, null content", List.of(topic), List.of(), null),
+        Arguments.of("two topics", List.of(topic, T2), List.of("a"), new SplitStreamSubscribeContent(1)),
         Arguments.of("many topics", topics(40), List.of("a", "b"),
             new SplitStreamSubscribeContent(SplitStreamSubscribeContent.STAGE_FINAL)));
   }
@@ -243,27 +243,27 @@ class ScribeWireRoundTripTest {
   @DisplayName("SubscribeMessage")
   void subscribeRoundTrip(String name, List<Topic> topics, List<String> toVisit, ScribeContent content)
       throws IOException {
-    SubscribeMessage m = new SubscribeMessage(self, topics, 42, content);
+    SubscribeMessage msg = new SubscribeMessage(self, topics, 42, content);
     for (String handle : toVisit) {
-      m.addLast(named(handle));
+      msg.addLast(named(handle));
     }
 
-    for (SubscribeMessage copy : copies(m)) {
+    for (SubscribeMessage copy : copies(msg)) {
       assertEquals(topics, copy.getTopics());
       assertEquals(topics.get(0), copy.getTopic());
       assertEquals(42, copy.getId());
       assertEquals(self, copy.getSubscriber());
-      assertAnycast(m, copy);
+      assertAnycast(msg, copy);
     }
   }
 
   @Test
   @DisplayName("SubscribeMessage after a hop removed topics from it")
   void subscribeAfterRemovingTopics() throws IOException {
-    SubscribeMessage m = new SubscribeMessage(self, List.of(T1, T2, T3), 7, new TestContent("x"));
-    SubscribeMessage read = WireRoundTrip.roundTrip(m, deserializer, self);
+    SubscribeMessage msg = new SubscribeMessage(self, List.of(topic, T2, T3), 7, new TestContent("x"));
+    SubscribeMessage read = WireRoundTrip.roundTrip(msg, deserializer, self);
 
-    read.removeTopics(List.of(T1));
+    read.removeTopics(List.of(topic));
     SubscribeMessage again = WireRoundTrip.roundTrip(read, deserializer, self);
     read.removeTopics(List.of(T2));
     SubscribeMessage last = WireRoundTrip.roundTrip(read, deserializer, self);
@@ -277,9 +277,9 @@ class ScribeWireRoundTripTest {
   @Test
   @DisplayName("SubscribeMessage copy() of a message read from the wire")
   void subscribeCopyOfReadMessage() throws IOException {
-    SubscribeMessage m = new SubscribeMessage(self, List.of(T1, T2), 7, new TestContent("x"));
-    m.addLast(a);
-    SubscribeMessage read = WireRoundTrip.roundTrip(m, deserializer, self);
+    SubscribeMessage msg = new SubscribeMessage(self, List.of(topic, T2), 7, new TestContent("x"));
+    msg.addLast(nodeHandle);
+    SubscribeMessage read = WireRoundTrip.roundTrip(msg, deserializer, self);
 
     SubscribeMessage split = read.copy(List.of(T2), read.getRawContent());
     SubscribeMessage copy = WireRoundTrip.roundTrip(split, deserializer, self);
@@ -290,15 +290,15 @@ class ScribeWireRoundTripTest {
   }
 
   static Stream<Arguments> acks() {
-    Id i1 = Id.build("AAAA");
+    Id id = Id.build("AAAA");
     Id i2 = Id.build("BBBB");
     List<rice.p2p.commonapi.Id> empty = List.of();
     return Stream.of(
-        Arguments.of("single topic, empty path", List.of(T1), List.of(empty)),
-        Arguments.of("single topic, path", List.of(T1), List.of(List.<rice.p2p.commonapi.Id>of(i1, i2))),
-        Arguments.of("many topics, mixed paths", List.of(T1, T2, T3),
-            List.of(empty, List.<rice.p2p.commonapi.Id>of(i1),
-                List.<rice.p2p.commonapi.Id>of(i1, i2, Id.build("CCCC")))),
+        Arguments.of("single topic, empty path", List.of(topic), List.of(empty)),
+        Arguments.of("single topic, path", List.of(topic), List.of(List.<rice.p2p.commonapi.Id>of(id, i2))),
+        Arguments.of("many topics, mixed paths", List.of(topic, T2, T3),
+            List.of(empty, List.<rice.p2p.commonapi.Id>of(id),
+                List.<rice.p2p.commonapi.Id>of(id, i2, Id.build("CCCC")))),
         Arguments.of("no topics", List.<Topic>of(), List.<List<rice.p2p.commonapi.Id>>of()));
   }
 
@@ -306,9 +306,9 @@ class ScribeWireRoundTripTest {
   @MethodSource("acks")
   @DisplayName("SubscribeAckMessage")
   void subscribeAck(String name, List<Topic> topics, List<List<rice.p2p.commonapi.Id>> paths) throws IOException {
-    SubscribeAckMessage m = new SubscribeAckMessage(self, topics, paths, 9);
+    SubscribeAckMessage msg = new SubscribeAckMessage(self, topics, paths, 9);
 
-    for (SubscribeAckMessage copy : copies(m)) {
+    for (SubscribeAckMessage copy : copies(msg)) {
       assertEquals(self, copy.getSource());
       assertEquals(9, copy.getId());
       assertEquals(topics, copy.getTopics());
@@ -356,10 +356,10 @@ class ScribeWireRoundTripTest {
   @Test
   @DisplayName("UnsubscribeMessage without a source")
   void unsubscribeNullSource() throws IOException {
-    UnsubscribeMessage copy = WireRoundTrip.roundTrip(new UnsubscribeMessage(null, List.of(T1)), deserializer, self);
+    UnsubscribeMessage copy = WireRoundTrip.roundTrip(new UnsubscribeMessage(null, List.of(topic)), deserializer, self);
 
     assertNull(copy.source());
-    assertEquals(List.of(T1), copy.topics());
+    assertEquals(List.of(topic), copy.topics());
   }
 
   @Test
@@ -376,9 +376,9 @@ class ScribeWireRoundTripTest {
   @MethodSource("contents")
   @DisplayName("PublishMessage")
   void publish(ScribeContent content) throws IOException {
-    for (PublishMessage copy : copies(new PublishMessage(self, T1, content))) {
+    for (PublishMessage copy : copies(new PublishMessage(self, topic, content))) {
       assertEquals(self, copy.getSource());
-      assertEquals(T1, copy.getTopic());
+      assertEquals(topic, copy.getTopic());
       assertContent(content, copy.getContent());
     }
   }
@@ -387,9 +387,9 @@ class ScribeWireRoundTripTest {
   @MethodSource("contents")
   @DisplayName("PublishRequestMessage")
   void publishRequest(ScribeContent content) throws IOException {
-    for (PublishRequestMessage copy : copies(new PublishRequestMessage(self, T1, content))) {
+    for (PublishRequestMessage copy : copies(new PublishRequestMessage(self, topic, content))) {
       assertEquals(self, copy.getSource());
-      assertEquals(T1, copy.getTopic());
+      assertEquals(topic, copy.getTopic());
       assertContent(content, copy.getContent());
     }
   }
@@ -398,7 +398,7 @@ class ScribeWireRoundTripTest {
   @DisplayName("PublishMessage read at a hop is sent on with the hop as its source")
   void publishSentOn() throws IOException {
     PublishMessage read =
-        WireRoundTrip.roundTrip(new PublishMessage(null, T1, new TestContent("x")), deserializer, self);
+        WireRoundTrip.roundTrip(new PublishMessage(null, topic, new TestContent("x")), deserializer, self);
 
     read.setSource(self);
     PublishMessage again = WireRoundTrip.roundTrip(read, deserializer, self);
