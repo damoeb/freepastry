@@ -21,6 +21,7 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_OK;
 
@@ -32,6 +33,9 @@ class IdentityTransportLayerVerifyTest {
   private Environment environment;
   private IdentityTransportLayerImpl<String, String> testObj;
   private KeyPair nodeKeys;
+  private X509Certificate nodeCert;
+  private TransportLayer<String, ByteBuffer> below;
+  private Serializer<String> serializer;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -41,11 +45,12 @@ class IdentityTransportLayerVerifyTest {
     CertificateAuthorityTool authority = new CertificateAuthorityTool(
         CertificateAuthorityTool.generateNewCA("CA", now.minusSeconds(60), now.plusSeconds(3600), 1, authorityKeys, CertificateAuthorityTool.DEFAULT_SIGNATURE_ALGORITHM), authorityKeys);
     nodeKeys = CertificateAuthorityTool.generateKeyPair();
-    X509Certificate cert = authority.sign(LOCAL, nodeKeys.getPublic());
+    nodeCert = authority.sign(LOCAL, nodeKeys.getPublic());
     @SuppressWarnings("unchecked")
-    TransportLayer<String, ByteBuffer> below = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
+    TransportLayer<String, ByteBuffer> stubBelow = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> null);
-    Serializer<String> serializer = new Serializer<>() {
+    below = stubBelow;
+    serializer = new Serializer<>() {
       @Override
       public void serialize(String identifier, OutputBuffer buf) throws IOException {
         buf.writeUTF(identifier);
@@ -56,7 +61,7 @@ class IdentityTransportLayerVerifyTest {
         return buf.readUTF();
       }
     };
-    testObj = new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, cert, nodeKeys.getPrivate(), below, new SHA256HashProvider(), environment);
+    testObj = new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, nodeCert, nodeKeys.getPrivate(), below, new SHA256HashProvider(), environment);
   }
 
   @AfterEach
@@ -81,5 +86,37 @@ class IdentityTransportLayerVerifyTest {
   @Test
   void emptySignatureIsReportedAsBad() {
     assertEquals(SIGNATURE_BAD, testObj.verify(LOCAL, MESSAGE, new byte[0]));
+  }
+
+  /** Lets the test fill the certificate store without the certificate exchange. */
+  static class CertificateHoldingTransport extends IdentityTransportLayerImpl<String, String> {
+    CertificateHoldingTransport(Serializer<String> serializer, X509Certificate localCert, KeyPair localKeys, TransportLayer<String, ByteBuffer> below, Environment env) throws Exception {
+      super(serializer, new X509Serializer(), LOCAL, localCert, localKeys.getPrivate(), below, new SHA256HashProvider(), env);
+    }
+
+    void addCertificate(String identifier, X509Certificate cert) {
+      knownValues.put(identifier, cert);
+    }
+  }
+
+  @Test
+  void verifierCacheStaysBoundedAndEvictedVerifiersAreRebuilt() throws Exception {
+    CertificateHoldingTransport transport = new CertificateHoldingTransport(serializer, nodeCert, nodeKeys, below, environment);
+    int identityCount = 2_000;
+    for (int i = 0; i < identityCount; i++) {
+      transport.addCertificate("node" + i, nodeCert);
+    }
+    Signature signer = Signature.getInstance(IdentityTransportLayerImpl.DEFAULT_SIGNATURE_ALGORITHM);
+    signer.initSign(nodeKeys.getPrivate());
+    signer.update(MESSAGE);
+    byte[] signature = signer.sign();
+
+    for (int i = 0; i < identityCount; i++) {
+      assertEquals(SIGNATURE_OK, transport.verify("node" + i, MESSAGE, signature));
+    }
+
+    assertTrue(transport.verifiers.size() <= 1_024, "the verifier cache holds " + transport.verifiers.size() + " entries");
+    // the verifier of the first identity was evicted and is built again from the certificate
+    assertEquals(SIGNATURE_OK, transport.verify("node0", MESSAGE, signature));
   }
 }
