@@ -45,6 +45,7 @@ import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
@@ -476,7 +477,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     logger.trace("Inserting PastContent object {} into cache", content);
 
     if ((content != null) && ! content.isMutable() && isAuthentic(null, content))
-      storage.cache(content.getId(), null, content, command);
+      Futures.forward(storage.cache(content.getId(), null, content), command);
     else
       command.receiveResult(Boolean.valueOf(true));
   }
@@ -743,7 +744,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         case InsertMessage imsg -> deliverInsert(imsg);
         case LookupMessage lmsg -> {
           // if the data is here, we send the reply; the requester caches it (see lookup())
-          storage.getObject(lmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
+          Futures.forward(storage.getObject(lmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
             @Override
             public void receiveResult(Object result) {
               logger.debug("Received object {} for id {}", result, lmsg.getId());
@@ -762,12 +763,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           Continuation<Object, Exception> continuation;
           continuation = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
 
-          storage.getObject(fmsg.getHandle().getId(), continuation);
+          Futures.forward(storage.getObject(fmsg.getHandle().getId()), continuation);
         }
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
 
-          storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+          Futures.forward(storage.getObject(fmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
             @Override
             public void receiveResult(Object result) {
               PastContent content = (PastContent) result;
@@ -827,12 +828,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   protected void checkAndStore(final InsertMessage insertMessage, final Function<PastContent, Object> metadata, Continuation<? super Boolean, Exception> command) {
     final Id id = insertMessage.getContent().getId();
 
-    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(Object result) {
         try {
           PastContent content = insertMessage.getContent().checkInsert(id, (PastContent) result);
-          storage.store(id, metadata.apply(content), content, parent);
+          Futures.forward(storage.store(id, metadata.apply(content), content), parent);
         } catch (PastException e) {
           parent.receiveException(e);
         }
@@ -878,19 +879,19 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   @Override
   public void remove(final Id id, Continuation<? super Boolean, Exception> command) {
     if (backup != null) {
-      storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+      Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
         public void receiveResult(Object storedObject) {
-          backup.cache(id, storage.getMetadata(id), storedObject, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
+          Futures.forward(backup.cache(id, storage.getMetadata(id), storedObject), new StandardContinuation<Boolean, Boolean, Exception>(parent) {
             @Override
             public void receiveResult(Boolean result) {
-              storage.unstore(id, parent);
+              Futures.forward(storage.unstore(id), parent);
             }
           });
         }
       });
     } else {
-      storage.unstore(id, command);
+      Futures.forward(storage.unstore(id), command);
     }
   }
 
@@ -937,7 +938,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   @Override
   public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
-    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(final Object storedObject) {
         insert((PastContent)storedObject, new StandardContinuation<Boolean[], Boolean, Exception>(parent) {

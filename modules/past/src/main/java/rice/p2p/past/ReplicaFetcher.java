@@ -41,6 +41,7 @@ package rice.p2p.past;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 
@@ -89,12 +90,12 @@ final class ReplicaFetcher {
    * insert does. A refusal drops the replica.
    */
   private void storeReplica(final Id id, final PastContent content, final Continuation<? super Boolean, Exception> command) {
-    past.storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+    Futures.forward(past.storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(Object existing) {
         try {
           PastContent checked = content.checkInsert(id, (PastContent) existing);
-          past.storage.getStorage().store(id, null, checked, parent);
+          Futures.forward(past.storage.getStorage().store(id, null, checked), parent);
         } catch (PastException e) {
           logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
           parent.receiveResult(Boolean.valueOf(false));

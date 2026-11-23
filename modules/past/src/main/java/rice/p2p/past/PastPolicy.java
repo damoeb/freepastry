@@ -40,6 +40,7 @@ package rice.p2p.past;
 
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.persistence.Cache;
@@ -100,7 +101,7 @@ public interface PastPolicy {
     @Override
     public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Object, Exception> command) {
       if ((backup != null) && backup.exists(id)) {
-        backup.getObject(id, command);
+        Futures.forward(backup.getObject(id), command);
       } else {
         past.lookup(id, false, new StandardContinuation<PastContent, Object, Exception>(command) {
           @Override

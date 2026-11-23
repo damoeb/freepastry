@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
 import rice.p2p.glacier.VersionKey;
@@ -215,7 +216,7 @@ final class AggregateFlusher {
   private void deleteDamagedObjects(List<Id> deletionVector) {
     for (final Id thisId : deletionVector) {
       logger.atInfo().log(() -> "Deleting object "+thisId.toStringFull()+" from waiting list (broken metadata)");
-      waitingList.unstore(thisId, new Continuation<Boolean, Exception>() {
+      Futures.forward(waitingList.unstore(thisId), new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {
           logger.debug("Successfully deleted: {}", thisId);
@@ -250,7 +251,7 @@ final class AggregateFlusher {
 
     void start() {
       logger.debug("Retrieving #{}.0: {}", index, desc[0].getKey());
-      waitingList.getObject(new VersionKey(desc[0].getKey(), desc[0].getVersion()), this);
+      Futures.forward(waitingList.getObject(new VersionKey(desc[0].getKey(), desc[0].getVersion())), this);
     }
 
     @Override
@@ -259,7 +260,7 @@ final class AggregateFlusher {
         contents[currentQuery++] = gcPastContent;
         if (currentQuery < desc.length) {
           logger.debug("Retrieving #{}.{}: {}", index, currentQuery, desc[currentQuery].getKey());
-          waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion()), this);
+          Futures.forward(waitingList.getObject(new VersionKey(desc[currentQuery].getKey(), desc[currentQuery].getVersion())), this);
         } else {
           storeAggregate();
         }
@@ -294,7 +295,7 @@ final class AggregateFlusher {
       final Continuation.MultiContinuation<Object[]> multiContinuation = new Continuation.MultiContinuation<Object[]>(command, desc.length);
       for (int i=0; i<desc.length; i++) {
         final Continuation<Object, Exception> subContinuation = multiContinuation.getSubContinuation(i);
-        waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion()), new Continuation<Boolean, Exception>() {
+        Futures.forward(waitingList.unstore(new VersionKey(desc[i].getKey(), desc[i].getVersion())), new Continuation<Boolean, Exception>() {
           @Override
           public void receiveResult(Boolean result) {
             subContinuation.receiveResult(result);

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -56,7 +57,7 @@ public class LRUCacheEvictionOrderTest {
 
   @Test
   public void readingAnObjectProtectsItFromEviction() {
-    cache.getObject(firstId, noop());
+    Futures.forward(cache.getObject(firstId), noop());
 
     put(thirdId);
 
@@ -78,7 +79,7 @@ public class LRUCacheEvictionOrderTest {
   @Test
   public void renamedObjectCountsAsMostRecentlyUsed() {
     Id renamed = factory.buildId("renamed");
-    cache.rename(firstId, renamed, noop());
+    Futures.forward(cache.rename(firstId, renamed), noop());
 
     put(thirdId);
 
@@ -89,7 +90,7 @@ public class LRUCacheEvictionOrderTest {
   @Test
   public void anObjectLargerThanTheCacheIsNotCachedAndEvictsNothing() {
     boolean[] cached = {true};
-    cache.cache(thirdId, null, new byte[3 * OBJECT_SIZE], new Continuation<Boolean, Exception>() {
+    Futures.forward(cache.cache(thirdId, null, new byte[3 * OBJECT_SIZE]), new Continuation<Boolean, Exception>() {
       @Override
       public void receiveResult(Boolean result) {
         cached[0] = result;
@@ -107,7 +108,7 @@ public class LRUCacheEvictionOrderTest {
   }
 
   private void put(Id id) {
-    cache.cache(id, null, new byte[OBJECT_SIZE], noop());
+    Futures.forward(cache.cache(id, null, new byte[OBJECT_SIZE]), noop());
   }
 
   private static <T> Continuation<T, Exception> noop() {

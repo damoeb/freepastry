@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.ErasureCodec;
@@ -66,18 +66,10 @@ class GlacierBulkRefreshPatchTest {
     var fragmentStorage = GlacierFakes.storage((proxy, method, args) -> switch (method.getName()) {
       case "exists" -> held.containsKey(args[0]);
       case "getMetadata" -> new FragmentMetadata(storedExpiration, 0, 0);
-      case "getObject" -> {
-        @SuppressWarnings("unchecked")
-        Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
-        continuation.receiveResult(held.get(args[0]));
-        yield null;
-      }
+      case "getObject" -> CompletableFuture.completedFuture(held.get(args[0]));
       case "store" -> {
-        @SuppressWarnings("unchecked")
-        Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[3];
         held.put((Id) args[0], (FragmentAndManifest) args[2]);
-        continuation.receiveResult(true);
-        yield null;
+        yield CompletableFuture.completedFuture(true);
       }
       default -> null;
     });

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -35,7 +36,7 @@ public class MemoryStorageSnapshotTest {
   }
 
   private void store(Id id) {
-    storage.store(id, "meta", "value", new Continuation<Boolean, Exception>() {
+    Futures.forward(storage.store(id, "meta", "value"), new Continuation<Boolean, Exception>() {
       @Override
       public void receiveResult(Boolean result) {
       }

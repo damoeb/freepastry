@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import rice.Continuation.ListenerContinuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
@@ -270,7 +271,7 @@ public class ReplicationRegrTest extends CommonAPITest {
 
       while (idIterator.hasNext()) {
         Id next = (Id) idIterator.next();
-        storage.store(next, null, next, new ListenerContinuation<Object, Exception>("Insertion of " + next, environment));
+        Futures.forward(storage.store(next, null, next), new ListenerContinuation<Object, Exception>("Insertion of " + next, environment));
       }
     }
 
@@ -293,7 +294,7 @@ public class ReplicationRegrTest extends CommonAPITest {
 
       while (idIterator.hasNext()) {
         Id next = (Id) idIterator.next();
-        storage.unstore(next, new ListenerContinuation<Object, Exception>("Removal of " + next, environment));
+        Futures.forward(storage.unstore(next), new ListenerContinuation<Object, Exception>("Removal of " + next, environment));
       }
     }
 
@@ -310,7 +311,7 @@ public class ReplicationRegrTest extends CommonAPITest {
     }
 
     public void insert(Id id) {
-      storage.store(id, null, id, new ListenerContinuation<Object, Exception>("Insertion of id " + id, environment));
+      Futures.forward(storage.store(id, null, id), new ListenerContinuation<Object, Exception>("Insertion of id " + id, environment));
     }
 
     @Override

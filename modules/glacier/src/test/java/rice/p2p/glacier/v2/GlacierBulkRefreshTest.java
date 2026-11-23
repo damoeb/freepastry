@@ -1,5 +1,6 @@
 package rice.p2p.glacier.v2;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,12 +52,7 @@ class GlacierBulkRefreshTest {
     var fragmentStorage = GlacierFakes.storage((proxy, method, args) -> switch (method.getName()) {
       case "exists" -> true;
       case "getMetadata" -> new FragmentMetadata(env.getTimeSource().currentTimeMillis() + 1000, 0, 0);
-      case "getObject" -> {
-        @SuppressWarnings("unchecked")
-        Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
-        continuation.receiveResult(null);
-        yield null;
-      }
+      case "getObject" -> CompletableFuture.completedFuture(null);
       default -> null;
     });
 

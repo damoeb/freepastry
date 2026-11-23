@@ -48,6 +48,7 @@ package rice.persistence.testing;
 import java.io.IOException;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -121,7 +122,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Storing Fourth Object");
-        storage.store(data[4], metadata[4], "Fourth Object", put4);
+        Futures.forward(storage.store(data[4], metadata[4], "Fourth Object"), put4);
       }
 
       @Override
@@ -141,7 +142,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Storing Third Object");
-        storage.store(data[3], metadata[3], "Third Object", put3);
+        Futures.forward(storage.store(data[3], metadata[3], "Third Object"), put3);
       }
 
       @Override
@@ -161,7 +162,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Storing Second Object");
-        storage.store(data[2], metadata[2], "Second Object", put2);
+        Futures.forward(storage.store(data[2], metadata[2], "Second Object"), put2);
       }
 
       @Override
@@ -173,7 +174,7 @@ public class MemoryStorageTest extends Test {
     sectionStart("Storing Objects");
 
     stepStart("Storing First Object");
-    storage.store(data[1], metadata[1], "First Object", put1);
+    Futures.forward(storage.store(data[1], metadata[1], "First Object"), put1);
   }
 
   public void testRetrieval(final Continuation<Object, Exception> continuation) {
@@ -213,7 +214,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Attempting Fifth Object");
-        storage.getObject(data[5], get5);
+        Futures.forward(storage.getObject(data[5]), get5);
       }
 
       @Override
@@ -238,7 +239,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Retrieving Fourth Object");
-        storage.getObject(data[4], get4);
+        Futures.forward(storage.getObject(data[4]), get4);
       }
 
       @Override
@@ -263,7 +264,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Retrieving Third Object");
-        storage.getObject(data[3], get3);
+        Futures.forward(storage.getObject(data[3]), get3);
       }
 
       @Override
@@ -288,7 +289,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Retrieving Second Object");
-        storage.getObject(data[2], get2);
+        Futures.forward(storage.getObject(data[2]), get2);
       }
 
       @Override
@@ -304,7 +305,7 @@ public class MemoryStorageTest extends Test {
           sectionStart("Retrieving Objects");
 
           stepStart("Retrieving First Object");
-          storage.getObject(data[1], get1);
+          Futures.forward(storage.getObject(data[1]), get1);
         } else {
           stepException(new RuntimeException("SetUp did not complete correctly."));
         }
@@ -356,7 +357,7 @@ public class MemoryStorageTest extends Test {
 
           sectionStart("Modifying Metadata");
           stepStart("Changing Metadata");
-          storage.setMetadata(data[4], Integer.valueOf(5001), new Continuation<Object, Exception>() {
+          Futures.forward(storage.setMetadata(data[4], Integer.valueOf(5001)), new Continuation<Object, Exception>() {
             @Override
             public void receiveResult(Object result) {
               stepDone(SUCCESS);
@@ -427,7 +428,7 @@ public class MemoryStorageTest extends Test {
         }
 
         stepStart("Attempting to Retrieve First Object");
-        storage.getObject(data[1], done1);
+        Futures.forward(storage.getObject(data[1]), done1);
       }
 
       @Override
@@ -443,7 +444,7 @@ public class MemoryStorageTest extends Test {
           sectionStart("Testing Removal");
 
           stepStart("Removing First Object");
-          storage.unstore(data[1], check1);
+          Futures.forward(storage.unstore(data[1]), check1);
         } else {
           stepException(new RuntimeException("Exists did not complete correctly."));
         }
@@ -527,7 +528,7 @@ public class MemoryStorageTest extends Test {
           sectionStart("Testing Scan");
 
           stepStart("Inserting String as Key");
-          storage.store(data[11], null, "Monkey", query);
+          Futures.forward(storage.store(data[11], null, "Monkey"), query);
         } else {
           stepException(new RuntimeException("Removal did not complete correctly."));
         }
@@ -601,7 +602,7 @@ public class MemoryStorageTest extends Test {
 
         if (environment.getRandomSource().nextBoolean()) {
           num_deleted++;
-          storage.unstore(data[13 + (count += SKIP)], this);
+          Futures.forward(storage.unstore(data[13 + (count += SKIP)]), this);
         } else {
           count += SKIP;
           receiveResult(Boolean.valueOf(true));
@@ -690,7 +691,7 @@ public class MemoryStorageTest extends Test {
         int num = count;
         count += SKIP;
 
-        storage.store(data[13 + num], null, new byte[num * num], this);
+        Futures.forward(storage.store(data[13 + num], null, new byte[num * num]), this);
       }
 
       @Override
@@ -738,7 +739,7 @@ public class MemoryStorageTest extends Test {
 
         stepStart("Inserting null value");
 
-        storage.store(data[12], null, null, validateNullValue);
+        Futures.forward(storage.store(data[12], null, null), validateNullValue);
       }
 
       @Override
@@ -759,7 +760,7 @@ public class MemoryStorageTest extends Test {
         sectionStart("Testing Error Cases");
         stepStart("Inserting null key");
 
-        storage.store(null, null, "null key", insertNullValue);
+        Futures.forward(storage.store(null, null, "null key"), insertNullValue);
       }
 
       @Override

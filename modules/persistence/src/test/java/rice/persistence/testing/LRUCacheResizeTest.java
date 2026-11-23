@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.LRUCache;
@@ -41,10 +42,10 @@ public class LRUCacheResizeTest {
   @Test
   public void shrinkingBelowUntrackedContentReportsAnExceptionInsteadOfThrowing() {
     // stored behind the cache's back, so the cache has nothing to evict
-    storage.store(factory.buildId("untracked"), null, "value", new Recorder());
+    Futures.forward(storage.store(factory.buildId("untracked"), null, "value"), new Recorder());
     Recorder shrunk = new Recorder();
 
-    cache.setMaximumSize(1, shrunk);
+    Futures.forward(cache.setMaximumSize(1), shrunk);
 
     assertEquals(1, shrunk.results.size());
     assertInstanceOf(IllegalStateException.class, shrunk.results.get(0));

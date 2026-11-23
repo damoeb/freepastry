@@ -276,7 +276,7 @@ final class GlacierSyncProtocol {
 
     logger.info("Sending {} fragments to {}", missing.size(), syncMessage.getSource().getId());
 
-    fragmentStorage.getObject(missing.get(0), new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.getObject(missing.get(0)), new Continuation<Object, Exception>() {
       int currentLookup = 0;
       int manifestIndex = 0;
       final int numLookups = missing.size();
@@ -327,7 +327,7 @@ final class GlacierSyncProtocol {
         }
 
         if (currentLookup < numLookups)
-          fragmentStorage.getObject(missing.get(currentLookup), this);
+          Futures.forward(fragmentStorage.getObject(missing.get(currentLookup)), this);
       }
       @Override
       public void receiveException(Exception e) {

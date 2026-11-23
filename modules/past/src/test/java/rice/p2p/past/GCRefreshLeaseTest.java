@@ -152,8 +152,8 @@ class GCRefreshLeaseTest {
       ExpiringPastImpl past = pasts.get(i);
       CachedStorage trash = trashes.get(i);
       if (past.storage.exists(id)) {
-        FutureContinuation.<Boolean>call(c -> trash.store(id, new ExpiringPastMetadata(1), content, c)).get(SECONDS, TimeUnit.SECONDS);
-        FutureContinuation.<Boolean>call(c -> past.storage.unstore(id, c)).get(SECONDS, TimeUnit.SECONDS);
+        trash.store(id, new ExpiringPastMetadata(1), content).get(SECONDS, TimeUnit.SECONDS);
+        past.storage.unstore(id).get(SECONDS, TimeUnit.SECONDS);
       }
     }
 

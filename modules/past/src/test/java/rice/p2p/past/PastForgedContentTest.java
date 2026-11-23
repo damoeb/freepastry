@@ -72,11 +72,11 @@ class PastForgedContentTest {
   }
 
   private void put(PastImpl past, DistPastTestContent content) throws Exception {
-    await(FutureContinuation.<Boolean>call(continuation -> past.storage.getStorage().store(content.getId(), null, content, continuation)));
+    await(past.storage.getStorage().store(content.getId(), null, content));
   }
 
   private PastContent stored(PastImpl past, Id id) throws Exception {
-    return (PastContent) await(FutureContinuation.<Object>call(continuation -> past.storage.getObject(id, continuation)));
+    return (PastContent) await(past.storage.getObject(id));
   }
 
   @Test

@@ -40,6 +40,7 @@ import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -175,7 +176,7 @@ final class GlacierNeighborProtocol {
     for (int i=0; i<numRequested; i++)
       neighbors[i] = (Id) iter.next();
 
-    neighborStorage.getObject(neighbors[0], new Continuation<Object, Exception>() {
+    Futures.forward(neighborStorage.getObject(neighbors[0]), new Continuation<Object, Exception>() {
       int currentLookup = 0;
 
       @Override
@@ -192,7 +193,7 @@ final class GlacierNeighborProtocol {
           lastSeen[currentLookup] = l.longValue();
           currentLookup ++;
           if (currentLookup < numRequested) {
-            neighborStorage.getObject(neighbors[currentLookup], this);
+            Futures.forward(neighborStorage.getObject(neighbors[currentLookup]), this);
           } else {
             logger.debug("Sending neighbor response...");
             router.sendMessage(

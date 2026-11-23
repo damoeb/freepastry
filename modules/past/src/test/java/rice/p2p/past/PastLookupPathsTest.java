@@ -60,7 +60,7 @@ class PastLookupPathsTest {
   }
 
   private void put(PastImpl past, DistPastTestContent content) throws Exception {
-    await(FutureContinuation.<Boolean>call(continuation -> past.storage.getStorage().store(content.getId(), null, content, continuation)));
+    await(past.storage.getStorage().store(content.getId(), null, content));
   }
 
   private PastContent lookup(PastImpl past, DistPastTestContent content, boolean cache) throws Exception {

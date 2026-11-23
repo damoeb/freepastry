@@ -458,7 +458,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
                   if (metadata != null) {
                     /* only allow the lifetime to be extended, otherwise skip */
                     if (metadata.expiration() < expiration) {
-                      storage.setMetadata(id.id(), metadata.setExpiration(expiration), this);
+                      Futures.forward(storage.setMetadata(id.id(), metadata.setExpiration(expiration)), this);
                     } else {
                       /* already refreshed to a later expiration, which counts as success */
                       receiveResult(true);
@@ -494,7 +494,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
 
-          storage.getObject(fmsg.getId(), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
+          Futures.forward(storage.getObject(fmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
             @Override
             public void receiveResult(Object result) {
               ExpiringPastContent content = (ExpiringPastContent) result;
@@ -534,24 +534,24 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           final Id gid = idIterator.next();
 
           if (trash != null) {
-            storage.getObject(gid, new StandardContinuation<Object, Object, Exception>(this) {
+            Futures.forward(storage.getObject(gid), new StandardContinuation<Object, Object, Exception>(this) {
               @Override
               public void receiveResult(Object storedObject) {
                 if (storedObject != null) {
-                  trash.store(gid, storage.getMetadata(gid), storedObject, new StandardContinuation<Boolean, Object, Exception>(parent) {
+                  Futures.forward(trash.store(gid, storage.getMetadata(gid), storedObject), new StandardContinuation<Boolean, Object, Exception>(parent) {
                     @Override
                     public void receiveResult(Boolean result) {
-                      storage.unstore(gid, parent);
+                      Futures.forward(storage.unstore(gid), parent);
                     }
                   });
                 } else {
                   // continue with the remove loop (parent), not this getObject continuation
-                  storage.unstore(gid, parent);
+                  Futures.forward(storage.unstore(gid), parent);
                 }
               }
             });
           } else {
-            storage.unstore(gid, this);
+            Futures.forward(storage.unstore(gid), this);
           }
         } else {
           parent.receiveResult(Boolean.TRUE);
@@ -587,7 +587,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       if (metadata == null) {
         setMissingMetadata(expiringId.id(), expiration, command);
       } else if (metadata.expiration() < expiration) {
-        storage.setMetadata(expiringId.id(), metadata.setExpiration(expiration), command);
+        Futures.forward(storage.setMetadata(expiringId.id(), metadata.setExpiration(expiration)), command);
       } else {
         command.receiveResult(Boolean.TRUE);
       }
@@ -607,7 +607,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
             }
             logger.trace("inserting replica of id {}", id);
 
-            storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content, parent);
+            Futures.forward(storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content), parent);
           }
         }
       });
@@ -665,10 +665,10 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
 
   /** Gives an object that was stored without metadata the metadata of the given expiration. */
   private void setMissingMetadata(Id id, long expiration, Continuation<? super Boolean, Exception> command) {
-    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
+    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(Object result) {
-        storage.setMetadata(id, ((ExpiringPastContent) result).getMetadata(expiration), parent);
+        Futures.forward(storage.setMetadata(id, ((ExpiringPastContent) result).getMetadata(expiration)), parent);
       }
     });
   }
@@ -677,7 +677,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   public void reInsert(final Id id, Continuation<? super Boolean, Exception> command) {
     if (id instanceof ExpiringId gcId) {
       // what if the ExpiringId's expiration is different than the metadata's?
-      storage.getObject(gcId.id(), new StandardContinuation<Object, Boolean, Exception>(command) {
+      Futures.forward(storage.getObject(gcId.id()), new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
         public void receiveResult(final Object storedObject) {
           insert((PastContent)storedObject, gcId.expiration(), new StandardContinuation<Boolean[], Boolean, Exception>(parent) {

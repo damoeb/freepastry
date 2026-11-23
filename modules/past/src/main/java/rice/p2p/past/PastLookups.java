@@ -43,6 +43,7 @@ import rice.Continuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.SimpleContinuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.messaging.LookupMessage;
 
@@ -63,7 +64,7 @@ final class PastLookups {
   void lookup(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
     logger.atTrace().log(() -> " Performing lookup on " + id.toStringFull());
 
-    past.storage.getObject(id, new StandardContinuation<Object, PastContent, Exception>(command) {
+    Futures.forward(past.storage.getObject(id), new StandardContinuation<Object, PastContent, Exception>(command) {
       @Override
       public void receiveResult(Object result) {
         if (result != null && past.isAuthentic(id, (PastContent) result)) {

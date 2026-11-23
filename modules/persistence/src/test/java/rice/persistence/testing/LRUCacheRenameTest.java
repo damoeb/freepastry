@@ -7,6 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -43,11 +44,11 @@ public class LRUCacheRenameTest {
     Id oldId = factory.buildId("old");
     Id newId = factory.buildId("new");
     Recorder stored = new Recorder();
-    cache.cache(oldId, null, "value", stored);
+    Futures.forward(cache.cache(oldId, null, "value"), stored);
     assertEquals(List.of(Boolean.TRUE), stored.results);
 
     Recorder renamed = new Recorder();
-    cache.rename(oldId, newId, renamed);
+    Futures.forward(cache.rename(oldId, newId), renamed);
 
     assertEquals(List.of(Boolean.TRUE), renamed.results);
     assertTrue(cache.exists(newId));
@@ -57,7 +58,7 @@ public class LRUCacheRenameTest {
   @Test
   public void renameOfMissingIdCallsBackFalse() {
     Recorder renamed = new Recorder();
-    cache.rename(factory.buildId("missing"), factory.buildId("new"), renamed);
+    Futures.forward(cache.rename(factory.buildId("missing"), factory.buildId("new")), renamed);
 
     assertEquals(List.of(Boolean.FALSE), renamed.results);
   }

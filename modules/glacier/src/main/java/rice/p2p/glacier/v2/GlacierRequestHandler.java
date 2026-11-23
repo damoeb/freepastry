@@ -40,6 +40,7 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.Fragment;
@@ -132,7 +133,7 @@ final class GlacierRequestHandler {
        another node. They are answered from the local fragment storage;
        keys that are not stored here get null entries in the response. */
 
-    fragmentStorage.getObject(fetchMessage.getKey(0), new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.getObject(fetchMessage.getKey(0)), new Continuation<Object, Exception>() {
       int currentLookup = 0;
       Fragment fragment[] = new Fragment[fetchMessage.getNumKeys()];
       Manifest manifest[] = new Manifest[fetchMessage.getNumKeys()];
@@ -170,7 +171,7 @@ final class GlacierRequestHandler {
         if (currentLookup >= fetchMessage.getNumKeys())
           returnResponse();
         else
-          fragmentStorage.getObject(fetchMessage.getKey(currentLookup), this);
+          Futures.forward(fragmentStorage.getObject(fetchMessage.getKey(currentLookup)), this);
       }
       @Override
       public void receiveException(Exception e) {
@@ -215,8 +216,7 @@ final class GlacierRequestHandler {
 
           FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(thisFragment, thisManifest);
 
-          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
-            new Continuation<Object, Exception>() {
+          Futures.forward(fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest), new Continuation<Object, Exception>() {
               @Override
               public void receiveResult(Object result) {
                 logger.info("Stored OK, sending receipt: {}", thisKey);
@@ -232,8 +232,7 @@ final class GlacierRequestHandler {
               public void receiveException(Exception e) {
                 logger.warn("receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
               }
-            }
-          );
+            });
         } else {
           logger.warn("We already have a fragment with this key! -- discarding");
           continue;
@@ -287,7 +286,7 @@ final class GlacierRequestHandler {
    * confirms the update to the sender.
    */
   private void replaceManifest(final GlacierDataMessage dataMessage, final FragmentKey thisKey, final Manifest thisManifest, final FragmentMetadata metadata) {
-    fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.getObject(thisKey), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object received) {
         if (received instanceof FragmentAndManifest fragmentAndManifest) {
@@ -308,8 +307,7 @@ final class GlacierRequestHandler {
 
           if (fault == null) {
             fragmentAndManifest.replaceManifest(thisManifest);
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
-              new Continuation<Object, Exception>() {
+            Futures.forward(fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), ((metadata == null) ? 0 : metadata.currentExpiration()), environment.getTimeSource().currentTimeMillis()), fragmentAndManifest), new Continuation<Object, Exception>() {
                 @Override
                 public void receiveResult(Object result) {
                   logger.debug("Old manifest for {} replaced OK, sending receipt", thisKey);
@@ -323,8 +321,7 @@ final class GlacierRequestHandler {
                 public void receiveException(Exception e) {
                   logger.warn("Cannot store refreshed manifest: ", e);
                 }
-              }
-            );
+              });
           } else {
             logger.warn(fault);
           }
@@ -357,8 +354,7 @@ final class GlacierRequestHandler {
 
             FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(fragment, thisManifest);
 
-            fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
-              new Continuation<Object, Exception>() {
+            Futures.forward(fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest), new Continuation<Object, Exception>() {
                 @Override
                 public void receiveResult(Object result) {
                   logger.debug("Recovered fragment stored OK");
@@ -367,8 +363,7 @@ final class GlacierRequestHandler {
                 public void receiveException(Exception e) {
                   logger.warn("receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
                 }
-              }
-            );
+              });
           } else {
             logger.warn("Received fragment {}, but it already exists in the fragment store", thisKey);
           }

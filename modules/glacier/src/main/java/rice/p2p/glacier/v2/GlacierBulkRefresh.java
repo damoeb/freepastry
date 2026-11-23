@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -554,7 +555,7 @@ final class GlacierBulkRefresh {
                   FragmentMetadata newMetadata = new FragmentMetadata(refreshPatchMessage.getLifetime(currentIndex), metadata.currentExpiration(), metadata.storedSince());
                   logger.debug("AR FAM {} updated ({} -> {}), writing to disk...", currentKey, newMetadata.previousExpiration(), newMetadata.currentExpiration());
                   fragmentAndManifest.replaceManifest(patched);
-                  fragmentStorage.store(currentKey, newMetadata, fragmentAndManifest, this);
+                  Futures.forward(fragmentStorage.store(currentKey, newMetadata, fragmentAndManifest), this);
                   return;
                 }
               } else {
@@ -595,7 +596,7 @@ final class GlacierBulkRefresh {
 
           currentPhase = phaseFetch;
           logger.debug("AR Patch: Fetching FAM for {}", currentKey);
-          fragmentStorage.getObject(currentKey, this);
+          Futures.forward(fragmentStorage.getObject(currentKey), this);
         }
       }
       void respond() {

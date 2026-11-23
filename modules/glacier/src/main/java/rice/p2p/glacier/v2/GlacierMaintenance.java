@@ -40,6 +40,7 @@ import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdSet;
@@ -248,7 +249,7 @@ final class GlacierMaintenance {
    * this node is responsible for but does not have.
    */
   private void fetchMissingFragments(final VersionKey thisVKey, int localFragmentID, final IdSet fragments) {
-    fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID), new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.getObject(new FragmentKey(thisVKey, localFragmentID)), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object result) {
         if (result instanceof FragmentAndManifest fragmentAndManifest) {
@@ -290,8 +291,7 @@ final class GlacierMaintenance {
 
           FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(fragment, thisManifest);
 
-          fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
-            new Continuation<Object, Exception>() {
+          Futures.forward(fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest), new Continuation<Object, Exception>() {
               @Override
               public void receiveResult(Object result) {
                 logger.debug("Local scan: Recovered fragment stored OK");
@@ -300,8 +300,7 @@ final class GlacierMaintenance {
               public void receiveException(Exception e) {
                 logger.warn("Local scan: receiveException({}) while storing a fragment with existing manifest (key={})", e, thisKey);
               }
-            }
-          );
+            });
         } else {
           logger.warn("Local scan: FS received something other than a fragment: {}", received);
         }

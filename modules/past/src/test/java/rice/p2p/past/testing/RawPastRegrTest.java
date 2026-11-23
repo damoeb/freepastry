@@ -43,6 +43,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -232,7 +233,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 // Lookup file locally
                 stepStart("Local File Lookup");
-                remote.getStorageManager().getObject(remoteId, new TestCommand() {
+                Futures.forward(remote.getStorageManager().getObject(remoteId), new TestCommand() {
                   @Override
                   public void receive(Object result) throws Exception {
                     assertTrue("File should be inserted at known node",
@@ -486,7 +487,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
     // Insert file
     stepStart("File 1 Insertion");
-    firstRemote.getStorageManager().store(id, null, firstContent, new TestCommand() {
+    Futures.forward(firstRemote.getStorageManager().store(id, null, firstContent), new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Storage of file 1 should succeed", ((Boolean)result).booleanValue());
@@ -495,7 +496,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Insert second file
         stepStart("File 2 Insertion");
-        secondRemote.getStorageManager().store(id, null, secondContent, new TestCommand() {
+        Futures.forward(secondRemote.getStorageManager().store(id, null, secondContent), new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("Storage of file 2 should succeed", ((Boolean)result).booleanValue());
@@ -535,7 +536,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                     // remove file
                     stepStart("File 1 Removal");
-                    firstRemote.getStorageManager().unstore(id, new TestCommand() {
+                    Futures.forward(firstRemote.getStorageManager().unstore(id), new TestCommand() {
                       @Override
                       public void receive(Object result) throws Exception {
                         assertTrue("Removal of file 1 should succeed", ((Boolean)result).booleanValue());
@@ -544,7 +545,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                         // remove second file
                         stepStart("File 2 Removal");
-                        secondRemote.getStorageManager().unstore(id, new TestCommand() {
+                        Futures.forward(secondRemote.getStorageManager().unstore(id), new TestCommand() {
                           @Override
                           public void receive(Object result) throws Exception {
                             assertTrue("Removal of file 2 should succeed", ((Boolean)result).booleanValue());
@@ -716,7 +717,7 @@ public class RawPastRegrTest extends CommonAPITest {
     stepStart("Manually Inserting Object Into Cache");
 
     // check cache
-    local.getStorageManager().getCache().cache(firstId, null, firstContent, new TestCommand() {
+    Futures.forward(local.getStorageManager().getCache().cache(firstId, null, firstContent), new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Object should not be null", result != null);
@@ -748,7 +749,7 @@ public class RawPastRegrTest extends CommonAPITest {
             stepStart("Cache Shouldn't Contain Object");
 
             // check cache
-            local.getStorageManager().getObject(secondId, new TestCommand() {
+            Futures.forward(local.getStorageManager().getObject(secondId), new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Object should be null", result == null);

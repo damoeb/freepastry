@@ -1,6 +1,7 @@
 package rice.p2p.glacier.v2;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.CompletableFuture;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.Id;
@@ -52,20 +52,15 @@ class GlacierNeighborhoodTest {
             ids.addId(id);
           return ids;
         }
-        case "getObject": {
-          @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
-          continuation.receiveResult(storedNeighbors.get((Id) args[0]));
-          return null;
-        }
+        case "getObject":
+          return CompletableFuture.completedFuture(storedNeighbors.get((Id) args[0]));
         case "unstore": {
-          @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
+          CompletableFuture<Boolean> unstored = new CompletableFuture<Boolean>();
           pendingUnstores.add(() -> {
             storedNeighbors.remove((Id) args[0]);
-            continuation.receiveResult(true);
+            unstored.complete(true);
           });
-          return null;
+          return unstored;
         }
         default:
           return null;

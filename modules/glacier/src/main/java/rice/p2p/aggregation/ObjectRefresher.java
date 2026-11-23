@@ -41,6 +41,7 @@ import java.util.Iterator;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.VersionKey;
 import rice.p2p.glacier.VersioningPast;
@@ -322,7 +323,7 @@ final class ObjectRefresher {
 
       if (thisObject == null) {
         logger.atWarn().log(() -> "Broken object in waiting list: " + versionKey.toStringFull() + ", removing...");
-        waitingList.unstore(versionKey, new Continuation<Boolean, Exception>() {
+        Futures.forward(waitingList.unstore(versionKey), new Continuation<Boolean, Exception>() {
           @Override
           public void receiveResult(Boolean result) {
             logger.atInfo().log(() -> "Broken object "+versionKey.toStringFull()+" removed successfully");
@@ -347,7 +348,7 @@ final class ObjectRefresher {
         expiration, thisObject.getSize()
       );
 
-      waitingList.setMetadata(versionKey, newDescriptor, new Continuation<Boolean, Exception>() {
+      Futures.forward(waitingList.setMetadata(versionKey, newDescriptor), new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {
           logger.atDebug().log(() -> "Refreshed metadata written ok for "+versionKey.toStringFull());
@@ -411,7 +412,7 @@ final class ObjectRefresher {
 
       logger.debug("ADDING MISSING OBJECT AFTER REFRESH: {}", content.getId());
 
-      waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersion, expiration, expiration, theSize), content, new Continuation<Boolean, Exception>() {
+      Futures.forward(waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersion, expiration, expiration, theSize), content), new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean received) {
           if (!(objectStore instanceof PastImpl pastImpl)) {

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -63,7 +64,7 @@ class FlushTest {
   @Test
   void flushRemovesTheMetadataCacheFilesWithoutTreatingThemAsObjects() throws Exception {
     Id id = factory.buildId("flushed");
-    assertTrue(this.<Boolean>await(continuation -> storage.store(id, null, "value", continuation)));
+    assertTrue(this.<Boolean>await(continuation -> Futures.forward(storage.store(id, null, "value"), continuation)));
     Path appDirectory = root.resolve(PersistentStorage.BACKUP_DIRECTORY).resolve("default");
     List<Path> directories;
     try (Stream<Path> walk = Files.walk(appDirectory)) {
@@ -73,7 +74,7 @@ class FlushTest {
       Files.write(directory.resolve(PersistentStorage.METADATA_FILENAME), new byte[] {1, 2, 3});
     }
 
-    assertTrue(this.<Boolean>await(storage::flush));
+    assertTrue(this.<Boolean>await(continuation -> Futures.forward(storage.flush(), continuation)));
 
     assertFalse(storage.exists(id));
     try (Stream<Path> walk = Files.walk(appDirectory)) {

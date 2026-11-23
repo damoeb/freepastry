@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -191,7 +192,7 @@ final class GlacierDebugCommands {
 
       while (iter.hasNext()) {
         FragmentKey thisKey = (FragmentKey) iter.next();
-        fragmentStorage.unstore(thisKey, new Continuation<Object, Exception>() {
+        Futures.forward(fragmentStorage.unstore(thisKey), new Continuation<Object, Exception>() {
           @Override
           public void receiveResult(Object result) {}
           @Override
@@ -243,7 +244,7 @@ final class GlacierDebugCommands {
 
           if (iter.hasNext()) {
             currentLookup = (Id) iter.next();
-            neighborStorage.getObject(currentLookup, this);
+            Futures.forward(neighborStorage.getObject(currentLookup), this);
           } else {
             reply.complete("OK");
           }
@@ -325,7 +326,7 @@ final class GlacierDebugCommands {
       FragmentKey id = new FragmentKey(versionKey, Integer.parseInt(versionKeyParts[2]));
 
       final CompletableFuture<String> reply = new CompletableFuture<String>();
-      fragmentStorage.unstore(id, new Continuation<Object, Exception>() {
+      Futures.forward(fragmentStorage.unstore(id), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           reply.complete("result("+result+")");
@@ -425,7 +426,7 @@ final class GlacierDebugCommands {
       final FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(id);
 
       final CompletableFuture<String> reply = new CompletableFuture<String>();
-      fragmentStorage.getObject(id, new Continuation<Object, Exception>() {
+      Futures.forward(fragmentStorage.getObject(id), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
@@ -454,7 +455,7 @@ final class GlacierDebugCommands {
       final CompletableFuture<String> reply = new CompletableFuture<String>();
       if (iter.hasNext()) {
         final FragmentKey thisKey = (FragmentKey) iter.next();
-        fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+        Futures.forward(fragmentStorage.getObject(thisKey), new Continuation<Object, Exception>() {
           FragmentKey currentKey = thisKey;
           int totalChecks = 1, totalFailures = 0;
           @Override
@@ -481,7 +482,7 @@ final class GlacierDebugCommands {
             if (iter.hasNext()) {
               currentKey = (FragmentKey) iter.next();
               totalChecks ++;
-              fragmentStorage.getObject(currentKey, this);
+              Futures.forward(fragmentStorage.getObject(currentKey), this);
             } else {
               if (totalFailures == 0)
                 reply.complete("OK ("+totalChecks+" fragments checked)");

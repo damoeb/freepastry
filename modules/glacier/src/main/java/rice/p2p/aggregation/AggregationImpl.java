@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.aggregation.messaging.AggregationMessage;
 import rice.p2p.aggregation.messaging.AggregationTimeoutMessage;
@@ -343,7 +344,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       else
         objectStore.insert(content, command);
 
-      waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content, new Continuation<Boolean, Exception>() {
+      Futures.forward(waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content), new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {
         }
@@ -420,7 +421,7 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     Iterator<Id> iter = waitingList.scan().getIterator();
     while (iter.hasNext()) {
       VersionKey thisKey = (VersionKey) iter.next();
-      waitingList.unstore(thisKey, new Continuation<Boolean, Exception>() {
+      Futures.forward(waitingList.unstore(thisKey), new Continuation<Boolean, Exception>() {
         @Override
         public void receiveResult(Boolean result) {}
         @Override

@@ -39,6 +39,7 @@ package rice.p2p.glacier.v2;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.FragmentKey;
 import rice.p2p.glacier.GlacierException;
@@ -64,7 +65,7 @@ class GlacierTrash {
   void deleteFragment(final Id fragmentKey, final Continuation<? super Boolean, Exception> command) {
     if (trashStorage != null) {
       logger.atInfo().log(() -> "Moving fragment "+fragmentKey.toStringFull()+" to trash");
-      fragmentStorage.getObject(fragmentKey, new Continuation<Object, Exception>() {
+      Futures.forward(fragmentStorage.getObject(fragmentKey), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           logger.atDebug().log(() -> "Fragment "+fragmentKey.toStringFull()+" retrieved, storing in trash");
@@ -82,7 +83,7 @@ class GlacierTrash {
       });
     } else {
       logger.atInfo().log(() -> "Deleting fragment "+fragmentKey.toStringFull());
-      fragmentStorage.unstore(fragmentKey, command);
+      Futures.forward(fragmentStorage.unstore(fragmentKey), command);
     }
   }
 
@@ -90,11 +91,11 @@ class GlacierTrash {
    * Stores a fragment in the trash, then removes it from the fragment storage.
    */
   private void moveToTrash(final Id fragmentKey, Object fragmentAndManifest, final Continuation<? super Boolean, Exception> command) {
-    trashStorage.store(fragmentKey, null, fragmentAndManifest, new Continuation<Object, Exception>() {
+    Futures.forward(trashStorage.store(fragmentKey, null, fragmentAndManifest), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object result) {
         logger.atDebug().log(() -> "Deleting fragment "+fragmentKey.toStringFull());
-        fragmentStorage.unstore(fragmentKey, command);
+        Futures.forward(fragmentStorage.unstore(fragmentKey), command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -110,7 +111,7 @@ class GlacierTrash {
    */
   void lookupFragment(final FragmentKey key, final Continuation<Object, Exception> continuation) {
     if (trashStorage!=null) {
-      trashStorage.getObject(key, new Continuation<Object, Exception>() {
+      Futures.forward(trashStorage.getObject(key), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           if (result != null) {

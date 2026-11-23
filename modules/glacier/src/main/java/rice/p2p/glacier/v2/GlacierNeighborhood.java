@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -150,8 +151,7 @@ final class GlacierNeighborhood {
     final Id fNodeId = nodeId;
     final long fWhen = when;
 
-    neighborStorage.getObject(nodeId,
-      new Continuation<Object, Exception>() {
+    Futures.forward(neighborStorage.getObject(nodeId), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           logger.debug("Continue: neighborSeen ({}, {}) after getObject", fNodeId, fWhen);
@@ -169,8 +169,7 @@ final class GlacierNeighborhood {
         public void receiveException(Exception e) {
           logger.warn("receiveException({}) while retrieving a neighbor ({})", e, fNodeId);
         }
-      }
-    );
+      });
   }
 
   Id[][] getNeighborRanges() {
@@ -261,8 +260,7 @@ final class GlacierNeighborhood {
   }
 
   private void storeLastSeen(final Id fNodeId, final long fWhen, final long previousWhen) {
-    neighborStorage.store(fNodeId, null, Long.valueOf(fWhen),
-      new Continuation<Object, Exception>() {
+    Futures.forward(neighborStorage.store(fNodeId, null, Long.valueOf(fWhen)), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           logger.debug("Continue: neighborSeen ({}, {}) after store", fNodeId, fWhen);
@@ -273,15 +271,14 @@ final class GlacierNeighborhood {
         public void receiveException(Exception e) {
           logger.warn("receiveException({}) while storing a neighbor ({})", e, fNodeId);
         }
-      }
-    );
+      });
   }
 
   /**
    * Removes a stored neighbor that was last seen before earliestAcceptableDate.
    */
   private void expireIfStale(final Id thisNeighbor, final long earliestAcceptableDate) {
-    neighborStorage.getObject(thisNeighbor, new Continuation<Object, Exception>() {
+    Futures.forward(neighborStorage.getObject(thisNeighbor), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object received) {
         if (received==null) {
@@ -292,7 +289,7 @@ final class GlacierNeighborhood {
         long lastSeen = ((Long)received).longValue();
         if (lastSeen < earliestAcceptableDate) {
           logger.info("CNE: Removing expired neighbor {} ({}<{})", thisNeighbor, lastSeen, earliestAcceptableDate);
-          neighborStorage.unstore(thisNeighbor, new Continuation<Object, Exception>() {
+          Futures.forward(neighborStorage.unstore(thisNeighbor), new Continuation<Object, Exception>() {
             @Override
             public void receiveResult(Object result) {
               logger.debug("CNE unstore successful: {}, returned {}", thisNeighbor, result);

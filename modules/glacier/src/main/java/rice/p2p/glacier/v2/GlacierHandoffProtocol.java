@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.glacier.Fragment;
@@ -197,7 +198,7 @@ final class GlacierHandoffProtocol {
   }
 
   private void sendFragment(final GlacierResponseMessage responseMessage, final FragmentKey thisKey) {
-    fragmentStorage.getObject(thisKey, new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.getObject(thisKey), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object result) {
         if (result != null) {
@@ -270,8 +271,7 @@ final class GlacierHandoffProtocol {
   private void storeHandedOffFragment(final GlacierDataMessage dataMessage, final FragmentKey thisKey, Fragment thisFragment, final Manifest thisManifest) {
     FragmentAndManifest fragmentAndManifest = new FragmentAndManifest(thisFragment, thisManifest);
 
-    fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest,
-      new Continuation<Object, Exception>() {
+    Futures.forward(fragmentStorage.store(thisKey, new FragmentMetadata(thisManifest.getExpiration(), 0, environment.getTimeSource().currentTimeMillis()), fragmentAndManifest), new Continuation<Object, Exception>() {
         @Override
         public void receiveResult(Object result) {
           logger.info("Handoff: Stored OK, sending receipt: {}", thisKey);
@@ -287,7 +287,6 @@ final class GlacierHandoffProtocol {
         public void receiveException(Exception e) {
           logger.warn("Handoff: receiveException({}) while storing a fragment -- unexpected, ignored (key={})", e, thisKey);
         }
-      }
-    );
+      });
   }
 }

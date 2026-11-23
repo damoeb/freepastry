@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -163,7 +164,7 @@ public class LRUCacheTest extends Test {
         }
 
         stepStart("Inserting Fourth Object (too big, rejected)");
-        cache.cache(data[4], null, FOURTH, put4);
+        Futures.forward(cache.cache(data[4], null, FOURTH), put4);
       }
 
       @Override
@@ -182,7 +183,7 @@ public class LRUCacheTest extends Test {
         }
 
         stepStart("Inserting Third Object (evicts the first)");
-        cache.cache(data[3], null, THIRD, put3);
+        Futures.forward(cache.cache(data[3], null, THIRD), put3);
       }
 
       @Override
@@ -201,7 +202,7 @@ public class LRUCacheTest extends Test {
         }
 
         stepStart("Inserting Second Object");
-        cache.cache(data[2], null, SECOND, put2);
+        Futures.forward(cache.cache(data[2], null, SECOND), put2);
       }
 
       @Override
@@ -213,7 +214,7 @@ public class LRUCacheTest extends Test {
     sectionStart("Inserting Objects");
 
     stepStart("Inserting First Object");
-    cache.cache(data[1], null, FIRST, put1);
+    Futures.forward(cache.cache(data[1], null, FIRST), put1);
   }
 
   private void testExists(final Continuation<Object, Exception> continuation) {
@@ -315,7 +316,7 @@ public class LRUCacheTest extends Test {
           sectionStart("Testing Scan");
 
           stepStart("Inserting String as Key");
-          cache.cache(data[11], null, new byte[0], query);
+          Futures.forward(cache.cache(data[11], null, new byte[0]), query);
         } else {
           stepException(new RuntimeException("Exists did not complete correctly."));
         }
@@ -386,7 +387,7 @@ public class LRUCacheTest extends Test {
 
         if (environment.getRandomSource().nextBoolean()) {
           num_deleted++;
-          cache.uncache(data[13 + (count += SKIP)], this);
+          Futures.forward(cache.uncache(data[13 + (count += SKIP)]), this);
         } else {
           count += SKIP;
           receiveResult(Boolean.valueOf(true));
@@ -454,7 +455,7 @@ public class LRUCacheTest extends Test {
         int num = count;
         count += SKIP;
 
-        cache.cache(data[13 + num], null, stressObject(num), this);
+        Futures.forward(cache.cache(data[13 + num], null, stressObject(num)), this);
       }
 
       @Override
@@ -475,7 +476,7 @@ public class LRUCacheTest extends Test {
         sectionStart("Stress Testing");
         stepStart("Increasing cache size to " + STRESS_CACHE_SIZE + " bytes");
 
-        cache.setMaximumSize(STRESS_CACHE_SIZE, insert);
+        Futures.forward(cache.setMaximumSize(STRESS_CACHE_SIZE), insert);
       }
 
       @Override
@@ -523,7 +524,7 @@ public class LRUCacheTest extends Test {
 
         stepStart("Inserting null value");
 
-        cache.cache(data[12], null, null, validateNullValue);
+        Futures.forward(cache.cache(data[12], null, null), validateNullValue);
       }
 
       @Override
@@ -544,7 +545,7 @@ public class LRUCacheTest extends Test {
         sectionStart("Testing Error Cases");
         stepStart("Inserting null key");
 
-        cache.cache(null, null, "null key", insertNullValue);
+        Futures.forward(cache.cache(null, null, "null key"), insertNullValue);
       }
 
       @Override

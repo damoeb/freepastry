@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.RawMessage;
@@ -115,7 +116,7 @@ class GlacierImplTest {
   @DisplayName("validate counts a stored object that is not a fragment as damaged instead of waiting for the timeout")
   void validateReportsAnObjectThatIsNotAFragment() {
     FragmentKey key = new FragmentKey(new VersionKey(ringIdFactory.buildRandomId(env.getRandomSource()), 0), 0);
-    fragmentStorage.store(key, null, "not a fragment", new rice.Continuation.ListenerContinuation<Object, Exception>("store", env));
+    Futures.forward(fragmentStorage.store(key, null, "not a fragment"), new rice.Continuation.ListenerContinuation<Object, Exception>("store", env));
 
     String actual = testObj.handleDebugCommand("g validate");
 
