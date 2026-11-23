@@ -42,9 +42,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -68,7 +69,10 @@ import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_
 /**
  * TODO: make it store known certs to a file, make it periodically check the revocation server.
  *
- * Extends the TableTLi, but uses Certs rather than general objects.
+ * Extends the TableTLi, but uses Certs rather than general objects. A certificate a peer returns is stored only if
+ * the {@link CertificateValidator} accepts it for the requested principal, and it never replaces a stored certificate
+ * that is still valid. The store keeps at most {@value #MAX_CERTIFICATES_PARAM} certificates (the oldest other than
+ * the local one is forgotten, and requested again when needed).
  * Also, sends huge messages by opening temp tcp-socket.
  *
  * @author Jeff Hoye
@@ -108,12 +112,17 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
 
   HashProvider hasher;
 
+  /** Parameter: how many certificates the store keeps, the local one included. */
+  public static final String MAX_CERTIFICATES_PARAM = "peerreview_identity_max_certificates";
+
+  final CertificateValidator<I> certificateValidator;
+
   /**
    * TODO: Use a param to load the store from a file.
    * @param buf must be null: loading a persistent store is not implemented and throws
    */
-  static <H, I> KeyValueStore<I, X509Certificate> loadTableStore(I localId, X509Certificate localCert, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
-    MyStore<H, I> ret = new MyStore<H, I>();
+  static <H, I> KeyValueStore<I, X509Certificate> loadTableStore(I localId, X509Certificate localCert, int maxCertificates, Serializer<I> iSerializer, X509Serializer cSerializer, InputBuffer buf) {
+    MyStore<H, I> ret = new MyStore<H, I>(localId, maxCertificates);
     ret.put(localId, localCert);
     if (buf != null) {
       // load store from the file
@@ -123,22 +132,50 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     return ret;
   }
 
-  static class MyStore<H, I> extends HashMap<I, X509Certificate> implements KeyValueStore<I, X509Certificate> {
+  /**
+   * The known certificates, at most maxCertificates of them: beyond that the one stored first is forgotten, never
+   * the local one. A forgotten certificate is requested again when a signature needs it.
+   */
+  static class MyStore<H, I> extends LinkedHashMap<I, X509Certificate> implements KeyValueStore<I, X509Certificate> {
+    private final I localId;
+    private final int maxCertificates;
     IdentityTransportCallback<H, I> callback;
+
+    MyStore(I localId, int maxCertificates) {
+      if (maxCertificates < 1) throw new IllegalArgumentException(MAX_CERTIFICATES_PARAM+" must be at least 1, is "+maxCertificates);
+      this.localId = localId;
+      this.maxCertificates = maxCertificates;
+    }
+
     @Override
     public X509Certificate put(I key, X509Certificate value) {
       X509Certificate ret = super.put(key, value);
+      if (size() > maxCertificates) {
+        Iterator<I> oldest = keySet().iterator();
+        while (oldest.hasNext()) {
+          I candidate = oldest.next();
+          if (!candidate.equals(localId) && !candidate.equals(key)) {
+            oldest.remove();
+            break;
+          }
+        }
+      }
       if (ret == null && callback != null) {
         callback.notifyCertificateAvailable(key);
       }
       return ret;
     }}
 
+  /**
+   * @param certificateValidator decides whether a certificate a peer returns is the principal's, e.g. a
+   *     {@link CaCertificateValidator} over the CA certificate in the node's key store
+   */
   public IdentityTransportLayerImpl(
       Serializer<I> iSerializer, X509Serializer cSerializer, I localId,
       X509Certificate localCert, PrivateKey localPrivate, TransportLayer<Identifier, ByteBuffer> transportLayer,
-      HashProvider hasher, Environment env) throws InvalidKeyException, NoSuchAlgorithmException {
-    super(iSerializer, cSerializer, loadTableStore(localId, localCert, iSerializer, cSerializer, null), transportLayer, env);
+      HashProvider hasher, CertificateValidator<I> certificateValidator, Environment env) throws InvalidKeyException, NoSuchAlgorithmException {
+    super(iSerializer, cSerializer, loadTableStore(localId, localCert, env.getParameters().getInt(MAX_CERTIFICATES_PARAM), iSerializer, cSerializer, null), transportLayer, env);
+    this.certificateValidator = certificateValidator;
     this.tl = transportLayer;
     transportLayer.setCallback(this);
     this.hasher = hasher;
@@ -167,6 +204,41 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
       final I principal, final Continuation<X509Certificate, Exception> continuation,
       Map<String, Object> options) {
     return super.requestValue(source, principal, continuation, options);
+  }
+
+  /**
+   * Stores the certificate only if the validator accepts it for principal; a stored certificate that is still valid
+   * is never replaced (a second certificate for the same id, even a CA-signed one, would let its holder sign as
+   * principal).
+   *
+   * @throws CertificateException if the certificate is refused
+   */
+  @Override
+  protected X509Certificate acceptReceivedValue(Identifier source, I principal, X509Certificate certificate) throws CertificateException {
+    certificateValidator.validate(principal, certificate);
+    if (knownValues.containsKey(principal)) {
+      X509Certificate stored = knownValues.get(principal);
+      if (stored.equals(certificate)) return stored;
+      if (isStillValid(principal, stored)) {
+        logger.warn("{} returned a different certificate for {} than the stored one; keeping the stored one", source, principal);
+        throw new CertificateException("A different certificate for "+principal+" is already stored");
+      }
+    }
+    // a verifier cached from an expired or forgotten certificate must not outlive it
+    synchronized (verifiers) {
+      verifiers.remove(principal);
+    }
+    knownValues.put(principal, certificate);
+    return certificate;
+  }
+
+  private boolean isStillValid(I principal, X509Certificate stored) {
+    try {
+      certificateValidator.validate(principal, stored);
+      return true;
+    } catch (CertificateException expiredOrRevoked) {
+      return false;
+    }
   }
 
   @Override

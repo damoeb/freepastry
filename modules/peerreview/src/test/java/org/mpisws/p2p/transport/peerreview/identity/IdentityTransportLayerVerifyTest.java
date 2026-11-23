@@ -35,6 +35,7 @@ class IdentityTransportLayerVerifyTest {
   private KeyPair nodeKeys;
   private X509Certificate nodeCert;
   private TransportLayer<String, ByteBuffer> below;
+  private CertificateValidator<String> validator;
   private Serializer<String> serializer;
 
   @BeforeEach
@@ -46,6 +47,7 @@ class IdentityTransportLayerVerifyTest {
         CertificateAuthorityTool.generateNewCA("CA", now.minusSeconds(60), now.plusSeconds(3600), 1, authorityKeys, CertificateAuthorityTool.DEFAULT_SIGNATURE_ALGORITHM), authorityKeys);
     nodeKeys = CertificateAuthorityTool.generateKeyPair();
     nodeCert = authority.sign(LOCAL, nodeKeys.getPublic());
+    validator = new CaCertificateValidator<>(authority.getCertificate(), principal -> principal, Instant::now);
     @SuppressWarnings("unchecked")
     TransportLayer<String, ByteBuffer> stubBelow = (TransportLayer<String, ByteBuffer>) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {TransportLayer.class}, (proxy, method, args) -> null);
@@ -61,7 +63,7 @@ class IdentityTransportLayerVerifyTest {
         return buf.readUTF();
       }
     };
-    testObj = new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, nodeCert, nodeKeys.getPrivate(), below, new SHA256HashProvider(), environment);
+    testObj = new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, nodeCert, nodeKeys.getPrivate(), below, new SHA256HashProvider(), validator, environment);
   }
 
   @AfterEach
@@ -90,8 +92,8 @@ class IdentityTransportLayerVerifyTest {
 
   /** Lets the test fill the certificate store without the certificate exchange. */
   static class CertificateHoldingTransport extends IdentityTransportLayerImpl<String, String> {
-    CertificateHoldingTransport(Serializer<String> serializer, X509Certificate localCert, KeyPair localKeys, TransportLayer<String, ByteBuffer> below, Environment env) throws Exception {
-      super(serializer, new X509Serializer(), LOCAL, localCert, localKeys.getPrivate(), below, new SHA256HashProvider(), env);
+    CertificateHoldingTransport(Serializer<String> serializer, X509Certificate localCert, KeyPair localKeys, TransportLayer<String, ByteBuffer> below, CertificateValidator<String> validator, Environment env) throws Exception {
+      super(serializer, new X509Serializer(), LOCAL, localCert, localKeys.getPrivate(), below, new SHA256HashProvider(), validator, env);
     }
 
     void addCertificate(String identifier, X509Certificate cert) {
@@ -101,7 +103,7 @@ class IdentityTransportLayerVerifyTest {
 
   @Test
   void verifierCacheStaysBoundedAndEvictedVerifiersAreRebuilt() throws Exception {
-    CertificateHoldingTransport transport = new CertificateHoldingTransport(serializer, nodeCert, nodeKeys, below, environment);
+    CertificateHoldingTransport transport = new CertificateHoldingTransport(serializer, nodeCert, nodeKeys, below, validator, environment);
     int identityCount = 2_000;
     for (int i = 0; i < identityCount; i++) {
       transport.addCertificate("node" + i, nodeCert);

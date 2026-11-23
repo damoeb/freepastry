@@ -44,6 +44,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
@@ -80,6 +81,8 @@ import org.mpisws.p2p.transport.peerreview.history.HashProvider;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
+import org.mpisws.p2p.transport.peerreview.identity.CaCertificateValidator;
+import org.mpisws.p2p.transport.peerreview.identity.CertificateValidator;
 import org.mpisws.p2p.transport.peerreview.identity.IdentityTransportLayerImpl;
 import org.mpisws.p2p.transport.peerreview.infostore.IdentifierStringCodec;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
@@ -525,7 +528,7 @@ public class PRRegressionTest {
 
       // every node must use the same key size: the signature size is derived from the local certificate's key
       pair = CertificateAuthorityTool.generateKeyPair();
-      cert = caTool.sign(localHandle.name,pair.getPublic());
+      cert = caTool.sign(commonNameOf(localHandle.id),pair.getPublic());
 
       t1 = getTL();
 
@@ -566,7 +569,8 @@ public class PRRegressionTest {
     public MyIdTL getIdTransport() throws Exception {
       return new MyIdTL(
           new IdSerializer(), new X509Serializer(),this.localHandle.id,
-          cert,pair.getPrivate(),t1,new SHA256HashProvider(),env) {
+          cert,pair.getPrivate(),t1,new SHA256HashProvider(),
+          new CaCertificateValidator<IdImpl>(caTool.getCertificate(), PRRegressionTest::commonNameOf, Instant::now),env) {
       };
     }
 
@@ -587,14 +591,20 @@ public class PRRegressionTest {
       }};
   }
 
+  /** the common name of a player's certificate */
+  static String commonNameOf(IdImpl id) {
+    return Integer.toString(id.id);
+  }
+
   class MyIdTL extends IdentityTransportLayerImpl<HandleImpl, IdImpl> {
     public MyIdTL(Serializer<IdImpl> serializer, X509Serializer serializer2,
         IdImpl localId, X509Certificate localCert, PrivateKey localPrivate,
         TransportLayer<HandleImpl, ByteBuffer> transportLayer, HashProvider hasher,
+        CertificateValidator<IdImpl> certificateValidator,
         Environment env) throws InvalidKeyException, NoSuchAlgorithmException,
         NoSuchProviderException {
       super(serializer, serializer2, localId, localCert, localPrivate, transportLayer, hasher,
-          env);
+          certificateValidator, env);
     }
 
     @Override
@@ -604,8 +614,14 @@ public class PRRegressionTest {
 
         @Override
         public void receiveResult(X509Certificate result) {
-          knownValues.put(certHolder, result);
-          if (continuation != null) continuation.receiveResult(result);
+          X509Certificate stored;
+          try {
+            stored = acceptReceivedValue(source, certHolder, result);
+          } catch (CertificateException refused) {
+            receiveException(refused);
+            return;
+          }
+          if (continuation != null) continuation.receiveResult(stored);
         }
 
         @Override

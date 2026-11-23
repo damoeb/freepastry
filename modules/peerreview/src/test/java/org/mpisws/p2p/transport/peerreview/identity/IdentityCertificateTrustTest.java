@@ -86,7 +86,8 @@ class IdentityCertificateTrustTest {
   }
 
   private IdentityTransportLayerImpl<String, String> newIdentityLayer() throws Exception {
-    return new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, localCert, nodeKeys.getPrivate(), below(), new SHA256HashProvider(), environment);
+    return new IdentityTransportLayerImpl<>(serializer, new X509Serializer(), LOCAL, localCert, nodeKeys.getPrivate(), below(), new SHA256HashProvider(),
+        new CaCertificateValidator<>(authority.getCertificate(), principal -> principal, Instant::now), environment);
   }
 
   /** The transport below: every socket it opens is a {@link ScriptedSocket}. */

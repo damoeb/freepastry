@@ -159,8 +159,7 @@ public class TableTransportLayer<Identifier, Key, Value>
 
                       logger.trace("requestValue({},{}) got value {}", source, principal, value);
 
-                      knownValues.put(principal, value);
-                      continuation.receiveResult(value);
+                      continuation.receiveResult(acceptReceivedValue(source, principal, value));
                       break;
                     case RESPONSE_FAILED:
                       continuation.receiveException(new UnknownValueException(source, principal));
@@ -194,6 +193,22 @@ public class TableTransportLayer<Identifier, Key, Value>
       }
 
     }, options);
+  }
+
+  /**
+   * Stores a value a peer returned for a key, unless one is stored already: the values in this table are constant,
+   * so the stored one wins and is returned. Subclasses check the value first (a peer can return anything).
+   *
+   * @param source the peer that returned the value
+   * @return the value now stored for principal
+   * @throws Exception if the value is refused; the request then fails with it
+   */
+  protected Value acceptReceivedValue(Identifier source, Key principal, Value value) throws Exception {
+    if (knownValues.containsKey(principal)) {
+      return knownValues.get(principal);
+    }
+    knownValues.put(principal, value);
+    return value;
   }
 
   @Override
