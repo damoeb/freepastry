@@ -149,6 +149,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // sends and receives the messages that go over a socket of their own
   private final PastSocketTransport socketTransport;
 
+  // the lookup of an object by its id
+  private final PastLookups lookups;
+
   // the requests that wait for a response
   private final PendingRequests pending;
 
@@ -268,6 +271,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.trash = trash;
 
     this.pending = new PendingRequests(logger);
+    this.lookups = new PastLookups(this, logger);
     this.replicationFactor = replicas;
 
     this.replicaManager = buildReplicationManager(node, instance);
@@ -639,88 +643,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   @Override
   public void lookup(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    logger.atTrace().log(() -> " Performing lookup on " + id.toStringFull());
-
-    storage.getObject(id, new StandardContinuation<Object, PastContent, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        if (result != null && isAuthentic(id, (PastContent) result)) {
-          command.receiveResult((PastContent) result);
-        } else {
-          lookupViaMessage(id, cache, command);
-        }
-      }
-    });
-  }
-
-  /**
-   * Second step of a lookup: asks the node the key routes to. If that node has no authentic object, or the message
-   * failed, all replicas are tried, just in case; this may fail too, but at least we tried.
-   */
-  private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    sendRequest(id, new LookupMessage(nextRequestId(), id, getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
-      @Override
-      public void receiveResult(final PastContent content) {
-        if (content != null && isAuthentic(id, content)) {
-          cacheAndReply(content, cache, command);
-        } else {
-          lookupViaReplicas(id, cache, command);
-        }
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        receiveResult(null);
-      }
-    });
-  }
-
-  /**
-   * Last step of a lookup: the first replica that has a handle is fetched, and the lookup answers null if there is
-   * none, which means the object doesn't exist anywhere.
-   */
-  private void lookupViaReplicas(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    lookupHandles(id, replicationFactor + 1, new StandardContinuation<PastContentHandle[], PastContent, Exception>(command) {
-      @Override
-      public void receiveResult(PastContentHandle[] handles) {
-        for (PastContentHandle handle : handles) {
-          if (handle != null) {
-            fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(command) {
-              @Override
-              public void receiveResult(final PastContent content) {
-                cacheAndReply(content, cache, command);
-              }
-            });
-
-            return;
-          }
-        }
-
-        // there were no replicas of the object
-        command.receiveResult(null);
-      }
-    });
-  }
-
-  /** Tries to cache a looked-up object locally for future use, and answers with it whether or not caching worked. */
-  private void cacheAndReply(final PastContent content, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    if (!cache) {
-      command.receiveResult(content);
-      return;
-    }
-
-    cache(content, new SimpleContinuation() {
-      @Override
-      public void receiveResult(Object object) {
-        command.receiveResult(content);
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        logger.warn("Caching after lookup failed, continuing", e);
-        command.receiveResult(content);
-      }
-    });
+    lookups.lookup(id, cache, command);
   }
 
   /**
