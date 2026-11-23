@@ -45,6 +45,7 @@ import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.mpisws.p2p.pki.x509.X509Serializer;
@@ -92,8 +93,18 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
 
   Signature signer;
 
-  // TODO: this cache grows without bound; evict verifiers that are no longer used
-  Map<I, Signature> verifiers = new HashMap<I, Signature>();
+  /**
+   * How many verifiers {@link #getVerifier} keeps. An evicted verifier is built again from its certificate.
+   */
+  public static final int MAX_CACHED_VERIFIERS = 1024;
+
+  /** The most recently used verifiers by identity; access to it is synchronized on the map. */
+  final Map<I, Signature> verifiers = new LinkedHashMap<I, Signature>(16, 0.75f, true) {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<I, Signature> eldest) {
+      return size() > MAX_CACHED_VERIFIERS;
+    }
+  };
 
   HashProvider hasher;
 
@@ -203,20 +214,22 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
    * @throws RuntimeException if the verifier cannot be created from the certificate
    */
   public Signature getVerifier(I identifier) {
-    Signature ret = verifiers.get(identifier);
-    try {
-      if (ret == null) {
-        if (knownValues.containsKey(identifier)) {
-          X509Certificate cert = knownValues.get(identifier);
-          ret = Signature.getInstance(signatureAlgorithm);
-          ret.initVerify(cert);
-          verifiers.put(identifier, ret);
+    synchronized (verifiers) {
+      Signature ret = verifiers.get(identifier);
+      try {
+        if (ret == null) {
+          if (knownValues.containsKey(identifier)) {
+            X509Certificate cert = knownValues.get(identifier);
+            ret = Signature.getInstance(signatureAlgorithm);
+            ret.initVerify(cert);
+            verifiers.put(identifier, ret);
+          }
         }
+      } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        throw new RuntimeException(e);
       }
-    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-      throw new RuntimeException(e);
+      return ret;
     }
-    return ret;
   }
 
   @Override

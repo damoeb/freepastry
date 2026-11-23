@@ -115,7 +115,7 @@ class IdentityTransportLayerVerifyTest {
       assertEquals(SIGNATURE_OK, transport.verify("node" + i, MESSAGE, signature));
     }
 
-    assertTrue(transport.verifiers.size() <= 1_024, "the verifier cache holds " + transport.verifiers.size() + " entries");
+    assertTrue(transport.verifiers.size() <= IdentityTransportLayerImpl.MAX_CACHED_VERIFIERS, "the verifier cache holds " + transport.verifiers.size() + " entries");
     // the verifier of the first identity was evicted and is built again from the certificate
     assertEquals(SIGNATURE_OK, transport.verify("node0", MESSAGE, signature));
   }
