@@ -90,7 +90,8 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
   AuditProtocol<Handle, Identifier> auditProtocol;
   CommitmentProtocol<Handle, Identifier> commitmentProtocol;
   private final Logger logger;
-  Map<Handle, List<PacketInfo<Handle, Identifier>>> queue = new HashMap<Handle,List<PacketInfo<Handle, Identifier>>>();
+  /** What SUSPECTED nodes sent, by sender, until the sender is TRUSTED (deliver) or EXPOSED (drop) */
+  Map<Identifier, List<PacketInfo<Handle, Identifier>>> queue = new HashMap<Identifier,List<PacketInfo<Handle, Identifier>>>();
 
   public ChallengeResponseProtocol(
       PeerReviewImpl<Handle, Identifier> peerReviewImpl,
@@ -112,11 +113,8 @@ public class ChallengeResponseProtocol<Handle extends RawSerializable, Identifie
   protected void copyAndEnqueueTail(Handle source, Evidence evidence,
       boolean isAccusation, Identifier subject, Identifier originator, long evidenceSeq,
       Map<String, Object> options) {
-    List<PacketInfo<Handle, Identifier>> list = queue.get(source);
-    if (list == null) {
-      list = new ArrayList<PacketInfo<Handle,Identifier>>();
-      queue.put(source, list);
-    }
+    List<PacketInfo<Handle, Identifier>> list = queue.computeIfAbsent(
+        peerreview.getIdentifierExtractor().extractIdentifier(source), id -> new ArrayList<PacketInfo<Handle,Identifier>>());
     list.add(new PacketInfo<Handle, Identifier>(source,evidence,isAccusation,subject,originator,evidenceSeq,options));
   }
 
