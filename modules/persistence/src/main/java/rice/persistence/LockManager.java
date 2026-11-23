@@ -39,9 +39,11 @@ package rice.persistence;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 
@@ -79,6 +81,17 @@ public class LockManager {
     }
     if (pendingContinuation != null)
       pendingContinuation.receiveResult(null);
+  }
+
+  /**
+   * Waits for the lock on {@code id}; release it with {@link #unlock(Id)}.
+   *
+   * @param id the id to lock
+   * @return completes when the lock is granted: before this method returns if the lock is free, otherwise when
+   *     the holders queued before release it
+   */
+  public CompletableFuture<Void> lock(Id id) {
+    return Futures.<Void>call(continuation -> lock(id, continuation));
   }
 
   public void unlock(Id id) {
