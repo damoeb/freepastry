@@ -807,7 +807,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     inserts++;
     final Id msgid = insertMessage.getContent().getId();
 
-    lockManager.lock(msgid, new StandardContinuation<Object, Object, Exception>(getResponseContinuation(insertMessage)) {
+    Futures.forward(lockManager.lock(msgid), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(insertMessage)) {
       @Override
       public void receiveResult(Object result) {
         checkAndStore(insertMessage, content -> null, new StandardContinuation<Boolean, Object, Exception>(parent) {
