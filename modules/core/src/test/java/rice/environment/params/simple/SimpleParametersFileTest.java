@@ -51,4 +51,17 @@ class SimpleParametersFileTest {
 
     assertEquals(3, testObj.getInt(KEY));
   }
+
+  @Test
+  void aStoredFileIsReadableByTheOwnerOnly() throws IOException {
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        java.nio.file.FileSystems.getDefault().supportedFileAttributeViews().contains("posix"), "POSIX permissions");
+    SimpleParameters testObj = new SimpleParameters(DEFAULTS, dir.resolve("stored").toString());
+    testObj.setInt(KEY, 5);
+
+    testObj.store();
+
+    assertEquals("rw-------", java.nio.file.attribute.PosixFilePermissions.toString(
+        Files.getPosixFilePermissions(dir.resolve("stored.params"))));
+  }
 }
