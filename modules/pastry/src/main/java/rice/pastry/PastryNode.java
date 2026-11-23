@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package rice.pastry;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,11 +53,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.jspecify.annotations.Nullable;
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -68,16 +65,12 @@ import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.proximity.ProximityListener;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
-import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Destructible;
 import rice.Executable;
 import rice.environment.Environment;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.commonapi.exception.AppNotRegisteredException;
-import rice.p2p.commonapi.exception.AppSocketException;
-import rice.p2p.commonapi.exception.NoReceiverAvailableException;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.pastry.boot.Bootstrapper;
@@ -96,7 +89,6 @@ import rice.pastry.routing.RoutingTable;
 import rice.pastry.transport.DefaultPastryMessageReceipt;
 import rice.pastry.transport.PastryMessageReceipt;
 import rice.pastry.transport.PastryMessageSendListener;
-import rice.pastry.transport.SocketAdapter;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
@@ -115,10 +107,6 @@ public class PastryNode implements
     ProximityListener<NodeHandle>,
     TransportLayerCallback<NodeHandle, RawMessage>,
     LivenessListener<NodeHandle> {
-
-  public static final byte CONNECTION_OK = 0;
-  public static final byte CONNECTION_NO_APP = 1;
-  public static final byte CONNECTION_NO_ACCEPTOR = 2;
 
 
   private final Id myNodeId;
@@ -192,6 +180,8 @@ public class PastryNode implements
    */
   private final PastryConfig config;
 
+  private final AppSocketHandshake appSockets;
+
   public PastryNode(Id id, Environment e) {
     myEnvironment = e;
     myNodeId = id;
@@ -200,6 +190,7 @@ public class PastryNode implements
     readyStrategy = getDefaultReadyStrategy();
 
     logger = e.getLogManager().getLogger(getClass(), null);
+    appSockets = new AppSocketHandshake(this, logger);
     e.addDestructable(this);
   }
 
@@ -678,7 +669,8 @@ public class PastryNode implements
 
 
   /**
-   * Called by PastryAppl to ask the transport layer to open a Socket to its counterpart on another node.
+   * Called by PastryAppl to ask the transport layer to open a Socket to its counterpart on another node, see
+   * {@link AppSocketHandshake}.
    *
    * @param i the node to connect to
    * @param deliverSocketToMe receives the socket, or the exception
@@ -688,118 +680,8 @@ public class PastryNode implements
    */
   public SocketRequestHandle<NodeHandle> connect(final NodeHandle i, final AppSocketReceiver deliverSocketToMe,
       final PastryAppl appl, int timeout) {
-
-    final SocketRequestHandleImpl<NodeHandle> handle = new SocketRequestHandleImpl<NodeHandle>(i, null, logger);
-
-    Runnable task = new Runnable() {
-      @Override
-      public void run() {
-
-        // use the proper application address
-        final ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.asIntBuffer().put(appl.getAddress());
-        buffer.clear();
-
-
-        handle.setSubCancellable(transportLayer.openSocket(i,
-          new SocketCallback<NodeHandle>(){
-            @Override
-            @SuppressWarnings("ReferenceEquality") // the same instance is meant
-            public void receiveResult(SocketRequestHandle<NodeHandle> c,
-                P2PSocket<NodeHandle> result) {
-
-              if (c != handle.getSubCancellable()) throw new RuntimeException("c != handle.getSubCancellable() (indicates a bug in the code) c:"+c+" sub:"+handle.getSubCancellable());
-
-              logger.trace("openSocket({}):receiveResult({})", i, result);
-              result.register(false, true, new P2PSocketReceiver<NodeHandle>() {
-                @Override
-                public void receiveSelectResult(P2PSocket<NodeHandle> socket,
-                    boolean canRead, boolean canWrite) throws IOException {
-                  if (canRead || !canWrite) throw new IOException("Expected to write! "+canRead+","+canWrite);
-
-                  // write the appId
-                  if (socket.write(buffer) == -1) {
-                    deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
-                    return;
-                  }
-
-                  // keep working or pass up the new socket
-                  if (buffer.hasRemaining()) {
-                    // keep writing
-                    socket.register(false, true, this);
-                  } else {
-                    // read the response
-                    final ByteBuffer answer = ByteBuffer.allocate(1);
-                    socket.register(true, false, new P2PSocketReceiver<NodeHandle>(){
-
-                      @Override
-                      public void receiveSelectResult(P2PSocket<NodeHandle> socket, boolean canRead, boolean canWrite) throws IOException {
-
-                        if (socket.read(answer) == -1) {
-                          deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new ClosedChannelException("Remote node closed socket while opening.  Try again."));
-                          return;
-                        };
-
-                        if (answer.hasRemaining()) {
-                          socket.register(true, false, this);
-                        } else {
-                          answer.clear();
-
-                          byte connectResult = answer.get();
-                          switch(connectResult) {
-                            case CONNECTION_OK:
-                              // on connector side
-                              deliverSocketToMe.receiveSocket(new SocketAdapter<NodeHandle>(socket, getEnvironment()));
-                              return;
-                            case CONNECTION_NO_APP:
-                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new AppNotRegisteredException(appl.getAddress()));
-                              return;
-                            case CONNECTION_NO_ACCEPTOR:
-                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new NoReceiverAvailableException());
-                              return;
-                            default:
-                              deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), new AppSocketException("Unknown error "+connectResult));
-                              return;
-                          }
-                        }
-                      }
-
-                      @Override
-                      public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
-                        deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), ioe);
-                      }
-                    });
-                  }
-                }
-
-                @Override
-                public void receiveException(P2PSocket<NodeHandle> socket,
-                    Exception e) {
-                  deliverSocketToMe.receiveException(new SocketAdapter<NodeHandle>(socket, getEnvironment()), e);
-                }
-              });
-            }
-
-            @Override
-            public void receiveException(SocketRequestHandle<NodeHandle> requestHandle, Exception ex) {
-              // TODO: return something with a proper toString()
-              deliverSocketToMe.receiveException(null, ex);
-            }
-          },
-        null));
-      }
-    };
-    if (myEnvironment.getSelectorManager().isSelectorThread()) {
-      task.run();
-    } else {
-      myEnvironment.getSelectorManager().invoke(task);
-    }
-
-
-    return handle;
+    return appSockets.connect(i, deliverSocketToMe, appl, timeout);
   }
-
-
 
   private JoinFailedException joinFailedReason;
   public void joinFailed(JoinFailedException exception) {
@@ -864,6 +746,11 @@ public class PastryNode implements
     return result;
   }
 
+  /** The transport layer, null until {@link #setSocketElements} ran. */
+  TransportLayer<NodeHandle, RawMessage> transportLayer() {
+    return transportLayer;
+  }
+
   // from TLPastryNode
 
   // Period (in seconds) at which the leafset and routeset maintenance tasks, respectively, are invoked.
@@ -897,96 +784,8 @@ public class PastryNode implements
 
   @Override
   public void incomingSocket(P2PSocket<NodeHandle> s) throws IOException {
-
-    // read the appId
-    final ByteBuffer appIdBuffer = ByteBuffer.allocate(4);
-
-    s.register(true, false, new P2PSocketReceiver<NodeHandle>() {
-
-      @Override
-      public void receiveSelectResult(
-          P2PSocket<NodeHandle> socket,
-          boolean canRead, boolean canWrite) throws IOException {
-        // read the appId
-        if (socket.read(appIdBuffer) == -1) {
-          logger.warn("AppId Socket from {} closed unexpectedly.", socket);
-          return;
-        }
-
-        if (appIdBuffer.hasRemaining()) {
-          // read the rest;
-          socket.register(true, false, this);
-        } else {
-          appIdBuffer.clear();
-          final int appId = appIdBuffer.asIntBuffer().get();
-
-          // we need to write the result, and there is a timing issue on the appl, so we need to first request to write, then do everything
-          // the alternative approach is to return a dummy socket (or a wrapper) and cache any registration request until we write the response
-          socket.register(false, true, new P2PSocketReceiver<NodeHandle>(){
-
-            @Override
-            public void receiveSelectResult(P2PSocket<NodeHandle> socket,
-                boolean canRead, boolean canWrite) throws IOException {
-
-              PastryAppl acceptorAppl = getMessageDispatch().getDestinationByAddress(appId);
-
-              ByteBuffer toWrite = ByteBuffer.allocate(1);
-              boolean success = false;
-
-              if (acceptorAppl == null) {
-                logger.atWarn().log(() -> "Sending error to connecter "+socket+" "+new AppNotRegisteredException(appId));
-                toWrite.put(CONNECTION_NO_APP);
-                toWrite.clear();
-                socket.write(toWrite);
-                socket.close();
-              } else {
-                synchronized(acceptorAppl) {
-                // try to register with the application
-                  if (acceptorAppl.canReceiveSocket()) {
-                    toWrite.put(CONNECTION_OK);
-                    toWrite.clear();
-                    success = true;
-                  } else {
-                    logger.atWarn().log(() -> "Sending error to connecter "+socket+" "+new NoReceiverAvailableException());
-                    toWrite.put(CONNECTION_NO_ACCEPTOR);
-                    toWrite.clear();
-                  }
-
-                  socket.write(toWrite);
-                  if (toWrite.hasRemaining()) {
-                    // this sucks, because the synchronization with the app-receiver becomes all wrong, this shouldn't normally happen
-                    logger.warn("couldn't write 1 bite!!! {}", toWrite);
-                    socket.close();
-                    return;
-                  }
-
-                  if (success) {
-                    acceptorAppl.finishReceiveSocket(new SocketAdapter<NodeHandle>(socket, getEnvironment()));
-                  }
-                } // sync
-              } // if (acceptorAppl!=null)
-            } // rSR()
-
-            @Override
-            public void receiveException(P2PSocket<NodeHandle> socket, Exception ioe) {
-              logger.warn("incomingSocket({})", socket, ioe);
-            }
-          });
-        }
-      }
-
-      @Override
-      public void receiveException(
-          P2PSocket<NodeHandle> socket,
-          Exception ioe) {
-        logger.warn("incomingSocket({})", socket, ioe);
-      }
-
-    });
+    appSockets.incomingSocket(s);
   }
-
-
-
 
   /**
    * The proximity of the node handle.
