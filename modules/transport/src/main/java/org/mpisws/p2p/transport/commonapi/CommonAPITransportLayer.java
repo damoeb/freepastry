@@ -154,11 +154,8 @@ public class CommonAPITransportLayer<Identifier extends NodeHandle>
     // we only serialize the Id, we assume the underlying layer got the address of the NodeHandle correct
     SimpleOutputBuffer sob = new SimpleOutputBuffer();
     try {
-      // TODO: maybe we should write my entire address to be compatible with the lower levels, why do we need to do this at all?
-      // Is the contract that the lower level's identifier is proper?
-      // What about the fact that the priorityTL will establish end to end connectivity?
-      // Perhaps this is wasteful.
-      // cant put the PriorityTL above this because this is where we serialize
+      // Only the message is serialized here, not the sender's address: the contract is that the lower layer's identifier is the proper address.
+      // The PriorityTL cannot sit above this layer because this is where the message is serialized.
 
       deserializer.serialize(m, sob);
     } catch (IOException ioe) {

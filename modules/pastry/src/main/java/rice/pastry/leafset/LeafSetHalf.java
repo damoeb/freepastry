@@ -377,7 +377,8 @@ public class LeafSetHalf implements NodeSetEventSource {
       default:
         // more than 1 node, and both are live, need to sort by direction
         Collections.sort(toUse,(a, b) -> {
-          // smallest to biggest (TODO: verify the order; minor)
+          // Ascending by id (plain numeric compare, not ring distance) for the clockwise half, descending for the counter-clockwise half.
+          // put() bubbles each handle into its ring position (isBetween), so this order only fixes the insertion order, not the final order.
           if (clockwise) return a.getId().compareTo(b.getId());
           return b.getId().compareTo(a.getId());
         });

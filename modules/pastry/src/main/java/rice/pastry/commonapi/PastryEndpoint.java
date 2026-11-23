@@ -216,7 +216,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
 
 
     final Id final_key = key;
-    // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
+    // The receipt wraps the RouteMessage; PastryNode has no dedicated router for this, so the message goes through receiveMessage.
     final MessageReceipt result = new MessageReceipt(){
 
       @Override

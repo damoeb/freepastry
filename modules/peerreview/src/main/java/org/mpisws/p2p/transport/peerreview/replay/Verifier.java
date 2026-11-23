@@ -95,7 +95,7 @@ public class Verifier<Handle extends RawSerializable, Identifier extends RawSeri
   private static final int NUM_EVENT_TYPES = 256;
 
   /**
-   * Maps EVT_XXX -> EventCallback
+   * Maps an event type (EVT_*) to its EventCallback
    */
   Map<Short, EventCallback> eventCallback = new HashMap<Short, EventCallback>();
 

@@ -133,7 +133,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
       if (connectionStatus == PriorityTransportLayer.STATUS_CONNECTED) {
         result--;
       } else {
-        priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // TODO: make proper options
+        priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // the only option is the node handle, so the identity layer can find it
       }
       return result;
 
@@ -142,7 +142,7 @@ public class RendezvousRouterStrategy implements RouterStrategy {
     // !contactDirect
     if (connectionStatus > PriorityTransportLayer.STATUS_CONNECTING) {
       // connect if we can
-      priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // TODO: make proper options
+      priority.openPrimaryConnection(rnh.getAddress(), getOptions(rnh)); // the only option is the node handle, so the identity layer can find it
     }
 
     if (connectionStatus == PriorityTransportLayer.STATUS_CONNECTED) {

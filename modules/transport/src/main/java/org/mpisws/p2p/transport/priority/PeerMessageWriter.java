@@ -103,7 +103,7 @@ final class PeerMessageWriter<Identifier> implements P2PSocketReceiver<Identifie
   private final int MAX_BIG_MSG_SIZE;
   private final List<PrimarySocketListener<Identifier>> primarySocketListeners;
 
-  // TODO: think about the behavior of this when it wraps around...
+  // Wrap-around is safe: MessageWrapper.compareTo uses this.seq - that.seq, which stays correct across int overflow as long as the queued messages span fewer than 2^31 sequence numbers (the queue is bounded).
   private int seq = Integer.MIN_VALUE; // guarded by queue
   final BoundedPriorityWriteQueue<MessageWrapper<Identifier>> queue; // messages we want to send, and the one being written
   final Collection<P2PSocket<Identifier>> sockets;

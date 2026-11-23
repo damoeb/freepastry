@@ -51,7 +51,7 @@ import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_SUSPECTED
  *
  * the livenessCheckerTimer is set every time we want to write, and killed every time we do write
  *
- * TODO: think about exactly what we want to use for the delay on the timer, currently using rto*4
+ * The delay on the timer is currently 4 times the retransmission timeout (rto).
  *
  * @author Jeff Hoye
  */

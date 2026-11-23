@@ -301,7 +301,7 @@ public class RendezvousSocketPastryNodeFactory extends SocketPastryNodeFactory {
 
       @Override
       public InetSocketAddress convert(RendezvousSocketNodeHandle high) {
-        // TODO: is this the correct one?
+        // Index 0 is the outermost address of the handle (MultiInetSocketAddress.getOutermostAddress(), the same one SocketNodeHandle.getInetSocketAddress() returns).
         return high.getAddress().getAddress(0);
       }
 

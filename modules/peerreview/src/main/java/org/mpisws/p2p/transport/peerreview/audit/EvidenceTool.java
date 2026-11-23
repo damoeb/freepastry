@@ -234,7 +234,7 @@ public class EvidenceTool<Handle extends RawSerializable, Identifier extends Raw
 
 
     logger.debug("Checking snippet (flags={})", flags);
-    // TODO: check for FLAG_FULL here? (open question inherited from the C++ PeerReview port)
+    // FLAG_FULL is not checked here; the snippet is verified against the two authenticators whatever the flags say. (Open question inherited from the C++ PeerReview port.)
 
     /* We read the snippet entry by entry and check the following:
            - Does the computed top-level hash value match the second authenticator in the challenge?

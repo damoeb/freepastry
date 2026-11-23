@@ -87,7 +87,7 @@ final class TreeRepair {
     if (arg.equals(NodeHandle.DECLARED_DEAD)) {
       ArrayList<Topic> wasChildOfTopics = new ArrayList<Topic>(registry.getTopicsByChild(handle));
       for (Topic topic : wasChildOfTopics) {
-        children.removeChild(topic, handle, true); // TODO: check which messages removeChild() sends here
+        children.removeChild(topic, handle, true); // removeChild() unsubscribes from the parent if this was the last child, and sends a DropMessage to the child only if it is still alive (it was just declared dead, so normally not)
         logger.debug("Child {} for topic {} has died - removing.", handle, topic);
       }
       ArrayList<Topic> wasParentOfTopics = new ArrayList<Topic>(registry.getTopicsByParent(handle));

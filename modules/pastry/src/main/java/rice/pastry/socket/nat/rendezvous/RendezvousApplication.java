@@ -199,7 +199,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
     logger.atTrace().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
-    // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
+    // The Cancellable wraps the RouteMessage; PastryNode has no dedicated router for this, so the message goes through the router directly.
     final Cancellable cancellable = () -> {
       logger.atDebug().log(() -> "openChannel("+target+","+rendezvous+","+source+","+uniqueId+","+deliverAckToMe+","+options+").cancel()");
       return routeMessage.cancel();
@@ -275,7 +275,7 @@ public class RendezvousApplication extends PastryAppl implements RendezvousStrat
 
       logger.atTrace().log(() -> "sendMessage("+i+","+m+","+deliverAckToMe+","+options+") sending via "+routeMessage);
 
-      // TODO: make PastryNode have a router that does this properly, rather than receiveMessage
+      // The request handle wraps the RouteMessage; PastryNode has no dedicated router for this, so the message goes through the router directly.
       final MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer> requestHandle = new MessageRequestHandle<RendezvousSocketNodeHandle, ByteBuffer>() {
 
         @Override
