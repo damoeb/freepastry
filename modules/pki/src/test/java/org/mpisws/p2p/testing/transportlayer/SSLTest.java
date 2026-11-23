@@ -596,4 +596,98 @@ public class SSLTest {
   void strictModeAcceptsNodeIdCommonName() throws Exception {
     assertEquals(BOB.toStringFull(), bobConnectsWithCertificateFor(BOB.toStringFull(), NodeIdCertificate::isNodeId).get(SSLTransportLayer.OPTION_CERT_SUBJECT));
   }
+
+  /**
+   * alice accepts TLS sockets without asking for a client certificate, reads PAYLOAD from each and then keeps reading;
+   * the returned future completes with what her reader sees after the payload: -1 (end of stream) or an exception
+   */
+  CompletableFuture<Object> aliceReadsUntilTheEnd() throws Exception {
+    CompletableFuture<Object> end = new CompletableFuture<Object>();
+    SSLTransportLayer<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
+    alice.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
+        incomingSocket.register(true, false, new P2PSocketReceiver<InetSocketAddress>() {
+          ByteBuffer readMe = ByteBuffer.allocate(PAYLOAD.getBytes(StandardCharsets.UTF_8).length);
+
+          @Override
+          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
+            if (readMe.hasRemaining()) {
+              if (socket.read(readMe) < 0) {
+                end.completeExceptionally(new IOException("end of stream before the payload"));
+                return;
+              }
+              if (!readMe.hasRemaining()) aliceRead.complete(new String(readMe.array(), StandardCharsets.UTF_8));
+            } else {
+              long read = socket.read(ByteBuffer.allocate(16));
+              if (read < 0) {
+                end.complete(read);
+                return;
+              }
+            }
+            socket.register(true, false, this);
+          }
+
+          @Override
+          public void receiveException(P2PSocket<InetSocketAddress> socket, Exception ioe) {
+            end.complete(ioe);
+          }
+        });
+      }
+
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer msg, Map<String, Object> options) throws IOException {
+      }
+    });
+    return end;
+  }
+
+  /** a plain TLS client that trusts the test CA, over the given TCP socket, which it does not close itself */
+  javax.net.ssl.SSLSocket tlsClientOver(java.net.Socket tcp) throws Exception {
+    javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance("SunX509");
+    tmf.init(store("client", null, ca(false)));
+    javax.net.ssl.SSLContext context = javax.net.ssl.SSLContext.getInstance("TLSv1.3");
+    context.init(null, tmf.getTrustManagers(), null);
+    javax.net.ssl.SSLSocket tls = (javax.net.ssl.SSLSocket) context.getSocketFactory().createSocket(tcp, addr.getHostAddress(), alicePort, false);
+    tls.setUseClientMode(true);
+    tls.startHandshake();
+    tls.getOutputStream().write(PAYLOAD.getBytes(StandardCharsets.UTF_8));
+    tls.getOutputStream().flush();
+    return tls;
+  }
+
+  @Test
+  @DisplayName("a TLS peer that closes its connection after the handshake reaches the reader as the end of the stream")
+  void peerCloseAfterHandshakeReachesTheReader() throws Exception {
+    CompletableFuture<Object> end = aliceReadsUntilTheEnd();
+    try (java.net.Socket tcp = new java.net.Socket(addr, alicePort)) {
+      javax.net.ssl.SSLSocket tls = tlsClientOver(tcp);
+      assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+      // an orderly TLS close: close_notify, then FIN
+      tls.close();
+      tcp.close();
+      Object seen = end.get(PEER_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      assertTrue(Long.valueOf(-1).equals(seen) || seen instanceof IOException, "the reader saw " + seen);
+    } catch (java.util.concurrent.TimeoutException e) {
+      throw new AssertionError("the reader was never told that the peer closed the TLS socket", e);
+    }
+  }
+
+  @Test
+  @DisplayName("a TLS peer whose TCP connection ends without close_notify reaches the reader as a closed socket")
+  void peerTcpCloseAfterHandshakeReachesTheReader() throws Exception {
+    CompletableFuture<Object> end = aliceReadsUntilTheEnd();
+    try (java.net.Socket tcp = new java.net.Socket(addr, alicePort)) {
+      tlsClientOver(tcp);
+      assertEquals(PAYLOAD, aliceRead.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+      // FIN without close_notify (a truncation)
+      tcp.close();
+      Object seen = end.get(PEER_CLOSE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      assertTrue(Long.valueOf(-1).equals(seen) || seen instanceof IOException, "the reader saw " + seen);
+    } catch (java.util.concurrent.TimeoutException e) {
+      throw new AssertionError("the reader was never told that the peer closed the TCP connection", e);
+    }
+  }
+
+  static final long PEER_CLOSE_TIMEOUT_SECONDS = 5;
 }
