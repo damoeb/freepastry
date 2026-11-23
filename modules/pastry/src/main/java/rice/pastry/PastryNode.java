@@ -88,6 +88,7 @@ import rice.pastry.routing.RoutingTable;
 import rice.pastry.transport.DefaultPastryMessageReceipt;
 import rice.pastry.transport.PastryMessageReceipt;
 import rice.pastry.transport.PastryMessageSendListener;
+import rice.selector.SelectorLoop;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_DEAD;
@@ -548,7 +549,17 @@ public class PastryNode implements
    *          the application
    */
 
+  /**
+   * Adds the application to those told once when the node first becomes ready, or tells it now if the node is ready
+   * already. Off the selector thread the registration is handed to the selector: deciding there keeps it in order
+   * with the observers' notification, so the application is told exactly once, on the selector thread.
+   */
   public void registerApp(PastryAppl application) {
+    SelectorLoop selector = getEnvironment().getSelectorManager();
+    if (!selector.isSelectorThread()) {
+      selector.invoke(() -> registerApp(application));
+      return;
+    }
     if (isReady())
       application.notifyReady();
     apps.add(application);

@@ -38,6 +38,7 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -354,7 +355,11 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     }
   }
 
-  boolean ready = false;
+  volatile boolean ready = false;
+
+  /** Coalesces the re-checks that queries off the selector thread schedule, so polling does not flood it. */
+  private final AtomicBoolean isReadinessCheckScheduled = new AtomicBoolean(false);
+
   @Override
   public void setReady(boolean r) {
     if (ready != r) {
@@ -366,11 +371,16 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
   }
 
   /**
-   *
-   *
+   * On the selector thread, checks the leases and moves the node to the state they call for. Off it, this is only a
+   * query: the lease maps belong to the selector, so it answers with the committed state and leaves the check, and
+   * any change, to the selector.
    */
   @Override
   public boolean isReady() {
+    if (!thePastryNode.getEnvironment().getSelectorManager().isSelectorThread()) {
+      scheduleReadinessCheck();
+      return ready;
+    }
     // check to see if we've heard from the left/right neighbors recently enough
     boolean shouldBeReady = shouldBeReady(); // temp
 
@@ -379,6 +389,17 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     }
 
     return shouldBeReady;
+  }
+
+  private void scheduleReadinessCheck() {
+    if (isReadinessCheckScheduled.compareAndSet(false, true)) {
+      thePastryNode.getEnvironment().getSelectorManager().invoke(() -> {
+        isReadinessCheckScheduled.set(false);
+        if (!destroyed) {
+          isReady();
+        }
+      });
+    }
   }
 
   public boolean shouldBeReady() {
