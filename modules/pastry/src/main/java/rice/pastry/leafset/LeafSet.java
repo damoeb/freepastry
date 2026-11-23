@@ -319,7 +319,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @param inx the index of the entry to complement
    * @return the index of the same node in the opposite half of the leafset, or inx if it does not exist there
    */
-  private int complement(int inx) {
+  int complement(int inx) {
     int result;
 
     if (inx == 0) return 0;
@@ -372,104 +372,25 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
-   * compute an ordered set of nodes that are neighbors of this local node,
-   * in order of numerical closeness to the local node
+   * Computes an ordered set of nodes that are neighbors of this local node, in order of numerical closeness to the
+   * local node, see {@link LeafSetReplicas}.
    *
    * @param max the maximal size of the set requested
    * @return the ordered set of nodehandles
    */
   public NodeSet neighborSet(int max) {
-    NodeSet set;
-    int cwSize = clockwiseSize();
-    int ccwSize = counterClockwiseSize();
-    NodeHandle cwExtreme = get(cwSize);
-    NodeHandle ccwExtreme = get(-ccwSize);
-    set = replicaSet(baseId,max);
-    if(!set.contains(cwExtreme) && !set.contains(ccwExtreme)) {
-      // the value of max did not cause us to reach either end of the leafset
-      // in the method replicaSet
-      return set;
-    }
-    else {
-      if(!set.contains(cwExtreme)) {
-        // All the nodes in the ccwSet are already members
-        for(int i=1; i <= cwSize; i++) {
-          set.put(get(i));
-        }
-      }
-      if(!set.contains(ccwExtreme)) {
-        // All the nodes in the cwSet are already members
-        for(int i=1; i <= ccwSize; i++) {
-          set.put(get(-i));
-        }
-      }
-      return set;
-    }
+    return LeafSetReplicas.neighborSet(this, max);
   }
 
   /**
-   * compute an ordered set of nodes, in order of numerical closeness to a given key
+   * Computes an ordered set of nodes, in order of numerical closeness to a given key, see {@link LeafSetReplicas}.
    *
    * @param key the key
    * @param max the maximal size of the set requested
    * @return the ordered set of nodehandles
    */
   public NodeSet replicaSet(Id key, int max) {
-    NodeSet set = new NodeSet();
-    if (max < 1) return set;
-
-    if ( !overlaps() && size() > 0 &&
-         !key.isBetween(get(-ccwSet.size()).getNodeId(), get(cwSet.size()).getNodeId()) &&
-         !key.equals(get(cwSet.size()).getNodeId()) )
-      // can't determine root of key, return empty set
-      return set;
-
-    // compute the nearest node
-    int nearest = mostSimilar(key);
-
-    // add the key's root
-    set.put(get(nearest));
-
-    int cw = nearest;
-    int ccw = nearest;
-    int wrapped = 0;
-
-    while (set.size() < max && wrapped < 3) {
-      int tmp;
-
-      // determine next nearest node
-      NodeHandle cwNode = get(cw);
-      NodeHandle ccwNode = get(ccw);
-      Id.Distance cwDist = cwNode.getNodeId().distance(key);
-      Id.Distance ccwDist = ccwNode.getNodeId().distance(key);
-
-      if (cwDist.compareTo(ccwDist) <= 0) {
-        // cwNode is closer to key
-        set.put(cwNode);
-
-        tmp = cw;
-        if (cw == cwSet.size()) {
-          if ((cw = complement(cw)) == tmp) return set;
-          wrapped++;
-        }
-        cw++;
-
-      } else {
-        // ccwNode is closer to key
-        set.put(ccwNode);
-
-        tmp = ccw;
-        if (-ccw == ccwSet.size()) {
-          if ((ccw = complement(ccw)) == tmp) return set;
-          wrapped++;
-        }
-        ccw--;
-
-      }
-    }
-
-
-    return set;
+    return LeafSetReplicas.replicaSet(this, key, max);
   }
 
   /**
