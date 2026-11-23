@@ -501,4 +501,171 @@ class FileTransferWireRoundTripTest {
       return s.count();
     }
   }
+
+  /** What the listeners of one side were told, in order. */
+  private static final class Events implements FileTransferListener {
+    final LinkedBlockingQueue<String> lines = new LinkedBlockingQueue<>();
+    final LinkedBlockingQueue<Receipt> cancelled = new LinkedBlockingQueue<>();
+    final LinkedBlockingQueue<Receipt> failed = new LinkedBlockingQueue<>();
+    volatile java.util.function.Consumer<ByteBufferReceipt> onMessageProgress = receipt -> { };
+
+    @Override
+    public void fileTransferred(FileReceipt receipt, long bytesTransferred, long total, boolean incoming) {
+      lines.add("file " + (incoming ? "in " : "out ") + bytesTransferred + "/" + total);
+    }
+
+    @Override
+    public void msgTransferred(ByteBufferReceipt receipt, int bytesTransferred, int total, boolean incoming) {
+      lines.add("msg " + (incoming ? "in " : "out ") + bytesTransferred + "/" + total);
+      onMessageProgress.accept(receipt);
+    }
+
+    @Override
+    public void transferCancelled(Receipt receipt, boolean incoming) {
+      lines.add("cancelled " + (incoming ? "in" : "out"));
+      cancelled.add(receipt);
+    }
+
+    @Override
+    public void transferFailed(Receipt receipt, boolean incoming) {
+      lines.add("failed " + (incoming ? "in" : "out"));
+      failed.add(receipt);
+    }
+
+    String last(String prefix) {
+      String found = null;
+      for (String line : lines) {
+        if (line.startsWith(prefix)) {
+          found = line;
+        }
+      }
+      return found;
+    }
+  }
+
+  private static ByteBuffer control(byte type, int uid) {
+    return frame(type, uid);
+  }
+
+  @Test
+  @DisplayName("Listeners on both sides are told the progress of a message and of a file up to its full size")
+  void progressIsReportedOnBothSides() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events senderEvents = new Events();
+    Events receiverEvents = new Events();
+    pair.sender.addListener(senderEvents);
+    pair.receiver.addListener(receiverEvents);
+
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(20, 1)), (byte) 0, null);
+    pair.inbox.next();
+    pair.sender.sendFile(file("source", payload(20, 2)), ByteBuffer.allocate(0), (byte) 0, null);
+    pair.inbox.next();
+
+    assertEquals("msg out 20/20", senderEvents.last("msg out"));
+    assertEquals("msg in 20/20", receiverEvents.last("msg in"));
+    assertEquals("file out 20/20", senderEvents.last("file out"));
+    assertEquals("file in 20/20", receiverEvents.last("file in"));
+  }
+
+  @Test
+  @DisplayName("A cancel from the sender of an incoming message tells the receiver's listeners and drops the message")
+  void senderCancelsIncomingMessage() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events receiverEvents = new Events();
+    pair.receiver.addListener(receiverEvents);
+
+    pair.senderSocket.write(frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+    pair.senderSocket.write(control(FileTransferImpl.MSG_CANCEL, 7));
+
+    Receipt receipt = receiverEvents.cancelled.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertNotNull(receipt, "the receiver's listeners were not told");
+    assertEquals(7, receipt.getUid());
+    assertEquals("cancelled in", receiverEvents.last("cancelled"));
+    // the uid is gone, a chunk for it is a protocol error
+    assertRejected(pair, frame(FileTransferImpl.MSG_CHUNK, 7, 4));
+  }
+
+  @Test
+  @DisplayName("A cancel from the receiver stops the outgoing message and tells the sender and its listeners")
+  void receiverCancelsOutgoingMessage() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events senderEvents = new Events();
+    pair.sender.addListener(senderEvents);
+    CompletableFuture<ByteBufferReceipt> sent = new CompletableFuture<>();
+
+    ByteBufferReceipt receipt = pair.sender.sendMessage(ByteBuffer.wrap(payload(1_000_000, 1)), (byte) 0, into(sent));
+    pair.receiverSocket.write(control(FileTransferImpl.MSG_CANCEL_REQUEST, receipt.getUid()));
+
+    java.util.concurrent.ExecutionException failure = org.junit.jupiter.api.Assertions
+        .assertThrows(java.util.concurrent.ExecutionException.class, () -> sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    assertTrue(failure.getCause() instanceof OperationCancelledException, "was " + failure.getCause());
+    assertNotNull(senderEvents.cancelled.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    assertEquals("cancelled out", senderEvents.last("cancelled"));
+  }
+
+  @Test
+  @DisplayName("A cancel from the receiver stops the outgoing file and tells the sender")
+  void receiverCancelsOutgoingFile() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events senderEvents = new Events();
+    pair.sender.addListener(senderEvents);
+    CompletableFuture<FileReceipt> sent = new CompletableFuture<>();
+
+    FileReceipt receipt = pair.sender.sendFile(file("source", payload(400_000, 1)), ByteBuffer.allocate(0), (byte) 0,
+        into(sent));
+    pair.receiverSocket.write(control(FileTransferImpl.MSG_CANCEL_REQUEST, receipt.getUid()));
+
+    java.util.concurrent.ExecutionException failure = org.junit.jupiter.api.Assertions
+        .assertThrows(java.util.concurrent.ExecutionException.class, () -> sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    assertTrue(failure.getCause() instanceof OperationCancelledException, "was " + failure.getCause());
+    assertNotNull(senderEvents.cancelled.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  @DisplayName("Cancelling an outgoing message right after sending it stops it: it is neither delivered nor acknowledged")
+  void senderCancelsOutgoingMessage() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    CompletableFuture<ByteBufferReceipt> sent = new CompletableFuture<>();
+
+    ByteBufferReceipt receipt = pair.sender.sendMessage(ByteBuffer.wrap(payload(1_000_000, 1)), (byte) 0, into(sent));
+    receipt.cancel();
+
+    assertEquals(null, pair.inbox.events.poll(2, TimeUnit.SECONDS), "a cancelled message must not arrive");
+    assertTrue(!sent.isDone(), "a cancelled message is not acknowledged");
+  }
+
+  @Test
+  @DisplayName("When the peer closes the socket, the outgoing message fails and the listeners are told")
+  void peerClosingFailsOutgoingMessage() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events senderEvents = new Events();
+    pair.sender.addListener(senderEvents);
+    CompletableFuture<ByteBufferReceipt> sent = new CompletableFuture<>();
+
+    pair.sender.sendMessage(ByteBuffer.wrap(payload(1_000_000, 1)), (byte) 0, into(sent));
+    pair.receiverSocket.close();
+
+    java.util.concurrent.ExecutionException failure = org.junit.jupiter.api.Assertions
+        .assertThrows(java.util.concurrent.ExecutionException.class, () -> sent.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    assertTrue(failure.getCause() instanceof TransferFailedException, "was " + failure.getCause());
+    Receipt receipt = senderEvents.failed.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertNotNull(receipt);
+    assertEquals("failed out", senderEvents.last("failed"));
+  }
+
+  @Test
+  @DisplayName("A protocol error fails the incoming transfers that are under way and tells the listeners")
+  void protocolErrorFailsIncomingTransfers() throws Exception {
+    Pair pair = pair(CHUNK, CHUNK);
+    Events receiverEvents = new Events();
+    pair.receiver.addListener(receiverEvents);
+
+    pair.senderSocket.write(frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+    assertRejected(pair, frame(FileTransferImpl.MSG_BB_HEADER, 7, 10));
+
+    Receipt receipt = receiverEvents.failed.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    assertNotNull(receipt);
+    assertEquals(7, receipt.getUid());
+    assertEquals("failed in", receiverEvents.last("failed"));
+  }
 }
