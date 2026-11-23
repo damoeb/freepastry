@@ -71,6 +71,7 @@ class FileTransferReceiver {
   private final Processor processor;
   private final FileTransferCallback callback;
   private final FileAllocationStrategy fileAllocater;
+  private final FileTransferSender sender;
 
   /**
    * Synchronized by only being mutated/checked on selector thread
@@ -78,8 +79,9 @@ class FileTransferReceiver {
    */
   private int fileChunksInMemory = 0;
 
-  FileTransferReceiver(FileTransferImpl transfer) {
+  FileTransferReceiver(FileTransferImpl transfer, FileTransferSender sender) {
     this.transfer = transfer;
+    this.sender = sender;
     this.logger = transfer.logger;
     this.environment = transfer.environment;
     this.processor = transfer.processor;
@@ -173,7 +175,7 @@ class FileTransferReceiver {
         senderCancelled(uid);
         break;
       case MSG_CANCEL_REQUEST:
-        transfer.receiverCancelled(uid);
+        sender.receiverCancelled(uid);
         break;
       }
       return true;
@@ -447,7 +449,7 @@ class FileTransferReceiver {
     public boolean cancel() {
       if (requestedCancel) return false;
       requestedCancel = true;
-      return transfer.requestCancel(uid);
+      return sender.requestCancel(uid);
     }
 
     // called when actually cancelled
@@ -615,7 +617,7 @@ class FileTransferReceiver {
     public boolean cancel() {
       if (requestedCancel) return false;
       requestedCancel = true;
-      return transfer.requestCancel(uid);
+      return sender.requestCancel(uid);
     }
 
     @Override
