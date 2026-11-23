@@ -221,12 +221,6 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     timers.put(Integer.valueOf(timeoutID), timer);
   }
 
-  private void panic(String message) throws Error {
-    Error error = new Error("Panic "+message);
-    logger.error("PANIC: {}", message, error);
-    throw error;
-  }
-
   @Override
   public String handleDebugCommand(String command) {
     return debugCommands.handleDebugCommand(command);
@@ -292,7 +286,8 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       }
       default:
       {
-        panic("Unknown timer expired: " + (int) timerID);
+        // timer ids come only from addTimer: a local bug, which the scheduled message that delivered it survives
+        throw new IllegalStateException("Unknown timer expired: " + (int) timerID);
       }
     }
   }

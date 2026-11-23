@@ -134,7 +134,8 @@ public class StandardLeafSetProtocol extends PastryAppl implements LeafSetProtoc
       maintainLeafSet();
 
     } else
-      throw new Error("message received is of unknown type");
+      // only the direct simulator uses this protocol, and it hands over message objects, never bytes from a peer
+      throw new IllegalStateException("message received is of unknown type: " + msg);
   }
 
 

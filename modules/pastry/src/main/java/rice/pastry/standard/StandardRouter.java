@@ -142,7 +142,8 @@ public class StandardRouter extends PastryAppl implements Router {
       // should only happen for messages coming off the wire
       route(routeMessage);
     } else {
-      throw new Error("message " + msg + " bounced at StandardRouter");
+      // the deserializer of the router address only reads route messages, so only a local caller gets here
+      throw new IllegalStateException("message " + msg + " bounced at StandardRouter");
     }
   }
 
