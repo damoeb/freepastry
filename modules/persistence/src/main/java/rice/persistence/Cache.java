@@ -44,7 +44,10 @@ package rice.persistence;
  * @version $Id: Cache.java 4654 2009-01-08 16:33:07Z jeffh $
  */
 
+import java.util.concurrent.CompletableFuture;
+
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 
 /**
@@ -79,6 +82,18 @@ public interface Cache extends Catalog {
   public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation);
 
   /**
+   * Caches an object under the given id; the cache may evict other objects for it.
+   *
+   * @param id The object's id.
+   * @param metadata The object's metadata
+   * @param obj The object to cache.
+   * @return completes with whether the object was cached
+   */
+  default CompletableFuture<Boolean> cache(Id id, Object metadata, Object obj) {
+    return Futures.call(continuation -> cache(id, metadata, obj, continuation));
+  }
+
+  /**
    * Removes the object from the list of cached objects. This method is
    * non-blocking. If the object was not in the cached list in the first place,
    * nothing happens and <code>False</code> is returned.
@@ -90,6 +105,16 @@ public interface Cache extends Catalog {
    * @param continuation The command to run once the operation is complete
    */
   public void uncache(Id id, Continuation<? super Boolean, Exception> continuation);
+
+  /**
+   * Removes the object cached under the given id.
+   *
+   * @param id The object's id.
+   * @return completes with whether an object was removed
+   */
+  default CompletableFuture<Boolean> uncache(Id id) {
+    return Futures.call(continuation -> uncache(id, continuation));
+  }
 
   /**
    * Returns the maximum size of the cache, in bytes.
@@ -110,4 +135,14 @@ public interface Cache extends Catalog {
    * @param continuation The command to run once the operation is complete
    */
   public void setMaximumSize(int size, Continuation<? super Boolean, Exception> continuation);
+
+  /**
+   * Sets the maximum size of the cache, evicting objects if it is smaller than the cache's contents.
+   *
+   * @param size The new maximum size, in bytes.
+   * @return completes with <code>true</code> once the cache fits
+   */
+  default CompletableFuture<Boolean> setMaximumSize(int size) {
+    return Futures.call(continuation -> setMaximumSize(size, continuation));
+  }
 }
