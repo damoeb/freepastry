@@ -93,16 +93,16 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   public static final byte MSG_CANCEL_REQUEST = 5;
 
 
-  private FileAllocationStrategy fileAllocater;
-  private final AppSocket socket;
-  private final FileTransferCallback callback;
+  FileAllocationStrategy fileAllocater;
+  final AppSocket socket;
+  final FileTransferCallback callback;
 
   int MAX_QUEUE_SIZE = 1024;
 
   /**
    * Max size of a message, (the size that can't be preempted)
    */
-  private int CHUNK_SIZE = 8192;
+  int CHUNK_SIZE = 8192;
 
   int NUM_OUTSTANDING_CHUNKS_TO_WRITE_TO_NETWORK = 10;
 
@@ -118,28 +118,26 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   static final int DEFAULT_MAX_CHUNK_SIZE = 1024 * 1024;
   static final long DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT = 64L * 1024 * 1024;
 
-  private final int maxMessageSize;
-  private final long maxFileSize;
-  private final int maxNameSize;
-  private final int maxChunkSize;
-  private final long maxMessageBytesInFlight;
+  final int maxMessageSize;
+  final long maxFileSize;
+  final int maxNameSize;
+  final int maxChunkSize;
+  final long maxMessageBytesInFlight;
 
   private final SelectorLoop selectorManager;
-  private final Logger logger;
+  final Logger logger;
 
-  private Processor processor;
-  private final Environment environment;
+  Processor processor;
+  final Environment environment;
 
   public static final byte CANCEL_PRIORITY = -20;
 
   boolean failed = false;
 
   public static final int MAX_FILE_CHUNKS_IN_MEMORY = 100;
-  /**
-   * Synchronized by only being mutated/checked on selector thread
-   * can be reading when below MAX_PENDING_CHUNKS, allowed to be greater
-   */
-  private int fileChunksInMemory = 0;
+
+  /** The receiving half: reads the wire protocol and keeps the incoming transfers. */
+  private final FileTransferReceiver receiver;
 
   public FileTransferImpl(AppSocket socket, FileTransferCallback callback, FileAllocationStrategy fileAllocater, Environment env, Processor processor) {
     this(socket,callback,fileAllocater,env,processor,-1,-1);
@@ -170,6 +168,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     // a chunk is at least as large as this node's own chunk size
     this.maxChunkSize = Math.max(CHUNK_SIZE, params.contains(PARAM_MAX_CHUNK_SIZE) ? params.getInt(PARAM_MAX_CHUNK_SIZE) : DEFAULT_MAX_CHUNK_SIZE);
     this.maxMessageBytesInFlight = params.contains(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) ? params.getLong(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) : DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT;
+
+    this.receiver = new FileTransferReceiver(this);
 
     socket.register(true, false, -1, this);
   }
@@ -205,9 +205,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     for (MessageWrapper foo : dropMe) {
       foo.drop();
     }
-    for (DataReader dataReader : new ArrayList<DataReader>(incomingData.values())) {
-      notifyListenersTransferFailed(dataReader, true);
-    }
+    receiver.failIncomingTransfers();
     for (ReceiptImpl receiptImpl : new ArrayList<ReceiptImpl>(outgoingData.values())) {
       receiptImpl.failed();
     }
@@ -319,7 +317,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  protected void notifyListenersSenderCancelled(DataReader receipt) {
+  protected void notifyListenersSenderCancelled(Receipt receipt) {
     logger.debug("notifyListenersSenderCancelled({})", receipt);
     for (FileTransferListener fileTransferListener : getListeners()) {
       fileTransferListener.transferCancelled(receipt, true);
@@ -976,7 +974,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     if (canRead) {
       try {
         // keep reading
-        while(reader.read(socket));
+        while(receiver.read(socket));
         // always be reading
         registerToReadIfPossible();
       } catch (IOException ioe) {
@@ -986,6 +984,10 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
         failAndClose(new IOException("Protocol error: " + e, e));
       }
     }
+  }
+
+  public void registerToReadIfPossible() {
+    receiver.registerToReadIfPossible();
   }
 
   /**
@@ -1000,84 +1002,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  protected void incrementFileChunksInMemory() {
-    if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Must be called on selector thread to maintain sync.");
-    fileChunksInMemory++;
-  }
-  protected void decrementFileChunksInMemory() {
-    if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Must be called on selector thread to maintain sync.");
-    fileChunksInMemory--;
-    registerToReadIfPossible();
-  }
-
-  public void registerToReadIfPossible() {
-    if (!environment.getSelectorManager().isSelectorThread()) throw new IllegalStateException("Must be called on selector thread to maintain sync.");
-    if (fileChunksInMemory < MAX_FILE_CHUNKS_IN_MEMORY) {
-      socket.register(true, false, -1, this);
-    } else {
-    }
-  }
-
-  final MsgTypeReader msgTypeReader = new MsgTypeReader();
-  final BBHeaderReader bbHeaderReader = new BBHeaderReader();
-  final FileHeaderReader fileHeaderReader = new FileHeaderReader();
-  final FileNameReader fileNameReader = new FileNameReader();
-  final ChunkReader chunkReader = new ChunkReader();
-
-  Reader reader = msgTypeReader;
-
-  // Reading.
-  interface Reader {
-
-    /**
-     * @return true if should keep reading
-     */
-    boolean read(AppSocket socket) throws IOException;
-  }
-
-  class MsgTypeReader implements Reader {
-    byte[] bytes = new byte[5];
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      // read the
-      long bytesRead = socket.read(buf);
-      if (bytesRead < 0) {
-        socketClosed();
-        return false;
-      }
-      if (buf.hasRemaining()) return false;
 
 
-      buf.clear();
-      byte msgType = bytes[0];
-      int uid = MathUtils.byteArrayToInt(bytes,1);
-      buf.clear();
-
-      switch(msgType) {
-      case MSG_BB_HEADER:
-        bbHeaderReader.setUID(uid);
-        reader = bbHeaderReader;
-        break;
-      case MSG_FILE_HEADER:
-        fileHeaderReader.setUID(uid);
-        reader = fileHeaderReader;
-        break;
-      case MSG_CHUNK:
-        chunkReader.setUID(uid);
-        reader = chunkReader;
-        break;
-      case MSG_CANCEL:
-        senderCancelled(uid);
-        break;
-      case MSG_CANCEL_REQUEST:
-        receiverCancelled(uid);
-        break;
-      }
-      return true;
-    }
-  }
 
   protected void receiverCancelled(int uid) {
     ReceiptImpl writer = outgoingData.remove(uid);
@@ -1090,491 +1016,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     }
   }
 
-  protected void senderCancelled(int uid) {
-    DataReader reader = incomingData.remove(uid);
-    if (reader != null) {
-      reader.cancelled(reader);
-    } else {
-      logger.warn("senderCanclled({}) no record of the uid.", uid);
-    }
-  }
 
-  class BBHeaderReader implements Reader {
-    byte[] bytes = new byte[4];
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    int uid;
-
-    public void setUID(int uid) {
-      this.uid = uid;
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      // read the
-      long bytesRead = socket.read(buf);
-      if (bytesRead < 0) {
-        socketClosed();
-        return false;
-      }
-      if (buf.hasRemaining()) return false;
-
-      buf.clear();
-      int size = MathUtils.byteArrayToInt(bytes);
-      buf.clear();
-
-      addIncomingMessage(uid,size);
-
-      reader = msgTypeReader;
-      return true;
-    }
-  }
-
-  class FileHeaderReader implements Reader {
-    byte[] bytes = new byte[20];
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    int uid;
-
-    public void setUID(int uid) {
-      this.uid = uid;
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      // read the
-      long bytesRead = socket.read(buf);
-      if (bytesRead < 0) {
-        socketClosed();
-        return false;
-      }
-      if (buf.hasRemaining()) return false;
-
-      buf.clear();
-      long offset = MathUtils.byteArrayToLong(bytes,0);
-      long length = MathUtils.byteArrayToLong(bytes,8);
-      int nameSize = MathUtils.byteArrayToInt(bytes,16);
-      buf.clear();
-
-      if (length < 0 || length > maxFileSize) throw new IOException("Protocol error: file " + uid + " announces " + length + " bytes, at most " + maxFileSize + " are accepted");
-      if (offset < 0 || offset > length) throw new IOException("Protocol error: file " + uid + " announces offset " + offset + " in a file of " + length + " bytes");
-      if (nameSize < 0 || nameSize > maxNameSize) throw new IOException("Protocol error: file " + uid + " announces a name of " + nameSize + " bytes, at most " + maxNameSize + " are accepted");
-      if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file " + uid + " is announced twice");
-
-      fileNameReader.initialize(uid,offset,length,nameSize);
-      reader = fileNameReader;
-      return true;
-    }
-  }
-
-  class FileNameReader implements Reader {
-    byte[] bytes = new byte[20];
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    int uid;
-    long offset;
-    long length;
-
-    public void initialize(int uid, long offset, long length, int nameSize) {
-      this.uid = uid;
-      this.offset = offset;
-      this.length = length;
-      if (bytes.length<nameSize) {
-        bytes = new byte[nameSize];
-        buf = ByteBuffer.wrap(bytes);
-      }
-      buf.clear();
-      buf.limit(nameSize);
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      // read the
-      long bytesRead = socket.read(buf);
-      if (bytesRead < 0) {
-        socketClosed();
-        return false;
-      }
-      if (buf.hasRemaining()) return false;
-
-      buf.flip();
-      byte[] returnBytes = new byte[buf.remaining()];
-      buf.get(returnBytes);
-      buf.clear();
-
-      addIncomingFile(uid,returnBytes,offset,length);
-
-      reader = msgTypeReader;
-      return true;
-    }
-  }
-
-
-  class ChunkReader implements Reader {
-    byte[] bytes = new byte[4];
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    int uid;
-
-    public void setUID(int uid) {
-      this.uid = uid;
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      // read the
-      long bytesRead = socket.read(buf);
-      if (bytesRead < 0) {
-        socketClosed();
-        return false;
-      }
-      if (buf.hasRemaining()) return false;
-
-      buf.clear();
-      int size = MathUtils.byteArrayToInt(bytes);
-      buf.clear();
-
-      DataReader dataReader = incomingData.get(uid);
-      if (dataReader ==  null) throw new IOException("Protocol error: chunk for unknown uid "+uid);
-      return dataReader.read(socket, size);
-    }
-  }
-
-
-  Map<Integer, DataReader> incomingData = new HashMap<Integer, DataReader>();
-  public void addIncomingMessage(int uid, int size) throws IOException {
-    if (incomingData.containsKey(uid)) throw new IOException("Protocol error: message "+uid+" is announced twice");
-    if (size < 0 || size > maxMessageSize) throw new IOException("Protocol error: message " + uid + " announces " + size + " bytes, at most " + maxMessageSize + " are accepted");
-    long inFlight = size;
-    for (DataReader dataReader : incomingData.values()) {
-      if (dataReader instanceof BBDataReader bBDataReader) inFlight += bBDataReader.bytes.length;
-    }
-    if (inFlight > maxMessageBytesInFlight) throw new IOException("Protocol error: message " + uid + " would bring the incoming messages to " + inFlight + " bytes, at most " + maxMessageBytesInFlight + " are accepted");
-    BBDataReader bbdr = new BBDataReader(uid, size);
-    incomingData.put(uid,bbdr);
-    notifyListenersReceiveMsgProgress(bbdr, 0, size);
-    // the sender writes a chunk only for a message that has bytes, so nothing else would complete an empty one
-    if (size == 0) {
-      bbdr.complete();
-    }
-  }
-
-  public void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
-    // check before the allocater creates a temp file
-    if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file "+uid+" is announced twice");
-    Path path = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
-    FileDataReader fdr = new FileDataReader(uid, metadata, path, offset, length);
-    incomingData.put(uid,fdr);
-    notifyListenersReceiveFileProgress(fdr, 0, length);
-    // the sender writes a chunk only for a file that has bytes, so nothing else would complete an empty one
-    if (length == 0) {
-      fdr.complete();
-    }
-  }
-
-  interface DataReader extends Reader, Receipt {
-    public boolean read(AppSocket socket, int size) throws IOException;
-    public void cancelled(DataReader reader);
-  }
-
-  class BBDataReader implements DataReader, ByteBufferReceipt {
-    int uid;
-    byte[] bytes;
-    ByteBuffer curReader;
-    boolean requestedCancel = false;
-
-
-    public BBDataReader(int uid, int size) {
-      this.uid = uid;
-      bytes = new byte[size];
-      curReader = ByteBuffer.wrap(bytes);
-      curReader.limit(0);
-    }
-
-    @Override
-    public String toString() {
-      return "Incoming msg<"+uid+"> of length"+bytes.length;
-    }
-
-    @Override
-    public boolean read(AppSocket socket, int numToRead) throws IOException {
-      if (curReader.hasRemaining()) throw new IllegalStateException("curReader has "+curReader.remaining()+" bytes remaining. "+numToRead);
-      if (numToRead < 0 || numToRead > bytes.length - curReader.position()) {
-        throw new IOException("Protocol error: chunk of " + numToRead + " bytes for a message with " + (bytes.length - curReader.position()) + " bytes to come");
-      }
-      curReader.limit(curReader.position()+numToRead);
-      reader = this;
-      return read(socket);
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      long ret = socket.read(curReader);
-      if (ret < 0) {
-        socketClosed();
-        return false;
-      }
-      if (curReader.hasRemaining()) {
-        return false;
-      }
-      completeChunk();
-      return true;
-    }
-
-    public void completeChunk() {
-      // notify listeners
-      notifyListenersReceiveMsgProgress(this, curReader.position(), bytes.length);
-
-      if (curReader.position() == bytes.length) {
-        complete();
-      }
-      reader = msgTypeReader;
-    }
-
-    public void complete() {
-      incomingData.remove(uid);
-
-      // notify callback
-      callback.messageReceived(ByteBuffer.wrap(getBytes()));
-    }
-
-    @Override
-    public byte[] getBytes() {
-      return bytes;
-    }
-
-    @Override
-    public byte getPriority() {
-      throw new RuntimeException("Unknown priority.  Don't call this on the receiving side.");
-    }
-
-    @Override
-    public long getSize() {
-      return bytes.length;
-    }
-
-    @Override
-    public int getUid() {
-      return uid;
-    }
-
-    @Override
-    public boolean cancel() {
-      if (requestedCancel) return false;
-      requestedCancel = true;
-      return requestCancel(uid);
-    }
-
-    // called when actually cancelled
-    @Override
-    public void cancelled(DataReader reader) {
-      notifyListenersSenderCancelled(reader);
-    }
-  }
-
-  class FileDataReader implements DataReader, FileReceipt {
-    int uid;
-    byte[] bytes;
-    ByteBuffer curReader;
-    RandomAccessFile file;
-
-    Path f;
-    byte[] metadata;
-    long offset;
-    long length;
-
-    long ptr;
-    /** Bytes of chunks accepted so far, only touched on the selector thread. */
-    long received;
-    private final Object ptrLock = new Object();
-
-    boolean requestedCancel = false;
-    boolean cancelled = false;
-
-    /**
-     * Null if there is no problem, set if there is a problem.
-     */
-    Exception exception = null;
-
-    public FileDataReader(int uid, byte[] metadata, Path path, long offset, long length) throws IOException {
-      this.uid = uid;
-      this.f = path;
-      this.ptr = offset;
-      this.offset = offset;
-      this.length = length;
-      file = new RandomAccessFile(path.toFile(), "rw");
-      this.metadata = metadata;
-      file.seek(offset);
-      bytes = new byte[CHUNK_SIZE];
-      curReader = ByteBuffer.wrap(bytes);
-    }
-
-    @Override
-    public String toString() {
-      return "Incoming file<"+uid+"> "+metadata.length+" off:"+offset+" length:"+length+" "+f;
-    }
-
-    @Override
-    public boolean read(AppSocket socket, int numToRead) throws IOException {
-      if (curReader.position() != 0) throw new IllegalStateException("curReader has "+curReader.remaining()+" bytes remaining. "+numToRead);
-      if (numToRead < 0 || numToRead > length || numToRead > maxChunkSize) {
-        throw new IOException("Chunk of " + numToRead + " bytes in a file of " + length + " bytes, chunks of at most " + maxChunkSize + " are accepted");
-      }
-      if (received + numToRead > length) {
-        throw new IOException("Chunk of " + numToRead + " bytes after " + received + " bytes of a file of " + length + " bytes");
-      }
-      received += numToRead;
-      if (numToRead > bytes.length) {
-        // the sender's chunk size is its own setting, the chunk is as large as it says
-        bytes = new byte[numToRead];
-        curReader = ByteBuffer.wrap(bytes);
-      }
-      curReader.limit(numToRead);
-      reader = this;
-      return read(socket);
-    }
-
-    @Override
-    public boolean read(AppSocket socket) throws IOException {
-      long ret = socket.read(curReader);
-      if (ret < 0) {
-        socketClosed();
-        return false;
-      }
-      if (curReader.hasRemaining()) {
-        return false;
-      }
-      completeChunk();
-
-      // if there are too many workRequests, turn off read interest (don't schedule another reader)
-      return true;
-    }
-
-    public void completeChunk() {
-      curReader.flip();
-
-      // copy the bytes so we can reuse them
-      final byte[] writeMe = new byte[curReader.remaining()];
-      curReader.get(writeMe);
-      curReader.clear();
-      incrementFileChunksInMemory();
-      // schedule them to be written, then notified on the blockingIOThread
-
-      // note, that it is required that these are in order
-      WorkRequest<Long> workRequest = new WorkRequest<Long>(new Continuation<Long, Exception>() {
-
-        @Override
-        public void receiveResult(Long myPtrL) {
-          decrementFileChunksInMemory();
-          if (cancelled) return;
-          // notify listeners
-          long myPtr = myPtrL.longValue();
-          notifyListenersReceiveFileProgress(FileDataReader.this, myPtr-offset, length);
-          if (myPtr == offset+length) FileDataReader.this.complete();
-        }
-
-        @Override
-        public void receiveException(Exception exception) {
-          logger.warn("Error writing file {} {}", f, metadata.length, exception);
-          FileDataReader.this.cancel();
-          decrementFileChunksInMemory();
-        }
-      },environment.getSelectorManager()) {
-
-        @Override
-        public Long doWork() throws Exception {
-          if (cancelled) return -1L;
-          file.write(writeMe);
-          synchronized(ptrLock) {
-            ptr+=writeMe.length;
-          }
-          return ptr;
-        }
-      };
-      processor.processBlockingIO(workRequest);
-      reader = msgTypeReader;
-    }
-
-    public void complete() {
-      incomingData.remove(uid);
-      try {
-        file.close();
-      } catch (IOException ioe) {
-        logger.warn("Error closing file {}", file, ioe);
-      }
-
-      // notify callback
-      callback.fileReceived(getFile(), getMetadata());
-    }
-
-    public byte[] getBytes() {
-      return bytes;
-    }
-
-    @Override
-    public byte getPriority() {
-      throw new RuntimeException("Unknown priority.  Don't call this on the receiving side.");
-    }
-
-    @Override
-    public long getSize() {
-      return bytes.length;
-    }
-
-    @Override
-    public int getUid() {
-      return uid;
-    }
-
-    @Override
-    public boolean cancel() {
-      if (requestedCancel) return false;
-      requestedCancel = true;
-      return requestCancel(uid);
-    }
-
-    @Override
-    public Path getFile() {
-      return f;
-    }
-
-    @Override
-    public ByteBuffer getMetadata() {
-      return ByteBuffer.wrap(metadata);
-    }
-
-    @Override
-    public long getOffset() {
-      return offset;
-    }
-
-    // called when actually cancelled
-    @Override
-    public void cancelled(final DataReader reader) {
-      cancelled = true;
-
-      // Don't close the file on the wrong thread.
-      WorkRequest<RandomAccessFile> workRequest = new WorkRequest<RandomAccessFile>(new Continuation<RandomAccessFile, Exception>() {
-
-        @Override
-        public void receiveResult(RandomAccessFile result) {
-          logger.atInfo().log(() -> "File Cancelled<"+uid+"> "+f+","+offset+","+(ptr-offset)+","+length);
-          fileAllocater.fileCancelled(ByteBuffer.wrap(metadata), f, offset, ptr-offset, length, exception);
-          notifyListenersSenderCancelled(reader);
-        }
-
-        @Override
-        public void receiveException(Exception exception) {
-          logger.warn("Error closing file {}", file, exception);
-        }
-      },environment.getSelectorManager()) {
-
-        @Override
-        public RandomAccessFile doWork() throws Exception {
-          file.close();
-          return file;
-        }
-      };
-      processor.processBlockingIO(workRequest);
-
-    }
-  }
 
   @Override
   public void receiveSocket(AppSocket socket) {
