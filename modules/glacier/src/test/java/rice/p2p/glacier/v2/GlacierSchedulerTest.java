@@ -18,6 +18,7 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.commonapi.PastryIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GlacierSchedulerTest {
 
@@ -139,5 +140,37 @@ class GlacierSchedulerTest {
     testObj.timerExpired();
 
     assertEquals(1, activeTimers());
+  }
+
+  @Test
+  void aContinuationThatDoesNotMoveItsTimeoutIsTerminatedAndTheOthersKeepTheirTimer() {
+    long now = time.currentTimeMillis();
+    GlacierContinuation stuck = new GlacierContinuation() {
+      @Override
+      public void receiveResult(Object result) {}
+
+      @Override
+      public void receiveException(Exception exception) {}
+
+      @Override
+      public void timeoutExpired() {
+        // a local bug: neither terminates nor sets a later timeout
+      }
+
+      @Override
+      public long getTimeout() {
+        return now + 5000;
+      }
+    };
+    FixedTimeout healthy = new FixedTimeout(now + 5000);
+    testObj.addContinuation(stuck);
+    testObj.addContinuation(healthy);
+    time.incrementTime(5000);
+
+    testObj.timerExpired();
+
+    assertTrue(stuck.hasTerminated(), "the stuck continuation is terminated");
+    assertEquals(1, testObj.size(), "only the stuck continuation is removed");
+    assertEquals(1, activeTimers(), "the timer is armed for the healthy continuation");
   }
 }
