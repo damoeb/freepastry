@@ -277,7 +277,10 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
           return false;
         }
         boolean replace;
-        if (replacement == BindStrategy.Replacement.REPLACE) {
+        if (replacement == BindStrategy.Replacement.REBIND) {
+          logger.info("addBinding({},{}): the bind strategy rebinds from {}, which stays alive", upperIdentifier, lowerIdentifier, old);
+          replace = true;
+        } else if (replacement == BindStrategy.Replacement.REPLACE) {
           logger.info("addBinding({},{}): the bind strategy replaces {}", upperIdentifier, lowerIdentifier, old);
           setDeadForever(lowerIdentifier, old, options);
           replace = true;

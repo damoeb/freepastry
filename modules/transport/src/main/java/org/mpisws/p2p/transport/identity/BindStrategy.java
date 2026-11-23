@@ -73,7 +73,12 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
     /** the old one stays bound, the new one is refused (and not marked dead) */
     KEEP,
     /** the {@link NodeChangeStrategy} decides; the one it rejects is marked dead for good */
-    ASK_NODE_CHANGE_STRATEGY
+    ASK_NODE_CHANGE_STRATEGY,
+    /**
+     * the new one is bound instead of the old one, and neither is marked dead: when neither claim on the lower
+     * identifier is proven, the binding follows the latest one, but a mere claim must not kill another node
+     */
+    REBIND
   }
 
   /**

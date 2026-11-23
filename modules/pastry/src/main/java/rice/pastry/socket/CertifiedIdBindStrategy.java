@@ -22,15 +22,18 @@ import rice.pastry.standard.NodeIdCertificate;
  * datagram, neither carries a certificate). The handle is accepted, so a node can route towards it and connect
  * to it, but it is not an authenticated identity: {@link #isAuthenticated} is false.</li>
  * <li><b>authenticated</b>: a TLS connection presented a certificate whose common name equals the id. This
- * promotes a pending id. The handle of that connection (the id at its address and epoch) is authenticated too
- * ({@link #isAuthenticated(TransportLayerNodeHandle)}); a handle with the same id at another address is not.</li>
+ * promotes a pending id. If this node opened that connection, to the handle's own address, the handle (the id at
+ * that address and epoch) is authenticated too ({@link #isAuthenticated(TransportLayerNodeHandle)}). An incoming
+ * connection proves the id only: the peer names its address in a header it writes before TLS, so it could name
+ * any node's address. A handle with the same id at another address is not authenticated either.</li>
  * <li><b>refused</b>: a connection presented a certificate whose common name differs from the id the peer
  * claims. The binding is not made, a warning is logged and the id loses its pending state. An authenticated id
  * stays authenticated, as the certificate proved it.</li>
  * </ul>
  * Received messages are passed up only from the channel that authenticates their sender ({@link #acceptsMessage}):
- * a TLS connection whose certificate is the sender's. Datagrams never are. And only a certificate changes the
- * binding of an authenticated id ({@link #replace}).
+ * a TLS connection whose certificate is the sender's. Datagrams never are. And only a proof changes a binding
+ * ({@link #replace}): a claim on an address by another id never displaces an authenticated handle, and never marks
+ * another node dead.
  * Return it from {@code SocketPastryNodeFactory.getBindStrategy()} when the factory inserts the SSL layer, with
  * {@code SSLTransportLayer.CLIENT_AUTH_REQUIRED} (otherwise connecting peers carry no certificate) and a
  * subject validator that only lets node ids pass ({@link NodeIdCertificate#isNodeId}); see
@@ -47,7 +50,7 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
   private final Map<Id, Boolean> authenticated = lru();
   private final Map<Id, Boolean> pending = lru();
 
-  /** handles (id, address and epoch) whose own TLS connection presented the id's certificate */
+  /** handles (id, address and epoch) at whose address this node found the id's certificate, on a connection it opened */
   private final Map<TransportLayerNodeHandle<MultiInetSocketAddress>, Boolean> authenticatedHandles = lru();
 
   private static <K> Map<K, Boolean> lru() {
@@ -72,9 +75,10 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     if (NodeIdCertificate.matches(id, subject)) {
       pending.remove(id);
       authenticated.put(id, Boolean.TRUE);
-      // the connection runs to or from this handle: an outgoing one was opened to its address and epoch, an
-      // incoming one names it as its sender
-      authenticatedHandles.put(u, Boolean.TRUE);
+      // an outgoing connection was opened to this handle's address; an incoming one only names that address
+      if (isOutgoing(options)) {
+        authenticatedHandles.put(u, Boolean.TRUE);
+      }
       return true;
     }
     pending.remove(id);
@@ -94,34 +98,47 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
   }
 
   /**
-   * An authenticated node's binding is changed only by a certificate. The identity layer binds each address to
-   * one handle, and a handle with the same address and a newer epoch used to replace it and mark the old one dead
-   * for good. Without a certificate (a datagram's header, a handle deserialized from a message) that is anyone's
-   * claim, so:
+   * Decides who keeps an address that two handles claim. The identity layer binds each address to one handle; by
+   * default a handle with a newer epoch replaces the old one and marks it dead for good. That rule is for a node
+   * that restarts; a different id at the same address is another node, and the address it names is a claim unless
+   * this node dialled that address itself. So:
    * <ul>
-   * <li>offered without a certificate, a handle never replaces one whose id is authenticated
-   * ({@link Replacement#KEEP});</li>
-   * <li>offered with its certificate, it replaces one whose id is not authenticated, whatever their epochs (an
-   * unverified handle cannot block the certified one);</li>
-   * <li>otherwise the epochs decide, as without certificates.</li>
+   * <li>the same id: offered without a certificate, it never replaces an authenticated id
+   * ({@link Replacement#KEEP}); with its certificate, or if the id is not authenticated, the epochs decide (a
+   * restart);</li>
+   * <li>another id with its certificate, on a connection this node opened to the address: it is at that address. It
+   * replaces an unverified handle, whatever the epochs, and against an authenticated id the epochs decide;</li>
+   * <li>another id otherwise (a datagram's header, a handle from a message, or an incoming connection, whose address
+   * header the peer writes before TLS): it never displaces a handle whose address is authenticated
+   * ({@link Replacement#KEEP}), and it may rebind any other, but marks no one dead
+   * ({@link Replacement#REBIND}).</li>
    * </ul>
    */
   @Override
   public Replacement replace(TransportLayerNodeHandle<MultiInetSocketAddress> old, TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
     boolean oldAuthenticated = isAuthenticated(old.getNodeId());
-    if (!certifies(u, options)) {
-      return oldAuthenticated ? Replacement.KEEP : Replacement.ASK_NODE_CHANGE_STRATEGY;
+    boolean certified = certifies(u, options);
+    if (old.getNodeId().equals(u.getNodeId())) {
+      if (!certified) {
+        return oldAuthenticated ? Replacement.KEEP : Replacement.ASK_NODE_CHANGE_STRATEGY;
+      }
+      return oldAuthenticated ? Replacement.ASK_NODE_CHANGE_STRATEGY : Replacement.REPLACE;
     }
-    return oldAuthenticated ? Replacement.ASK_NODE_CHANGE_STRATEGY : Replacement.REPLACE;
+    if (certified && isOutgoing(options)) {
+      return oldAuthenticated ? Replacement.ASK_NODE_CHANGE_STRATEGY : Replacement.REPLACE;
+    }
+    return isAuthenticated(old) ? Replacement.KEEP : Replacement.REBIND;
   }
 
   /**
-   * A binding confirmed by the node's certificate is never forgotten to make room for others: forgetting it would let
-   * a handle without a certificate (a datagram's header) take the address, which {@link #replace} prevents.
+   * A binding confirmed by the node's certificate on a connection this node opened is never forgotten to make room
+   * for others: forgetting it would let another id's claim take the address, which {@link #replace} prevents. A
+   * binding from an incoming connection is not kept: the address in it is the peer's claim, and a peer could make
+   * any number of them.
    */
   @Override
   public boolean shouldKeepBinding(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
-    return certifies(u, options);
+    return certifies(u, options) && isOutgoing(options);
   }
 
   /** @return true if the options carry a certificate subject that is this handle's id */
@@ -130,15 +147,21 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     return subject != null && NodeIdCertificate.matches(handle.getNodeId(), subject);
   }
 
+  /** @return true if the options are those of a TLS connection this node opened */
+  private static boolean isOutgoing(@Nullable Map<String, Object> options) {
+    return options != null && Boolean.TRUE.equals(options.get(SSLTransportLayer.OPTION_OUTGOING));
+  }
+
   /** @return true if a TLS certificate whose common name is this id has been presented, by any address */
   public synchronized boolean isAuthenticated(Id id) {
     return authenticated.containsKey(id);
   }
 
   /**
-   * @return true if this very handle, its id at its address and epoch, presented its id's certificate over TLS: a
-   *     connection was opened to it, or came from it. That the id was authenticated at another address does not
-   *     count: any node can advertise a handle with another node's id at an address of its choice.
+   * @return true if this very handle, its id at its address and epoch, presented its id's certificate over TLS on a
+   *     connection this node opened to that address. A connection that came from it does not count, nor does the
+   *     id authenticated at another address: any node can name an address of its choice, in a handle it advertises
+   *     or in the header of a connection it opens.
    */
   public synchronized boolean isAuthenticated(TransportLayerNodeHandle<?> handle) {
     return authenticatedHandles.containsKey(handle);

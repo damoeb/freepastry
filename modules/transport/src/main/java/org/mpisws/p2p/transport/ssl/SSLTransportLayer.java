@@ -76,6 +76,12 @@ import static rice.environment.params.ConfigChecks.requirePositive;
 public class SSLTransportLayer<Identifier, MessageType>
     implements TransportLayer<Identifier, MessageType>, TransportLayerCallback<Identifier, MessageType> {
   public static final String OPTION_CERT_SUBJECT = "ssl_certificate_subject";
+  /**
+   * Set with {@link #OPTION_CERT_SUBJECT}: {@link Boolean#TRUE} if this node opened the connection, to the address it
+   * chose, {@link Boolean#FALSE} if the peer did. Only an outgoing connection shows that the certified peer is at that
+   * address; an incoming one names its address in a header the peer writes before TLS.
+   */
+  public static final String OPTION_OUTGOING = "ssl_outgoing";
   public static final int CLIENT_AUTH_NONE = 0;
   public static final int CLIENT_AUTH_REQUIRED = 1;
   /** the parameter that bounds the read callbacks one TLS socket runs per selector turn */

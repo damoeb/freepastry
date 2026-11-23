@@ -494,22 +494,44 @@ public class SSLTest {
   static final Id BOB = Id.build("1234567890ABCDEF1234567890ABCDEF12345678");
 
   @Test
-  @DisplayName("only a certificate changes the binding of an authenticated id, and a certificate beats an unverified binding")
-  void onlyACertificateReplacesTheBindingOfAnAuthenticatedId() {
+  @DisplayName("another id takes an address only on a connection this node opened, and a claim marks no one dead")
+  void onlyADialledCertificateReplacesTheBindingOfAnotherId() {
     CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
     Id id = Id.build("FEDCBA0987654321FEDCBA0987654321FEDCBA09");
     TransportLayerNodeHandle<MultiInetSocketAddress> bob = handleWithId(BOB);
     TransportLayerNodeHandle<MultiInetSocketAddress> claimant = handleWithId(id);
-    Map<String, Object> claimantsCertificate = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, id.toStringFull());
+    Map<String, Object> claimantIncoming = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, id.toStringFull(), SSLTransportLayer.OPTION_OUTGOING, false);
+    Map<String, Object> claimantDialled = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, id.toStringFull(), SSLTransportLayer.OPTION_OUTGOING, true);
 
-    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, null), "neither verified: the epochs decide");
-    assertEquals(BindStrategy.Replacement.REPLACE, strategy.replace(bob, claimant, claimantsCertificate), "certified over unverified");
+    assertEquals(BindStrategy.Replacement.REBIND, strategy.replace(bob, claimant, null), "neither verified: rebound, no one dead");
+    assertEquals(BindStrategy.Replacement.REBIND, strategy.replace(bob, claimant, claimantIncoming), "an incoming certificate proves the id, not the address");
+    assertEquals(BindStrategy.Replacement.REPLACE, strategy.replace(bob, claimant, claimantDialled), "found at the address this node dialled, over unverified");
 
-    strategy.accept(bob, null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull()));
+    strategy.accept(bob, null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull(), SSLTransportLayer.OPTION_OUTGOING, false));
 
+    assertFalse(strategy.isAuthenticated(bob), "an incoming connection does not authenticate the address");
+    assertEquals(BindStrategy.Replacement.REBIND, strategy.replace(bob, claimant, null), "Bob's address is a claim too");
+    assertEquals(BindStrategy.Replacement.REBIND, strategy.replace(bob, claimant, claimantIncoming), "Bob's address is a claim too");
+
+    strategy.accept(bob, null, Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull(), SSLTransportLayer.OPTION_OUTGOING, true));
+
+    assertTrue(strategy.isAuthenticated(bob), "a connection this node opened authenticates the address");
     assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, claimant, null), "a datagram or a handle from the wire");
     assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, claimant, Map.of()), "no certificate subject");
-    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, claimantsCertificate), "both certified: the epochs decide");
+    assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, claimant, claimantIncoming), "an insider naming Bob's address");
+    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, claimant, claimantDialled), "both proven at the address: the epochs decide");
+  }
+
+  @Test
+  @DisplayName("only its own certificate changes the binding of an authenticated id to a newer epoch")
+  void onlyItsCertificateRebindsAnAuthenticatedIdToANewerEpoch() {
+    CertifiedIdBindStrategy strategy = new CertifiedIdBindStrategy();
+    TransportLayerNodeHandle<MultiInetSocketAddress> bob = handleWithId(BOB);
+    Map<String, Object> bobsCertificate = Map.of(SSLTransportLayer.OPTION_CERT_SUBJECT, BOB.toStringFull(), SSLTransportLayer.OPTION_OUTGOING, false);
+    strategy.accept(bob, null, bobsCertificate);
+
+    assertEquals(BindStrategy.Replacement.KEEP, strategy.replace(bob, bob, null), "a datagram or a handle from the wire");
+    assertEquals(BindStrategy.Replacement.ASK_NODE_CHANGE_STRATEGY, strategy.replace(bob, bob, bobsCertificate), "a restart: the epochs decide");
   }
 
   @Test

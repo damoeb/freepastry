@@ -34,7 +34,7 @@ import rice.pastry.standard.NodeIdCertificate;
  * whose id differs from the certificate.
  * <p>
  * The node also trusts only authenticated handles. The routing table and the leaf set admit a handle (an id at an
- * address and epoch) only after a TLS connection to or from that very handle presented a certificate for its id
+ * address and epoch) only after a TLS connection this node opened to that very handle presented a certificate for its id
  * ({@link CertifiedIdBindStrategy#isAuthenticated(TransportLayerNodeHandle)}): that the id was authenticated at
  * another address is not enough, since any node can advertise another node's id at an address of its choice. A
  * handle learned over the wire is first verified by opening a TLS connection to its address (the handle is admitted

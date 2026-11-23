@@ -319,7 +319,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
               fail(new IllegalArgumentException("Certificate CN is not acceptable: "+name+" "+this));
               return false;
             }
-            options = OptionsFactory.addOption(socket.getOptions(), SSLTransportLayer.OPTION_CERT_SUBJECT, name);
+            options = OptionsFactory.addOption(socket.getOptions(), SSLTransportLayer.OPTION_CERT_SUBJECT, name,
+                SSLTransportLayer.OPTION_OUTGOING, Boolean.valueOf(!server));
           } else {
             fail(new IllegalArgumentException("CN must start with CN= "+name+" "+this));
             return false;
