@@ -276,7 +276,10 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
           // pick random outgoing pilot, and openConnection via him
           ArrayList<HighIdentifier> myPilots = new ArrayList<HighIdentifier>(outgoingPilots.keySet());
-          if (myPilots.isEmpty()) deliverSocketToMe.receiveException(handle, new IllegalStateException("No available outgoing pilots."));
+          if (myPilots.isEmpty()) {
+            deliverSocketToMe.receiveException(handle, new IllegalStateException("No available outgoing pilots."));
+            return handle;
+          }
           HighIdentifier middleMan = myPilots.get(random.nextInt(myPilots.size()));
           openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
           return handle;
