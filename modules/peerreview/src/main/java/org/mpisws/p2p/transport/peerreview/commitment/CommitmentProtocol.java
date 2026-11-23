@@ -360,6 +360,20 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
     /* Receive queue */
 
     if (!info.recvQueue.isEmpty() && !info.isReceiving) {
+
+      /* The challenge protocol admits only messages from TRUSTED nodes, but the status can change while a
+         message waits here, e.g. for the sender's certificate */
+
+      int status = infoStore.getStatus(identifier);
+      if (status == STATUS_EXPOSED) {
+        logger.warn("Discarding {} messages from exposed node {}", info.recvQueue.size(), identifier);
+        info.recvQueue.clear();
+        return;
+      }
+      if (status != STATUS_TRUSTED) {
+        return; /* SUSPECTED: keep the messages until the node is trusted again */
+      }
+
       info.isReceiving = true;
 
       /* Dequeue the packet. After this point, we must either deliver it or discard it */
@@ -379,7 +393,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
       if (authenticator != null) {
 
         /* At this point, we are convinced that:
-              - The remote node is TRUSTED (TODO: this is not checked yet)
+              - The remote node is TRUSTED
               - The message has an acceptable sequence number
               - The message is properly signed
            Now we must check our log for an existing RECV entry:
