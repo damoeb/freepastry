@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -64,7 +63,7 @@ class PastLookupPathsTest {
   }
 
   private PastContent lookup(PastImpl past, DistPastTestContent content, boolean cache) throws Exception {
-    return await(FutureContinuation.<PastContent>call(continuation -> past.lookup(content.getId(), cache, continuation)));
+    return await(past.lookup(content.getId(), cache));
   }
 
   @Test

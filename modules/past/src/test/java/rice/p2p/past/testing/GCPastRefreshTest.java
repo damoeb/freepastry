@@ -1,13 +1,13 @@
 package rice.p2p.past.testing;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import rice.Continuation;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -31,7 +31,6 @@ import rice.persistence.CachedStorageImpl;
 import rice.persistence.MemoryStorage;
 import rice.persistence.NoOpCache;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
  * Refreshes objects through {@link ExpiringPastImpl} on a ring of the direct simulator.
@@ -82,7 +81,7 @@ class GCPastRefreshTest {
       sectionStart("ExpiringPast refresh");
 
       stepStart("Insert");
-      Object inserted = await(continuation -> local.insert(new Content(existing), FAR_FUTURE / 2, continuation));
+      Object inserted = await(local.insert(new Content(existing), FAR_FUTURE / 2));
       assertTrue("insert should succeed", inserted instanceof Boolean[]);
       stepDone();
 
@@ -115,23 +114,18 @@ class GCPastRefreshTest {
     private Object[] refresh(ExpiringPast past, Id[] ids, long expiration) {
       long[] expirations = new long[ids.length];
       java.util.Arrays.fill(expirations, expiration);
-      Object result = await(continuation -> past.refresh(ids, expirations, continuation));
-      return assertInstanceOf(Object[].class, result);
+      List<Outcome<Boolean>> outcomes = await(past.refresh(ids, expirations));
+      Object[] result = new Object[outcomes.size()];
+      for (int i = 0; i < result.length; i++) {
+        result[i] = switch (outcomes.get(i)) {
+          case Outcome.Success<Boolean> success -> success.value();
+          case Outcome.Failure<Boolean> failure -> failure.cause();
+        };
+      }
+      return result;
     }
 
-    private Object await(Consumer<Continuation<Object, Exception>> operation) {
-      CompletableFuture<Object> future = new CompletableFuture<>();
-      operation.accept(new Continuation<Object, Exception>() {
-        @Override
-        public void receiveResult(Object result) {
-          future.complete(result);
-        }
-
-        @Override
-        public void receiveException(Exception exception) {
-          future.completeExceptionally(exception);
-        }
-      });
+    private <T> T await(CompletableFuture<T> future) {
       try {
         return future.get(AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
       } catch (Exception e) {

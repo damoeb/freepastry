@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
@@ -185,7 +186,7 @@ final class AggregateTree {
     /** Starts the lookup of a key that is already in {@code keysInProgress}. */
     private void startLookup(final Id fromKey) {
       logger.atInfo().log(() -> "Rebuild: Fetching handles for aggregate " + fromKey.toStringFull());
-      aggregateStore.lookupHandles(fromKey, MAX_HANDLES, new Continuation<PastContentHandle[], Exception>() {
+      Futures.forward(aggregateStore.lookupHandles(fromKey, MAX_HANDLES), new Continuation<PastContentHandle[], Exception>() {
         @Override
         public void receiveResult(PastContentHandle[] results) {
           logger.debug("Got handles for {}", fromKey);
@@ -220,7 +221,7 @@ final class AggregateTree {
 
       final PastContentHandle thisHandle = bestHandle;
       logger.debug("Fetching {}", thisHandle);
-      aggregateStore.fetch(thisHandle, new Continuation<PastContent, Exception>() {
+      Futures.forward(aggregateStore.fetch(thisHandle), new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           if (result instanceof Aggregate aggregate) {
@@ -301,7 +302,7 @@ final class AggregateTree {
      */
     private void restoreInObjectStore(final ExpiringPastContent objData) {
       logger.debug("Checking whether {}v{} is in object store...", objData.getId(), objData.getVersion());
-      objectStore.lookupHandles(objData.getId(), 1, new Continuation<PastContentHandle[], Exception>() {
+      Futures.forward(objectStore.lookupHandles(objData.getId(), 1), new Continuation<PastContentHandle[], Exception>() {
         @Override
         public void receiveResult(PastContentHandle[] rawHandles) {
           PastContentHandle[] result = (rawHandles != null) ? ((PastContentHandle[])rawHandles) : new PastContentHandle[] {};
@@ -319,7 +320,7 @@ final class AggregateTree {
             logger.debug("Got it");
           } else {
             logger.debug("Ain't got it... reinserting");
-            objectStore.insert(objData, new Continuation<Boolean[], Exception>() {
+            Futures.forward(objectStore.insert(objData), new Continuation<Boolean[], Exception>() {
               @Override
               public void receiveResult(Boolean[] results) {
                 logger.debug("Reinsert {}v{} ok, result={}", objData.getId(), objData.getVersion(), results);

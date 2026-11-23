@@ -40,6 +40,7 @@ advised of the possibility of such damage.
 package rice.tutorial.lesson0a;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
@@ -56,7 +57,7 @@ public class TestContinuationAnon {
     Id id = null; // generated elsewhere
 
     // same code as TestContinuation and MyContinuation combined
-    past.lookup(id, new Continuation<PastContent, Exception>() {
+    Futures.forward(past.lookup(id), new Continuation<PastContent, Exception>() {
       // will be called if success in the lookup
       @Override
       public void receiveResult(PastContent pastContent) {

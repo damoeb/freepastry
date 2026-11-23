@@ -65,14 +65,14 @@ class PastSocketRingTest {
     for (int i = 0; i < NODES; i++) {
       DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "content " + i);
       Past inserter = pasts.get(i);
-      Boolean[] stored = await(FutureContinuation.<Boolean[]>call(continuation -> inserter.insert(content, continuation)));
+      Boolean[] stored = await(inserter.insert(content));
       assertEquals(REPLICAS + 1, stored.length, "replicas asked to store content " + i);
       assertEquals(REPLICAS + 1, Arrays.stream(stored).filter(Boolean::booleanValue).count(),
           "replicas that stored content " + i + ": " + Arrays.toString(stored));
 
       for (int j = 0; j < NODES; j++) {
         Past at = pasts.get((i + j + 1) % NODES);
-        PastContent found = await(FutureContinuation.<PastContent>call(continuation -> at.lookup(content.getId(), false, continuation)));
+        PastContent found = await(at.lookup(content.getId(), false));
         assertNotNull(found, "content " + i + " found from node " + j);
         assertEquals(content.getContent(), ((DistPastTestContent) found).getContent());
       }
@@ -82,7 +82,7 @@ class PastSocketRingTest {
           continuation -> remotePast.lookupHandles(content.getId(), REPLICAS + 1, continuation)));
       assertEquals(REPLICAS + 1, Arrays.stream(handles).filter(handle -> handle != null).count(),
           "handles of content " + i + ": " + Arrays.toString(handles));
-      PastContent fetched = await(FutureContinuation.<PastContent>call(continuation -> remotePast.fetch(handles[0], continuation)));
+      PastContent fetched = await(remotePast.fetch(handles[0]));
       assertEquals(content.getContent(), ((DistPastTestContent) fetched).getContent());
     }
     ring.assertNoExceptions();

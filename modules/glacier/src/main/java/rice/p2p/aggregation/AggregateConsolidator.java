@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.random.RandomSource;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Id;
@@ -176,7 +177,7 @@ final class AggregateConsolidator {
     void start() {
       final Id firstKey = aggregates[0].getKey();
       logger.atDebug().log(() -> "Consolidation: Fetching aggregate #0: "+firstKey.toStringFull());
-      aggregateStore.lookup(firstKey, this);
+      Futures.forward(aggregateStore.lookup(firstKey), this);
     }
 
     @Override
@@ -188,7 +189,7 @@ final class AggregateConsolidator {
           storeConsolidated();
         } else {
           logger.atDebug().log(() -> "Consolidation: Fetching aggregate #"+currentLookup+": "+aggregates[currentLookup].getKey().toStringFull());
-          aggregateStore.lookup(aggregates[currentLookup].getKey(), this);
+          Futures.forward(aggregateStore.lookup(aggregates[currentLookup].getKey()), this);
         }
       }
     }

@@ -142,9 +142,9 @@ final class AggregateStorer {
     };
 
     if (aggregateStore instanceof ExpiringPast gcPast)
-      gcPast.insert(aggregate, expiration, continuation);
+      Futures.forward(gcPast.insert(aggregate, expiration), continuation);
     else
-      aggregateStore.insert(aggregate, continuation);
+      Futures.forward(aggregateStore.insert(aggregate), continuation);
   }
 
   private void commitAggregate(Aggregate storedAggregate, long expiration, ObjectDescriptor[] desc, Id[] pointers, Boolean[] results, Continuation<? super Boolean, Exception> command) {

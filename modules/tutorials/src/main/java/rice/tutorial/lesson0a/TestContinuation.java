@@ -40,6 +40,7 @@ advised of the possibility of such damage.
 package rice.tutorial.lesson0a;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
@@ -57,6 +58,6 @@ public class TestContinuation {
     Continuation<PastContent, Exception> command = new MyContinuation();
 
     // make the call with the continuation
-    past.lookup(id, command);
+    Futures.forward(past.lookup(id), command);
   }
 }

@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
@@ -108,7 +109,7 @@ public class DistPastTest {
       String contentText = "test" + env.getRandomSource().nextInt();
       PastContent testContent = new DistPastTestContent(env,idFactory,contentText);
       System.out.println("Inserting "+testContent);
-      localPast.insert(testContent, new Continuation<Boolean[], Exception>() {
+      Futures.forward(localPast.insert(testContent), new Continuation<Boolean[], Exception>() {
         @Override
         public void receiveResult(Boolean[] result) {
           Boolean[] results = result;
@@ -126,7 +127,7 @@ public class DistPastTest {
 
       Thread.sleep(5000);
 
-      localPast.lookup(testContent.getId(), new Continuation<PastContent, Exception>() {
+      Futures.forward(localPast.lookup(testContent.getId()), new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           System.out.println("Got a "+result);

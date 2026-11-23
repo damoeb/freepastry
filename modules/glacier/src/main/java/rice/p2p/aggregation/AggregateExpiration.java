@@ -42,10 +42,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
 import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.RefreshOutcomes;
 
 /**
  * The lifetimes of the aggregates: renews aggregates that are about to expire but still hold live objects,
@@ -166,7 +168,7 @@ final class AggregateExpiration {
       lifetimes[i] = refreshLifetimeList.get(i).longValue();
     }
 
-    store.refresh(ids, lifetimes, new Continuation<Object[], Exception>() {
+    Futures.forward(store.refresh(ids, lifetimes).thenApply(RefreshOutcomes::toArray), new Continuation<Object[], Exception>() {
       @Override
       public void receiveResult(Object[] rawResults) {
         Object[] results = (Object[]) rawResults;

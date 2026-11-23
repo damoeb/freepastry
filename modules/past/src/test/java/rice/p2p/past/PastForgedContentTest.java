@@ -86,7 +86,7 @@ class PastForgedContentTest {
     DistPastTestContent evil = forged("victim", "evil");
 
     assertThrows(ExecutionException.class,
-        () -> await(FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(evil, continuation))));
+        () -> await(pasts.get(0).insert(evil)));
 
     for (PastImpl past : pasts) {
       assertNull(stored(past, evil.getId()), "forged content stored on a replica");
@@ -104,7 +104,7 @@ class PastForgedContentTest {
 
     PastContent found = null;
     try {
-      found = await(FutureContinuation.<PastContent>call(continuation -> pasts.get(0).lookup(evil.getId(), true, continuation)));
+      found = await(pasts.get(0).lookup(evil.getId(), true));
     } catch (ExecutionException expected) {
       // refusing with an exception is as good as returning nothing
     }

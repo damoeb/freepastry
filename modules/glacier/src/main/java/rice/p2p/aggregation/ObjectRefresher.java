@@ -50,6 +50,7 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.RefreshOutcomes;
 import rice.persistence.CachedStorage;
 
 /**
@@ -167,7 +168,7 @@ final class ObjectRefresher {
 
   private void refreshInObjectStore(Id[] ids, long[] expirations, Continuation<Object, Exception> command) {
     if (objectStore instanceof ExpiringPast gcPast) {
-      gcPast.refresh(ids, expirations, command);
+      Futures.forward(gcPast.refresh(ids, expirations).thenApply(RefreshOutcomes::toArray), command);
     } else {
       // same contract as ExpiringPast.refresh: one result per id
       Object[] result = new Object[ids.length];
@@ -367,7 +368,7 @@ final class ObjectRefresher {
      * Looks the object up in the object store and adds it to the waiting list again.
      */
     private void reaggregate(final Id id, final long expiration) {
-      objectStore.lookup(id, false, new Continuation<PastContent, Exception>() {
+      Futures.forward(objectStore.lookup(id, false), new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           if (result != null) {

@@ -103,17 +103,17 @@ public interface PastPolicy {
       if ((backup != null) && backup.exists(id)) {
         Futures.forward(backup.getObject(id), command);
       } else {
-        past.lookup(id, false, new StandardContinuation<PastContent, Object, Exception>(command) {
+        Futures.forward(past.lookup(id, false), new StandardContinuation<PastContent, Object, Exception>(command) {
           @Override
           public void receiveResult(PastContent content) {
             if (content != null)
               parent.receiveResult(content);
             else
-              past.lookupHandle(id, hint, new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
+              Futures.forward(past.lookupHandle(id, hint), new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
                 @Override
                 public void receiveResult(PastContentHandle handle) {
                   if (handle != null)
-                    past.fetch(handle, parent);
+                    Futures.forward(past.fetch(handle), parent);
                   else
                     parent.receiveResult(null);
                 }

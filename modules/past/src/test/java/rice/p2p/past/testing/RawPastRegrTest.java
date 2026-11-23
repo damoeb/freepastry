@@ -196,7 +196,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
     // Check file doesn't exist
     stepStart("Initial Lookup");
-    local.lookup(remoteId, new TestCommand() {
+    Futures.forward(local.lookup(remoteId), new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("File returned should be null", result == null);
@@ -204,7 +204,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Insert file
         stepStart("File Insertion");
-        local.insert(file, new TestCommand() {
+        Futures.forward(local.insert(file), new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("Insert of file result should not be null", result != null);
@@ -222,7 +222,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Check file exists
             stepStart("Remote File Lookup");
-            local.lookup(remoteId, new TestCommand() {
+            Futures.forward(local.lookup(remoteId), new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("File should not be null", result != null);
@@ -274,7 +274,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
     // Insert file
     stepStart("File Insertion");
-    local.insert(oldFile, new TestCommand() {
+    Futures.forward(local.insert(oldFile), new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Insert of file result should not be null", result != null);
@@ -292,7 +292,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Check file exists
         stepStart("Remote File Lookup");
-        local.lookup(remoteId, new TestCommand() {
+        Futures.forward(local.lookup(remoteId), new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("File should not be null", result != null);
@@ -303,7 +303,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Insert overwriting file
             stepStart("Overwriting File Insertion");
-            local.insert(newFile, new TestCommand() {
+            Futures.forward(local.insert(newFile), new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Insert of file result should not be null", result != null);
@@ -321,7 +321,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 // Check correct file exists
                 stepStart("Remote Overwriting File Lookup");
-                local.lookup(remoteId, new TestCommand() {
+                Futures.forward(local.lookup(remoteId), new TestCommand() {
                   @Override
                   public void receive(Object result) throws Exception {
                     assertTrue("Overwriting file should not be null", result != null);
@@ -332,7 +332,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                     // Insert overwriting file
                     stepStart("Non-overwriting File Insertion");
-                    local.insert(newNewFile, new TestCommand() {
+                    Futures.forward(local.insert(newNewFile), new TestCommand() {
                       @Override
                       public void receive(Object result) throws Exception {
                         assertTrue("Insert of file result should not be null", result != null);
@@ -350,7 +350,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                         // Check correct file exists
                         stepStart("Remote Non-Overwriting File Lookup");
-                        local.lookup(remoteId, new TestCommand() {
+                        Futures.forward(local.lookup(remoteId), new TestCommand() {
                           @Override
                           public void receive(Object result) throws Exception {
                             assertTrue("Non-Overwriting file should not be null", result != null);
@@ -392,7 +392,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
     // Null insert should fail
     stepStart("Insertion Of Null");
-    local.insert(null, new TestExceptionCommand() {
+    Futures.forward(local.insert(null), new TestExceptionCommand() {
       public void receive(Object result) throws Exception {
         assertTrue("Exception returned should not be null", result != null);
         assertTrue("Exception should be return", result instanceof Exception);
@@ -400,7 +400,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Null lookup should fail
         stepStart("Lookup Of Null");
-        local.lookup(null, new TestExceptionCommand() {
+        Futures.forward(local.lookup(null), new TestExceptionCommand() {
           public void receive(Object result) throws Exception {
             assertTrue("Exception returned should not be null", result != null);
             assertTrue("Exception should be return", result instanceof Exception);
@@ -408,7 +408,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Null fetch should fail
             stepStart("Fetch Of Null");
-            local.fetch((PastContentHandle) null, new TestExceptionCommand() {
+            Futures.forward(local.fetch((PastContentHandle) null), new TestExceptionCommand() {
               public void receive(Object result) throws Exception {
                 assertTrue("Exception returned should not be null", result != null);
                 assertTrue("Exception should be return", result instanceof Exception);
@@ -416,7 +416,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 // Null lookup handles should fail
                 stepStart("Lookup Handles Of Null");
-                local.lookupHandles(null, 1, new TestExceptionCommand() {
+                Futures.forward(local.lookupHandles(null, 1), new TestExceptionCommand() {
                   public void receive(Object result) throws Exception {
                     assertTrue("Exception returned should not be null", result != null);
                     assertTrue("Exception should be return", result instanceof Exception);
@@ -424,7 +424,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                     // Lookup handles of -4 should fail
                     stepStart("Lookup Handles Of -4");
-                    local.lookupHandles(localId, -4, new TestExceptionCommand() {
+                    Futures.forward(local.lookupHandles(localId, -4), new TestExceptionCommand() {
                       public void receive(Object result) throws Exception {
                         assertTrue("Exception returned should not be null", result != null);
                         assertTrue("Exception should be return", result instanceof Exception);
@@ -432,7 +432,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                         // Lookup handles of 0 should fail
                         stepStart("Lookup Handles Of 0");
-                        local.lookupHandles(localId, 0, new TestExceptionCommand() {
+                        Futures.forward(local.lookupHandles(localId, 0), new TestExceptionCommand() {
                           public void receive(Object result) throws Exception {
                             assertTrue("Exception returned should not be null", result != null);
                             assertTrue("Exception should be return", result instanceof Exception);
@@ -505,7 +505,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Retrieve first file
             stepStart("File 1 Fetch");
-            local.fetch(firstHandle, new TestCommand() {
+            Futures.forward(local.fetch(firstHandle), new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Result should be non-null", result != null);
@@ -518,7 +518,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 // Retrieve second file
                 stepStart("File 2 Fetch");
-                local.fetch(secondHandle, new TestCommand() {
+                Futures.forward(local.fetch(secondHandle), new TestCommand() {
                   @Override
                   public void receive(Object result) throws Exception {
                     assertTrue("Result should be non-null", result != null);
@@ -587,7 +587,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
     // Insert file
     stepStart("File Insertion");
-    local.insert(file, new TestCommand() {
+    Futures.forward(local.insert(file), new TestCommand() {
       @Override
       public void receive(Object result) throws Exception {
         assertTrue("Insert of file result should not be null", result != null);
@@ -605,7 +605,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Check file exists (at 1 replica)
         stepStart("Remote Handles Lookup - 1 Replica");
-        local.lookupHandles(remoteId, 1, new TestCommand() {
+        Futures.forward(local.lookupHandles(remoteId, 1), new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("Replicas should not be null", result != null);
@@ -621,7 +621,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
             // Check file exists (at all replicas)
             stepStart("Remote Handles Lookup - All Replicas");
-            local.lookupHandles(remoteId, REPLICATION_FACTOR+1, new TestCommand() {
+            Futures.forward(local.lookupHandles(remoteId, REPLICATION_FACTOR+1), new TestCommand() {
               @Override
               public void receive(Object result) throws Exception {
                 assertTrue("Replicas should not be null", result != null);
@@ -650,7 +650,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
                 // Check file exists (at a huge number of replicas)
                 stepStart("Remote Handles Lookup - 12 Replicas");
-                local.lookupHandles(remoteId, 12, new TestCommand() {
+                Futures.forward(local.lookupHandles(remoteId, 12), new TestCommand() {
                   @Override
                   public void receive(Object result) throws Exception {
                     assertTrue("Replicas should not be null", result != null);
@@ -727,7 +727,7 @@ public class RawPastRegrTest extends CommonAPITest {
 
         // Check file exists
         stepStart("Local Lookup Satisfied by Cache");
-        local.lookup(firstId, new TestCommand() {
+        Futures.forward(local.lookup(firstId), new TestCommand() {
           @Override
           public void receive(Object result) throws Exception {
             assertTrue("File should not be null", result != null);

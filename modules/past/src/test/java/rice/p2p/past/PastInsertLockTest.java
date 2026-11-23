@@ -11,7 +11,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
@@ -48,7 +47,7 @@ class PastInsertLockTest {
   }
 
   private static Boolean[] insert(PastImpl past, PastContent content) throws Exception {
-    return FutureContinuation.<Boolean[]>call(continuation -> past.insert(content, continuation)).get(SECONDS, TimeUnit.SECONDS);
+    return past.insert(content).get(SECONDS, TimeUnit.SECONDS);
   }
 
   @Test

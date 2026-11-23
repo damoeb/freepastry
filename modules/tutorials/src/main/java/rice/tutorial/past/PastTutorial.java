@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
@@ -164,7 +165,7 @@ public class PastTutorial {
       System.out.println("Inserting " + myContent + " at node "+randomPast.getLocalNodeHandle());
 
       // insert the data
-      randomPast.insert(myContent, new Continuation<Boolean[], Exception>() {
+      Futures.forward(randomPast.insert(myContent), new Continuation<Boolean[], Exception>() {
         // the result is an Array of Booleans for each insert
         @Override
         public void receiveResult(Boolean[] results) {
@@ -199,7 +200,7 @@ public class PastTutorial {
       Past randomPast = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
 
       System.out.println("Looking up " + lookupKey + " at node "+randomPast.getLocalNodeHandle());
-      randomPast.lookup(lookupKey, new Continuation<PastContent, Exception>() {
+      Futures.forward(randomPast.lookup(lookupKey), new Continuation<PastContent, Exception>() {
         @Override
         public void receiveResult(PastContent result) {
           System.out.println("Successfully looked up " + result + " for key "+lookupKey+".");
@@ -224,7 +225,7 @@ public class PastTutorial {
     Past randomPast = (Past)apps.get(env.getRandomSource().nextInt(numNodes));
 
     System.out.println("Looking up bogus key " + bogusKey + " at node "+randomPast.getLocalNodeHandle());
-    randomPast.lookup(bogusKey, new Continuation<PastContent, Exception>() {
+    Futures.forward(randomPast.lookup(bogusKey), new Continuation<PastContent, Exception>() {
       @Override
       public void receiveResult(PastContent result) {
         System.out.println("Successfully looked up " + result + " for key "+bogusKey+".  Notice that the result is null.");

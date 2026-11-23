@@ -335,9 +335,9 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       logger.info("AGGREGATE INSERT: {} version={} size={} class={}", content.getId(), theVersion, theSize, content.getClass().getName());
 
       if (objectStore instanceof ExpiringPast gcPast)
-        gcPast.insert(content, lifetime, command);
+        Futures.forward(gcPast.insert(content, lifetime), command);
       else
-        objectStore.insert(content, command);
+        Futures.forward(objectStore.insert(content), command);
 
       Futures.forward(waitingList.store(versionKey, new ObjectDescriptor(content.getId(), theVersionF, lifetime, lifetime, theSize), content), new Continuation<Boolean, Exception>() {
         @Override
@@ -354,14 +354,14 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
       Continuation<Boolean[], Exception> continuation = new InsertJoin(command);
 
       if (objectStore instanceof ExpiringPast gcPast)
-        gcPast.insert(content, lifetime, continuation);
+        Futures.forward(gcPast.insert(content, lifetime), continuation);
       else
-        objectStore.insert(content, continuation);
+        Futures.forward(objectStore.insert(content), continuation);
 
       if (aggregateStore instanceof ExpiringPast gcPast)
-        gcPast.insert(new NonAggregate(content), lifetime, continuation);
+        Futures.forward(gcPast.insert(new NonAggregate(content), lifetime), continuation);
       else
-        aggregateStore.insert(new NonAggregate(content), continuation);
+        Futures.forward(aggregateStore.insert(new NonAggregate(content)), continuation);
     }
   }
 
@@ -401,9 +401,9 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     /* Note that we never give out any handles from the aggregate store, so this must
        be an object store handle */
     if (handle instanceof GlacierContentHandle)
-      aggregateStore.fetch(handle, command);
+      Futures.forward(aggregateStore.fetch(handle), command);
     else
-      objectStore.fetch(handle, command);
+      Futures.forward(objectStore.fetch(handle), command);
   }
 
   public void flush(final Continuation<? super Boolean, Exception> command) {

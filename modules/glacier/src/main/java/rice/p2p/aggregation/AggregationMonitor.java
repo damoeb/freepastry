@@ -42,6 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -198,7 +199,7 @@ final class AggregationMonitor {
               result.append(" OD " + (objectDescriptor.getCurrentLifetime() - now));
               lookupInAggrStore = true;
               skipToNext = false;
-              aggregateStore.lookupHandles(aggregate.getKey(), 1, this);
+              Futures.forward(aggregateStore.lookupHandles(aggregate.getKey(), 1), this);
             } else {
               result.append(" OD ??\n");
             }
@@ -214,7 +215,7 @@ final class AggregationMonitor {
           currentLookup++;
           if (currentLookup < monitorIDs.size()) {
             logger.debug("Monitor: Continuing with element {}", currentLookup);
-            objectStore.lookupHandles((Id) monitorIDs.get(currentLookup), 1, this);
+            Futures.forward(objectStore.lookupHandles((Id) monitorIDs.get(currentLookup), 1), this);
           } else {
             logger.debug("Monitor: Done");
             reply.complete("done");
@@ -228,7 +229,7 @@ final class AggregationMonitor {
       }
     };
 
-    objectStore.lookupHandles((Id) monitorIDs.get(0), 1, continuation);
+    Futures.forward(objectStore.lookupHandles((Id) monitorIDs.get(0), 1), continuation);
     String outcome = AggregationDebugCommands.await(reply, environment);
     // the StringBuffer is synchronized, and complete() happens-after the last append
     return outcome.equals("done") ? result.toString() : result.toString() + outcome;

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
+import rice.Outcome;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.gc.ExpiringPastImpl;
 import rice.pastry.PastryNode;
@@ -43,7 +43,7 @@ class GCRefreshResultsPerIdTest {
     local = pasts.get(0);
     existing = idFactory.buildId("existing");
     missing = idFactory.buildId("missing");
-    FutureContinuation.<Boolean[]>call(c -> local.insert(new GCPastInsertTest.Content(existing, false), now() + 2 * HOUR_MILLIS, c)).get(SECONDS, TimeUnit.SECONDS);
+    local.insert(new GCPastInsertTest.Content(existing, false), now() + 2 * HOUR_MILLIS).get(SECONDS, TimeUnit.SECONDS);
   }
 
   @AfterEach
@@ -65,44 +65,44 @@ class GCRefreshResultsPerIdTest {
     return ring.env.getTimeSource().currentTimeMillis();
   }
 
-  private Object[] refresh(Id[] ids, long expiration) throws Exception {
+  private List<Outcome<Boolean>> refresh(Id[] ids, long expiration) throws Exception {
     long[] expirations = new long[ids.length];
     java.util.Arrays.fill(expirations, expiration);
-    return FutureContinuation.<Object[]>call(c -> local.refresh(ids, expirations, c)).get(SECONDS, TimeUnit.SECONDS);
+    return local.refresh(ids, expirations).get(SECONDS, TimeUnit.SECONDS);
   }
 
   @Test
   @DisplayName("refresh of an existing id succeeds")
   void existingIdIsRefreshed() throws Exception {
-    Object[] result = refresh(new Id[] {existing}, now() + 3 * HOUR_MILLIS);
+    List<Outcome<Boolean>> result = refresh(new Id[] {existing}, now() + 3 * HOUR_MILLIS);
 
-    assertEquals(1, result.length);
-    assertEquals(true, result[0]);
+    assertEquals(1, result.size());
+    assertEquals(new Outcome.Success<Boolean>(true), result.get(0));
   }
 
   @Test
   @DisplayName("refresh of a missing id yields ObjectNotFoundException")
   void missingIdIsNotFound() throws Exception {
-    Object[] result = refresh(new Id[] {missing}, now() + 3 * HOUR_MILLIS);
+    List<Outcome<Boolean>> result = refresh(new Id[] {missing}, now() + 3 * HOUR_MILLIS);
 
-    assertInstanceOf(ObjectNotFoundException.class, result[0]);
+    assertInstanceOf(ObjectNotFoundException.class, assertInstanceOf(Outcome.Failure.class, result.get(0)).cause());
   }
 
   @Test
   @DisplayName("refresh to an earlier expiration than the current one still succeeds")
   void earlierExpirationSucceeds() throws Exception {
-    Object[] result = refresh(new Id[] {existing}, now() + HOUR_MILLIS / 2);
+    List<Outcome<Boolean>> result = refresh(new Id[] {existing}, now() + HOUR_MILLIS / 2);
 
-    assertEquals(true, result[0]);
+    assertEquals(new Outcome.Success<Boolean>(true), result.get(0));
   }
 
   @Test
   @DisplayName("refresh of a missing and an existing id reports each on its own")
   void mixedIdsAreReportedPerId() throws Exception {
-    Object[] result = refresh(new Id[] {missing, existing}, now() + 3 * HOUR_MILLIS);
+    List<Outcome<Boolean>> result = refresh(new Id[] {missing, existing}, now() + 3 * HOUR_MILLIS);
 
-    assertEquals(2, result.length);
-    assertInstanceOf(ObjectNotFoundException.class, result[0]);
-    assertEquals(true, result[1]);
+    assertEquals(2, result.size());
+    assertInstanceOf(ObjectNotFoundException.class, assertInstanceOf(Outcome.Failure.class, result.get(0)).cause());
+    assertEquals(new Outcome.Success<Boolean>(true), result.get(1));
   }
 }

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -72,7 +71,7 @@ class GCPastInsertTest {
     List<ExpiringPastImpl> pasts = boot();
     Content content = new Content(idFactory.buildId("gc"), false);
 
-    Boolean[] result = FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(content, EXPIRATION, continuation)).get(SECONDS, TimeUnit.SECONDS);
+    Boolean[] result = pasts.get(0).insert(content, EXPIRATION).get(SECONDS, TimeUnit.SECONDS);
 
     assertTrue(result[0]);
     int holders = 0;
@@ -92,7 +91,7 @@ class GCPastInsertTest {
     Content content = new Content(idFactory.buildId("refused"), true);
 
     assertThrows(ExecutionException.class,
-        () -> FutureContinuation.<Boolean[]>call(continuation -> pasts.get(0).insert(content, EXPIRATION, continuation)).get(SECONDS, TimeUnit.SECONDS));
+        () -> pasts.get(0).insert(content, EXPIRATION).get(SECONDS, TimeUnit.SECONDS));
 
     for (ExpiringPastImpl past : pasts) {
       assertFalse(past.storage.exists(content.getId()), "refused object stored");

@@ -77,7 +77,7 @@ final class ObjectRetriever {
   void lookup(final Id id, boolean cache, final Continuation<? super PastContent, Exception> command) {
     logger.info("lookup({}, cache={})", id, cache);
 
-    objectStore.lookup(id, cache, new Continuation<PastContent, Exception>() {
+    Futures.forward(objectStore.lookup(id, cache), new Continuation<PastContent, Exception>() {
       @Override
       public void receiveResult(PastContent result) {
         if (result != null) {
@@ -194,7 +194,7 @@ final class ObjectRetriever {
 
   void lookupHandles(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     logger.info("lookupHandles({},{})", id, max);
-    objectStore.lookupHandles(id, max, new Continuation<PastContentHandle[], Exception>() {
+    Futures.forward(objectStore.lookupHandles(id, max), new Continuation<PastContentHandle[], Exception>() {
       @Override
       public void receiveResult(PastContentHandle[] results) {
         PastContentHandle[] result = (results != null) ? ((PastContentHandle[])results) : new PastContentHandle[] {};
@@ -255,7 +255,7 @@ final class ObjectRetriever {
       public void receiveResult(ExpiringPastContent result) {
         logger.debug("lookupHandles: Retrieved from aggregate: {}, result={}", id, result);
         /* re-inserted implicitly by retrieveObjectFromAggregate */
-        objectStore.lookupHandles(id, max, command);
+        Futures.forward(objectStore.lookupHandles(id, max), command);
       }
       @Override
       public void receiveException(Exception e) {
@@ -270,7 +270,7 @@ final class ObjectRetriever {
    * the object store and returns it.
    */
   private void retrieveObjectFromAggregate(final AggregateDescriptor aggregateDescriptor, final int objDescIndex, final Continuation<? super ExpiringPastContent, Exception> command) {
-    aggregateStore.lookup(aggregateDescriptor.getKey(), new Continuation<PastContent, Exception>() {
+    Futures.forward(aggregateStore.lookup(aggregateDescriptor.getKey()), new Continuation<PastContent, Exception>() {
       @Override
       public void receiveResult(PastContent result) {
         if (result instanceof Aggregate aggregate) {
@@ -303,7 +303,7 @@ final class ObjectRetriever {
 
           logger.debug("Object {} (#{}) successfully retrieved from {}", aggregate.getObjects()[objDescIndex].getKey(), objDescIndex, aggregate.getKey());
 
-          objectStore.insert(fetchedAggregate.getComponent(objDescIndex), new Continuation<Boolean[], Exception>() {
+          Futures.forward(objectStore.insert(fetchedAggregate.getComponent(objDescIndex)), new Continuation<Boolean[], Exception>() {
             @Override
             public void receiveResult(Boolean[] results) {}
             @Override

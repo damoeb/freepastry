@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.FutureContinuation;
+import rice.Outcome;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.gc.ExpiringId;
 import rice.p2p.past.gc.ExpiringPastImpl;
@@ -83,11 +84,11 @@ class GCRefreshLeaseTest {
     List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("lease");
     long start = now();
-    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), start + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
+    pasts.get(0).insert(new GCPastInsertTest.Content(id, false), start + HOUR).get(SECONDS, TimeUnit.SECONDS);
 
-    Object[] result = FutureContinuation.<Object[]>call(c -> pasts.get(0).refresh(new Id[] {id}, new long[] {Long.MAX_VALUE}, c)).get(SECONDS, TimeUnit.SECONDS);
+    List<Outcome<Boolean>> result = pasts.get(0).refresh(new Id[] {id}, new long[] {Long.MAX_VALUE}).get(SECONDS, TimeUnit.SECONDS);
 
-    assertEquals(true, result[0]);
+    assertEquals(new Outcome.Success<Boolean>(true), result.get(0));
     int holders = 0;
     for (ExpiringPastImpl past : pasts) {
       if (past.storage.exists(id)) {
@@ -106,7 +107,7 @@ class GCRefreshLeaseTest {
     List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("insert-lease");
 
-    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), Long.MAX_VALUE, c)).get(SECONDS, TimeUnit.SECONDS);
+    pasts.get(0).insert(new GCPastInsertTest.Content(id, false), Long.MAX_VALUE).get(SECONDS, TimeUnit.SECONDS);
 
     awaitHolders(pasts, id, 1);
     for (ExpiringPastImpl past : pasts) {
@@ -122,7 +123,7 @@ class GCRefreshLeaseTest {
   void fetchedReplicaExpirationIsCapped() throws Exception {
     List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("fetch-lease");
-    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(new GCPastInsertTest.Content(id, false), now() + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
+    pasts.get(0).insert(new GCPastInsertTest.Content(id, false), now() + HOUR).get(SECONDS, TimeUnit.SECONDS);
     awaitHolders(pasts, id, 1);
     ExpiringPastImpl holder = pasts.stream().filter(past -> past.storage.exists(id)).findFirst().orElseThrow();
     ExpiringPastImpl fetcher = pasts.stream().filter(past -> !past.storage.exists(id)).findFirst().orElseThrow();
@@ -143,7 +144,7 @@ class GCRefreshLeaseTest {
     List<ExpiringPastImpl> pasts = ring.boot(3, this::newPast);
     Id id = idf.buildId("trashed");
     GCPastInsertTest.Content content = new GCPastInsertTest.Content(id, false);
-    FutureContinuation.<Boolean[]>call(c -> pasts.get(0).insert(content, now() + HOUR, c)).get(SECONDS, TimeUnit.SECONDS);
+    pasts.get(0).insert(content, now() + HOUR).get(SECONDS, TimeUnit.SECONDS);
     // the insert returns once the root stores the object: the replication to the other replicas is still under way and
     // would store the object behind the trash's back
     awaitHolders(pasts, id, 2);
@@ -157,9 +158,9 @@ class GCRefreshLeaseTest {
       }
     }
 
-    Object[] result = FutureContinuation.<Object[]>call(c -> pasts.get(0).refresh(new Id[] {id}, new long[] {now() + HOUR}, c)).get(SECONDS, TimeUnit.SECONDS);
+    List<Outcome<Boolean>> result = pasts.get(0).refresh(new Id[] {id}, new long[] {now() + HOUR}).get(SECONDS, TimeUnit.SECONDS);
 
-    assertInstanceOf(ObjectNotFoundException.class, result[0]);
+    assertInstanceOf(ObjectNotFoundException.class, assertInstanceOf(Outcome.Failure.class, result.get(0)).cause());
     for (ExpiringPastImpl past : pasts) {
       assertFalse(past.storage.exists(id), "refresh restored a trashed object");
     }
