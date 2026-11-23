@@ -200,7 +200,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
     final SocketRequestHandle<Identifier> handle = new SocketRequestHandleImpl<Identifier>(identifier,options,logger);
 
-    // TODO: throw proper exception if options == null, or !contains(R_C_S)
+    // no options, or no contact in them, means the caller addresses the lower layer directly (as sendMessage does)
     final HighIdentifier contact = getHighIdentifier(options);
 
     if (contact == null || contact.canContactDirect() || contactDirectStrategy.canContactDirect(contact)) {
@@ -485,7 +485,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       @Override
       public void receiveSelectResult(P2PSocket<Identifier> socket,
           boolean canRead, boolean canWrite) throws IOException {
-        // TODO: recover when sib doesn't have enough data yet: reset(), reregister to read; probably belongs in its own class
+        // a header split across reads throws InsufficientBytesException: sib keeps what it read and rewinds, and we wait for more
 
         try {
           HighIdentifier target = serializer.deserialize(sib);
@@ -527,7 +527,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       @Override
       public void receiveSelectResult(final P2PSocket<Identifier> acceptorSocket,
           boolean canRead, boolean canWrite) throws IOException {
-        // TODO: recover when sib doesn't have enough data yet: reset(), reregister to read; probably belongs in its own class
+        // a header split across reads throws InsufficientBytesException: sib keeps what it read and rewinds, and we wait for more
 
         try {
           final HighIdentifier target = serializer.deserialize(sib);
