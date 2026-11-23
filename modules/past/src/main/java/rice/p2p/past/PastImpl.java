@@ -152,6 +152,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // the lookup of an object by its id
   private final PastLookups lookups;
 
+  // the fetch of a replica that the replication asks for
+  private final ReplicaFetcher replicaFetcher;
+
   // the requests that wait for a response
   private final PendingRequests pending;
 
@@ -271,6 +274,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.trash = trash;
 
     this.pending = new PendingRequests(logger);
+    this.replicaFetcher = new ReplicaFetcher(this, logger);
     this.lookups = new PastLookups(this, logger);
     this.replicationFactor = replicas;
 
@@ -958,49 +962,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   @Override
   public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
-    logger.trace("Sending out replication fetch request for the id {}", id);
-
-    policy.fetch(id, hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        if (result == null) {
-          logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, instance);
-          parent.receiveResult(Boolean.valueOf(false));
-        } else {
-          logger.trace("inserting replica of id {}", id);
-
-          // the peer that answered is not trusted: store only what was asked for, never another id's object
-          if (!(result instanceof PastContent content)) {
-            logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, result.getClass().getName());
-            parent.receiveResult(Boolean.valueOf(false));
-          } else if (!id.equals(content.getId())) {
-            logger.warn("Dropping fetched replica of id {}: it carries the id {}", id, content.getId());
-            parent.receiveResult(Boolean.valueOf(false));
-          } else {
-            storeReplica(id, content, parent);
-          }
-        }
-      }
-    });
-  }
-
-  /**
-   * Stores a replica fetched for the id, letting the content check it against what is stored locally, as an
-   * insert does. A refusal drops the replica.
-   */
-  private void storeReplica(final Id id, final PastContent content, final Continuation<? super Boolean, Exception> command) {
-    storage.getObject(id, new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object existing) {
-        try {
-          PastContent checked = content.checkInsert(id, (PastContent) existing);
-          storage.getStorage().store(id, null, checked, parent);
-        } catch (PastException e) {
-          logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
-          parent.receiveResult(Boolean.valueOf(false));
-        }
-      }
-    });
+    replicaFetcher.fetch(id, hint, command);
   }
 
   /**
