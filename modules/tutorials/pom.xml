@@ -69,5 +69,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <!-- FutureThreadingRulesTest: the tutorials depend on every other module, so their tests see all main code -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
