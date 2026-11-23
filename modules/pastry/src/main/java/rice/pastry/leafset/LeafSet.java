@@ -132,7 +132,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @return false if the handle would enter this half but the admission test refuses it; the test is asked only for
    *     a handle that would enter, as it may start verifying the handle
    */
-  private boolean admits(LeafSetHalf half, NodeHandle handle) {
+  boolean admits(LeafSetHalf half, NodeHandle handle) {
     return admission == null || !half.test(handle) || admission.test(handle);
   }
 
@@ -448,7 +448,7 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
-   * Merge a remote leafset into this
+   * Merge a remote leafset into this, see {@link LeafSetMerge}.
    *
    * @param remotels the remote leafset
    * @param from the node from which we received the leafset
@@ -459,184 +459,7 @@ public class LeafSet implements Iterable<NodeHandle> {
    */
   public boolean merge(LeafSet remotels, NodeHandle from, RoutingTable routeTable,
                        boolean testOnly, Set<NodeHandle> insertedHandles) {
-
-    boolean changed, result = false;
-    int cwSize = remotels.clockwiseSize();
-    int ccwSize = remotels.counterClockwiseSize();
-
-    // this is the only way to get the notification correct
-    Set<NodeHandle> myInsertedHandles = new HashSet<NodeHandle>();
-
-    // merge the received leaf set into our own
-    // to minimize inserts/removes, we do this from nearest to farthest nodes
-
-    // get indices of localId in the leafset
-    int cw = remotels.cwSet.getIndex(baseId);
-    int ccw = remotels.ccwSet.getIndex(baseId);
-
-    if (cw < 0) {
-      // localId not in cw set
-
-      if (ccw < 0) {
-        // localId not in received leafset, that means local node is joining
-
-        if (remotels.size() < 2) {
-          cw = ccw = 0;
-        }
-        else {
-
-          // find the num. closest to localId in the remotels
-          int closest = remotels.mostSimilar(baseId);
-          Id closestId = remotels.get(closest).getNodeId();
-
-          if (closest == -remotels.counterClockwiseSize() || closest == remotels.clockwiseSize()) {
-            // doesn't hurt to merge it anyways
-          }
-
-          if (closest == 0) {
-            // from is closest
-            if (baseId.clockwise(closestId)) {
-              cw = closest;
-              ccw = remotels.complement(closest - 1);
-            }
-            else {
-              cw = remotels.complement(closest + 1);
-              ccw = closest;
-            }
-          }
-          else if (closest < 0) {
-            // from is cw
-            if (baseId.clockwise(closestId)) {
-              cw = closest;
-              ccw = remotels.complement(closest - 1);
-            }
-            else {
-              cw = closest + 1;
-              ccw = remotels.complement(closest);
-            }
-          }
-          else {
-            // from is ccw
-            if (baseId.clockwise(closestId)) {
-              cw = remotels.complement(closest);
-              ccw = closest - 1;
-            }
-            else {
-              ccw = closest;
-              cw = remotels.complement(closest + 1);
-            }
-          }
-
-        }
-      }
-      else {
-        // localId in ccw set
-
-        ccw = -ccw  - 2;
-        cw = ccw + 2;
-      }
-    }
-    else {
-      // localId in cw set
-
-      if (ccw < 0) {
-        cw = cw + 2;
-        ccw = cw - 2;
-      }
-      else {
-        // localId is in both halves
-        int tmp = ccw;
-        ccw = cw;
-        cw = -tmp;
-      }
-    }
-
-    for (int i=cw; i<=cwSize; i++) {
-      NodeHandle currentHandle;
-
-      if (i == 0) currentHandle = from;
-      else currentHandle = remotels.get(i);
-
-      if (currentHandle.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
-
-      if (testOnly) {
-        // see it is missing
-        changed = cwSet.test(currentHandle);
-      }
-      else {
-        // merge into our cw leaf set half, if the admission test lets the handle in
-        changed = admits(cwSet, currentHandle) && cwSet.put(currentHandle, true);
-
-        if (changed) myInsertedHandles.add(currentHandle);
-
-        // update RT as well
-        routeTable.put(currentHandle);
-      }
-
-      result |= changed;
-      if (insertedHandles != null && changed) insertedHandles.add(currentHandle);
-    }
-
-    for (int i=ccw; i>= -ccwSize; i--) {
-      NodeHandle nh;
-
-      if (i == 0) nh = from;
-      else nh = remotels.get(i);
-
-      if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
-
-      if (testOnly) {
-        // see if it is missing
-        changed = ccwSet.test(nh);
-      }
-      else {
-        // merge into our leaf set, if the admission test lets the handle in
-        changed = admits(ccwSet, nh) && ccwSet.put(nh, true);
-
-        if (changed) myInsertedHandles.add(nh);
-
-        // update RT as well
-        routeTable.put(nh);
-      }
-
-      result |= changed;
-      if (insertedHandles != null && changed) insertedHandles.add(nh);
-    }
-
-    // if there is overlap, insert nearest nodes regardless of orientation
-    if (overlaps()) {
-      for (int i=-ccwSize; i <= cwSize; i++) {
-        NodeHandle nh;
-
-        if (i == 0) nh = from;
-        else nh = remotels.get(i);
-
-        if (nh.getLiveness() >= NodeHandle.LIVENESS_DEAD) continue;
-
-        if (testOnly) {
-          // merge into our leaf set
-          changed = test(nh);
-        }
-        else {
-          // merge into our leaf set
-          changed = put(nh);
-
-          if (changed) myInsertedHandles.add(nh);
-
-          // update RT as well
-          routeTable.put(nh);
-        }
-
-        result |= changed;
-        if (insertedHandles != null && changed) insertedHandles.add(nh);
-      }
-    }
-
-    for (NodeHandle nodeHandle : myInsertedHandles) {
-      cwSet.notifyListeners(nodeHandle, true);
-    }
-
-    return result;
+    return LeafSetMerge.merge(this, remotels, from, routeTable, testOnly, insertedHandles);
   }
 
   /**
