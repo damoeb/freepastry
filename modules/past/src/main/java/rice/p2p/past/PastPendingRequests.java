@@ -50,7 +50,7 @@ import rice.p2p.commonapi.CancellableTask;
  * the request lost, and the counter that numbers the requests. Requests may be sent from application threads while
  * the selector thread delivers responses and timeouts.
  */
-final class PendingRequests {
+final class PastPendingRequests {
   private final Logger logger;
 
   // the unique ids used by the messages sent across the wire
@@ -63,7 +63,7 @@ final class PendingRequests {
   // the hashtable of outstanding timer tasks
   private final Map<Integer, CancellableTask> timers = new ConcurrentHashMap<Integer, CancellableTask>();
 
-  PendingRequests(Logger logger) {
+  PastPendingRequests(Logger logger) {
     this.logger = logger;
   }
 

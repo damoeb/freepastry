@@ -149,7 +149,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private final PastInserts insertOperations;
 
   // the requests that wait for a response
-  private final PendingRequests pending;
+  private final PastPendingRequests pending;
 
   // the instance name we are running with
   private final String instance;
@@ -266,7 +266,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.instance = instance;
     this.trash = trash;
 
-    this.pending = new PendingRequests(logger);
+    this.pending = new PastPendingRequests(logger);
     this.replicaFetcher = new ReplicaFetcher(this, logger);
     this.lookups = new PastLookups(this, logger);
     this.insertOperations = new PastInserts(this, endpoint, logger);

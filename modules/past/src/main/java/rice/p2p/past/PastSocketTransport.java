@@ -64,7 +64,7 @@ final class PastSocketTransport {
 
   private final PastImpl past;
   private final Endpoint endpoint;
-  private final PendingRequests pending;
+  private final PastPendingRequests pending;
   private final Logger logger;
 
   /**
@@ -74,7 +74,7 @@ final class PastSocketTransport {
    */
   private final PastSocketReader socketReader;
 
-  PastSocketTransport(PastImpl past, Endpoint endpoint, PendingRequests pending, Logger logger, int maxSocketMessageBytes) {
+  PastSocketTransport(PastImpl past, Endpoint endpoint, PastPendingRequests pending, Logger logger, int maxSocketMessageBytes) {
     this.past = past;
     this.endpoint = endpoint;
     this.pending = pending;
