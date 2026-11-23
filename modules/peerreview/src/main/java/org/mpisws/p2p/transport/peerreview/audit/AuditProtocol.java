@@ -657,7 +657,17 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
         AuthResponse<Identifier> response = (AuthResponse<Identifier>)message;
           logger.debug("Received AUTHRESP(<{}>, {}..{}) from {}", response.subject(), response.authFrom(), response.authTo(), handle);
 
-          // TODO: check the signatures of response.authFrom and response.authTo
+          /* A forged authenticator would make the audit challenge the subject for a range it cannot answer.
+             Without the subject's certificate we cannot check; the investigation retransmits its requests. */
+          if (!peerreview.hasCertificate(response.subject())) {
+            logger.debug("No certificate for {} to check an AUTHRESP; requesting it", response.subject());
+            peerreview.requestCertificate(handle, response.subject());
+            break;
+          }
+          if (!peerreview.verify(response.subject(), response.authFrom()) || !peerreview.verify(response.subject(), response.authTo())) {
+            logger.warn("AUTHRESP from {} carries authenticators that {} did not sign; ignoring", handle, response.subject());
+            break;
+          }
           PendingInvestigation<Handle> investigation = activeInvestigation.get(response.subject());
           if (investigation != null) {
             investigation.offerAuthenticators(response.authFrom(), response.authTo());
