@@ -47,8 +47,9 @@ import rice.environment.params.Parameters;
  * @param messageTimeout {@code p2p_past_messageTimeout}: how long to wait for a reply, in milliseconds
  * @param successfulInsertThreshold {@code p2p_past_successfulInsertThreshold}: the fraction of
  *        replicas, from 0 to 1, that must store an object for an insert to succeed
+ * @param maxSocketMessageBytes {@code p2p_past_maxSocketMessageBytes}: the largest message, in bytes, accepted over a socket
  */
-public record PastConfig(int messageTimeout, double successfulInsertThreshold) {
+public record PastConfig(int messageTimeout, double successfulInsertThreshold, int maxSocketMessageBytes) {
 
   /**
    * @throws IllegalArgumentException if the timeout is not positive or the threshold is outside [0, 1]
@@ -56,6 +57,7 @@ public record PastConfig(int messageTimeout, double successfulInsertThreshold) {
   public static PastConfig fromParameters(Parameters parameters) {
     return new PastConfig(
       requirePositive("p2p_past_messageTimeout", parameters.getInt("p2p_past_messageTimeout")),
-      inRange("p2p_past_successfulInsertThreshold", parameters.getDouble("p2p_past_successfulInsertThreshold"), 0, 1));
+      inRange("p2p_past_successfulInsertThreshold", parameters.getDouble("p2p_past_successfulInsertThreshold"), 0, 1),
+      requirePositive("p2p_past_maxSocketMessageBytes", parameters.getInt("p2p_past_maxSocketMessageBytes")));
   }
 }

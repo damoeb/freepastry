@@ -9,6 +9,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,7 @@ class PastSocketReaderTest {
 
   private static final int MAX_BYTES = 1024;
 
-  /** A socket that hands out the queued chunks one per read, then reports the end of the stream. */
+  /** A socket that hands out the queued chunks, at most what fits per read, then reports the end of the stream. */
   private static final class ChunkedSocket implements AppSocket {
     private final Deque<byte[]> chunks = new ArrayDeque<>();
 
@@ -36,8 +37,12 @@ class PastSocketReaderTest {
       if (chunk == null) {
         return -1;
       }
-      dst.put(chunk);
-      return chunk.length;
+      int count = Math.min(chunk.length, dst.remaining());
+      dst.put(chunk, 0, count);
+      if (count < chunk.length) {
+        chunks.addFirst(Arrays.copyOfRange(chunk, count, chunk.length));
+      }
+      return count;
     }
 
     @Override

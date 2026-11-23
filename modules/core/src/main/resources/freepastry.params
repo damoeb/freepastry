@@ -219,6 +219,8 @@ p2p_filetransfer_max_chunk_size = 1048576
 #past
 p2p_past_messageTimeout = 30000
 p2p_past_successfulInsertThreshold = 0.5
+# the largest message, in bytes, that Past accepts over a socket (held in memory while it arrives); a peer announcing more is dropped; 16 MiB
+p2p_past_maxSocketMessageBytes = 16777216
 # ExpiringPast: the longest an insert, a refresh or a replica fetched from a peer may lease an object for, counted from its arrival, in milliseconds; 365 days.
 # One asking for more is capped to this. Refreshes never restore an object from the trash.
 p2p_past_gc_max_lease = 31536000000

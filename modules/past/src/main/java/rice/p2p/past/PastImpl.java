@@ -261,6 +261,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     PastConfig config = PastConfig.fromParameters(environment.getParameters());
     MESSAGE_TIMEOUT = config.messageTimeout();
     SUCCESSFUL_INSERT_THRESHOLD = config.successfulInsertThreshold();
+    this.socketReader = new PastSocketReader(config.maxSocketMessageBytes());
     this.socketStrategy = strategy;
     this.storage = manager;
     this.backup = backup;
@@ -432,7 +433,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * Used for receiving the objects.
    */
-  private final PastSocketReader socketReader = new PastSocketReader(Integer.MAX_VALUE);
+  private final PastSocketReader socketReader;
 
   private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
     if (continuation != null) {

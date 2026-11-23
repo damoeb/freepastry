@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.WeakHashMap;
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.util.MathUtils;
 
@@ -16,7 +17,14 @@ final class PastSocketReader {
   /** The largest message accepted, in bytes. */
   final int maxMessageBytes;
 
-  private final WeakHashMap<AppSocket, ByteBuffer[]> pendingSocketTransactions = new WeakHashMap<>();
+  /** Per socket: the buffer for the size header, then the buffer for the message once the size is known. */
+  private static final class Pending {
+    final ByteBuffer header = ByteBuffer.allocate(Integer.BYTES);
+    byte @Nullable [] bytes;
+    @Nullable ByteBuffer body;
+  }
+
+  private final WeakHashMap<AppSocket, Pending> pendingSocketTransactions = new WeakHashMap<>();
 
   PastSocketReader(int maxMessageBytes) {
     this.maxMessageBytes = maxMessageBytes;
@@ -27,39 +35,35 @@ final class PastSocketReader {
    *
    * @return the complete message, or {@code null} if more bytes are still to come
    * @throws EOFException if the peer closed the socket
+   * @throws IOException if the announced size is negative or above the cap
    */
-  byte[] read(AppSocket socket) throws IOException {
-    ByteBuffer[] buffers = pendingSocketTransactions.get(socket);
-    if (buffers == null) {
-      // this is a new message
-
-      // read the size
-      buffers = new ByteBuffer[1];
-      buffers[0] = ByteBuffer.allocate(Integer.BYTES);
-      if (socket.read(buffers[0]) == -1) {
+  byte @Nullable [] read(AppSocket socket) throws IOException {
+    Pending pending = pendingSocketTransactions.computeIfAbsent(socket, key -> new Pending());
+    if (pending.body == null) {
+      if (socket.read(pending.header) == -1) {
         throw new EOFException();
       }
-
-      // TODO: handle a partial read of the 4-byte size header
-      byte[] sizeBytes = buffers[0].array();
-      int size = MathUtils.byteArrayToInt(sizeBytes);
-
-      // allocate a buffer to store the object, save it in the pst
-      buffers[0] = ByteBuffer.allocate(size);
-      pendingSocketTransactions.put(socket, buffers);
+      if (pending.header.hasRemaining()) {
+        return null; // a partial header, the rest follows
+      }
+      int size = MathUtils.byteArrayToInt(pending.header.array());
+      if (size < 0 || size > maxMessageBytes) {
+        throw new IOException("Past message of " + size + " bytes announced, at most " + maxMessageBytes + " are accepted");
+      }
+      pending.bytes = new byte[size];
+      pending.body = ByteBuffer.wrap(pending.bytes);
     }
 
-    // now we have a bb
-
-    // read some bytes
-    if (socket.read(buffers[0]) == -1) {
+    ByteBuffer body = pending.body;
+    byte[] bytes = pending.bytes;
+    if (socket.read(body) == -1) {
       throw new EOFException();
     }
 
-    if (buffers[0].remaining() == 0) {
+    if (body.remaining() == 0) {
       // make sure to clear things up so we can keep receiving
       pendingSocketTransactions.remove(socket);
-      return buffers[0].array();
+      return bytes;
     }
     return null;
   }
