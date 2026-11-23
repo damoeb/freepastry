@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -102,5 +103,22 @@ class PastryEndpointProcessTest {
     assertSame(taskFailure, failed.outcome());
     assertEquals(true, failed.onSelector());
     assertEquals(List.of(true), ranOnSelector, "the simulator runs the task on the selector");
+  }
+
+  @Test
+  void theFutureCompletesOnTheSelectorThread() throws Exception {
+    Endpoint endpoint = endpoint();
+    CompletableFuture<Delivery> result = new CompletableFuture<Delivery>();
+    CompletableFuture<Delivery> failure = new CompletableFuture<Delivery>();
+    IOException taskFailure = new IOException("task failed");
+    env.getSelectorManager().invoke(() -> {
+      var _ = endpoint.process(() -> "done")
+          .whenComplete((value, throwable) -> result.complete(new Delivery(value, env.getSelectorManager().isSelectorThread())));
+      var _ = endpoint.<String>process(() -> {
+        throw taskFailure;
+      }).whenComplete((value, throwable) -> failure.complete(new Delivery(Futures.unwrap(throwable), env.getSelectorManager().isSelectorThread())));
+    });
+    assertEquals(new Delivery("done", true), result.get(WAIT_MILLIS, TimeUnit.MILLISECONDS));
+    assertEquals(new Delivery(taskFailure, true), failure.get(WAIT_MILLIS, TimeUnit.MILLISECONDS));
   }
 }
