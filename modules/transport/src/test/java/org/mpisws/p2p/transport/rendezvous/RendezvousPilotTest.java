@@ -49,6 +49,7 @@ class RendezvousPilotTest {
   }
 
   private static final Contact LOCAL = new Contact("me", false);
+  private static final Contact DIRECT_LOCAL = new Contact("me", true);
   private static final Contact SUPERNODE = new Contact("super", true);
   private static final Contact NATTED = new Contact("natted", false);
   private static final Contact OPENER = new Contact("opener", false);
@@ -290,10 +291,14 @@ class RendezvousPilotTest {
 
   /** A layer that reads the parameters of {@link #env} as they are now. */
   private RendezvousTransportLayerImpl<String, Contact> newLayer() {
+    return newLayer(LOCAL);
+  }
+
+  private RendezvousTransportLayerImpl<String, Contact> newLayer(Contact local) {
     return new RendezvousTransportLayerImpl<>(
         lower,
         CONTACT_OPTION,
-        LOCAL,
+        local,
         new Serializer(),
         new RendezvousGenerationStrategy<>() {},
         c -> null,
@@ -661,6 +666,193 @@ class RendezvousPilotTest {
     assertEquals(1, failures.size());
     assertInstanceOf(IllegalStateException.class, failures.get(0));
     assertEquals(List.of(), lower.opened);
+  }
+
+  @Test
+  @DisplayName("an acceptor socket for a request of the local node is answered with success and delivered to who asked")
+  void acceptorForALocalRequestIsDelivered() throws Exception {
+    layer = newLayer(DIRECT_LOCAL);
+    List<P2PSocket<String>> delivered = new ArrayList<>();
+    List<Exception> failures = new ArrayList<>();
+    layer.openSocket("natted", recordingCallback(delivered, failures), Map.<String, Object>of(CONTACT_OPTION, NATTED));
+    assertEquals(1, rendezvousStrategy.openedChannels.size());
+    String request = rendezvousStrategy.openedChannels.get(0);
+    int uid = Integer.parseInt(request.substring(request.indexOf('#') + 1));
+    FakeSocket acceptor = new FakeSocket();
+    acceptor.feed(header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, NATTED, DIRECT_LOCAL, uid));
+
+    layer.incomingSocket(acceptor);
+
+    assertArrayEquals(new byte[] {RendezvousTransportLayerImpl.CONNECTION_RESPONSE_SUCCESS}, acceptor.writtenBytes());
+    assertEquals(1, delivered.size());
+    assertEquals(List.of(), failures);
+    assertFalse(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("an acceptor socket for a request the local node did not make is answered with failure and closed")
+  void unexpectedAcceptorForTheLocalNodeIsRefused() throws Exception {
+    FakeSocket acceptor = new FakeSocket();
+    acceptor.feed(header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, NATTED, LOCAL, UID));
+
+    layer.incomingSocket(acceptor);
+
+    assertArrayEquals(new byte[] {RendezvousTransportLayerImpl.CONNECTION_RESPONSE_FAILURE}, acceptor.writtenBytes());
+    assertTrue(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("an acceptor socket without a waiting connector is answered with failure and closed")
+  void acceptorWithoutConnectorIsRefused() throws Exception {
+    FakeSocket acceptor = new FakeSocket();
+    acceptor.feed(header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, NATTED, OPENER, UID));
+
+    layer.incomingSocket(acceptor);
+
+    assertArrayEquals(new byte[] {RendezvousTransportLayerImpl.CONNECTION_RESPONSE_FAILURE}, acceptor.writtenBytes());
+    assertTrue(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("a normal socket is handed to the layer above after its type byte")
+  void normalSocketIsHandedUp() throws Exception {
+    List<P2PSocket<String>> delivered = new ArrayList<>();
+    layer.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void incomingSocket(P2PSocket<String> s) {
+        delivered.add(s);
+      }
+
+      @Override
+      public void messageReceived(String identifier, ByteBuffer msg, @Nullable Map<String, Object> options) {}
+    });
+    FakeSocket socket = new FakeSocket();
+    socket.feed(RendezvousTransportLayerImpl.NORMAL_SOCKET);
+
+    layer.incomingSocket(socket);
+
+    assertEquals(List.of(socket), delivered);
+  }
+
+  @Test
+  @DisplayName("a connector for a node that has a pilot to this rendezvous node is passed on through the pilot")
+  void connectorIsPassedOnThroughThePilot() throws Exception {
+    FakeSocket pilot = new FakeSocket();
+    pilot.feed(RendezvousTransportLayerImpl.PILOT_SOCKET);
+    pilot.feed(bytes(NATTED));
+    layer.incomingSocket(pilot);
+    FakeSocket connector = new FakeSocket();
+    connector.feed(header(RendezvousTransportLayerImpl.CONNECTOR_SOCKET, NATTED, OPENER, UID));
+
+    layer.incomingSocket(connector);
+    pilot.fire(false, true);
+
+    SimpleOutputBuffer expected = new SimpleOutputBuffer();
+    expected.writeByte(RendezvousTransportLayerImpl.PILOT_REQUEST);
+    expected.writeUTF(OPENER.name());
+    expected.writeBoolean(OPENER.direct());
+    expected.writeInt(UID);
+    ByteBuffer expectedBytes = expected.getByteBuffer();
+    byte[] expectedArray = new byte[expectedBytes.remaining()];
+    expectedBytes.get(expectedArray);
+    assertArrayEquals(expectedArray, pilot.writtenBytes());
+    assertEquals(List.of(), rendezvousStrategy.openedChannels);
+    assertEquals(connector, layer.removeConnectSocket(OPENER, NATTED, UID));
+  }
+
+  private FakeSocket openedSocketToTheSupernode() {
+    FakeSocket socket = new FakeSocket();
+    lower.callbacks.get(0).receiveResult(lower.handles.get(0), socket);
+    return socket;
+  }
+
+  @Test
+  @DisplayName("a socket opened through a pilot sends a connector header to the supernode and is delivered on success")
+  void socketViaPilotIsDeliveredOnSuccess() throws Exception {
+    List<P2PSocket<String>> delivered = new ArrayList<>();
+    List<Exception> failures = new ArrayList<>();
+
+    layer.openSocket("natted", recordingCallback(delivered, failures),
+        Map.<String, Object>of(CONTACT_OPTION, NATTED, RendezvousTransportLayerImpl.OPTION_USE_PILOT, SUPERNODE));
+
+    assertEquals(List.of("super"), lower.opened);
+    FakeSocket socket = openedSocketToTheSupernode();
+    byte[] written = socket.writtenBytes();
+    assertEquals(RendezvousTransportLayerImpl.CONNECTOR_SOCKET, written[0]);
+    assertEquals(List.of(), delivered);
+
+    socket.feed(RendezvousTransportLayerImpl.CONNECTION_RESPONSE_SUCCESS);
+    socket.fire(true, false);
+
+    assertEquals(List.of(socket), delivered);
+    assertEquals(List.of(), failures);
+  }
+
+  @Test
+  @DisplayName("a socket opened through a pilot fails when the supernode answers with failure")
+  void socketViaPilotFailsOnFailure() throws Exception {
+    List<P2PSocket<String>> delivered = new ArrayList<>();
+    List<Exception> failures = new ArrayList<>();
+    layer.openSocket("natted", recordingCallback(delivered, failures),
+        Map.<String, Object>of(CONTACT_OPTION, NATTED, RendezvousTransportLayerImpl.OPTION_USE_PILOT, SUPERNODE));
+    FakeSocket socket = openedSocketToTheSupernode();
+
+    socket.feed(RendezvousTransportLayerImpl.CONNECTION_RESPONSE_FAILURE);
+    socket.fire(true, false);
+
+    assertEquals(List.of(), delivered);
+    assertEquals(1, failures.size());
+    assertInstanceOf(org.mpisws.p2p.transport.ClosedChannelException.class, failures.get(0));
+  }
+
+  @Test
+  @DisplayName("a firewalled node that is asked to open a channel sends an acceptor header and hands the socket up on success")
+  void openChannelHandsTheSocketUpOnSuccess() throws Exception {
+    List<P2PSocket<String>> handedUp = new ArrayList<>();
+    layer.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void incomingSocket(P2PSocket<String> s) {
+        handedUp.add(s);
+      }
+
+      @Override
+      public void messageReceived(String identifier, ByteBuffer msg, @Nullable Map<String, Object> options) {}
+    });
+
+    layer.openChannel(OPENER, SUPERNODE, UID);
+
+    assertEquals(List.of("super"), lower.opened);
+    FakeSocket socket = openedSocketToTheSupernode();
+    assertArrayEquals(
+        header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, LOCAL, OPENER, UID), socket.writtenBytes());
+    assertEquals(List.of(), handedUp);
+
+    socket.feed(RendezvousTransportLayerImpl.CONNECTION_RESPONSE_SUCCESS);
+    socket.fire(true, false);
+
+    assertEquals(List.of(socket), handedUp);
+  }
+
+  @Test
+  @DisplayName("a firewalled node whose acceptor socket is refused hands nothing up")
+  void openChannelRefusedHandsNothingUp() throws Exception {
+    List<P2PSocket<String>> handedUp = new ArrayList<>();
+    layer.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void incomingSocket(P2PSocket<String> s) {
+        handedUp.add(s);
+      }
+
+      @Override
+      public void messageReceived(String identifier, ByteBuffer msg, @Nullable Map<String, Object> options) {}
+    });
+    layer.openChannel(OPENER, SUPERNODE, UID);
+    FakeSocket socket = openedSocketToTheSupernode();
+
+    socket.feed(RendezvousTransportLayerImpl.CONNECTION_RESPONSE_FAILURE);
+    socket.fire(true, false);
+
+    assertEquals(List.of(), handedUp);
   }
 
   private static SocketCallback<String> recordingCallback(List<P2PSocket<String>> delivered, List<Exception> failures) {
