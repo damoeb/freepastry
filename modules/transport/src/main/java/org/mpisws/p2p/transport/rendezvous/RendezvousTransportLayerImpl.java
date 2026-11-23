@@ -37,7 +37,6 @@ advised of the possibility of such damage.
 package org.mpisws.p2p.transport.rendezvous;
 
 import java.io.IOException;
-import java.net.BindException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,34 +45,25 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
-import org.mpisws.p2p.transport.ClosedChannelException;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.P2PSocket;
-import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
-import org.mpisws.p2p.transport.sourceroute.Forwarder;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
-import org.mpisws.p2p.transport.util.InsufficientBytesException;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.OptionsFactory;
-import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
-import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.ConfigChecks;
 import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
-import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorLoop;
-import rice.selector.TimerTask;
 
 /**
  * The trick here is that this layer is at some level, say InetSocketAddress, but must pass around very High-Level
@@ -169,6 +159,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
   final ExpectedIncomingSockets<Identifier, HighIdentifier> expectedIncomingSockets;
   private final IncomingSocketHandler<Identifier, HighIdentifier> incomingSocketHandler;
+  private final RendezvousSocketOpener<Identifier, HighIdentifier> socketOpener;
   ErrorHandler<Identifier> errorHandler;
 
   /** Parameter: how long a rendezvous node keeps a connector waiting for its acceptor; 0 keeps it until the socket closes. */
@@ -215,6 +206,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         : DEFAULT_MAX_WAITING_CONNECTORS;
     this.waitingConnectors = new WaitingConnectors<Identifier, HighIdentifier>(logger, selectorManager, connectorTimeoutMillis, maxWaitingConnectors);
     this.incomingSocketHandler = new IncomingSocketHandler<Identifier, HighIdentifier>(this);
+    this.socketOpener = new RendezvousSocketOpener<Identifier, HighIdentifier>(this, transportLayer, random, RENDEZVOUS_CONTACT_STRING);
 
     transportLayer.setCallback(this);
   }
@@ -265,7 +257,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
         HighIdentifier middleMan = (HighIdentifier)options.get(OPTION_USE_PILOT);
         // this is normally used when a node is joining, wo you can't route to
         logger.trace("Opening socket to {} OPTION_USE_PILOT->{}", contact, middleMan);
-        openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
+        socketOpener.openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
         return handle;
       } else {
         if (localNodeHandle.canContactDirect()) {
@@ -285,7 +277,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
             return handle;
           }
           HighIdentifier middleMan = myPilots.get(random.nextInt(myPilots.size()));
-          openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
+          socketOpener.openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
           return handle;
         }
       }
@@ -326,7 +318,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     } else {
       // use middleman
       logger.trace("opening a socket to {} via {}", contact, middleMan);
-      openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
+      socketOpener.openSocketViaPilot(contact, middleMan, handle, deliverSocketToMe, options);
       return true;
     }
   }
@@ -352,105 +344,6 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       return true;
     }
     return false;
-  }
-
-  protected void openSocketViaPilot(
-      final HighIdentifier destination,
-      final HighIdentifier middleMan,
-      final SocketRequestHandle<Identifier> handle,
-      final SocketCallback<Identifier> deliverSocketToMe,
-      final @Nullable Map<String, Object> options) {
-
-    if (middleMan.equals(localNodeHandle)) {
-      throw new IllegalArgumentException("openSocketViaPilot("+destination+","+middleMan+","+handle+","+deliverSocketToMe+","+options+") can't use self as rendezvous.");
-    }
-
-    final int uid = random.nextInt();
-    logger.atDebug().log(() -> "openSocketViaPilot<"+uid+">("+destination+","+middleMan+","+handle+","+deliverSocketToMe+","+options+")");
-
-    // build header
-    SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    try {
-      sob.writeByte(CONNECTOR_SOCKET);
-      serializer.serialize(destination, sob);
-      serializer.serialize(localNodeHandle, sob);
-      sob.writeInt(uid);
-    } catch (IOException ioe) {
-      deliverSocketToMe.receiveException(handle, ioe);
-    }
-
-    final ByteBuffer writeBuffer = sob.getByteBuffer(); // to write all the connection info
-    final ByteBuffer readBuffer = ByteBuffer.allocate(1);  // to read success
-
-    // open the socket
-    transportLayer.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
-      @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> openedSocket) {
-
-        try {
-          new P2PSocketReceiver<Identifier>() {
-
-            @Override
-            public void receiveSelectResult(P2PSocket<Identifier> socket,
-                boolean canRead, boolean canWrite) throws IOException {
-              if (writeBuffer.hasRemaining()) {
-                // write the header
-                long bytesWritten = socket.write(writeBuffer);
-                if (bytesWritten < 0) {
-                  deliverSocketToMe.receiveException(handle, new ClosedChannelException("Channel closed detected to <"+uid+"> "+destination+" via "+middleMan+" in "+RendezvousTransportLayerImpl.this));
-                  return;
-                }
-                if (writeBuffer.hasRemaining()) {
-                  socket.register(false, true, this);
-                  return;
-                }
-              }
-              if (!writeBuffer.hasRemaining()) {
-                // read for the response
-                if (readBuffer.hasRemaining()) {
-                  long bytesRead = socket.read(readBuffer);
-                  if (bytesRead < 0) {
-                    deliverSocketToMe.receiveException(handle, new ClosedChannelException("Channel closed detected to <"+uid+"> "+destination+" via "+middleMan+" in "+RendezvousTransportLayerImpl.this));
-                    return;
-                  }
-                  if (readBuffer.hasRemaining()) {
-                    socket.register(true, false, this);
-                    return;
-                  }
-                }
-
-                // interpret the response
-                readBuffer.flip();
-                byte response = readBuffer.get();
-                switch(response) {
-                case CONNECTION_RESPONSE_SUCCESS:
-                  logger.atDebug().log(() -> "success in openSocketViaPilot<"+uid+">("+destination+","+middleMan+","+handle+","+deliverSocketToMe+","+options+")");
-                  deliverSocketToMe.receiveResult(handle, socket);
-                  return;
-                default:
-                  deliverSocketToMe.receiveException(handle, new ClosedChannelException("Failed to connect to <"+uid+"> "+destination+" via "+middleMan+" in "+RendezvousTransportLayerImpl.this+" response:"+response));
-                  return;
-                }
-              }
-            }
-
-            @Override
-            public void receiveException(P2PSocket<Identifier> socket,
-                Exception ioe) {
-              deliverSocketToMe.receiveException(handle, ioe);
-            }
-          }.receiveSelectResult(openedSocket, false, true);
-        } catch (IOException ioe) {
-          deliverSocketToMe.receiveException(handle, ioe);
-        }
-      }
-      @Override
-      public void receiveException(SocketRequestHandle<Identifier> request,
-          Exception ex) {
-        deliverSocketToMe.receiveException(handle, ex);
-      }
-    }, options);
   }
 
   @Override
@@ -481,108 +374,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
    * We are a firewalled node and got a connect request, now time to respond to it
    */
   protected void openAcceptSocket(final HighIdentifier requestor, final HighIdentifier middleMan, final int uid) {
-    logger.trace("openAcceptSocket({},{},{})", requestor, middleMan, uid);
-    // TODO: there is a case where the requestor can be contacted directly, in this case, just do that, but may have to change
-    // some other parts of the code:
-      // 1) Send message to middleman, rather than open socket
-      // 2) Change Pilot Request to include the middleman and requestor, or, better yet, make PILOT_CONNECT_DIRECT
-      // 3) Set accept the socket directly
-
-    if (!middleMan.canContactDirect()) {
-      throw new IllegalArgumentException("openAcceptSocket("+requestor+","+middleMan+","+uid+") middleMan is firewalled.");
-    }
-
-
-    // build header
-    SimpleOutputBuffer sob = new SimpleOutputBuffer();
-    try {
-      sob.writeByte(ACCEPTOR_SOCKET);
-      serializer.serialize(localNodeHandle, sob);
-      serializer.serialize(requestor, sob);
-      sob.writeInt(uid);
-    } catch (IOException ioe) {
-      logger.warn("Error serializing in openAcceptSocket({},{},{})", requestor, middleMan, uid, ioe);
-      return;
-    }
-
-    final ByteBuffer writeBuffer = sob.getByteBuffer(); // to write all the connection info
-    final ByteBuffer readBuffer = ByteBuffer.allocate(1);  // to read success
-
-
-    transportLayer.openSocket(serializer.convert(middleMan), new SocketCallback<Identifier>() {
-      @Override
-      public void receiveResult(SocketRequestHandle<Identifier> cancellable,
-          P2PSocket<Identifier> openedSocket) {
-        try {
-          new P2PSocketReceiver<Identifier>() {
-
-            @Override
-            public void receiveSelectResult(P2PSocket<Identifier> socket,
-                boolean canRead, boolean canWrite) throws IOException {
-              if (writeBuffer.hasRemaining()) {
-                // write the header
-                long bytesWritten = socket.write(writeBuffer);
-                if (bytesWritten < 0) {
-                  logger.warn("Channel closed in openAcceptSocket({},{},{})", requestor, middleMan, uid);
-                  return;
-                }
-                if (writeBuffer.hasRemaining()) {
-                  socket.register(false, true, this);
-                  return;
-                }
-              }
-              if (!writeBuffer.hasRemaining()) {
-                // read for the response
-                if (readBuffer.hasRemaining()) {
-                  long bytesRead = socket.read(readBuffer);
-                  if (bytesRead < 0) {
-                    logger.warn("Channel closed in openAcceptSocket({},{},{})", requestor, middleMan, uid);
-                    return;
-                  }
-                  if (readBuffer.hasRemaining()) {
-                    socket.register(true, false, this);
-                    return;
-                  }
-                }
-
-                // interpret the response
-                readBuffer.flip();
-                byte response = readBuffer.get();
-                switch(response) {
-                case CONNECTION_RESPONSE_SUCCESS:
-                  logger.trace("success in openAcceptSocket({},{},{})", requestor, middleMan, uid);
-                  callback.incomingSocket(socket);
-                  return;
-                default:
-                  logger.warn("Failed to connect in openAcceptSocket({},{},{})", requestor, middleMan, uid);
-                  return;
-                }
-              }
-            }
-
-            @Override
-            public void receiveException(P2PSocket<Identifier> s,
-                Exception ex) {
-              logger.warn("Failure opening socket in openAcceptSocket({},{},{})", requestor, middleMan, uid, ex);
-            }
-          }.receiveSelectResult(openedSocket, false, true);
-        } catch (IOException ioe) {
-          logger.warn("Exception in openAcceptSocket({},{},{})", requestor, middleMan, uid, ioe);
-        }
-      }
-
-      @Override
-      public void receiveException(SocketRequestHandle<Identifier> request,
-          Exception ex) {
-        if (ex instanceof BindException) {
-          // Address already in use: no further information
-          openAcceptSocket(requestor, middleMan, uid);
-          return;
-        }
-        logger.warn("Failure opening socket in openAcceptSocket({},{},{})", requestor, middleMan, uid, ex);
-      }
-    }, OptionsFactory.addOption(null, RENDEZVOUS_CONTACT_STRING, requestor));
-
+    socketOpener.openAcceptSocket(requestor, middleMan, uid);
   }
 
   // ************************** UDP **********************
