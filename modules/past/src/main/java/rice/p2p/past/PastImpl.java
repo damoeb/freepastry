@@ -816,6 +816,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
             getResponseContinuation(insertMessage).receiveResult(result);
             lockManager.unlock(msgid);
           }
+
+          @Override
+          public void receiveException(Exception e) {
+            parent.receiveException(e);
+            lockManager.unlock(msgid);
+          }
         });
       }
     });
