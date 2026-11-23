@@ -61,7 +61,8 @@ class SubscriptionManagerTest {
   void setUp() {
     fake = new FakeEndpoint(local);
     registry = new TopicRegistry(fake.endpoint, local, ScribeTestSupport.listener(), LOGGER);
-    manager = new SubscriptionManager(fake.endpoint, local, null, registry, () -> null, null, null, 1000, LOGGER);
+    manager = new SubscriptionManager(fake.endpoint, local, null, registry, () -> null, null, null,
+        new ScribeConfig(180000, 1000, 4096, 64, 4096, 256), () -> 0L, LOGGER);
   }
 
   /** Sends a subscribe for the topics and returns its message id. */
@@ -181,7 +182,7 @@ class SubscriptionManagerTest {
   }
 
   @Test
-  void ackFromTheCurrentParentUpdatesThePathToTheRoot() {
+  void ackFromTheCurrentParentKeepsIt() {
     Topic topic = ScribeTestSupport.topic(1);
     registry.create(topic).setParent(fake.remote, new ArrayList<>());
     List<List<Id>> path = List.of(List.of(ScribeTestSupport.id(7)));

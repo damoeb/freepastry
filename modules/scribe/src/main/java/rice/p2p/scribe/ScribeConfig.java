@@ -47,14 +47,29 @@ import rice.environment.params.Parameters;
  *        maintenance runs
  * @param messageTimeout {@code p2p_scribe_message_timeout}: how long to wait for a subscribe ack
  */
-public record ScribeConfig(int maintenanceInterval, int messageTimeout) {
+/**
+ * Scribe's parameters.
+ *
+ * @param maintenanceInterval milliseconds between maintenance rounds (heartbeat subscribes to the parents)
+ * @param messageTimeout milliseconds a subscribe waits for its ack
+ * @param maxTopics topics a node keeps state for
+ * @param maxChildrenPerTopic children a node accepts per topic from remote subscribes
+ * @param maxPendingSubscribes outstanding subscribes
+ * @param maxAnycastVisited nodes an anycast may have visited before it fails
+ */
+public record ScribeConfig(int maintenanceInterval, int messageTimeout, int maxTopics, int maxChildrenPerTopic,
+    int maxPendingSubscribes, int maxAnycastVisited) {
 
   /**
-   * @throws IllegalArgumentException if a time is not positive
+   * @throws IllegalArgumentException if a time or a bound is not positive
    */
   public static ScribeConfig fromParameters(Parameters parameters) {
     return new ScribeConfig(
       requirePositive("p2p_scribe_maintenance_interval", parameters.getInt("p2p_scribe_maintenance_interval")),
-      requirePositive("p2p_scribe_message_timeout", parameters.getInt("p2p_scribe_message_timeout")));
+      requirePositive("p2p_scribe_message_timeout", parameters.getInt("p2p_scribe_message_timeout")),
+      requirePositive("p2p_scribe_max_topics", parameters.getInt("p2p_scribe_max_topics")),
+      requirePositive("p2p_scribe_max_children_per_topic", parameters.getInt("p2p_scribe_max_children_per_topic")),
+      requirePositive("p2p_scribe_max_pending_subscribes", parameters.getInt("p2p_scribe_max_pending_subscribes")),
+      requirePositive("p2p_scribe_max_anycast_visited", parameters.getInt("p2p_scribe_max_anycast_visited")));
   }
 }

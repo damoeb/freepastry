@@ -80,9 +80,11 @@ final class Publisher {
   }
 
   /**
-   * A publish request reached us, the root.
+   * A publish request reached us, the root. The request was routed over several hops, so its source (the publisher)
+   * is a claim nobody here can check: any node may publish to any topic. {@link ScribePolicy#acceptPublishRequest} is
+   * the place to refuse it, and where signed topics (publisher authentication) will check the signature.
    *
-   * @return the publish message to deliver locally, or null if we don't know the topic
+   * @return the publish message to push down the tree from here, or null if we don't know the topic or the policy refuses it
    */
   PublishMessage publishRequestReceived(PublishRequestMessage prMessage) {
     TopicTreeState manager = registry.get(prMessage.getTopic());
@@ -95,11 +97,27 @@ final class Publisher {
       logger.debug("Received publish request message for non-existent topic {} - dropping on floor.", prMessage.getTopic());
       return null;
     }
+    if (!policy.get().acceptPublishRequest(prMessage.getTopic(), prMessage.getSource(), prMessage.getContent())) {
+      logger.info("The policy refuses the publish request from {} for topic {}", prMessage.getSource(), prMessage.getTopic());
+      return null;
+    }
     return new PublishMessage(prMessage.getSource(), prMessage.getTopic(), prMessage.getContent());
   }
 
   /**
-   * Hands a published message to our clients and pushes it on to our children.
+   * We are the root and accepted a publish request: deliver it to our clients and push it down the tree.
+   */
+  void publishAtRoot(PublishMessage pMessage) {
+    TopicTreeState manager = registry.get(pMessage.getTopic());
+    if (manager != null) {
+      deliverAndPushDown(manager, pMessage);
+    }
+  }
+
+  /**
+   * A publish message arrived from another node. It is accepted only from our parent for the topic: a publish comes
+   * down the tree directly from parent to child, and {@code ScribeImpl} has checked that its source is the node that
+   * sent it (in certified mode, the authenticated previous hop). A node without a parent takes no publish.
    */
   void publishReceived(PublishMessage pMessage) {
     TopicTreeState manager = registry.get(pMessage.getTopic());
@@ -110,29 +128,36 @@ final class Publisher {
     // not come from our parent, send an unsubscribe message
     // otherwise, we deliver the message to all clients and forward the
     // message to all children
-    if ((manager != null) && ((manager.getParent() == null) || manager.getParent().equals(pMessage.getSource()))) {
-      pMessage.setSource(localHandle);
-
-      Collection<ScribeMultiClient> clients = manager.getClients();
-
-      // We also do an upcall intermediateNode() to allow implicit subscribers to change state in the message
-      policy.get().intermediateNode(pMessage);
-
-      for (ScribeMultiClient client : clients) {
-        logger.trace("Delivering publish message with data {} for topic {} to client {}", pMessage.getContent(), pMessage.getTopic(), client);
-        client.deliver(pMessage.getTopic(), pMessage.getContent());
-      }
-
-      Collection<NodeHandle> handles = new ArrayList<NodeHandle>(manager.getChildren());
-
-      for (NodeHandle handle : handles) {
-        logger.trace("Forwarding publish message with data {} for topic {} to child {}", pMessage.getContent(), pMessage.getTopic(), handle);
-        endpoint.route(null, new PublishMessage(endpoint.getLocalNodeHandle(), pMessage.getTopic(), pMessage.getContent()), handle);
-      }
+    if ((manager != null) && (manager.getParent() != null) && manager.getParent().equals(pMessage.getSource())) {
+      deliverAndPushDown(manager, pMessage);
     } else {
-      logger.warn("Received unexpected publish message from {} for unknown topic {}", pMessage.getSource(), pMessage.getTopic());
+      logger.warn("Received unexpected publish message from {} (not our parent) for topic {}", pMessage.getSource(), pMessage.getTopic());
 
       endpoint.route(null, new UnsubscribeMessage(localHandle, Collections.singletonList(pMessage.getTopic())), pMessage.getSource());
+    }
+  }
+
+  /**
+   * Hands a published message to our clients and pushes it on to our children.
+   */
+  private void deliverAndPushDown(TopicTreeState manager, PublishMessage pMessage) {
+    pMessage.setSource(localHandle);
+
+    Collection<ScribeMultiClient> clients = manager.getClients();
+
+    // We also do an upcall intermediateNode() to allow implicit subscribers to change state in the message
+    policy.get().intermediateNode(pMessage);
+
+    for (ScribeMultiClient client : clients) {
+      logger.trace("Delivering publish message with data {} for topic {} to client {}", pMessage.getContent(), pMessage.getTopic(), client);
+      client.deliver(pMessage.getTopic(), pMessage.getContent());
+    }
+
+    Collection<NodeHandle> handles = new ArrayList<NodeHandle>(manager.getChildren());
+
+    for (NodeHandle handle : handles) {
+      logger.trace("Forwarding publish message with data {} for topic {} to child {}", pMessage.getContent(), pMessage.getTopic(), handle);
+      endpoint.route(null, new PublishMessage(endpoint.getLocalNodeHandle(), pMessage.getTopic(), pMessage.getContent()), handle);
     }
   }
 }

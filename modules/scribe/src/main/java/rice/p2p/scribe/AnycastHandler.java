@@ -63,7 +63,13 @@ final class AnycastHandler {
 
   private final Logger logger;
 
-  AnycastHandler(Endpoint endpoint, NodeHandle localHandle, TopicRegistry registry, Supplier<ScribePolicy> policy, Logger logger) {
+  /**
+   * nodes an anycast may have visited, at most
+   */
+  private final int maxAnycastVisited;
+
+  AnycastHandler(Endpoint endpoint, NodeHandle localHandle, TopicRegistry registry, Supplier<ScribePolicy> policy, int maxAnycastVisited, Logger logger) {
+    this.maxAnycastVisited = maxAnycastVisited;
     this.endpoint = endpoint;
     this.localHandle = localHandle;
     this.registry = registry;
@@ -154,6 +160,13 @@ final class AnycastHandler {
 
     // add the local node to the visited list
     aMessage.addVisited(endpoint.getLocalNodeHandle());
+
+    if (aMessage.getVisitedSize() > maxAnycastVisited) {
+      // the visited and to-visit lists come from the wire: stop the walk instead of following it on
+      logger.info("Anycast for topic {} has visited {} nodes (p2p_scribe_max_anycast_visited): failing it", aMessage.getTopic(), aMessage.getVisitedSize());
+      endpoint.route(null, new AnycastFailureMessage(endpoint.getLocalNodeHandle(), aMessage.getTopic(), aMessage.getContent()), aMessage.getInitialRequestor());
+      return false;
+    }
 
     // allow the policy to select the order in which the nodes are visited
     policy.get().directAnycast(aMessage, manager.getParent(), manager.getChildren());

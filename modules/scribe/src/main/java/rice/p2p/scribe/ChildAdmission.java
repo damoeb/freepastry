@@ -82,8 +82,20 @@ final class ChildAdmission {
 
   private final Logger logger;
 
+  /**
+   * children accepted per topic from remote subscribes, at most
+   */
+  private final int maxChildrenPerTopic;
+
+  /**
+   * nodes a subscribe walking the tree may have visited, at most
+   */
+  private final int maxAnycastVisited;
+
   ChildAdmission(Endpoint endpoint, NodeHandle localHandle, TopicRegistry registry, Supplier<ScribePolicy> policy,
-      ScribeMaintenancePolicy maintenancePolicy, Scribe scribe, SubscriptionManager subscriptions, Logger logger) {
+      ScribeMaintenancePolicy maintenancePolicy, Scribe scribe, SubscriptionManager subscriptions, ScribeConfig config, Logger logger) {
+    this.maxChildrenPerTopic = config.maxChildrenPerTopic();
+    this.maxAnycastVisited = config.maxAnycastVisited();
     this.endpoint = endpoint;
     this.localHandle = localHandle;
     this.registry = registry;
@@ -265,9 +277,22 @@ final class ChildAdmission {
     // this is the list of topics that aren't a loop or already a child
     ArrayList<Topic> dontForward = new ArrayList<Topic>(); // take these out, and maybe send a response message for these, the old policy just drops these, We should probably send a response as long as sMessage.getId() != NO_ACK_REQUIRED
     ArrayList<Topic> askPolicy = new ArrayList<Topic>(); // ask the policy, and take these out if the policy accepts them
+    int topicsToCreate = 0; // topics we would create state for if the policy accepts them
 
     for (Topic topic : sMessage.getTopics()) {
       TopicTreeState tmanager = registry.get(topic);
+
+      // bounds: refuse (the topic stays in the message and is passed on, as if the policy had refused it), never evict
+      if (tmanager == null) {
+        if (!subscriptions.hasRoomForTopics(topicsToCreate + 1)) {
+          logger.info("Not taking on {} for new topic {}: the node keeps the most topics it may (p2p_scribe_max_topics)", sMessage.getSubscriber(), topic);
+          continue;
+        }
+        topicsToCreate++;
+      } else if (tmanager.getChildren().size() >= maxChildrenPerTopic && !tmanager.getChildren().contains(sMessage.getSubscriber())) {
+        logger.debug("Not taking on {} for topic {}: it has the most children it may (p2p_scribe_max_children_per_topic)", sMessage.getSubscriber(), topic);
+        continue;
+      }
 
       if (tmanager != null) {
         List<Id> path = tmanager.getPathToRoot();
@@ -382,6 +407,13 @@ final class ChildAdmission {
 
     // add the local node to the visited list
     sMessage.addVisited(endpoint.getLocalNodeHandle());
+
+    if (sMessage.getVisitedSize() > maxAnycastVisited) {
+      // the visited list comes from the wire: stop the walk instead of following it on
+      logger.info("Subscribe of {} for {} has visited {} nodes (p2p_scribe_max_anycast_visited): failing it", sMessage.getSubscriber(), sMessage.getTopics(), sMessage.getVisitedSize());
+      endpoint.route(null, new SubscribeFailedMessage(localHandle, new ArrayList<Topic>(sMessage.getTopics()), sMessage.getId()), sMessage.getSubscriber());
+      return false;
+    }
 
     logger.trace("handleForwardSubscribeMessage() here 4 {}", sMessage);
 

@@ -154,6 +154,22 @@ public interface ScribePolicy {
   public ScribeContent divideContent(List<Topic> theTopics, ScribeContent content);
 
   /**
+   * Called at the root of a topic when a publish request arrives, before the content goes down the tree. The
+   * request was routed over several hops, so {@code claimedPublisher} is the publisher's own claim and not
+   * authenticated: any node can publish to any topic, and name any node as the publisher. A policy that
+   * restricts publishing must check something in the content it can verify, a signature. Signed topics (publisher
+   * authentication, verified at the root and again at every node on the way down) are planned to hook in here.
+   *
+   * @param topic the topic
+   * @param claimedPublisher the node the request names as its publisher, not authenticated
+   * @param content the content to publish
+   * @return whether to publish the content; the default publishes everything
+   */
+  default boolean acceptPublishRequest(Topic topic, NodeHandle claimedPublisher, ScribeContent content) {
+    return true;
+  }
+
+  /**
    * The default policy for Scribe, which always allows new children to join and adds children in
    * the order in which they are provided, implicitly providing a depth-first search.
    *

@@ -25,7 +25,7 @@ class AnycastHandlerTest {
   private final FakeEndpoint fake = new FakeEndpoint(local);
   private final TopicRegistry registry = new TopicRegistry(fake.endpoint, local, ScribeTestSupport.listener(), LOGGER);
   private final ScribePolicy policy = new ScribePolicy.DefaultScribePolicy(null);
-  private final AnycastHandler handler = new AnycastHandler(fake.endpoint, local, registry, () -> policy, LOGGER);
+  private final AnycastHandler handler = new AnycastHandler(fake.endpoint, local, registry, () -> policy, 256, LOGGER);
 
   private static RouteMessage routeMessage() {
     return (RouteMessage) Proxy.newProxyInstance(AnycastHandlerTest.class.getClassLoader(), new Class<?>[] { RouteMessage.class },

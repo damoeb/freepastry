@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.scribe;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -97,13 +99,32 @@ final class SubscriptionManager {
   private HashMap<Integer, SubscribeLostMessage> subscribeLostMessages = new HashMap<Integer, SubscribeLostMessage>();
 
   /**
-   * the next unique id
+   * subscribe ids are random, so that a node that does not see the subscribe cannot guess the id its ack must carry
    */
-  private int id = Integer.MIN_VALUE;
-  private final Object idLock = new Object();
+  private final SecureRandom ids = new SecureRandom();
+
+  /**
+   * topics this node keeps state for, at most
+   */
+  private final int maxTopics;
+
+  /**
+   * outstanding subscribes, at most
+   */
+  private final int maxPendingSubscribes;
+
+  /**
+   * milliseconds, for the window in which a maintenance ack from a new parent is expected
+   */
+  private final LongSupplier clock;
+
+  /**
+   * until when (clock time) the heartbeat subscribes of the last maintenance round may be answered by a new parent
+   */
+  private long heartbeatsAnsweredUntil = Long.MIN_VALUE;
 
   SubscriptionManager(Endpoint endpoint, NodeHandle localHandle, Node node, TopicRegistry registry, Supplier<ScribePolicy> policy,
-      ScribeMaintenancePolicy maintenancePolicy, MaintainableScribe scribe, int messageTimeout, Logger logger) {
+      ScribeMaintenancePolicy maintenancePolicy, MaintainableScribe scribe, ScribeConfig config, LongSupplier clock, Logger logger) {
     this.endpoint = endpoint;
     this.localHandle = localHandle;
     this.node = node;
@@ -111,8 +132,25 @@ final class SubscriptionManager {
     this.policy = policy;
     this.maintenancePolicy = maintenancePolicy;
     this.scribe = scribe;
-    this.messageTimeout = messageTimeout;
+    this.messageTimeout = config.messageTimeout();
+    this.maxTopics = config.maxTopics();
+    this.maxPendingSubscribes = config.maxPendingSubscribes();
+    this.clock = clock;
     this.logger = logger;
+  }
+
+  /**
+   * The maintenance policy is about to send heartbeat subscribes (with {@link MaintainableScribe#MAINTENANCE_ID}) to
+   * our parents. A parent that no longer has us as a child may pass one on, and another node may take us on and ack
+   * it: such an ack is accepted for a message timeout from now.
+   */
+  void maintenanceStarted() {
+    heartbeatsAnsweredUntil = clock.getAsLong() + messageTimeout;
+  }
+
+  /** whether a node may take on state for one more topic */
+  boolean hasRoomForTopics(int newTopics) {
+    return registry.topics().size() + newTopics <= maxTopics;
   }
 
   /**
@@ -125,6 +163,7 @@ final class SubscriptionManager {
 
     List<Topic> toSubscribe = new ArrayList<Topic>();
     List<Topic> alreadySubscribed = new ArrayList<Topic>();
+    List<Topic> refused = new ArrayList<Topic>();
 
     synchronized(registry.lock()) {
       for (Topic topic : theTopics) {
@@ -133,6 +172,10 @@ final class SubscriptionManager {
         // if we don't know about this topic, subscribe
         // otherwise, we simply add the client to the list
         if (manager == null) {
+          if (!hasRoomForTopics(1)) {
+            refused.add(topic);
+            continue;
+          }
           manager = registry.create(topic);
           toSubscribe.add(topic);
         } else {
@@ -150,6 +193,10 @@ final class SubscriptionManager {
     // we may need to make this call on the Selector thread for better consistency
     if (client != null) {
       if (!alreadySubscribed.isEmpty()) client.subscribeSuccess(alreadySubscribed);
+    }
+    if (!refused.isEmpty()) {
+      logger.warn("Not subscribing to {} new topics: this node already keeps {} topics (p2p_scribe_max_topics)", refused.size(), maxTopics);
+      if (client != null) client.subscribeFailed(refused);
     }
 
     if (toSubscribe.isEmpty()) return;
@@ -214,28 +261,34 @@ final class SubscriptionManager {
 
 
   void sendSubscribe(List<Topic> topics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
+    if (subscribeLostMessages.size() >= maxPendingSubscribes) {
+      // refuse rather than forget an outstanding one; implicit subscribes (no client) are retried by tree repair
+      logger.warn("Not subscribing to {}: {} subscribes are outstanding (p2p_scribe_max_pending_subscribes)", topics, maxPendingSubscribes);
+      if (client != null) client.subscribeFailed(topics);
+      return;
+    }
+
     // remember that we're subscribing
     registry.markPending(topics);
 
-    // choose the UID
+    // choose the UID: random and not in use, so an ack can be bound to this subscribe
     int theId;
-    synchronized(idLock) {
-      id++;
-      if (id == MaintainableScribe.MAINTENANCE_ID) id++;
-      theId = id;
-    }
+    do {
+      theId = ids.nextInt();
+    } while (theId == MaintainableScribe.MAINTENANCE_ID || subscribeLostMessages.containsKey(theId));
+    final int subscribeId = theId;
 
     // sort the topics
     if (topics.size() > 1) {
       Collections.sort(topics);
     }
 
-    logger.atTrace().log(() -> "sendSubscribe("+topics+","+client+","+content+","+hint+") theId:"+theId);
+    logger.atTrace().log(() -> "sendSubscribe("+topics+","+client+","+content+","+hint+") id:"+subscribeId);
     // schedule a LostMessage
-    SubscribeLostMessage slm = new SubscribeLostMessage(localHandle, topics, theId, client);
+    SubscribeLostMessage slm = new SubscribeLostMessage(localHandle, topics, subscribeId, client);
     CancellableTask task = endpoint.scheduleMessage(slm, messageTimeout);
     slm.putTask(task);
-    subscribeLostMessages.put(theId, slm);
+    subscribeLostMessages.put(subscribeId, slm);
 
     if (hint == null) {
       // break them into groups based on the next hop
@@ -243,7 +296,7 @@ final class SubscriptionManager {
 
       for (NodeHandle nextHop : manifest.keySet()) {
         List<Topic> theTopics = manifest.get(nextHop);
-        SubscribeMessage msg = new SubscribeMessage(localHandle, theTopics, theId, policy.get().divideContent(theTopics, content));
+        SubscribeMessage msg = new SubscribeMessage(localHandle, theTopics, subscribeId, policy.get().divideContent(theTopics, content));
 
         // if I'm the 1st Replica, then route direct (to prevent problem with consistency)  IE, I know he
         // is the root for this message, even if he doesn't.  Make sure that if it is re-routed,
@@ -259,7 +312,7 @@ final class SubscriptionManager {
       }
     } else {
       // use the hint
-      SubscribeMessage msg = new SubscribeMessage(localHandle, topics, theId, content);
+      SubscribeMessage msg = new SubscribeMessage(localHandle, topics, subscribeId, content);
 
       // see if hint is my direct neighbor, if so, route only directly, so that he will accept the connection even
       // though he may still be joining
@@ -327,37 +380,34 @@ final class SubscriptionManager {
 
 
   /**
-   * Internal method which processes an ack message
+   * Reports the asked topics of an ack to the client of its subscribe and stops waiting for them.
    *
-   * @param message The ackMessage
+   * @param slm the outstanding subscribe the ack answers
+   * @param asked the topics of the ack that the subscribe asked for
    */
-  void ackMessageReceived(SubscribeAckMessage message) {
+  private void ackMessageReceived(SubscribeAckMessage message, SubscribeLostMessage slm, List<Topic> asked) {
     logger.trace("ackMessageReceived({})", message);
-    SubscribeLostMessage slm = subscribeLostMessages.get(message.getId());
-    if (slm == null) {
-      logger.debug("ackMessageReceived({}) for unknown id", message);
+    ScribeMultiClient multiClient = slm.getClient();
+    if (multiClient != null) multiClient.subscribeSuccess(asked);
+    if (slm.topicsAcked(asked)) {
+      logger.trace("Removing client {} from list of outstanding for ack {}", slm.getClient(), message.getId());
+      subscribeLostMessages.remove(message.getId()).cancel();
     } else {
-      ScribeMultiClient multiClient = slm.getClient();
-      if (multiClient != null) multiClient.subscribeSuccess(message.getTopics());
-      if (slm.topicsAcked(message.getTopics())) {
-        logger.trace("Removing client {} from list of outstanding for ack {}", slm.getClient(), message.getId());
-        subscribeLostMessages.remove(message.getId()).cancel();
-      } else {
-         logger.atTrace().log(() -> {
-           Collection<Topic> topics = slm.getTopics();
-           int numTopics = topics.size();
-           return "Still waiting for SubscribeAck from "+
-               (numTopics == 1 ?
-                   " topic "+topics.iterator().next() +"." :
-                   numTopics+" topics.");
-         });
-      }
+      logger.atTrace().log(() -> {
+        Collection<Topic> topics = slm.getTopics();
+        int numTopics = topics.size();
+        return "Still waiting for SubscribeAck from "+
+            (numTopics == 1 ?
+                " topic "+topics.iterator().next() +"." :
+                numTopics+" topics.");
+      });
     }
   }
 
 
   /**
-   * Internal method which processes a subscribe failed message
+   * Internal method which processes a subscribe failed message. Only the topics that the outstanding subscribe with
+   * the message's id still waits for count; the rest of the message is ignored.
    *
    * @param message THe lost message
    */
@@ -367,8 +417,14 @@ final class SubscriptionManager {
       logger.warn("received unexpected subscribe failed message, ignoring:{}", message);
       return;
     }
+    List<Topic> failed = new ArrayList<Topic>(message.getTopics());
+    failed.retainAll(slm.getTopics());
+    if (failed.isEmpty()) {
+      logger.info("received subscribe failed message for topics its subscribe does not wait for, ignoring:{}", message);
+      return;
+    }
     // only remove it if this message covers everything
-    if (slm.topicsAcked(message.getTopics())) {
+    if (slm.topicsAcked(failed)) {
       subscribeLostMessages.remove(message.getId()).cancel();
     }
 
@@ -377,9 +433,9 @@ final class SubscriptionManager {
     logger.trace("Telling client {} about FAILURE for outstanding ack {}", client, message.getId());
 
     if (client != null) {
-      client.subscribeFailed(message.getTopics());
+      client.subscribeFailed(failed);
     } else {
-      maintenancePolicy.subscribeFailed(scribe, message.getTopics());
+      maintenancePolicy.subscribeFailed(scribe, failed);
     }
   }
 
@@ -441,65 +497,95 @@ final class SubscriptionManager {
   }
 
   /**
-   * A parent accepted us: adopt it (unsubscribing from a previous parent), or reject the ack if we
-   * don't need it.
+   * A node acked a subscribe of ours: adopt it as the parent of each topic the ack is an answer to (unsubscribing from
+   * a previous parent), and tell it to drop us for the others.
+   *
+   * <p>An ack answers a topic if
+   * <ul>
+   *   <li>it comes from the topic's current parent (nothing changes), or</li>
+   *   <li>its id is that of an outstanding subscribe of ours that still waits for the topic (subscribe ids are
+   *       random), or</li>
+   *   <li>it carries {@link MaintainableScribe#MAINTENANCE_ID}, which binds it to no request, and the topic has an
+   *       outstanding subscribe (SplitStream's root takes a subscriber on with {@code addChild}) or a heartbeat of the
+   *       last maintenance round is still within its message timeout.</li>
+   * </ul>
+   * An ack nobody asked for no longer replaces the parent: it was enough to make any node the parent of any other.
+   * Which node may take us on is not checked (any node on the subscribe's path may); that the ack's source is the
+   * node that sent it is checked by {@code ScribeImpl} against the authenticated previous hop.
    */
   void subscribeAckReceived(SubscribeAckMessage saMessage) {
+    NodeHandle source = saMessage.getSource();
     // store the former parents/topics here so we can send Unsubscribe messages
     HashMap<NodeHandle, List<Topic>> needToUnsubscribe = new HashMap<NodeHandle, List<Topic>>();
 
-    if (! endpoint.isAlive(saMessage.getSource())) {
-      logger.warn("Dropping subscribe ack message from dead node:{} for topics {}", saMessage.getSource(), saMessage.getTopics());
+    if (! endpoint.isAlive(source)) {
+      logger.warn("Dropping subscribe ack message from dead node:{} for topics {}", source, saMessage.getTopics());
       return;
     }
 
+    // decide which topics were asked for before the outstanding subscribe forgets them
+    SubscribeLostMessage slm = saMessage.getId() == MaintainableScribe.MAINTENANCE_ID ? null : subscribeLostMessages.get(saMessage.getId());
+    List<Topic> asked = new ArrayList<Topic>();
+    for (Topic topic : saMessage.getTopics()) {
+      if (isAnswer(topic, saMessage.getId(), slm)) {
+        asked.add(topic);
+      }
+    }
     // the ack covers all of its topics, so it is processed once, not once per topic
-    ackMessageReceived(saMessage);
+    if (slm != null && !asked.isEmpty()) {
+      ackMessageReceived(saMessage, slm, asked);
+    }
 
     Iterator<List<Id>> iterator = saMessage.getPathsToRoot().iterator();
     for (Topic topic : saMessage.getTopics()) {
       List<Id> pathToRoot = iterator.next();
       TopicTreeState manager = registry.get(topic);
 
-      logger.debug("Received subscribe ack message from {} for topic {}", saMessage.getSource(), topic);
+      logger.debug("Received subscribe ack message from {} for topic {}", source, topic);
 
       // if we're the root, reject the ack message, except for the hack to implement a centralized solution with self overlays for each node (i.e everyone is a root)
       if (registry.isRoot(topic)) {
-        logger.debug("Received unexpected subscribe ack message (we are the root) from {} for topic {}", saMessage.getSource(), topic);
-        needToUnsubscribe.computeIfAbsent(saMessage.getSource(), k -> new ArrayList<Topic>()).add(topic);
-      } else {
+        logger.debug("Received unexpected subscribe ack message (we are the root) from {} for topic {}", source, topic);
+        needToUnsubscribe.computeIfAbsent(source, k -> new ArrayList<Topic>()).add(topic);
+      } else if (manager == null) {
         // if we don't know about this topic, then we unsubscribe
-        // if we already have a parent, then this is either an errorous
-        // subscribe ack, or our path to the root has changed.
-        if (manager == null) {
-          logger.warn("Received unexpected subscribe ack message from {} for unknown topic {}", saMessage.getSource(), topic);
-          needToUnsubscribe.computeIfAbsent(saMessage.getSource(), k -> new ArrayList<Topic>()).add(topic);
-        } else {
-          if (manager.getParent() == null) {
-            registry.getOrCreate(topic).setParent(saMessage.getSource(), pathToRoot);
-          }
-
-          if (!manager.getParent().equals(saMessage.getSource())) {
-            logger.warn("Received somewhat unexpected subscribe ack message (already have parent {}) from {} for topic {} - the new policy is now to accept the message", manager.getParent(), saMessage.getSource(), topic);
-
-
-            NodeHandle parent = manager.getParent();
-            registry.getOrCreate(topic).setParent(saMessage.getSource(), pathToRoot);
-
-            List<Topic> topics = needToUnsubscribe.get(parent);
-            if (topics == null) {
-              topics = new ArrayList<Topic>();
-              needToUnsubscribe.put(parent, topics);
-            }
-            topics.add(topic);
-          }
+        logger.warn("Received unexpected subscribe ack message from {} for unknown topic {}", source, topic);
+        needToUnsubscribe.computeIfAbsent(source, k -> new ArrayList<Topic>()).add(topic);
+      } else if (source.equals(manager.getParent())) {
+        // our parent confirms us, nothing changes
+      } else if (!asked.contains(topic)) {
+        logger.info("Dropping subscribe ack from {} for topic {} that answers no subscribe of ours (id {}), parent stays {}", source, topic, saMessage.getId(), manager.getParent());
+        needToUnsubscribe.computeIfAbsent(source, k -> new ArrayList<Topic>()).add(topic);
+      } else {
+        NodeHandle parent = manager.getParent();
+        registry.getOrCreate(topic).setParent(source, pathToRoot);
+        if (parent != null) {
+          // our path to the root has changed
+          logger.info("Replacing parent {} with {} for topic {}, which answered our subscribe", parent, source, topic);
+          needToUnsubscribe.computeIfAbsent(parent, k -> new ArrayList<Topic>()).add(topic);
         }
       }
     }
 
-    for (NodeHandle source : needToUnsubscribe.keySet()) {
-      endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(source)), source);
+    for (NodeHandle node : needToUnsubscribe.keySet()) {
+      endpoint.route(null, new UnsubscribeMessage(localHandle, needToUnsubscribe.get(node)), node);
     }
+  }
+
+  /**
+   * @param slm the outstanding subscribe with the ack's id, or null
+   * @return whether an ack with this id answers a subscribe of ours for the topic
+   */
+  private boolean isAnswer(Topic topic, int ackId, SubscribeLostMessage slm) {
+    if (ackId != MaintainableScribe.MAINTENANCE_ID) {
+      return slm != null && slm.getTopics().contains(topic);
+    }
+    for (SubscribeLostMessage outstanding : subscribeLostMessages.values()) {
+      if (outstanding.getTopics().contains(topic)) {
+        return true;
+      }
+    }
+    return registry.getParent(topic) != null && clock.getAsLong() < heartbeatsAnsweredUntil;
   }
 
 }

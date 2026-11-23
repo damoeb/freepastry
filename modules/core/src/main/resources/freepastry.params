@@ -250,6 +250,14 @@ p2p_replication_max_keys_in_message = 1000
 p2p_scribe_maintenance_interval = 180000
 #time for a subscribe fail to be thrown (in millis)
 p2p_scribe_message_timeout = 15000
+# topics a node keeps state for; beyond it a node refuses new children for unknown topics and fails local subscribes
+p2p_scribe_max_topics = 4096
+# children a node accepts per topic from remote subscribes; further subscribers are passed on, nobody is evicted
+p2p_scribe_max_children_per_topic = 64
+# outstanding subscribes; beyond it a subscribe is not sent and its client gets subscribeFailed
+p2p_scribe_max_pending_subscribes = 4096
+# nodes an anycast (or a subscribe walking the tree) may have visited; beyond it the walk fails back to its requestor
+p2p_scribe_max_anycast_visited = 256
 
 #aggregation
 p2p_aggregation_flushDelayAfterJoin = 30000

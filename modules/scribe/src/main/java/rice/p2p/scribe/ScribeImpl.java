@@ -71,6 +71,23 @@ import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
 /**
  * The provided implementation of Scribe.
  *
+ * <p>What a node checks of the tree messages it receives. Messages sent directly from one tree node to another
+ * (subscribe ack and failure, unsubscribe, drop, publish down the tree, anycast failure) name their sender in a
+ * {@code source} field; each is dropped unless that source has the id of the node it arrived from
+ * ({@link Application#deliver(Id, Message, NodeHandle)}), which in certified mode is authenticated. Without
+ * certificates the transport sender is not authenticated, but a node can still no longer name another one. An ack
+ * must also answer a subscribe of ours (see {@code SubscriptionManager#subscribeAckReceived}), a drop come from our
+ * parent, a publish from our parent. Messages routed over several hops (subscribe, publish request, anycast) carry
+ * the originator's claim only: the subscriber of a subscribe and the publisher of a publish request are not checked,
+ * so any node may subscribe to and publish to any topic, and name another node as subscriber. Publisher
+ * authentication (signed topics) is not done; {@link ScribePolicy#acceptPublishRequest} is its hook. When the
+ * endpoint cannot tell the previous hop (a wrapper such as multiring calls {@link #deliver(Id, Message)}) the
+ * source check is skipped.
+ *
+ * <p>Bounds (see {@link ScribeConfig}): topics per node, children per topic for remote subscribes, outstanding
+ * subscribes, and nodes an anycast may have visited. At a bound a node refuses (passes the subscriber on, fails the
+ * subscribe or the anycast); it does not evict existing children or topics.
+ *
  * @version $Id: ScribeImpl.java 4495 2008-09-26 14:48:02Z jeffh $
  * @author Alan Mislove
  */
@@ -186,9 +203,10 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     this.maintenancePolicy = maintenancePolicy;
     this.localHandle = endpoint.getLocalNodeHandle();
     this.registry = new TopicRegistry(endpoint, localHandle, this, logger);
-    this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, MESSAGE_TIMEOUT, logger);
-    this.children = new ChildAdmission(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, logger);
-    this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, logger);
+    this.subscriptions = new SubscriptionManager(endpoint, localHandle, node, registry, this::getPolicy, maintenancePolicy, this, config,
+        environment.getTimeSource()::currentTimeMillis, logger);
+    this.children = new ChildAdmission(endpoint, localHandle, registry, this::getPolicy, maintenancePolicy, this, subscriptions, config, logger);
+    this.anycasts = new AnycastHandler(endpoint, localHandle, registry, this::getPolicy, config.maxAnycastVisited(), logger);
     this.publisher = new Publisher(endpoint, localHandle, registry, this::getPolicy, logger);
     this.repair = new TreeRepair(registry, subscriptions, children, maintenancePolicy, this, logger);
 
@@ -426,10 +444,26 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   @Override
   public void deliver(Id id, Message message) {
-    logger.trace("Deliver called with {} {}", id, message);
+    deliver(id, message, null);
+  }
+
+  /**
+   * Delivers a message, dropping a direct tree message whose source is not the node it arrived from.
+   *
+   * @param id The destination id of the message
+   * @param message The message being sent
+   * @param previousHop the node the message arrived from, null if it was created here or the endpoint cannot tell
+   */
+  @Override
+  public void deliver(Id id, Message message, NodeHandle previousHop) {
+    logger.trace("Deliver called with {} {} from {}", id, message, previousHop);
 
     if (!(message instanceof ScribeProtocolMessage scribeMessage)) {
       logger.warn("Received unknown message {} - dropping on floor.", message);
+      return;
+    }
+    if (previousHop != null && !namesItsSender(scribeMessage, previousHop)) {
+      logger.info("Dropping {} from {}: it names another node as its source", scribeMessage, previousHop);
       return;
     }
     switch (scribeMessage) {
@@ -440,7 +474,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       case PublishRequestMessage prMessage -> {
         PublishMessage pMessage = publisher.publishRequestReceived(prMessage);
         if (pMessage != null) {
-          deliver(pMessage.getTopic().id(), pMessage);
+          publisher.publishAtRoot(pMessage);
         }
       }
       case PublishMessage pMessage -> publisher.publishReceived(pMessage);
@@ -448,6 +482,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
       case DropMessage dMessage -> repair.dropReceived(dMessage);
       case MaintenanceMessage mMessage -> {
         logger.debug("Received maintenance message");
+        subscriptions.maintenanceStarted();
         maintenancePolicy.doMaintenance(this);
       }
       case AnycastFailureMessage aFailMsg -> {
@@ -455,6 +490,27 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
         recvAnycastFail(aFailMsg.getTopic(), aFailMsg.getSource(), aFailMsg.getContent());
       }
     }
+  }
+
+  /**
+   * @return whether a message that arrived from {@code previousHop} may be processed: a message sent directly from
+   *     tree node to tree node must name that node as its source; a routed one names its originator, which cannot be
+   *     checked; a local one (timer, maintenance) never arrives from another node
+   */
+  private static boolean namesItsSender(ScribeProtocolMessage message, NodeHandle previousHop) {
+    NodeHandle source = switch (message) {
+      case SubscribeAckMessage m -> m.getSource();
+      case SubscribeFailedMessage m -> m.getSource();
+      case UnsubscribeMessage m -> m.source();
+      case DropMessage m -> m.getSource();
+      case PublishMessage m -> m.getSource();
+      case AnycastFailureMessage m -> m.getSource();
+      case AnycastMessage m -> previousHop; // routed (a subscribe too): source and subscriber are claims
+      case PublishRequestMessage m -> previousHop; // routed: the publisher is a claim
+      case SubscribeLostMessage m -> null;
+      case MaintenanceMessage m -> null;
+    };
+    return source != null && source.getId().equals(previousHop.getId());
   }
 
   private void deliverAnycast(AnycastMessage aMessage) {
