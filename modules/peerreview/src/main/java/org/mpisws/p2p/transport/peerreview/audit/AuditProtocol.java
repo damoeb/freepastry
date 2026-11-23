@@ -67,7 +67,6 @@ import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.mpisws.p2p.transport.peerreview.replay.playback.ReplaySelectorManager;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
 
 import static org.mpisws.p2p.transport.peerreview.StatusRenderer.renderStatus;
@@ -436,7 +435,7 @@ public class AuditProtocol<Handle extends RawSerializable, Identifier extends Ra
       }
 
       currentNodeHash = transport.hash(currentSeq, sEntry.getType(), currentNodeHash, contentHash);
-      if (logger.isTraceEnabled()) logger.trace("NH ["+MathUtils.toBase64(currentNodeHash)+"]");
+      if (logger.isTraceEnabled()) logger.trace("NH ["+java.util.Base64.getEncoder().encodeToString(currentNodeHash)+"]");
 
       /* If we have an authenticator for this entry (matched by sequence number), the hash in the
          authenticator must match the node hash. If not, we have a proof of misbehavior. */

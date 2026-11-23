@@ -59,7 +59,6 @@ import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
-import rice.p2p.util.MathUtils;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.NO_CERTIFICATE;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SIGNATURE_BAD;
@@ -169,7 +168,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
     try {
       signer.update(bytes);
       byte[] ret = signer.sign();
-      logger.atTrace().log(() -> "Signature of "+MathUtils.toBase64(bytes)+" was "+MathUtils.toBase64(ret));
+      logger.atTrace().log(() -> "Signature of "+java.util.Base64.getEncoder().encodeToString(bytes)+" was "+java.util.Base64.getEncoder().encodeToString(ret));
       return ret;
     } catch (SignatureException signatureException) {
       RuntimeException throwMe = new RuntimeException("Couldn't sign "+bytes.length+" bytes");
@@ -180,7 +179,7 @@ public class IdentityTransportLayerImpl<Identifier, I> extends
 
   @Override
   public int verify(I id, byte[] msg, byte[] signature) {
-    logger.atTrace().log(() -> "Verify:"+id+" "+msg.length+" "+MathUtils.toBase64(msg)+" == "+signature.length+" "+MathUtils.toBase64(signature));
+    logger.atTrace().log(() -> "Verify:"+id+" "+msg.length+" "+java.util.Base64.getEncoder().encodeToString(msg)+" == "+signature.length+" "+java.util.Base64.getEncoder().encodeToString(signature));
     Signature verifier = getVerifier(id);
     if (verifier == null) return NO_CERTIFICATE;
 

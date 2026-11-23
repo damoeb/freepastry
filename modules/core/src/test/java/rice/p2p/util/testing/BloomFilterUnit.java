@@ -39,9 +39,14 @@ package rice.p2p.util.testing;
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
 import rice.p2p.util.BloomFilter;
-import rice.p2p.util.MathUtils;
 
 public class BloomFilterUnit {
+
+  private static byte[] randomBytes(int length, RandomSource random) {
+    byte[] result = new byte[length];
+    random.nextBytes(result);
+    return result;
+  }
 
   public static void main(String[] args) {
     RandomSource rand = new SimpleRandomSource(null);
@@ -54,7 +59,7 @@ public class BloomFilterUnit {
     BloomFilter filter = new BloomFilter(k, m);
 
     for (int i=0; i<elements.length; i++) {
-      elements[i] = MathUtils.randomBytes(l, rand);
+      elements[i] = randomBytes(l, rand);
       filter.add(elements[i]);
     }
 
@@ -66,7 +71,7 @@ public class BloomFilterUnit {
     int count = 0;
 
     for (int i=0; i<elements.length; i++) {
-      if (filter.check(MathUtils.randomBytes(l, rand)))
+      if (filter.check(randomBytes(l, rand)))
         count++;
     }
 

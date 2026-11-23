@@ -99,7 +99,7 @@ public class BloomFilter {
     this.parameters = new int[num];
 
     for (int i=0; i<parameters.length; i++)
-      this.parameters[i] = MathUtils.randomInt(rand);
+      this.parameters[i] = rand.nextInt();
   }
 
   /**
@@ -140,7 +140,7 @@ public class BloomFilter {
     if (length <= 0)
       return 0;
 
-    return MathUtils.mod(doHash(array, parameters[i]), length);
+    return Math.floorMod(doHash(array, parameters[i]), length);
   }
 
   /**

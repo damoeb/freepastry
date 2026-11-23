@@ -42,7 +42,6 @@ import java.util.Objects;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
-import rice.p2p.util.MathUtils;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.SEQS_PER_MILLI;
 import rice.p2p.util.rawserialization.WireLengths;
 
@@ -131,7 +130,7 @@ public class SnippetEntry {
     byte b = buf.readByte();
     if (b == (byte)0) return prevSeq+1;
     if (b == SEQ_CODE_ABSOLUTE) return buf.readLong();
-    long howMuchBigger = (long)MathUtils.uByteToInt(b)*NUM_INDEXES;
+    long howMuchBigger = (long)Byte.toUnsignedInt(b)*NUM_INDEXES;
     long prevSeqMS = ((prevSeq/NUM_INDEXES)*NUM_INDEXES);
     return prevSeqMS+howMuchBigger;
   }
@@ -145,7 +144,7 @@ public class SnippetEntry {
     // If I end with SEQS_PER_MILLI
     if ((seq%NUM_INDEXES == 0)) {
       long foo = ((seq/NUM_INDEXES) - (prevSeq/NUM_INDEXES));
-      if (foo < MathUtils.uByteToInt(SEQ_CODE_ABSOLUTE)) {
+      if (foo < Byte.toUnsignedInt(SEQ_CODE_ABSOLUTE)) {
         if (foo < 0) throw new IOException("bug in encodeSeq.  foo:"+foo+" seq:"+seq+" prevSeq:"+prevSeq);
         buf.writeByte((byte)foo);
         return;
@@ -161,7 +160,7 @@ public class SnippetEntry {
       buf.writeByte((byte)0);
       return;
     }
-    if (content.length < MathUtils.uByteToInt(SIZE_CODE_INT)) {
+    if (content.length < Byte.toUnsignedInt(SIZE_CODE_INT)) {
       buf.writeByte((byte)content.length);
       return;
     }
@@ -177,12 +176,12 @@ public class SnippetEntry {
   public int decodeSize(InputBuffer buf) throws IOException {
     byte b = buf.readByte();
     if (b == SIZE_CODE_SHORT) {
-      return MathUtils.uShortToInt(buf.readShort());
+      return Short.toUnsignedInt(buf.readShort());
     }
     if (b == SIZE_CODE_INT) {
       return buf.readInt();
     }
-    return MathUtils.uByteToInt(b);
+    return Byte.toUnsignedInt(b);
   }
 
   public byte[] getContent() {

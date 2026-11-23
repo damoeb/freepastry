@@ -37,8 +37,6 @@ advised of the possibility of such damage.
 package rice.p2p.util;
 
 
-import rice.environment.random.RandomSource;
-
 /**
  * This class contains a large number of static methods for performing
  * math operations.
@@ -52,50 +50,6 @@ public class MathUtils {
    * Make the constructor private so no MathUtils is ever created.
    */
   private MathUtils() {
-  }
-
-  /**
-   * Utility which does *proper* modding, where the result is guaranteed to be
-   * positive.
-   *
-   * @param a The modee
-   * @param b The value to mod by
-   * @return The result
-   */
-  public static int mod(int a, int b) {
-    return ((a % b) + b) % b;
-  }
-
-  /**
-   * Method which returns a specified number of random bytes
-   *
-   * @param len The number of random bytes to generate
-   */
-  public static byte[] randomBytes(int len, RandomSource random) {
-    byte[] result = new byte[len];
-    random.nextBytes(result);
-
-    return result;
-  }
-
-  /**
-   * Method which returns a random int
-   *
-   * @param random The source of randomness
-   * @return a random int
-   */
-  public static int randomInt(RandomSource random) {
-    return random.nextInt();
-  }
-
-  /**
-   * Utility method which converts a byte[] to a base64 string of characters, on one line
-   *
-   * @param text The array to convert
-   * @return A string representation
-   */
-  public static String toBase64(byte[] text) {
-    return java.util.Base64.getEncoder().encodeToString(text);
   }
 
   /**
@@ -244,13 +198,5 @@ public class MathUtils {
       result[i] = data[i];
 
     return result;
-  }
-
-  public static int uByteToInt(byte b) {
-    return (int) b & 0xFF;
-  }
-
-  public static int uShortToInt(short b) {
-    return (int) b & 0xFFFF;
   }
 }

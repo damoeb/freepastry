@@ -92,7 +92,6 @@ import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.TimerTask;
@@ -351,7 +350,7 @@ public class PRRegressionTest {
     public void sendMessage() {
       byte[] msg = generateMessage();
 
-      logger.atInfo().log(() -> "sending message "+msg.length+" "+MathUtils.toBase64(msg));
+      logger.atInfo().log(() -> "sending message "+msg.length+" "+java.util.Base64.getEncoder().encodeToString(msg));
       try {
       transportLayer.sendMessage(destination, ByteBuffer.wrap(msg), new MessageCallback<HandleImpl, ByteBuffer>() {
 
@@ -434,7 +433,7 @@ public class PRRegressionTest {
     @Override
     public void messageReceived(HandleImpl handleImpl, ByteBuffer msg,
         Map<String, Object> options) throws IOException {
-      logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())));
+      logger.atInfo().log(() -> "Message received: "+java.util.Base64.getEncoder().encodeToString(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())));
     }
 
     @Override

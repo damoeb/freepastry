@@ -46,7 +46,6 @@ import org.mpisws.p2p.transport.peerreview.PeerReview;
 import org.mpisws.p2p.transport.peerreview.PeerReviewImpl;
 import org.mpisws.p2p.transport.peerreview.StatusConstants;
 import rice.environment.Environment;
-import rice.p2p.util.MathUtils;
 import rice.selector.TimerTask;
 
 import static org.mpisws.p2p.transport.peerreview.StatusConstants.STATUS_EXPOSED;
@@ -116,7 +115,7 @@ public class PRNonconform1 extends PRRegressionTest {
       @Override
       public void messageReceived(HandleImpl handleImpl, ByteBuffer msg,
           Map<String, Object> options) throws IOException {
-        logger.atInfo().log(() -> "Message received: "+MathUtils.toBase64(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())));
+        logger.atInfo().log(() -> "Message received: "+java.util.Base64.getEncoder().encodeToString(Arrays.copyOfRange(msg.array(), msg.arrayOffset()+msg.position(), msg.arrayOffset()+msg.limit())));
       }
 
       @Override

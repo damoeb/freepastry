@@ -46,7 +46,6 @@ import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.util.rawserialization.WireLengths;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
@@ -87,7 +86,7 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     this.signature = signature;
     this.relevantLen = relevantLen;
 
-    assert((relevantLen == message.remaining()) || (relevantLen < MathUtils.uByteToInt(RELEVANT_LEN_ALL)));
+    assert((relevantLen == message.remaining()) || (relevantLen < Byte.toUnsignedInt(RELEVANT_LEN_ALL)));
     if (message.remaining() == message.array().length) {
       this.payload = message.array();
     } else {
@@ -129,11 +128,11 @@ public sealed class UserDataMessage<Handle extends RawSerializable> implements P
     byte[] hash = WireLengths.readBytes(buf, hashSize);
     byte[] signature = WireLengths.readBytes(buf, sigSize);
     byte relevantCode = buf.readByte();
-    int len = MathUtils.uByteToInt(relevantCode);
+    int len = Byte.toUnsignedInt(relevantCode);
 
     byte[] msg = WireLengths.readBytes(buf, buf.bytesRemaining());
 
-    if (len == MathUtils.uByteToInt(RELEVANT_LEN_ALL)) {
+    if (len == Byte.toUnsignedInt(RELEVANT_LEN_ALL)) {
       len = msg.length;
     }
 

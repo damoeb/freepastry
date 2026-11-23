@@ -508,7 +508,7 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
 
     /* Construct a USERDATA message... */
 
-    assert((relevantlen == message.remaining()) || (relevantlen < MathUtils.uByteToInt(UserDataMessage.RELEVANT_LEN_ALL)));
+    assert((relevantlen == message.remaining()) || (relevantlen < Byte.toUnsignedInt(UserDataMessage.RELEVANT_LEN_ALL)));
 
     PeerCommitmentState<Handle> peerCommitmentState = lookupPeer(target);
 

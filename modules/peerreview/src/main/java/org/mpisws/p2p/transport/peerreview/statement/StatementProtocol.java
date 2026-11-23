@@ -65,7 +65,6 @@ import org.mpisws.p2p.transport.peerreview.message.UserDataMessage;
 import org.mpisws.p2p.transport.peerreview.replay.Verifier;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
-import rice.p2p.util.MathUtils;
 import rice.p2p.util.tuples.Tuple;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CERT_MISSING;
@@ -291,7 +290,7 @@ public class StatementProtocol<Handle extends RawSerializable, Identifier extend
            }
 
            if (Arrays.equals(hash1, hash2)) {
-             logger.atWarn().log(() -> "INCONSISTENT-0 proof's authenticators have the same hash (seq1="+seq1+", seq2="+seq2+") hash: "+MathUtils.toBase64(hash1)+" -- discarding");
+             logger.atWarn().log(() -> "INCONSISTENT-0 proof's authenticators have the same hash (seq1="+seq1+", seq2="+seq2+") hash: "+java.util.Base64.getEncoder().encodeToString(hash1)+" -- discarding");
              incompleteStatement.finish();
              return;
            }
