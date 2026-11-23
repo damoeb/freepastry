@@ -39,10 +39,11 @@ advised of the possibility of such damage.
  * ({@link rice.persistence.PersistentStorage} on disk, {@link rice.persistence.MemoryStorage} in
  * memory), {@link rice.persistence.Cache} a bounded cache ({@link rice.persistence.LRUCache},
  * {@link rice.persistence.NoOpCache}), and {@link rice.persistence.CachedStorage} combines one of each,
- * as PAST uses it. All operations are asynchronous and report through a {@link rice.Continuation}.
+ * as PAST uses it. All operations that may block return a {@code CompletableFuture}.
  * <p>
  * Threading: {@code PersistentStorage} does its disk IO on the environment's blocking-IO thread and
- * calls the continuation back on the selector thread; {@code MemoryStorage} calls it synchronously on
- * the calling thread.
+ * completes the future on the selector thread; {@code MemoryStorage} returns a completed future. Chain
+ * with the non-{@code Async} methods and unwrap failures with {@link rice.Futures#unwrap} (see
+ * {@link rice.Futures}).
  */
 package rice.persistence;
