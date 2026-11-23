@@ -42,45 +42,29 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 
-@SuppressWarnings("unchecked")
+/**
+ * Serializes work on an id: {@link #lock(Id)} grants the lock at once if it is free, and otherwise when the
+ * holders queued before release it with {@link #unlock(Id)}, in FIFO order.
+ */
 public class LockManager {
 
-  // map: Id -> List<Continuation>
-  private HashMap<Id, List<Continuation<?, ?>>> locks;
+  // the queued grants per locked id; an id is locked while it is a key
+  private final HashMap<Id, List<CompletableFuture<Void>>> locks;
 
   // guards locks; private, so that code holding a reference to this object can't contend for it
   private final Object locksLock = new Object();
 
+  private final Environment environment;
+
   private final Logger logger;
 
   public LockManager(Environment env) {
-    this.locks = new HashMap<Id, List<Continuation<?, ?>>>();
-    this.logger =  env.getLogManager().getLogger(CachedStorageImpl.class,null);
-  }
-
-
-  public void lock(Id id, Continuation<?, ?> continuation) {
-    Continuation<?, ?> pendingContinuation = null;
-    logger.debug("locking on id {} for continuation {}", id, continuation);
-    synchronized (locksLock) {
-      if (locks.containsKey(id)) {
-        List<Continuation<?, ?>> locklist = locks.get(id);
-        logger.trace("locking on id {}; blocked on {} earlier continuations", id, locklist.size());
-        if (locklist.size() > 10) logger.info("locking on id {}; {} continuations in queue.  That seems large", id, locklist.size());
-        locklist.add(continuation);
-      } else {
-        locks.put(id, new ArrayList<Continuation<?, ?>>());
-        logger.trace("locking on id {}; no contention so running {}", id, continuation);
-        pendingContinuation = continuation;
-      }
-    }
-    if (pendingContinuation != null)
-      pendingContinuation.receiveResult(null);
+    this.locks = new HashMap<Id, List<CompletableFuture<Void>>>();
+    this.environment = env;
+    this.logger = env.getLogManager().getLogger(CachedStorageImpl.class, null);
   }
 
   /**
@@ -88,31 +72,57 @@ public class LockManager {
    *
    * @param id the id to lock
    * @return completes when the lock is granted: before this method returns if the lock is free, otherwise when
-   *     the holders queued before release it
+   *     the holders queued before release it (on the thread that unlocks). A queued grant is tracked by the
+   *     Environment, so destroying it fails the grant; a cancelled grant is skipped.
    */
   public CompletableFuture<Void> lock(Id id) {
-    return Futures.<Void>call(continuation -> lock(id, continuation));
-  }
-
-  public void unlock(Id id) {
-    Continuation<?, ?> pendingContinuation = null;
-    logger.debug("unlocking on id {}", id);
+    CompletableFuture<Void> grant = new CompletableFuture<Void>();
+    boolean isFree;
+    logger.debug("locking on id {}", id);
     synchronized (locksLock) {
-      if (locks.containsKey(id)) {
-        if (locks.get(id).isEmpty()) {
-          logger.trace("unlocking on id {}; last out the door -- removing lock ", id);
-          locks.remove(id);
-        } else {
-          Continuation<?, ?> next = locks.get(id).remove(0);
-          logger.trace("unlocking on id {}; starting next continuation {}", id, next);
-          pendingContinuation = next;
-        }
+      List<CompletableFuture<Void>> queue = locks.get(id);
+      isFree = (queue == null);
+      if (isFree) {
+        locks.put(id, new ArrayList<CompletableFuture<Void>>());
+        logger.trace("locking on id {}; no contention", id);
       } else {
-        logger.warn("unlocking on id {}; no lock currently held!!", id);
+        logger.trace("locking on id {}; blocked on {} earlier requests", id, queue.size());
+        if (queue.size() > 10) logger.info("locking on id {}; {} requests in queue.  That seems large", id, queue.size());
+        queue.add(grant);
       }
     }
-    if (pendingContinuation != null)
-      pendingContinuation.receiveResult(null);
+    if (isFree) {
+      grant.complete(null);
+      return grant;
+    }
+    return environment.track(grant);
   }
 
+  /**
+   * Releases the lock on {@code id}, and grants it to the next one queued, if any.
+   *
+   * @param id the locked id
+   */
+  public void unlock(Id id) {
+    logger.debug("unlocking on id {}", id);
+    while (true) {
+      CompletableFuture<Void> next;
+      synchronized (locksLock) {
+        List<CompletableFuture<Void>> queue = locks.get(id);
+        if (queue == null) {
+          logger.warn("unlocking on id {}; no lock currently held!!", id);
+          return;
+        }
+        if (queue.isEmpty()) {
+          logger.trace("unlocking on id {}; last out the door -- removing lock ", id);
+          locks.remove(id);
+          return;
+        }
+        next = queue.remove(0);
+      }
+      logger.trace("unlocking on id {}; granting the next request", id);
+      // a grant that was cancelled (or failed by a destroyed environment) is skipped
+      if (next.complete(null)) return;
+    }
+  }
 }
