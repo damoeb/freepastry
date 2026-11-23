@@ -408,7 +408,7 @@ These are open `TODO` comments in the main sources. None is a known defect; each
 
 ### filetransfer
 
-- `org/mpisws/p2p/filetransfer/FileTransferImpl.java` (chunk sending): allow more than one outstanding chunk; one chunk in flight is correct but slow on high-latency links.
+- `org/mpisws/p2p/filetransfer/OutgoingFileReceipt.java` (chunk sending): allow more than one outstanding chunk; one chunk in flight is correct but slow on high-latency links.
 
 ### multiring
 
@@ -416,7 +416,7 @@ These are open `TODO` comments in the main sources. None is a known defect; each
 
 ### pastry
 
-- `rice/pastry/PastryNode.java` (receiveException on a null request handle): pass a small handle with a proper `toString()` for diagnostics.
+- `rice/pastry/AppSocketHandshake.java` (receiveException on a null request handle): pass a small handle with a proper `toString()` for diagnostics.
 - `rice/pastry/boot/Bootstrapper.java` (`boot()`): give the caller a way to learn about errors; today failures are only logged.
 - `rice/pastry/direct/NetworkSimulator.java` (listeners): add a listener on the top-level transport layer to notify simulator listeners.
 - `rice/pastry/leafset/LeafSet.java` (iteration order): offer an iterator ordered from the nearest to the farthest neighbor (cw[0], ccw[0], cw[1], ccw[1], ...); the current iterator is deliberately unordered.
@@ -469,7 +469,7 @@ These are open `TODO` comments in the main sources. None is a known defect; each
 - `org/mpisws/p2p/transport/priority/PeerMessageWriter.java` (cancel of the in-flight message): handle the later socket callback after a cancel, so a cleared message cannot be written.
 - `org/mpisws/p2p/transport/proximity/MinRTTProximityProvider.java` (`pingThrottle`): make the 5 s ping throttle configurable.
 - `org/mpisws/p2p/transport/rendezvous/RendezvousTransportLayerImpl.java` (ephemeral registry): make the stale-port time a configurable parameter.
-- `org/mpisws/p2p/transport/rendezvous/RendezvousTransportLayerImpl.java` (requestor contact): when the requestor can be contacted directly, just do that; this may need protocol changes.
+- `org/mpisws/p2p/transport/rendezvous/RendezvousSocketOpener.java` (requestor contact): when the requestor can be contacted directly, just do that; this may need protocol changes.
 - `org/mpisws/p2p/transport/sourceroute/factory/WireSourceRouteFactory.java` (serialization): special-case the single hop, as is done for multi-inet addresses.
 - `org/mpisws/p2p/transport/sourceroute/manager/SourceRouteSelectingTransportLayer.java` (route probing): keep track of when routes were checked so that unanswered ones can go to `markDead`.
 - `org/mpisws/p2p/transport/ssl/SSLSocketManager.java` (read registration): check that no other receiver is registered to read; it would be silently replaced.
