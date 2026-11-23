@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.Executor;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -813,6 +814,18 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
    */
   public Timer getTimer() {
     return this;
+  }
+
+  /**
+   * Returns an Executor that runs each task on the selector thread, through {@link #invoke(Runnable)}: it
+   * always queues, also when called on the selector thread, and drops the task once the selector is destroyed.
+   * This is the only executor that FreePastry code passes to the {@code *Async} methods of a
+   * {@code CompletableFuture}.
+   *
+   * @return the executor of the selector thread
+   */
+  public Executor executor() {
+    return this::invoke;
   }
 
   public Selector getSelector() {
