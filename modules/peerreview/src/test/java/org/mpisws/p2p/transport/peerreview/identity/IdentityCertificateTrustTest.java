@@ -124,7 +124,7 @@ class IdentityCertificateTrustTest {
     return outcome;
   }
 
-  private static ByteBuffer certificateResponse(X509Certificate cert) throws IOException {
+  private static ByteBuffer certificateResponse(X509Certificate cert) throws Exception {
     SimpleOutputBuffer body = new SimpleOutputBuffer();
     body.writeByte(TableTransportLayer.RESPONSE_SUCCESS);
     new X509Serializer().serialize(cert, body);
