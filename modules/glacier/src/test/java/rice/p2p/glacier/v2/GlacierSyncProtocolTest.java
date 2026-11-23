@@ -18,7 +18,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -105,18 +104,7 @@ class GlacierSyncProtocolTest {
     Manifest manifest = new Manifest(new byte[0], new byte[NUM_FRAGMENTS][0], Long.MAX_VALUE / 2, new byte[0], new byte[0]);
     FragmentKey key = new FragmentKey(new VersionKey(factory.buildId("object"), 1), fragmentId);
     FragmentMetadata metadata = new FragmentMetadata(Long.MAX_VALUE / 2, 0, now - config.syncMinQuietTime() - 1);
-    CompletableFuture<Object> stored = new CompletableFuture<>();
-    fragmentStorage.store(key, metadata, new FragmentAndManifest(new Fragment(0), manifest), new Continuation<Object, Exception>() {
-      @Override
-      public void receiveResult(Object result) {
-        stored.complete(result);
-      }
-
-      @Override
-      public void receiveException(Exception exception) {
-        stored.completeExceptionally(exception);
-      }
-    });
+    CompletableFuture<Boolean> stored = fragmentStorage.store(key, metadata, new FragmentAndManifest(new Fragment(0), manifest));
     stored.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
   }
 
