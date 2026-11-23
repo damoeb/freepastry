@@ -38,9 +38,9 @@ package org.mpisws.p2p.transport.identity;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -308,8 +308,11 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     }
   }
 
-  // todo, make this a timer weak hash map
-  private final Map<UpperIdentifier, Integer> liveness = new HashMap<UpperIdentifier, Integer>();
+  /**
+   * The last liveness notified per upper identifier. Weak: every datagram's identity header names an upper
+   * identifier, so an entry lives only as long as the identifier is in use elsewhere. Selector thread.
+   */
+  private final Map<UpperIdentifier, Integer> liveness = new WeakHashMap<UpperIdentifier, Integer>();
 
   protected void notifyLivenessListeners(UpperIdentifier upperIdentifier, int liveness, @Nullable Map<String, Object> options) {
     logger.trace("notifyLivenessListeners({},{})", upperIdentifier, liveness);

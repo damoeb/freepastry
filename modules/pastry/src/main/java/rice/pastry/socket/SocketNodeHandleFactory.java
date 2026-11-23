@@ -37,9 +37,10 @@ advised of the possibility of such damage.
 package rice.pastry.socket;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
@@ -53,13 +54,19 @@ import rice.pastry.PastryNode;
 
 public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHandle>, Serializer<SocketNodeHandle> {
   protected PastryNode pn;
-  private final Map<SocketNodeHandle, SocketNodeHandle> handleSet;
+  /**
+   * The canonical instance of each handle (id, address and epoch) that is still in use. Every datagram's identity
+   * header names a handle, and a sender can make up any number of them, so a handle is kept only as long as something
+   * else refers to it (a binding, the leaf set, the routing table, a message); nobody can then tell a later, equal
+   * instance from the forgotten one. Weak like {@code Id}'s own cache. Selector thread, as before.
+   */
+  private final Map<SocketNodeHandle, WeakReference<SocketNodeHandle>> handleSet;
   private final Collection<NodeHandleFactoryListener<? super SocketNodeHandle>> listeners = new CopyOnWriteArrayList<NodeHandleFactoryListener<? super SocketNodeHandle>>();
 
   public SocketNodeHandleFactory(PastryNode pn) {
     this.pn = pn;
 
-    handleSet = new HashMap<SocketNodeHandle, SocketNodeHandle>();
+    handleSet = new WeakHashMap<SocketNodeHandle, WeakReference<SocketNodeHandle>>();
   }
 
 
@@ -82,13 +89,15 @@ public class SocketNodeHandleFactory implements NodeHandleFactory<SocketNodeHand
   @Override
   public SocketNodeHandle coalesce(SocketNodeHandle nodeHandle) {
     SocketNodeHandle handle = (SocketNodeHandle)nodeHandle;
-    if (handleSet.containsKey(handle)) {
-      return handleSet.get(handle);
+    WeakReference<SocketNodeHandle> reference = handleSet.get(handle);
+    SocketNodeHandle canonical = reference == null ? null : reference.get();
+    if (canonical != null) {
+      return canonical;
     }
 
     handle.setLocalNode(pn);
 
-    handleSet.put(handle, handle);
+    handleSet.put(handle, new WeakReference<SocketNodeHandle>(handle));
     notifyListeners(handle);
     return handle;
   }
