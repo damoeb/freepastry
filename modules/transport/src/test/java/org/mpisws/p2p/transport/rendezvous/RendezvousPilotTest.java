@@ -3,6 +3,7 @@ package org.mpisws.p2p.transport.rendezvous;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -648,6 +649,18 @@ class RendezvousPilotTest {
 
     assertArrayEquals(new byte[] {RendezvousTransportLayerImpl.NORMAL_SOCKET}, socket.writtenBytes());
     assertEquals(List.of(socket), delivered);
+  }
+
+  @Test
+  @DisplayName("a NATted node without outgoing pilots reports one clear failure when it opens a socket to another NATted node")
+  void nattedNodeWithoutPilotsFailsClearly() {
+    List<Exception> failures = new ArrayList<>();
+
+    layer.openSocket("natted", recordingCallback(new ArrayList<>(), failures), Map.<String, Object>of(CONTACT_OPTION, NATTED));
+
+    assertEquals(1, failures.size());
+    assertInstanceOf(IllegalStateException.class, failures.get(0));
+    assertEquals(List.of(), lower.opened);
   }
 
   private static SocketCallback<String> recordingCallback(List<P2PSocket<String>> delivered, List<Exception> failures) {
