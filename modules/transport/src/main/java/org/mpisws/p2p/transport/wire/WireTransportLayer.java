@@ -56,6 +56,7 @@ import org.mpisws.p2p.transport.TransportLayerListener;
 import org.mpisws.p2p.transport.util.DefaultCallback;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.environment.Environment;
 import org.mpisws.p2p.transport.TransportLayer;
 
@@ -145,7 +146,7 @@ public class WireTransportLayer
     this.errorHandler = errorHandler;
 
     if (this.errorHandler == null) {
-      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger, Level.INFO, environment.getLogRateLimiter());
     }
 
     if (enableUDPServer) {
@@ -206,7 +207,7 @@ public class WireTransportLayer
   @Override
   public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
     if (handler == null) {
-      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger);
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger, Level.INFO, environment.getLogRateLimiter());
       return;
     }
     this.errorHandler = handler;

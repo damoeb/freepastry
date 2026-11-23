@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.socket.nat.probe;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public class ConnectivityProbeApplication extends PastryAppl implements ProbeStr
     MultiInetSocketAddress local = ((SocketNodeHandle)thePastryNode.getLocalHandle()).getAddress();
     InetSocketAddress target = addressStrategy.getAddress(local, probeRequest.getProbeRequester());
     if (!AddressPolicyForwardStrategy.isAcceptable(AddressPolicyForwardStrategy.addresses(local), target)) {
-      logger.info("Refusing to probe {} for {}", target, probeRequest);
+      thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "probe.refused").log("Refusing to probe {} for {}", target, probeRequest);
       return;
     }
     prober.probe(target, probeRequest.getUID(), null, null);

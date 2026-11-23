@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.pastry.commonapi;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -567,7 +568,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
       if (nextHop != null && (thePastryNode.isAwaitingAuthentication(nextHop) || !thePastryNode.acceptsIdentity(nextHop))) {
         // the check has been started; the message goes on when it succeeds, and is dropped when it fails or times out
         if (!thePastryNode.deferUntilAuthenticated(nextHop, () -> forwardOrDeliver(routeMessage))) {
-          logger.info("Dropping {} from {}: its id is not authenticated and too many messages wait", routeMessage, nextHop);
+          thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "endpoint.unauthenticated-queue-full").log("Dropping {} from {}: its id is not authenticated and too many messages wait", routeMessage, nextHop);
         }
         return;
       }

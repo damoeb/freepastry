@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.priority;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -99,13 +100,13 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
       } else {
         int size = MathUtils.byteArrayToInt(sizeBytes);
         if (size <= 0 || size > ctx.maxBigMsgSize) {
-          ctx.logger.warn("Closing socket, BIG message of size:{} is invalid or too big! (max:{}) from:{}", size, ctx.maxBigMsgSize, socket);
+          ctx.logRateLimiter.at(ctx.logger, Level.WARN, "priority.big-message-too-big").log("Closing socket, BIG message of size:{} is invalid or too big! (max:{}) from:{}", size, ctx.maxBigMsgSize, socket);
           closeAndRelease(socket);
           return;
         }
         int initial = Math.min(size, INITIAL_CHUNK);
         if (!ctx.bigMsgBudget.tryReserve(initial)) {
-          ctx.logger.warn("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", size, socket);
+          ctx.logRateLimiter.at(ctx.logger, Level.WARN, "priority.big-message-budget").log("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", size, socket);
           closeAndRelease(socket);
           return;
         }
@@ -131,7 +132,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
         // the buffer is full and more is coming: grow it, within the budget
         int grown = (int) Math.min((long) announced, 2L * msgBuf.capacity());
         if (!ctx.bigMsgBudget.tryReserve(grown - msgBuf.capacity())) {
-          ctx.logger.warn("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", announced, socket);
+          ctx.logRateLimiter.at(ctx.logger, Level.WARN, "priority.big-message-budget").log("Closing socket, the budget for BIG messages in flight is used up, BIG message of size:{} from:{}", announced, socket);
           closeAndRelease(socket);
           return;
         }

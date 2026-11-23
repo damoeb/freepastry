@@ -31,6 +31,11 @@ transport_wire_max_datagrams_per_read = 64
 # read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
 # waits for the next turn, so that a burst on one socket neither nests calls nor starves others
 transport_ssl_max_read_callbacks_per_select = 64
+# log lines of one kind that remote input can trigger at will (a dropped malformed datagram, a
+# refused handshake, an exception contained on the selector thread) per interval; further lines of
+# that kind are counted and reported in one summary line with the next line of the kind
+logging_rate_limit_max_lines = 10
+logging_rate_limit_interval_millis = 60000
 transport_epoch_max_num_addresses = 2
 transport_sr_max_num_hops = 5
 

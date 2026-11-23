@@ -55,6 +55,7 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.Continuation;
 import rice.Futures;
 
@@ -265,12 +266,12 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   protected void fail(Exception e) {
     if (doneHandshaking) return;
-    logger.warn("fail:", e);
-    Throwable throwable = e;
-    while (throwable.getCause() != null) {
-      logger.warn("fail cause:", throwable.getCause());
-      throwable = throwable.getCause();
-    }
+    // a peer can fail handshakes as fast as it can connect: one rate-limited line, the stack trace at debug
+    Throwable rootCause = e;
+    while (rootCause.getCause() != null) rootCause = rootCause.getCause();
+    sslTL.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "ssl.handshake-failed")
+        .log("TLS handshake of {} failed: {} (root cause {})", this, e, rootCause);
+    logger.debug("TLS handshake of {} failed", this, e);
     handshakeFail = true;
     continuation.receiveException(e);
     socket.close();
@@ -361,7 +362,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
       }, sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager()), new Continuation<Object, Exception>() {
         @Override
         public void receiveException(Exception exception) {
-          logger.warn("SSL handshake task failed", exception);
+          sslTL.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "ssl.handshake-task-failed")
+              .setCause(exception).log("SSL handshake task failed");
         };
         @Override
         public void receiveResult(Object result) {

@@ -192,7 +192,7 @@ public class PriorityTransportLayer<Identifier>
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
     this.entityManagerContext = new PeerMessageWriterContext<Identifier>(transportLayer, livenessProvider, proximityProvider,
         selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
-        () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager);
+        () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager, env.getLogRateLimiter());
     transportLayer.setCallback(this);
     livenessProvider.addLivenessListener(this);
     this.errorHandler = handler;

@@ -54,6 +54,7 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.wire.exception.StalledSocketException;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.selector.SelectionKeyHandler;
 import rice.selector.TimerTask;
 
@@ -133,7 +134,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
     synchronized (this) {
       if (!isInHandshake) return;
     }
-    logger.info("Closing {}: its handshake did not finish within {} ms", this, handshakeTimeoutMillis);
+    tcp.wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.handshake-timeout")
+        .log("Closing {}: its handshake did not finish within {} ms", this, handshakeTimeoutMillis);
     close();
     tcp.wire.getErrorHandler().receivedException(addr,
         new StalledSocketException(addr, "Handshake did not finish within " + handshakeTimeoutMillis + " ms."));
@@ -382,7 +384,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
    * stack trace and reported to the error handler. Errors (OutOfMemoryError and the like) still propagate.
    */
   private void receiverFailed(P2PSocketReceiver<InetSocketAddress> receiver, RuntimeException e) {
-    logger.warn("Closing {}: its receiver {} threw", this, receiver, e);
+    tcp.wire.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "wire.receiver-threw")
+        .setCause(e).log("Closing {}: its receiver {} threw", this, receiver);
     tcp.wire.getErrorHandler().receivedException(addr, e);
     close();
     try {
@@ -512,7 +515,7 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
     } catch (IOException ioe) {
       if (logger.isDebugEnabled()) {
         logger.debug(this+" error reading", ioe);
-      } else logger.info("{} error reading", this);
+      } else tcp.wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.read-error").log("{} error reading", this);
       close();
       throw ioe;
     }

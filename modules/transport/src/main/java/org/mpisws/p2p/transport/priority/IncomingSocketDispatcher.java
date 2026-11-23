@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.priority;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -112,7 +113,7 @@ final class IncomingSocketDispatcher<Identifier> implements P2PSocketReceiver<Id
       ctx.entityManagers.apply(s.getIdentifier()).handleBigMsgSocket(s);
       break;
     default:
-      ctx.logger.warn("Closing socket from {}, unknown socket header:{}", s.getIdentifier(), val);
+      ctx.logRateLimiter.at(ctx.logger, Level.WARN, "priority.unknown-socket-header").log("Closing socket from {}, unknown socket header:{}", s.getIdentifier(), val);
       s.close();
       break;
     }

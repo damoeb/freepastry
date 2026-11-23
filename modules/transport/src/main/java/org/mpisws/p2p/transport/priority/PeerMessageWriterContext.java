@@ -48,6 +48,7 @@ import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.slf4j.Logger;
+import rice.environment.logging.LogRateLimiter;
 import rice.selector.SelectorLoop;
 
 /**
@@ -72,6 +73,8 @@ final class PeerMessageWriterContext<Identifier> {
   final Supplier<ErrorHandler<Identifier>> errorHandler;
   final Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback;
   final BooleanSupplier destroyed;
+  /** limits the lines that a peer's malformed input logs */
+  final LogRateLimiter logRateLimiter;
 
   /**
    * looks up (or creates) the manager of an identifier
@@ -112,6 +115,27 @@ final class PeerMessageWriterContext<Identifier> {
       Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
       BooleanSupplier destroyed,
       Function<Identifier, PeerMessageWriter<Identifier>> entityManagers) {
+    this(transportLayer, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
+        maxBigMsgSize, maxBigMsgInFlight, primarySocketListeners, listeners, errorHandler, callback, destroyed,
+        entityManagers, LogRateLimiter.withDefaults());
+  }
+
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      SelectorLoop selectorManager,
+      Logger logger,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      long maxBigMsgInFlight,
+      List<PrimarySocketListener<Identifier>> primarySocketListeners,
+      TransportListeners<Identifier> listeners,
+      Supplier<ErrorHandler<Identifier>> errorHandler,
+      Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
+      BooleanSupplier destroyed,
+      Function<Identifier, PeerMessageWriter<Identifier>> entityManagers,
+      LogRateLimiter logRateLimiter) {
     this.tl = transportLayer;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;
@@ -127,5 +151,6 @@ final class PeerMessageWriterContext<Identifier> {
     this.callback = callback;
     this.destroyed = destroyed;
     this.entityManagers = entityManagers;
+    this.logRateLimiter = logRateLimiter;
   }
 }

@@ -62,6 +62,7 @@ import org.mpisws.p2p.transport.util.SocketInputBuffer;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -103,7 +104,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
     if (handler != null) {
       this.errorHandler = handler;
     } else {
-      this.errorHandler = new DefaultErrorHandler<LowerIdentifier>(logger);
+      this.errorHandler = new DefaultErrorHandler<LowerIdentifier>(logger, Level.INFO, environment.getLogRateLimiter());
     }
 
     transportLayer.setCallback(this);
@@ -317,7 +318,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
               }
 
               if (!Arrays.equals(buf.array(), localIdentifier)) {
-                logger.atInfo().log(() -> "incomingSocket() FAILURE expected "+
+                environment.getLogRateLimiter().at(logger, Level.INFO, "identity.incoming-socket-failure").log(() -> "incomingSocket() FAILURE expected "+
                       Arrays.toString(buf.array())+" me:"+
                       Arrays.toString(localIdentifier));
 
@@ -354,7 +355,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
               }
             } else {
               // doesn't want to verify
-              logger.info("Connection from {} didn't want to verify our identity.", socket.getIdentifier());
+              environment.getLogRateLimiter().at(logger, Level.INFO, "identity.no-verify").log("Connection from {} didn't want to verify our identity.", socket.getIdentifier());
             }
             // either he doesn't want to verify, or the TO was me,
             // now read the FROM, and add the proper index into the options
@@ -387,7 +388,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
                   // no problem, sending message
                 } else {
                   // this is bad, a previous instance is trying to open a socket
-                  logger.atWarn().log(() -> "Serious error.  There was an attempt to open a socket from a supposedly stale identifier:"+
+                  environment.getLogRateLimiter().at(logger, Level.WARN, "identity.stale-socket").log(() -> "Serious error.  There was an attempt to open a socket from a supposedly stale identifier:"+
                         from+". Current identifier is "+bindings.get(serializer.translateUp(socket.getIdentifier()))+" lower:"+socket.getIdentifier());
                   socket.close();
                   return;
@@ -551,7 +552,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
         msg.get(dest);
         if (!Arrays.equals(dest, localIdentifier)) {
           // send back an error
-          logger.atInfo().log(() -> "received message for wrong node from:"+lowerIdentifier+
+          environment.getLogRateLimiter().at(logger, Level.INFO, "identity.wrong-node").log(() -> "received message for wrong node from:"+lowerIdentifier+
               " intended:"+Arrays.toString(dest)+
               " me:"+Arrays.toString(localIdentifier));
 
@@ -574,7 +575,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
 
           // need to do this so the bootstrapper knows the proper identity
         } else {
-          logger.atWarn().log(() -> "Warning.  Received message from stale identifier:"+
+          environment.getLogRateLimiter().at(logger, Level.WARN, "identity.stale-message").log(() -> "Warning.  Received message from stale identifier:"+
               from+". Current identifier is "+bindings.get(serializer.translateUp(lowerIdentifier))+" lower:"+lowerIdentifier+" Probably a delayed message, dropping.");
           errorHandler.receivedUnexpectedData(lowerIdentifier, array, ByteBuffers.arrayPosition(msg), newOptions);
           return;
@@ -595,7 +596,7 @@ class LowerIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
         UpperIdentifier oldDest = bindings.get(serializer.translateUp(lowerIdentifier));
 
         UpperIdentifier newDest = serializer.deserialize(new SimpleInputBuffer(ByteBuffers.arrayForRead(msg), ByteBuffers.arrayPosition(msg)), lowerIdentifier);
-        logger.info("received INCORRECT_IDENTITY:{} old:{} new:{}", lowerIdentifier, oldDest, newDest);
+        environment.getLogRateLimiter().at(logger, Level.INFO, "identity.incorrect-identity").log("received INCORRECT_IDENTITY:{} old:{} new:{}", lowerIdentifier, oldDest, newDest);
 
         if (identity.addBinding(newDest, lowerIdentifier, options)) { // should call setDeadForever
 

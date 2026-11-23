@@ -52,6 +52,7 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.selector.SelectionKeyHandler;
 
 public class TCPLayer extends SelectionKeyHandler {
@@ -190,7 +191,8 @@ public class TCPLayer extends SelectionKeyHandler {
         return;
       }
       if (!startHandshake(remoteAddress)) {
-        logger.info("Closing a socket from {}: it already has {} sockets in the handshake", remoteAddress, maxHandshakingSocketsPerAddress);
+        wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.handshake-cap")
+            .log("Closing a socket from {}: it already has {} sockets in the handshake", remoteAddress, maxHandshakingSocketsPerAddress);
         channel.close();
         return;
       }

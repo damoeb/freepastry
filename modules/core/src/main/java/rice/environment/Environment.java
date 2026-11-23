@@ -51,6 +51,7 @@ import rice.Destructible;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.exception.simple.SimpleExceptionStrategy;
 import rice.environment.logging.LogManager;
+import rice.environment.logging.LogRateLimiter;
 import rice.environment.logging.Slf4jLogManager;
 import rice.environment.params.Parameters;
 import rice.environment.params.simple.SimpleParameters;
@@ -83,6 +84,7 @@ public class Environment implements Destructible {
   private Parameters params;
   private Logger logger;
   private ExceptionStrategy exceptionStrategy;
+  private final LogRateLimiter logRateLimiter;
 
   private HashSet<Destructible> destructables = new HashSet<Destructible>();
 
@@ -121,6 +123,8 @@ public class Environment implements Destructible {
     // choose defaults for all non-specified parameters
     chooseDefaults();
     logger = this.logManager.getLogger(getClass(), null);
+    TimeSource clock = this.time;
+    logRateLimiter = LogRateLimiter.fromParameters(params, clock::currentTimeMillis);
 
 
     this.selectorManager.setEnvironment(this);
@@ -318,6 +322,13 @@ public class Environment implements Destructible {
       return;
     }
     destructables.remove(destructable);
+  }
+
+  /**
+   * @return the limiter for log lines that remote input can trigger at will, such as a dropped malformed datagram
+   */
+  public LogRateLimiter getLogRateLimiter() {
+    return logRateLimiter;
   }
 
   public ExceptionStrategy getExceptionStrategy() {

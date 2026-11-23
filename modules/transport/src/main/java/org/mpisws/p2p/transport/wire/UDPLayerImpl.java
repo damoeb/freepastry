@@ -54,6 +54,7 @@ import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.selector.SelectionKeyHandler;
 
 public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
@@ -222,7 +223,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
           } catch (RuntimeException e) {
             // A layer above did not reject this datagram cleanly, or has a bug. Either way it must cost this datagram,
             // not the selector thread, whose exceptions destroy the environment and every node in it.
-            logger.warn("Dropping a datagram from {}: reading it threw", address, e);
+            wire.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "wire.datagram-reader-threw")
+                .setCause(e).log("Dropping a datagram from {}: reading it threw", address);
             wire.getErrorHandler().receivedException(address, e);
           }
           readBuffer.clear();

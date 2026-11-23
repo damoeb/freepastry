@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.priority;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 
 import org.mpisws.p2p.transport.P2PSocket;
@@ -57,7 +58,7 @@ final class SizeReader<Identifier> extends PrimarySocketBufferReader<Identifier>
     ctx.logger.trace("{} reading message of size {}", owner, msgSize);
 
     if (msgSize < 0 || msgSize > ctx.maxMsgSize) {
-      ctx.logger.warn("{} attempted to send a message of size {}. MAX_MSG_SIZE = {}", socket, msgSize, ctx.maxMsgSize);
+      ctx.logRateLimiter.at(ctx.logger, Level.WARN, "priority.message-too-big").log("{} attempted to send a message of size {}. MAX_MSG_SIZE = {}", socket, msgSize, ctx.maxMsgSize);
       owner.closeMe(socket);
       return;
     }

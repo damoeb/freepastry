@@ -136,7 +136,7 @@ public class SSLTransportLayer<Identifier, MessageType>
     this.maxReadCallbacksPerSelect = requirePositive(MAX_READ_CALLBACKS_PER_SELECT_PARAM, env.getParameters().getInt(MAX_READ_CALLBACKS_PER_SELECT_PARAM));
     this.logger = env.getLogManager().getLogger(SSLTransportLayer.class, null);
     this.transportLayer = transportLayer;
-    errorHandler = new DefaultErrorHandler<Identifier>(logger, Level.WARN);
+    errorHandler = new DefaultErrorHandler<Identifier>(logger, Level.WARN, env.getLogRateLimiter());
     this.clientAuth = clientAuth;
 
     try {

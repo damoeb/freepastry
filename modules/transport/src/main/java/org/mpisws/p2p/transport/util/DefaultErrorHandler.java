@@ -42,6 +42,7 @@ import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
+import rice.environment.logging.LogRateLimiter;
 
 
 /**
@@ -54,6 +55,7 @@ public class DefaultErrorHandler<Identifier> implements
   private final int NUM_BYTES_TO_PRINT = 8;
   private final Level printlevel;
   private Logger logger;
+  private final LogRateLimiter logRateLimiter;
 
   public DefaultErrorHandler(Logger logger) {
     this(logger, Level.INFO);
@@ -64,9 +66,19 @@ public class DefaultErrorHandler<Identifier> implements
    * @param printlevel the level {@link #receivedException(Object, Throwable)} logs at
    */
   public DefaultErrorHandler(Logger logger, Level printlevel) {
+    this(logger, printlevel, LogRateLimiter.withDefaults());
+  }
+
+  /**
+   * @param logger where to log
+   * @param printlevel the level {@link #receivedException(Object, Throwable)} logs at
+   * @param logRateLimiter limits the lines, which a peer can trigger at will with malformed input
+   */
+  public DefaultErrorHandler(Logger logger, Level printlevel, LogRateLimiter logRateLimiter) {
     if (logger == null) throw new IllegalArgumentException("logger is null");
     this.logger = logger;
     this.printlevel = printlevel;
+    this.logRateLimiter = logRateLimiter;
   }
 
   @Override
@@ -79,13 +91,13 @@ public class DefaultErrorHandler<Identifier> implements
       for (int i = 0; i < numBytes; i++) {
         text+=bytes[i]+",";
       }
-      logger.info("Unexpected data from "+id+" "+text);
+      logRateLimiter.at(logger, Level.INFO, "error-handler.unexpected-data").log("Unexpected data from {} {}", id, text);
     }
   }
 
   @Override
   public void receivedException(@Nullable Identifier identifier, Throwable error) {
-    logger.atLevel(printlevel).setCause(error).log(() -> String.valueOf(identifier));
+    logRateLimiter.at(logger, printlevel, "error-handler.exception").setCause(error).log(() -> String.valueOf(identifier));
   }
 
 }

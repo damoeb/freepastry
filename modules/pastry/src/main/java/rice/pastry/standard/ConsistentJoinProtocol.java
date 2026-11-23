@@ -36,6 +36,7 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package rice.pastry.standard;
 
+import org.slf4j.event.Level;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -405,7 +406,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       // Certified mode: the answer must come over TLS from an authenticated node. The handles it brings (leaf set,
       // routing table rows) are each verified at their own address before they are admitted. Without certificates
       // (plain mode) the joiner trusts the answer, and the network must be trusted.
-      logger.warn("Ignoring accepted JoinRequest {} from {}, the sender is not authenticated", joinRequest, joinRequest.getSender());
+      thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "join.unauthenticated").log("Ignoring accepted JoinRequest {} from {}, the sender is not authenticated", joinRequest, joinRequest.getSender());
     } else { // this is the node that initiated the join request in the first place
       completeJoin(joinRequest);
     }
