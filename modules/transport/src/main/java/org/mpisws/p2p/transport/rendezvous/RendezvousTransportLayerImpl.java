@@ -67,10 +67,13 @@ import org.mpisws.p2p.transport.util.SocketWrapperSocket;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.environment.params.ConfigChecks;
+import rice.environment.params.Parameters;
 import rice.environment.random.RandomSource;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.tuples.Tuple;
 import rice.selector.SelectorLoop;
+import rice.selector.TimerTask;
 
 /**
  * The trick here is that this layer is at some level, say InetSocketAddress, but must pass around very High-Level
@@ -166,6 +169,17 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
   private ErrorHandler<Identifier> errorHandler;
 
+  /** Parameter: how long a rendezvous node keeps a connector waiting for its acceptor; 0 keeps it until the socket closes. */
+  public static final String CONNECTOR_TIMEOUT_MILLIS_KEY = "transport_rendezvous_connector_timeout_millis";
+  /** Parameter: how many connectors a rendezvous node keeps waiting at the same time; further ones are closed at once. */
+  public static final String MAX_WAITING_CONNECTORS_KEY = "transport_rendezvous_max_waiting_connectors";
+  /** As long as {@code transport_wire_handshake_timeout_millis}, which closes a waiting connector socket anyway. */
+  public static final int DEFAULT_CONNECTOR_TIMEOUT_MILLIS = 10_000;
+  public static final int DEFAULT_MAX_WAITING_CONNECTORS = 1024;
+
+  private final int connectorTimeoutMillis;
+  private final int maxWaitingConnectors;
+
   public RendezvousTransportLayerImpl(
       TransportLayer<Identifier, ByteBuffer> transportLayer,
       String RENDEZVOUS_CONTACT_STRING,
@@ -190,6 +204,13 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.ephemeralDB = new EphemeralIdentifierRegistry<Identifier, HighIdentifier>(env,EphemeralIdentifierRegistry.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
+    Parameters parameters = env.getParameters();
+    this.connectorTimeoutMillis = parameters.contains(CONNECTOR_TIMEOUT_MILLIS_KEY)
+        ? ConfigChecks.requireNonNegative(CONNECTOR_TIMEOUT_MILLIS_KEY, parameters.getInt(CONNECTOR_TIMEOUT_MILLIS_KEY))
+        : DEFAULT_CONNECTOR_TIMEOUT_MILLIS;
+    this.maxWaitingConnectors = parameters.contains(MAX_WAITING_CONNECTORS_KEY)
+        ? ConfigChecks.requirePositive(MAX_WAITING_CONNECTORS_KEY, parameters.getInt(MAX_WAITING_CONNECTORS_KEY))
+        : DEFAULT_MAX_WAITING_CONNECTORS;
 
     transportLayer.setCallback(this);
   }
@@ -493,7 +514,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
           int uid = sib.readInt();
 
           logger.trace("readConnectHeader({},{},{},{})", socket, target, opener, uid);
-          putConnectSocket(opener, target, uid, socket);
+          if (!putConnectSocket(opener, target, uid, socket)) return;
 
           if (incomingPilots.containsKey(target)) {
             logger.trace("I'm the rendezvous for {} to {} and I have a pilot.", opener, target);
@@ -718,58 +739,106 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     new Forwarder<Identifier>(null,socket,b,logger);
   }
 
-  /**
-   * requestor, target, uid -> socket
-   */
-  Map<HighIdentifier, Map<HighIdentifier, Map<Integer, P2PSocket<Identifier>>>> connectSockets =
-    new HashMap<HighIdentifier, Map<HighIdentifier, Map<Integer, P2PSocket<Identifier>>>>();
+  /** A connector socket at the rendezvous node, and the task that closes it if its acceptor does not come in time. */
+  private record WaitingConnector<Identifier>(P2PSocket<Identifier> socket, TimerTask expiry) {}
 
   /**
-   * This map stores the connect socket until the corresponding accept socket arrives
+   * requestor, target, uid -> connector waiting for its acceptor. Only touched on the selector thread.
    */
-  public void putConnectSocket(HighIdentifier requestor, HighIdentifier target, int uid, P2PSocket<Identifier> socket) {
-    Map<HighIdentifier, Map<Integer, P2PSocket<Identifier>>> socketsByTarget = connectSockets.get(requestor);
+  private final Map<HighIdentifier, Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>>> connectSockets =
+    new HashMap<HighIdentifier, Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>>>();
+  private int waitingConnectorCount;
+
+  /**
+   * This map stores the connect socket until the corresponding accept socket arrives, for at most
+   * {@code transport_rendezvous_connector_timeout_millis}. The socket stays under the handshake deadline of the lower
+   * layer while it waits.
+   *
+   * @return false if the socket was closed instead: too many connectors wait already, or one waits under the same uid
+   */
+  public boolean putConnectSocket(final HighIdentifier requestor, final HighIdentifier target, final int uid, final P2PSocket<Identifier> socket) {
+    if (waitingConnectorCount >= maxWaitingConnectors) {
+      logger.warn("{} connectors wait for their acceptor already, closing the new one from {} to {} uid:{} {}", waitingConnectorCount, requestor, target, uid, socket);
+      socket.close();
+      return false;
+    }
+
+    Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>> socketsByTarget = connectSockets.get(requestor);
     if (socketsByTarget == null) {
-      socketsByTarget = new HashMap<HighIdentifier, Map<Integer, P2PSocket<Identifier>>>();
+      socketsByTarget = new HashMap<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>>();
       connectSockets.put(requestor, socketsByTarget);
     }
 
-    Map<Integer, P2PSocket<Identifier>> socketsByUid = socketsByTarget.get(target);
+    Map<Integer, WaitingConnector<Identifier>> socketsByUid = socketsByTarget.get(target);
     if (socketsByUid == null) {
-      socketsByUid = new HashMap<Integer, P2PSocket<Identifier>>();
+      socketsByUid = new HashMap<Integer, WaitingConnector<Identifier>>();
       socketsByTarget.put(target, socketsByUid);
     }
 
-    P2PSocket<Identifier> three = socketsByUid.get(uid);
-    if (three != null) {
+    WaitingConnector<Identifier> existing = socketsByUid.get(uid);
+    if (existing != null) {
       // error, we have a problem, because there is already a socket registered here with the same uid!!!
-      logger.warn("error in storeConnectSocket() there is already a connector with the same UID!!!, dropping the new one.  Old:{} new:{}", three, socket);
+      logger.warn("error in storeConnectSocket() there is already a connector with the same UID!!!, dropping the new one.  Old:{} new:{}", existing.socket(), socket);
       socket.close();
-      return;
+      return false;
     }
 
-    socketsByUid.put(uid, socket);
+    TimerTask expiry = new TimerTask() {
+      @Override
+      public void run() {
+        expireConnectSocket(requestor, target, uid, socket);
+      }
+    };
+    socketsByUid.put(uid, new WaitingConnector<>(socket, expiry));
+    waitingConnectorCount++;
+    if (connectorTimeoutMillis > 0) selectorManager.schedule(expiry, connectorTimeoutMillis);
+    return true;
+  }
 
-    // TODO: connectSockets entries whose acceptor never connects are never removed; add a timeout
+  private void expireConnectSocket(HighIdentifier requestor, HighIdentifier target, int uid, P2PSocket<Identifier> socket) {
+    Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>> socketsByTarget = connectSockets.get(requestor);
+    Map<Integer, WaitingConnector<Identifier>> socketsByUid = socketsByTarget == null ? null : socketsByTarget.get(target);
+    WaitingConnector<Identifier> waiting = socketsByUid == null ? null : socketsByUid.get(uid);
+    if (waiting == null || !waiting.socket().equals(socket)) return; // its acceptor came, or it was replaced
+    logger.info("no acceptor came within {} ms, closing the connector from {} to {} uid:{} {}", connectorTimeoutMillis, requestor, target, uid, socket);
+    removeConnectSocket(requestor, target, uid);
+    socket.close();
   }
 
   public @Nullable P2PSocket<Identifier> removeConnectSocket(HighIdentifier requestor, HighIdentifier target, int uid) {
-    Map<HighIdentifier, Map<Integer, P2PSocket<Identifier>>> socketsByTarget = connectSockets.get(requestor);
+    Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>> socketsByTarget = connectSockets.get(requestor);
     if (socketsByTarget == null) {
       return null;
     }
 
-    Map<Integer, P2PSocket<Identifier>> socketsByUid = socketsByTarget.get(target);
+    Map<Integer, WaitingConnector<Identifier>> socketsByUid = socketsByTarget.get(target);
     if (socketsByUid == null) {
       return null;
     }
 
     // clean this up
-    P2PSocket<Identifier> three = socketsByUid.remove(uid);
+    WaitingConnector<Identifier> waiting = socketsByUid.remove(uid);
     if (socketsByUid.isEmpty()) socketsByTarget.remove(target);
     if (socketsByTarget.isEmpty()) connectSockets.remove(requestor);
+    if (waiting == null) return null;
 
-    return three;
+    waiting.expiry().cancel();
+    waitingConnectorCount--;
+    return waiting.socket();
+  }
+
+  /** Closes every connector that still waits for its acceptor. */
+  private void closeWaitingConnectors() {
+    for (Map<HighIdentifier, Map<Integer, WaitingConnector<Identifier>>> socketsByTarget : connectSockets.values()) {
+      for (Map<Integer, WaitingConnector<Identifier>> socketsByUid : socketsByTarget.values()) {
+        for (WaitingConnector<Identifier> waiting : socketsByUid.values()) {
+          waiting.expiry().cancel();
+          waiting.socket().close();
+        }
+      }
+    }
+    connectSockets.clear();
+    waitingConnectorCount = 0;
   }
 
   @Override
@@ -1024,6 +1093,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   }
   @Override
   public void destroy() {
+    closeWaitingConnectors();
     transportLayer.destroy();
   }
 

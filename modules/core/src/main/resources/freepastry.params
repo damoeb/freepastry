@@ -128,6 +128,11 @@ rendezvous_test_firewall = false
 rendezvous_test_num_firewalled = 0.3
 # don't firewall the first node, useful for testing
 rendezvous_test_makes_bootstrap = false
+# a rendezvous node closes a connector socket whose acceptor has not come within this time
+# (as long as transport_wire_handshake_timeout_millis by default); 0 = until the socket closes
+transport_rendezvous_connector_timeout_millis = 10000
+# connector sockets a rendezvous node keeps waiting for their acceptor; further ones are closed at once
+transport_rendezvous_max_waiting_connectors = 1024
 
 # NAT/UPnP settings
 nat_network_prefixes = 127.0.0.1;10.;192.168.
