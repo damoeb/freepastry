@@ -70,10 +70,10 @@ import rice.pastry.routing.RoutingTable;
  * @author Peter Druschel
  */
 public class LeafSet implements Iterable<NodeHandle> {
-  private Id baseId;
-  private NodeHandle baseHandle;
-  private LeafSetHalf cwSet;
-  private LeafSetHalf ccwSet;
+  Id baseId;
+  NodeHandle baseHandle;
+  LeafSetHalf cwSet;
+  LeafSetHalf ccwSet;
 
   boolean observe = true;
   private int theSize;
@@ -866,72 +866,10 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
-   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
-   * leafset first defines the NodeHandles to be loaded into an array, then
-   * specifies their locations. We do this because
-   * a NodeHandle takes up a lot more space than the index in the leafset, and
-   * it may be in the leafset 1 or 2 times.
-   *
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle baseHandle                                         +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle 1st                                                +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *                    ...
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle numUniqueHandls-th                                 +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *
+   * Reads a leaf set from its wire format, see {@link LeafSetWire}.
    */
   public static LeafSet build(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory) throws IOException {
-    byte theSize = buf.readByte();
-    byte numUniqueHandles = buf.readByte();
-    byte cwSize = buf.readByte();
-    byte ccwSize = buf.readByte();
-    if (theSize < 0 || numUniqueHandles < 0 || cwSize < 0 || ccwSize < 0) {
-      throw new IOException("Invalid leafset sizes: " + theSize + "/" + numUniqueHandles + "/" + cwSize + "/" + ccwSize);
-    }
-    NodeHandle baseHandle = nodeHandleFactory.readNodeHandle(buf);
-    NodeHandle[] nhTable = new NodeHandle[numUniqueHandles];
-    for (int i = 0; i < numUniqueHandles; i++) {
-      nhTable[i] = nodeHandleFactory.readNodeHandle(buf);
-    }
-
-    NodeHandle[] cwTable = new NodeHandle[cwSize];
-    NodeHandle[] ccwTable = new NodeHandle[ccwSize];
-
-    for (int i = 0; i < cwSize; i++) {
-      cwTable[i] = readTableEntry(buf, nhTable);
-    }
-
-    for (int i = 0; i < ccwSize; i++) {
-      ccwTable[i] = readTableEntry(buf, nhTable);
-    }
-
-    return new LeafSet(baseHandle,theSize, true, cwTable, ccwTable);
-  }
-
-  private static NodeHandle readTableEntry(InputBuffer buf, NodeHandle[] nhTable) throws IOException {
-    byte index = buf.readByte();
-    if (index < 0 || index >= nhTable.length) {
-      throw new IOException("Leafset handle index " + index + " out of range 0.." + (nhTable.length - 1));
-    }
-    return nhTable[index];
+    return LeafSetWire.read(buf, nodeHandleFactory);
   }
 
   public LeafSet(NodeHandle localNode, int size, boolean observe, NodeHandle[] cwTable, NodeHandle[] ccwTable) {
@@ -946,62 +884,10 @@ public class LeafSet implements Iterable<NodeHandle> {
   }
 
   /**
-   * So that small LeafSets (who have overlapping nodes) don't waste bandwidth,
-   * leafset first defines the NodeHandles to be loaded into an array, then
-   * specifies their locations. We do this because
-   * a NodeHandle takes up a lot more space than the index in the leafset, and
-   * it may be in the leafset 1 or 2 times.
-   *
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + byte theSize  +numUniqueHandls+ byte cwSize   + byte ccwSize  +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle baseHandle                                         +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle 1st                                                +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *                    ...
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + NodeHandle numUniqueHandls-th                                 +
-   *                    ...
-   *   +                                                               +
-   *   +                                                               +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + byte cw 1st   +  cw  2nd      + ...           + ccw 1st       +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
-   *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   *
+   * Writes this leaf set in its wire format, see {@link LeafSetWire}.
    */
   public synchronized void serialize(OutputBuffer buf) throws IOException {
-    HashSet<NodeHandle> superset = new HashSet<NodeHandle>();
-    superset.addAll(cwSet.getCollection());
-    superset.addAll(ccwSet.getCollection());
-    ArrayList<NodeHandle> list = new ArrayList<NodeHandle>(superset);
-
-    buf.writeByte((byte)theSize);
-    buf.writeByte((byte)list.size());
-    buf.writeByte((byte)clockwiseSize());
-    buf.writeByte((byte)counterClockwiseSize());
-
-    baseHandle.serialize(buf);
-
-    for (NodeHandle nodeHandle : list) {
-      nodeHandle.serialize(buf);
-    }
-
-    for (int i = 0; i < cwSet.size(); i++) {
-      buf.writeByte((byte)list.indexOf(cwSet.get(i)));
-    }
-
-    for (int i = 0; i < ccwSet.size(); i++) {
-      buf.writeByte((byte)list.indexOf(ccwSet.get(i)));
-    }
+    LeafSetWire.write(this, buf);
   }
 
   /**
