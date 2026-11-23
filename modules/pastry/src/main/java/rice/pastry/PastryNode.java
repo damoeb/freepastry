@@ -49,8 +49,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
@@ -128,13 +126,8 @@ public class PastryNode implements
 
   ReadyStrategy readyStrategy;
 
-  private volatile boolean joinFailed = false;
-
-  /**
-   * Signalled when the node becomes ready or fails to join, see {@link #awaitReadyOrJoinFailed}.
-   */
-  private final ReentrantLock readyLock = new ReentrantLock();
-  private final Condition readyOrJoinFailed = readyLock.newCondition();
+  /** Who waits for the node to become ready or to fail to join, and who is told about it. */
+  private final ReadyAndJoinSignals signals = new ReadyAndJoinSignals();
 
   private boolean isDestroyed = false;
 
@@ -386,7 +379,7 @@ public class PastryNode implements
     if (ready) {
       nodeIsReady(true);
 
-      notifyPastryNodeListeners(Boolean.valueOf(true));
+      signals.notifyListeners(this, Boolean.valueOf(true));
 
       if (neverBeenReady) {
         // notify applications
@@ -399,10 +392,10 @@ public class PastryNode implements
       }
 
       // signal any apps that might be waiting for the node to get ready
-      signalReadyOrJoinFailed();
+      signals.signal();
     } else {
       nodeIsReady(false);
-      notifyPastryNodeListeners(Boolean.valueOf(false));
+      signals.notifyListeners(this, Boolean.valueOf(false));
 
     }
   }
@@ -433,19 +426,13 @@ public class PastryNode implements
   /****************** PastryNodeListener **********/
 
   /**
-   * Registered listeners.  Notified in reverse order of registration.
-   */
-  private final CopyOnWriteArrayList<PastryNodeListener> pastryNodeListeners = new CopyOnWriteArrayList<PastryNodeListener>();
-
-  /**
    * Register to be notified when the node becomes ready (or not) or fails to join.
    * Has no effect if the listener is already registered.
    *
    * @param listener the listener
    */
   public void addPastryNodeListener(PastryNodeListener listener) {
-    if (listener == null) throw new NullPointerException();
-    pastryNodeListeners.addIfAbsent(listener);
+    signals.addListener(listener);
   }
 
   /**
@@ -454,21 +441,7 @@ public class PastryNode implements
    * @param listener the listener
    */
   public void removePastryNodeListener(PastryNodeListener listener) {
-    pastryNodeListeners.remove(listener);
-  }
-
-  /**
-   * @param event Boolean (ready) or JoinFailedException
-   */
-  private void notifyPastryNodeListeners(Object event) {
-    PastryNodeListener[] listeners = pastryNodeListeners.toArray(new PastryNodeListener[0]);
-    for (int i = listeners.length-1; i >= 0; i--) {
-      if (event instanceof Boolean b) {
-        listeners[i].pastryNodeReady(this, b.booleanValue());
-      } else if (event instanceof JoinFailedException joinFailedException) {
-        listeners[i].pastryNodeJoinFailed(this, joinFailedException);
-      }
-    }
+    signals.removeListener(listener);
   }
 
   /**
@@ -683,22 +656,11 @@ public class PastryNode implements
     return appSockets.connect(i, deliverSocketToMe, appl, timeout);
   }
 
-  private JoinFailedException joinFailedReason;
   public void joinFailed(JoinFailedException exception) {
     logger.atWarn().log(() -> "joinFailed("+exception+")");
-    joinFailedReason = exception;
-    joinFailed = true;
-    signalReadyOrJoinFailed();
-    notifyPastryNodeListeners(exception);
-  }
-
-  private void signalReadyOrJoinFailed() {
-    readyLock.lock();
-    try {
-      readyOrJoinFailed.signalAll();
-    } finally {
-      readyLock.unlock();
-    }
+    signals.setJoinFailed(exception);
+    signals.signal();
+    signals.notifyListeners(this, exception);
   }
 
   /**
@@ -711,28 +673,18 @@ public class PastryNode implements
    * @throws InterruptedException if the thread was interrupted while waiting
    */
   public boolean awaitReadyOrJoinFailed(long timeout, TimeUnit unit) throws InterruptedException {
-    long nanos = unit.toNanos(timeout);
-    readyLock.lock();
-    try {
-      while (!isReady() && !joinFailed) {
-        if (nanos <= 0) return false;
-        nanos = readyOrJoinFailed.awaitNanos(nanos);
-      }
-      return true;
-    } finally {
-      readyLock.unlock();
-    }
+    return signals.await(timeout, unit, this::isReady);
   }
 
   /**
    * Returns true if there was a fatal error Joining
    */
   public boolean joinFailed() {
-    return joinFailed;
+    return signals.joinFailed();
   }
 
   public JoinFailedException joinFailedReason() {
-    return joinFailedReason;
+    return signals.joinFailedReason();
   }
 
   public Router getRouter() {
