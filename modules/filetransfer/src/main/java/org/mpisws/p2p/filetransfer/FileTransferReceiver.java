@@ -52,9 +52,9 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.environment.processing.Processor;
-import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.util.MathUtils;
 
@@ -548,7 +548,7 @@ class FileTransferReceiver {
       // schedule them to be written, then notified on the blockingIOThread
 
       // note, that it is required that these are in order
-      WorkRequest<Long> workRequest = new WorkRequest<Long>(new Continuation<Long, Exception>() {
+      Continuation<Long, Exception> written = new Continuation<Long, Exception>() {
 
         @Override
         public void receiveResult(Long myPtrL) {
@@ -566,19 +566,15 @@ class FileTransferReceiver {
           FileDataReader.this.cancel();
           decrementFileChunksInMemory();
         }
-      },environment.getSelectorManager()) {
-
-        @Override
-        public Long doWork() throws Exception {
-          if (cancelled) return -1L;
-          file.write(writeMe);
-          synchronized(ptrLock) {
-            ptr+=writeMe.length;
-          }
-          return ptr;
-        }
       };
-      processor.processBlockingIO(workRequest);
+      Futures.forward(processor.processBlockingIO(() -> {
+        if (cancelled) return -1L;
+        file.write(writeMe);
+        synchronized(ptrLock) {
+          ptr+=writeMe.length;
+        }
+        return ptr;
+      }, environment.getSelectorManager()), written, environment);
       reader = msgTypeReader;
     }
 
@@ -641,7 +637,7 @@ class FileTransferReceiver {
       cancelled = true;
 
       // Don't close the file on the wrong thread.
-      WorkRequest<RandomAccessFile> workRequest = new WorkRequest<RandomAccessFile>(new Continuation<RandomAccessFile, Exception>() {
+      Continuation<RandomAccessFile, Exception> closed = new Continuation<RandomAccessFile, Exception>() {
 
         @Override
         public void receiveResult(RandomAccessFile result) {
@@ -654,15 +650,11 @@ class FileTransferReceiver {
         public void receiveException(Exception exception) {
           logger.warn("Error closing file {}", file, exception);
         }
-      },environment.getSelectorManager()) {
-
-        @Override
-        public RandomAccessFile doWork() throws Exception {
-          file.close();
-          return file;
-        }
       };
-      processor.processBlockingIO(workRequest);
+      Futures.forward(processor.processBlockingIO(() -> {
+        file.close();
+        return file;
+      }, environment.getSelectorManager()), closed, environment);
 
     }
   }
