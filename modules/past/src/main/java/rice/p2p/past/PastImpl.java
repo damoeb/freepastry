@@ -155,6 +155,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // the fetch of a replica that the replication asks for
   private final ReplicaFetcher replicaFetcher;
 
+  // the insert of an object
+  private final PastInserts insertOperations;
+
   // the requests that wait for a response
   private final PendingRequests pending;
 
@@ -276,6 +279,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.pending = new PendingRequests(logger);
     this.replicaFetcher = new ReplicaFetcher(this, logger);
     this.lookups = new PastLookups(this, logger);
+    this.insertOperations = new PastInserts(this, endpoint, logger);
     this.replicationFactor = replicas;
 
     this.replicaManager = buildReplicationManager(node, instance);
@@ -378,7 +382,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     };
   }
 
-  private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
+  void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
     socketTransport.send(handle, msg, continuation);
   }
 
@@ -446,28 +450,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param command The command to call with the result (NodeHandle[])
    */
   protected void getHandles(Id id, final int max, Continuation<? super NodeHandleSet, Exception> command) {
-    NodeHandleSet nodeHandleSet = endpoint.replicaSet(id, max);
-
-    if (nodeHandleSet.size() == max) {
-      command.receiveResult(nodeHandleSet);
-    } else {
-      sendRequest(id, new LookupHandlesMessage(nextRequestId(), id, max, getLocalNodeHandle(), id), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
-        @Override
-        public void receiveResult(NodeHandleSet replicas) {
-
-          // check to make sure we've fetched the correct number of replicas
-          // the deal with this is for the small ring.  If you are requesting
-          // 4 nodes, but the ring is only 3, you are only going to get 3
-          // Note: this is still kind of funky, because the replicationFactor+1
-          // argument is kind of weird, but I don't know how to get it right
-          // -Jeff 1/24/07
-          if (Math.min(max,endpoint.replicaSet(endpoint.getLocalNodeHandle().getId(), replicationFactor+1).size()) > replicas.size())
-            parent.receiveException(new PastException("Only received " + replicas.size() + " replicas - cannot insert as we know about more nodes."));
-          else
-            parent.receiveResult(replicas);
-        }
-      });
-    }
+    insertOperations.getHandles(id, max, command);
   }
 
   /**
@@ -519,57 +502,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * @param useSocket Whether to send the insert messages over a socket
    */
   protected void doInsert(final Id id, final MessageBuilder builder, Continuation<? super Boolean[], Exception> command, final boolean useSocket) {
-    // first, we get all of the replicas for this id
-    getHandles(id, replicationFactor+1, new StandardContinuation<NodeHandleSet, Boolean[], Exception>(command) {
-      @Override
-      public void receiveResult(NodeHandleSet replicas) {
-        logger.trace("Received replicas {} for id {}", replicas, id);
-
-        // then we send inserts to each replica and wait for at least
-        // threshold * num to return successfully
-        MultiContinuation<Boolean[]> multiContinuation = new MultiContinuation<Boolean[]>(parent, replicas.size()) {
-          @Override
-          public boolean isDone() throws Exception {
-            int numSuccess = 0;
-            for (int i=0; i<haveResult.length; i++)
-              if (haveResult[i] && Boolean.TRUE.equals(result[i]))
-                numSuccess++;
-
-            if (numSuccess >= (SUCCESSFUL_INSERT_THRESHOLD * haveResult.length))
-              return true;
-
-            if (super.isDone()) {
-              for (int i=0; i<result.length; i++)
-                if (result[i] instanceof Exception)
-                  logger.warn("result[{}]:", i, (Exception)result[i]);
-
-              throw new PastException("Had only " +  numSuccess + " successful inserts out of " + result.length + " - aborting.");
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean[] getResult() {
-            Boolean[] successes = new Boolean[result.length];
-            for (int i=0; i<successes.length; i++)
-              successes[i] = Boolean.valueOf((result[i] == null) || Boolean.TRUE.equals(result[i]));
-
-            return successes;
-          }
-        };
-
-        for (int i=0; i<replicas.size(); i++) {
-          NodeHandle handle = replicas.getHandle(i);
-          PastMessage msg = builder.buildMessage();
-          Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multiContinuation.getSubContinuation(i));
-          if (useSocket) {
-            sendViaSocket(handle, msg, continuation);
-          } else {
-            sendRequest(handle, msg, continuation);
-          }
-        }
-      }
-    });
+    insertOperations.doInsert(id, builder, command, useSocket);
   }
 
 
@@ -587,27 +520,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   @Override
   public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
-    logger.trace("Inserting the object {} with the id {}", obj, obj.getId());
-
-    logger.atTrace().log(() -> " Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
-
-    doInsert(obj.getId(), () -> new InsertMessage(nextRequestId(), obj, getLocalNodeHandle(), obj.getId()), new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
-      @Override
-      public void receiveResult(final Boolean[] array) {
-        cache(obj, new SimpleContinuation()  {
-          @Override
-          public void receiveResult(Object result) {
-            parent.receiveResult(array);
-          }
-          @Override
-          public void receiveException(Exception e) {
-            logger.warn("Caching after insert failed, continuing", e);
-            parent.receiveResult(array);
-          }
-        });
-      }
-    },
-    socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
+    insertOperations.insert(obj, command);
   }
 
   /**
