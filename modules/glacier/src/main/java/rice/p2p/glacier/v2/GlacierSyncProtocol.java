@@ -225,9 +225,16 @@ final class GlacierSyncProtocol {
   /**
    * Compares the requester's bloom filter with the local fragments in the requested range, and sends the
    * manifests of the fragments the requester is missing.
+   *
+   * <p>The requester names the offset between its fragment ids and the local ones; a sync task only ever picks one in
+   * {@code 1..numFragments-1}, and a request with any other offset is dropped.
    */
   void handleSyncRequest(final GlacierSyncMessage syncMessage) {
     logger.info("SyncRequest from {} for {} offset {}", syncMessage.getSource().getId(), syncMessage.getRange(), syncMessage.getOffsetFID());
+    if (syncMessage.getOffsetFID() < 1 || syncMessage.getOffsetFID() >= numFragments) {
+      logger.warn("Dropping the sync request from {}: offset {} is outside 1..{}", syncMessage.getSource(), syncMessage.getOffsetFID(), numFragments - 1);
+      return;
+    }
     logger.atDebug().log(() -> "Contains "+syncMessage.getBloomFilter());
 
     Iterator<Id> iter = fragmentStorage.scan().getIterator();
@@ -241,6 +248,11 @@ final class GlacierSyncProtocol {
 
     while (iter.hasNext()) {
       FragmentKey fragmentKey = (FragmentKey)iter.next();
+      if (fragmentKey.fragmentId() < 0 || fragmentKey.fragmentId() >= numFragments) {
+        // the owner of an object signs its manifest and may list more fragments than this node uses
+        logger.warn("Not offering {}: its fragment id is outside 0..{}", fragmentKey, numFragments - 1);
+        continue;
+      }
       Id thisPos = locator.getFragmentLocation(fragmentKey);
       if (range.containsId(thisPos)) {
         FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fragmentKey);
@@ -297,16 +309,18 @@ final class GlacierSyncProtocol {
 
         FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
 
-        if (!policy.checkSignature(fragmentAndManifest.getManifest(), thisKey.versionKey()))
-          panic("Signature mismatch!!");
+        if (!policy.checkSignature(fragmentAndManifest.getManifest(), thisKey.versionKey())) {
+          // every path that stores a fragment checks its signature first, so the local store is damaged
+          logger.warn("SYN2: The stored manifest of {} does not verify -- canceled SYN", thisKey);
+          return;
+        }
 
         fragments[manifestIndex] = null;
         manifests[manifestIndex] = fragmentAndManifest.getManifest();
+        // both the local fragment id and the offset were bounded above, so this is in 0..numFragments-1
         int hisFID = thisKey.fragmentId() - offset;
         if (hisFID < 0)
           hisFID += numFragments;
-        if (hisFID >= numFragments)
-          panic("Assertion failed: L938");
         keys[manifestIndex] = new FragmentKey(thisKey.versionKey(), hisFID);
         logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+locator.getFragmentLocation(keys[manifestIndex]));
         manifestIndex ++;
@@ -403,16 +417,5 @@ final class GlacierSyncProtocol {
     b[a.length + 7] = (byte)(0xFF & expiration);
 
     return b;
-  }
-
-  /**
-   * This method is called when Glacier encounters a fatal error
-   *
-   * @param message Message describing the error, which is logged
-   * @throws Error always
-   */
-  private void panic(String message) throws Error {
-    logger.error("PANIC: {}", message);
-    throw new Error("Panic");
   }
 }
