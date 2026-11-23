@@ -46,12 +46,12 @@ import java.util.concurrent.PriorityBlockingQueue;
  */
 public class ProcessingThread extends Thread {
 
-  PriorityBlockingQueue<ProcessingRequest<?, ?>> queue;
+  PriorityBlockingQueue<ProcessingRequest<?>> queue;
 
   volatile boolean running = false;
 
   public ProcessingThread(String name,
-      PriorityBlockingQueue<ProcessingRequest<?, ?>> queue) {
+      PriorityBlockingQueue<ProcessingRequest<?>> queue) {
     super(name);
     this.queue = queue;
   }
@@ -61,7 +61,7 @@ public class ProcessingThread extends Thread {
     running = true;
     while (running) {
       try {
-        ProcessingRequest<?, ?> processingRequest = queue.take();
+        ProcessingRequest<?> processingRequest = queue.take();
         if (processingRequest != null)
           processingRequest.run();
       } catch (java.lang.InterruptedException ignored) {

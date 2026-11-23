@@ -1,14 +1,11 @@
 package rice.pastry.commonapi;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import rice.Continuation;
 import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -25,11 +22,10 @@ import rice.pastry.direct.EuclideanNetwork;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
- * Pins {@link Endpoint#process}: under the direct simulator the task runs on the selector, and its result or
- * exception arrives on the selector thread.
+ * {@link Endpoint#process}: under the direct simulator its future completes on the selector thread, with the
+ * task's result or the exception it threw.
  */
 class PastryEndpointProcessTest {
 
@@ -66,43 +62,6 @@ class PastryEndpointProcessTest {
 
   /** The outcome, and whether it arrived on the selector thread. */
   record Delivery(Object outcome, boolean onSelector) {
-  }
-
-  private Continuation<String, Exception> recordTo(CompletableFuture<Delivery> delivered) {
-    return new Continuation<String, Exception>() {
-      @Override
-      public void receiveResult(String result) {
-        delivered.complete(new Delivery(result, env.getSelectorManager().isSelectorThread()));
-      }
-
-      @Override
-      public void receiveException(Exception exception) {
-        delivered.complete(new Delivery(exception, env.getSelectorManager().isSelectorThread()));
-      }
-    };
-  }
-
-  @Test
-  void resultAndExceptionArriveOnTheSelectorThread() throws Exception {
-    Endpoint endpoint = endpoint();
-    List<Boolean> ranOnSelector = new CopyOnWriteArrayList<Boolean>();
-    CompletableFuture<Delivery> result = new CompletableFuture<Delivery>();
-    CompletableFuture<Delivery> failure = new CompletableFuture<Delivery>();
-    IOException taskFailure = new IOException("task failed");
-    env.getSelectorManager().invoke(() -> {
-      endpoint.process(() -> {
-        ranOnSelector.add(env.getSelectorManager().isSelectorThread());
-        return "done";
-      }, recordTo(result));
-      endpoint.process(() -> {
-        throw taskFailure;
-      }, recordTo(failure));
-    });
-    assertEquals(new Delivery("done", true), result.get(WAIT_MILLIS, TimeUnit.MILLISECONDS));
-    Delivery failed = failure.get(WAIT_MILLIS, TimeUnit.MILLISECONDS);
-    assertSame(taskFailure, failed.outcome());
-    assertEquals(true, failed.onSelector());
-    assertEquals(List.of(true), ranOnSelector, "the simulator runs the task on the selector");
   }
 
   @Test

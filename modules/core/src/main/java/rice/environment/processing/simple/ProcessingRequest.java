@@ -39,8 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
@@ -52,13 +53,13 @@ import rice.selector.SelectorLoop;
  *
  * @author Jeff Hoye
  */
-@SuppressWarnings("unchecked")
-public class ProcessingRequest<R, E extends Exception> implements Runnable,
-    Comparable<ProcessingRequest<?, ?>>, Cancellable {
-  Continuation<R, E> c;
-  Executable<R, E> r;
-  private boolean cancelled = false;
-  private boolean running = false;
+public class ProcessingRequest<R> implements Runnable,
+    Comparable<ProcessingRequest<?>>, Cancellable {
+  private final CompletableFuture<R> future = new CompletableFuture<R>();
+  Executable<R, ? extends Exception> r;
+  // set by the selector or a caller, read by the processing thread
+  private volatile boolean cancelled = false;
+  private volatile boolean running = false;
 
   TimeSource timeSource;
   SelectorLoop selectorManager;
@@ -66,10 +67,9 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
   int priority = 0;
   long seq;
 
-  public ProcessingRequest(Executable<R, E> executable, Continuation<R, E> continuation, int priority, long seq,
+  public ProcessingRequest(Executable<R, ? extends Exception> executable, int priority, long seq,
       LogManager logging, TimeSource timeSource, SelectorLoop selectorManager) {
     this.r = executable;
-    this.c = continuation;
 
     logger = logging.getLogger(getClass(), null);
     this.timeSource = timeSource;
@@ -78,13 +78,20 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
     this.seq = seq;
   }
 
+  /**
+   * @return completed on the selector thread with the result of the task, or the exception it threw
+   */
+  public CompletableFuture<R> future() {
+    return future;
+  }
+
   public void returnResult(R r) {
-    c.receiveResult(r);
+    future.complete(r);
   }
 
   public void returnError(Exception e) {
     // unchecked exceptions thrown by the task are delivered here as well
-    c.receiveException((E) e);
+    future.completeExceptionally(e);
   }
 
   public int getPriority() {
@@ -92,7 +99,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
   }
 
   @Override
-  public int compareTo(ProcessingRequest<?, ?> request) {
+  public int compareTo(ProcessingRequest<?> request) {
     if (priority == request.getPriority()) {
       if (seq > request.seq) return 1;
       return -1;
@@ -120,7 +127,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
 
         @Override
         public String toString() {
-          return "return ProcessingRequest for " + r + " to " + c;
+          return "return ProcessingRequest for " + r;
         }
       });
     } catch (final Exception e) {
@@ -132,7 +139,7 @@ public class ProcessingRequest<R, E extends Exception> implements Runnable,
 
         @Override
         public String toString() {
-          return "return ProcessingRequest for " + r + " to " + c;
+          return "return ProcessingRequest for " + r;
         }
       });
     }

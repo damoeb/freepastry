@@ -42,10 +42,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
-import rice.Continuation;
 import rice.Destructible;
 import rice.Executable;
 import rice.environment.Environment;
@@ -623,12 +623,10 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
    * of the underlying node's thread, and should only be done via this method.
    *
    * @param task The task to run on the processing thread
-   * @param command The command to return the result to once it's done
    */
   @Override
-  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
-
-    thePastryNode.process(task, command);
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task) {
+    return thePastryNode.process(task);
   }
 
   /**

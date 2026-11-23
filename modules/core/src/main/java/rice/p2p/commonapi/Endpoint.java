@@ -42,9 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
 import rice.Executable;
-import rice.FutureContinuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
@@ -226,8 +224,6 @@ public interface Endpoint extends NodeHandleReader {
    * @param task The task to run on the processing thread
    * @param command The command to return the result to once it's done
    */
-  <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command);
-
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
@@ -236,15 +232,7 @@ public interface Endpoint extends NodeHandleReader {
    * @param task The task to run on the processing thread
    * @return completed on the selector thread with the task's result, or the exception it threw
    */
-  default <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task) {
-    return processViaContinuation(this, task);
-  }
-
-  private static <R, E extends Exception> CompletableFuture<R> processViaContinuation(Endpoint endpoint, Executable<R, E> task) {
-    FutureContinuation<R, E> continuation = new FutureContinuation<R, E>();
-    endpoint.process(task, continuation);
-    return continuation.future();
-  }
+  <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task);
 
   /**
    * Returns a unique instance name of this endpoint, sort of a mailbox name for this

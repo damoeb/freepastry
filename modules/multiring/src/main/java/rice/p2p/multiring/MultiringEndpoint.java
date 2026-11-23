@@ -40,8 +40,8 @@ package rice.p2p.multiring;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
 import rice.Executable;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -328,11 +328,10 @@ public class MultiringEndpoint implements Endpoint {
    * of the underlying node's thread, and should only be done via this method.
    *
    * @param task The task to run on the processing thread
-   * @param command The command to return the result to once it's done
    */
   @Override
-  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
-    endpoint.process(task, command);
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task) {
+    return endpoint.process(task);
   }
 
   /**

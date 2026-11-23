@@ -42,14 +42,10 @@ package rice.environment.processing;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
-import rice.FutureContinuation;
-import rice.Futures;
 import rice.Destructible;
 import rice.Executable;
 import rice.environment.logging.LogManager;
 import rice.environment.time.TimeSource;
-import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorLoop;
 
 /**
@@ -73,8 +69,6 @@ public interface Processor extends Destructible {
    * @param log the log manager the request logs to
    * @return a handle to cancel the task before it starts
    */
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R,E> command, SelectorLoop selector, TimeSource timeSource, LogManager log);
-
   /**
    * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
    * as encryption, erasure encoding, or bloom filter creation should never be done in the context
@@ -87,24 +81,7 @@ public interface Processor extends Destructible {
    * @return completed on the selector thread with the task's result, or the exception it threw; cancelling it
    *     before the task starts keeps the task from running
    */
-  default <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task, SelectorLoop selector, TimeSource timeSource, LogManager log) {
-    return processViaContinuation(this, task, selector, timeSource, log);
-  }
-
-  private static <R, E extends Exception> CompletableFuture<R> processViaContinuation(Processor processor, Executable<R, E> task,
-      SelectorLoop selector, TimeSource timeSource, LogManager log) {
-    FutureContinuation<R, E> continuation = new FutureContinuation<R, E>();
-    Cancellable request = processor.process(task, continuation, selector, timeSource, log);
-    return Futures.onCancel(continuation.future(), request);
-  }
-
-  /**
-   * Schedules a different type of task.  This thread is for doing Disk IO that is required to be blocking.
-   *
-   * @param request the request; its result is delivered on the selector thread
-   * @return a handle to cancel the request before it starts
-   */
-  public Cancellable processBlockingIO(WorkRequest<?> request);
+  <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task, SelectorLoop selector, TimeSource timeSource, LogManager log);
 
   /**
    * Runs blocking (disk) IO on the blocking IO thread.
@@ -114,22 +91,7 @@ public interface Processor extends Destructible {
    * @return completed on the selector thread with the result of the work, or the exception it threw;
    *     cancelling it before the work starts keeps the work from running
    */
-  default <R> CompletableFuture<R> processBlockingIO(final Callable<R> work, SelectorLoop selector) {
-    FutureContinuation<R, Exception> continuation = new FutureContinuation<R, Exception>();
-    WorkRequest<R> request = new WorkRequest<R>(continuation, selector) {
-      @Override
-      public R doWork() throws Exception {
-        return work.call();
-      }
-
-      @Override
-      public String toString() {
-        return work.toString();
-      }
-    };
-    processBlockingIO(request);
-    return Futures.onCancel(continuation.future(), request);
-  }
+  <R> CompletableFuture<R> processBlockingIO(Callable<R> work, SelectorLoop selector);
 
   /**
    * Shuts down the processing thread.

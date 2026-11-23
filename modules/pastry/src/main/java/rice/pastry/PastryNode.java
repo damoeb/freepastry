@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -594,23 +595,21 @@ public class PastryNode implements
    *
    * @param task
    *          The task to run on the processing thread
-   * @param command
-   *          The command to return the result to once it's done
+   * @return completed on the selector thread with the task's result, or the exception it threw; fails with an
+   *          EnvironmentDestroyedException if the environment is destroyed first
    */
-  public <R, E extends Exception> void process(Executable<R, E> task, Continuation<R, E> command) {
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task) {
+    CompletableFuture<R> result;
     try {
-      myEnvironment.getProcessor().process(task,
-          command,
+      result = myEnvironment.getProcessor().process(task,
           myEnvironment.getSelectorManager(),
           myEnvironment.getTimeSource(),
           myEnvironment.getLogManager());
-
-    } catch (final Exception e) {
-      // scheduling failures are handed to the continuation as-is, whatever E is
-      @SuppressWarnings("unchecked")
-      E error = (E)e;
-      command.receiveException(error);
+    } catch (RuntimeException e) {
+      // a scheduling failure fails the future at once, as it reached the continuation at once before
+      return CompletableFuture.failedFuture(e);
     }
+    return myEnvironment.track(result);
   }
 
 

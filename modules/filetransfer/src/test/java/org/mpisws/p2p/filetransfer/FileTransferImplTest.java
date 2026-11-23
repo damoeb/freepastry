@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -20,9 +21,7 @@ import rice.Executable;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.processing.Processor;
-import rice.environment.processing.WorkRequest;
 import rice.environment.time.TimeSource;
-import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.selector.SelectorLoop;
@@ -48,17 +47,17 @@ class FileTransferImplTest {
 
   /** Records the blocking IO requests and never runs them. */
   static class RecordingProcessor implements Processor {
-    final List<WorkRequest<?>> blockingIO = new ArrayList<WorkRequest<?>>();
+    final List<Callable<?>> blockingIO = new ArrayList<Callable<?>>();
 
     @Override
-    public <R, E extends Exception> Cancellable process(Executable<R, E> task, Continuation<R, E> command, SelectorLoop selector, TimeSource timeSource, LogManager log) {
+    public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task, SelectorLoop selector, TimeSource timeSource, LogManager log) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public Cancellable processBlockingIO(WorkRequest<?> request) {
-      blockingIO.add(request);
-      return () -> true;
+    public <R> CompletableFuture<R> processBlockingIO(Callable<R> work, SelectorLoop selector) {
+      blockingIO.add(work);
+      return new CompletableFuture<R>();
     }
 
     @Override

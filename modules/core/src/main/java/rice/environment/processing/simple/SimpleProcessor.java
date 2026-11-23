@@ -39,16 +39,17 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.simple;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import rice.Continuation;
 import rice.Executable;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.processing.Processor;
 import rice.environment.processing.WorkRequest;
 import rice.environment.time.TimeSource;
-import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorLoop;
 
 /**
@@ -56,7 +57,7 @@ import rice.selector.SelectorLoop;
  */
 public class SimpleProcessor implements Processor {
   // the queue used for processing requests
-  private final PriorityBlockingQueue<ProcessingRequest<?, ?>> QUEUE;
+  private final PriorityBlockingQueue<ProcessingRequest<?>> QUEUE;
   private final ProcessingThread THREAD;
 
   // for blocking IO WorkRequests
@@ -67,7 +68,7 @@ public class SimpleProcessor implements Processor {
 
   @SuppressWarnings("ThreadPriorityCheck") // a hint only: CPU-heavy work must not starve the selector
   public SimpleProcessor(String name) {
-    QUEUE = new PriorityBlockingQueue<ProcessingRequest<?, ?>>();
+    QUEUE = new PriorityBlockingQueue<ProcessingRequest<?>>();
     THREAD = new ProcessingThread("FreePastry Processing -- " + name, QUEUE);
     THREAD.start();
     THREAD.setPriority(Thread.MIN_PRIORITY);
@@ -84,30 +85,30 @@ public class SimpleProcessor implements Processor {
    *
    * @param task
    *          The task to run on the processing thread
-   * @param command
-   *          The command to return the result to once it's done
+   * @return completed on the selector thread; cancelling it before the task starts keeps it from running
    */
   @Override
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task,
       SelectorLoop selector, TimeSource timeSource, LogManager log) {
-    return process(task, command, 0, selector, timeSource, log);
+    return process(task, 0, selector, timeSource, log);
   }
 
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task, int priority,
       SelectorLoop selector, TimeSource timeSource, LogManager log) {
     long nextSeq;
     synchronized(SimpleProcessor.this) {
       nextSeq = seq++;
     }
-    ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, priority, nextSeq, log, timeSource, selector);
-    QUEUE.offer(ret);
-    return ret;
+    ProcessingRequest<R> request = new ProcessingRequest<R>(task, priority, nextSeq, log, timeSource, selector);
+    QUEUE.offer(request);
+    return Futures.onCancel(request.future(), request);
   }
 
   @Override
-  public Cancellable processBlockingIO(WorkRequest<?> workRequest) {
-    workQueue.enqueue(workRequest);
-    return workRequest;
+  public <R> CompletableFuture<R> processBlockingIO(Callable<R> work, SelectorLoop selector) {
+    WorkRequest<R> request = new WorkRequest<R>(work, selector);
+    workQueue.enqueue(request);
+    return Futures.onCancel(request.future(), request);
   }
 
   @Override
@@ -126,40 +127,19 @@ public class SimpleProcessor implements Processor {
     Environment env = new Environment();
     Processor processor = env.getProcessor();
     // block the processor for 1 second while we schedule some more stuff
-    processor.process(() -> {
+    Futures.reportUnhandled(processor.process(() -> {
       try { Thread.sleep(1000); } catch (InterruptedException ignored) { /* only delays the demo */ }
       return null;
-    }, new Continuation<Object, Exception>() {
-
-      @Override
-      public void receiveResult(Object result) {
-        System.out.println("Done blocking.");
-      }
-
-      @Override
-      public void receiveException(Exception exception) {
-        exception.printStackTrace();
-      }
-
-    }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());
+    }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager())
+        .thenRun(() -> System.out.println("Done blocking.")), env);
 
     for (int seq = 0; seq < 10; seq++) {
       final int mySeq = seq;
-      processor.process(() -> {
+      Futures.reportUnhandled(processor.process(() -> {
         System.out.println("Executed Seq: "+mySeq);
         return null;
-      }, new Continuation<Object, Exception>() {
-        @Override
-        public void receiveResult(Object result) {
-          System.out.println("Received Seq: "+mySeq);
-        }
-
-        @Override
-        public void receiveException(Exception exception) {
-          exception.printStackTrace();
-        }
-
-      }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager());
+      }, env.getSelectorManager(), env.getTimeSource(), env.getLogManager())
+          .thenRun(() -> System.out.println("Received Seq: "+mySeq)), env);
       System.out.println("Done scheduling "+mySeq);
     }
   }

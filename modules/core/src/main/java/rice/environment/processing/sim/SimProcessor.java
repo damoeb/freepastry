@@ -39,14 +39,16 @@ advised of the possibility of such damage.
  */
 package rice.environment.processing.sim;
 
-import rice.Continuation;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+
 import rice.Executable;
+import rice.Futures;
 import rice.environment.logging.LogManager;
 import rice.environment.processing.Processor;
 import rice.environment.processing.WorkRequest;
 import rice.environment.processing.simple.ProcessingRequest;
 import rice.environment.time.TimeSource;
-import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorLoop;
 
 public class SimProcessor implements Processor {
@@ -57,22 +59,23 @@ public class SimProcessor implements Processor {
   }
 
   @Override
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command,
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task,
       SelectorLoop selector, TimeSource timeSource, LogManager log) {
-    return process(task, command, 0, selector, timeSource, log);
+    return process(task, 0, selector, timeSource, log);
   }
 
-  public <R, E extends Exception> Cancellable process(Executable<R,E> task, Continuation<R, E> command, int priority,
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task, int priority,
       SelectorLoop selector, TimeSource timeSource, LogManager log) {
-    ProcessingRequest<R, E> ret = new ProcessingRequest<R, E>(task, command, 0, 0, log, timeSource, selector);
-    selector.invoke(ret);
-    return ret;
+    ProcessingRequest<R> request = new ProcessingRequest<R>(task, 0, 0, log, timeSource, selector);
+    selector.invoke(request);
+    return Futures.onCancel(request.future(), request);
   }
 
   @Override
-  public Cancellable processBlockingIO(WorkRequest<?> request) {
-    selector.invoke(request);
-    return request;
+  public <R> CompletableFuture<R> processBlockingIO(Callable<R> work, SelectorLoop selector) {
+    WorkRequest<R> request = new WorkRequest<R>(work, selector);
+    this.selector.invoke(request);
+    return Futures.onCancel(request.future(), request);
   }
 
   @Override

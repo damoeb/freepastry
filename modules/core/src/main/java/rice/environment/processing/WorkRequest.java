@@ -34,55 +34,73 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-/*
- * Created on Aug 16, 2005
- */
 package rice.environment.processing;
 
-import rice.Continuation;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+
+import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.Cancellable;
 import rice.selector.SelectorLoop;
 
 /**
- * Extend this class and implement doWork() if you need to do blocking disk IO.
- *
- * This is primarily used by Persistence.
+ * A piece of blocking (disk) IO that a {@link Processor} implementation queues for its blocking IO thread: it
+ * runs the work there and completes its {@link #future()} on the selector thread. Callers use
+ * {@link Processor#processBlockingIO(Callable, SelectorLoop)}.
  *
  * @author Jeff Hoye
  */
-public abstract class WorkRequest<R> implements Runnable, Cancellable {
-  private Continuation<? super R, Exception> continuation;
-  private SelectorLoop selectorManager;
+public class WorkRequest<R> implements Runnable, Cancellable {
+  private final @Nullable Callable<R> work;
+  private final @Nullable SelectorLoop selectorManager;
+  private final CompletableFuture<R> future = new CompletableFuture<R>();
 
   protected volatile boolean cancelled = false;
   private volatile boolean running = false;
 
-  public WorkRequest(Continuation<? super R, Exception> continuation, SelectorLoop selectorLoop){
-    this.continuation = continuation;
-    this.selectorManager = selectorLoop;
+  /**
+   * @param work the work; its toString() describes the request
+   * @param selectorLoop the selector whose thread completes the future
+   */
+  public WorkRequest(Callable<R> work, SelectorLoop selectorLoop) {
+    this.work = Objects.requireNonNull(work, "work");
+    this.selectorManager = Objects.requireNonNull(selectorLoop, "selectorLoop");
   }
 
-  @SuppressWarnings("NullAway.Init") // only for requests that never run, such as WorkQueue's STOP sentinel
-  public WorkRequest(){
-    /* do nothing */
+  /**
+   * Only for requests that never run, such as WorkQueue's STOP sentinel.
+   */
+  public WorkRequest() {
+    this.work = null;
+    this.selectorManager = null;
+  }
+
+  /**
+   * @return completed with the result of the work, or the exception it threw
+   */
+  public CompletableFuture<R> future() {
+    return future;
   }
 
   public void returnResult(R r) {
-    continuation.receiveResult(r);
+    future.complete(r);
   }
 
   public void returnError(Exception e) {
-    continuation.receiveException(e);
+    future.completeExceptionally(e);
   }
 
   @Override
   public void run() {
     if (cancelled) return;
     running = true;
+    Callable<R> task = Objects.requireNonNull(work, "a sentinel request can't run");
+    SelectorLoop selector = Objects.requireNonNull(selectorManager, "a sentinel request can't run");
 
     try {
-      final R result = doWork();
-      selectorManager.invoke(new Runnable() {
+      final R result = task.call();
+      selector.invoke(new Runnable() {
         @Override
         public void run() {
           returnResult(result);
@@ -90,11 +108,11 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
 
         @Override
         public String toString() {
-          return "invc result of " + continuation;
+          return "invc result of " + WorkRequest.this;
         }
       });
     } catch (final Exception e) {
-      selectorManager.invoke(new Runnable() {
+      selector.invoke(new Runnable() {
         @Override
         public void run() {
           returnError(e);
@@ -102,7 +120,7 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
 
         @Override
         public String toString() {
-          return "invc error of " + continuation;
+          return "invc error of " + WorkRequest.this;
         }
       });
     }
@@ -114,5 +132,8 @@ public abstract class WorkRequest<R> implements Runnable, Cancellable {
     return !running;
   }
 
-  public abstract R doWork() throws Exception;
+  @Override
+  public String toString() {
+    return String.valueOf(work);
+  }
 }

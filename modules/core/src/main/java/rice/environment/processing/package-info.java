@@ -37,12 +37,12 @@ advised of the possibility of such damage.
 /**
  * Moves work off the selector thread. {@link rice.environment.processing.Processor#process} runs a
  * CPU-bound {@link rice.Executable} on a processing thread, and
- * {@link rice.environment.processing.Processor#processBlockingIO} runs a
- * {@link rice.environment.processing.WorkRequest} (blocking disk IO, used by
- * {@code rice.persistence.PersistentStorage}) on a blocking-IO thread.
+ * {@link rice.environment.processing.Processor#processBlockingIO} runs blocking disk IO (used by
+ * {@code rice.persistence.PersistentStorage}) on a blocking-IO thread, as a
+ * {@link rice.environment.processing.WorkRequest}.
  * <p>
- * Threading: in both cases the result is handed back to the caller's {@link rice.Continuation} on the
- * selector thread, via {@code SelectorLoop.invoke()}. The simulator's {@code SimProcessor} runs
+ * Threading: in both cases the returned {@code CompletableFuture} is completed on the selector thread, via
+ * {@code SelectorLoop.invoke()}, so its dependent stages run there too (see {@link rice.Futures}). The simulator's {@code SimProcessor} runs
  * both kinds of work on the selector thread itself.
  */
 @NullMarked

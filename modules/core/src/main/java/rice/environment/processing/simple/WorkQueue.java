@@ -58,13 +58,7 @@ public class WorkQueue {
   /**
    * Put into the queue by {@link #destroy()} to wake up the threads blocked in {@link #dequeue()}.
    */
-  private static final WorkRequest<Object> STOP = new WorkRequest<Object>() {
-    @Override
-    @SuppressWarnings("NullAway") // never run: dequeue() returns null instead
-    public Object doWork() {
-      return null;
-    }
-  };
+  private static final WorkRequest<Object> STOP = new WorkRequest<Object>();
 
   private final BlockingQueue<WorkRequest<?>> blockingQueue = new LinkedBlockingQueue<WorkRequest<?>>();
   /* A negative capacity, is equivalent to infinite capacity */
