@@ -38,6 +38,9 @@ package org.mpisws.p2p.transport.peerreview.audit;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,10 +57,12 @@ import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
- * Tests that an AUTHRESP widens the range of the ongoing investigation of its subject.
+ * Tests that an AUTHRESP widens the range of the ongoing investigation of its subject, and that only
+ * authenticators signed by the subject enter the investigation.
  */
 public class AuditProtocolAuthResponseTest {
 
@@ -85,10 +90,20 @@ public class AuditProtocolAuthResponseTest {
     }
   }
 
+  /** The signature the stub accepts as the subject's; any other signature is a forgery. */
+  static final byte[] GOOD_SIGNATURE = {2};
+  static final byte[] FORGED_SIGNATURE = {3};
+
   Environment env;
   AuditProtocol<Id, Id> audit;
+  boolean hasSubjectCertificate = true;
+  final List<Id> certificateRequests = new ArrayList<>();
 
-  /** A stub of the interface: getEnvironment(), getTime() and getIdentifierExtractor() work, the rest is a no-op. */
+  /**
+   * A stub of the interface: getEnvironment(), getTime() and getIdentifierExtractor() work, hasCertificate() answers
+   * {@link #hasSubjectCertificate}, verify(subject, authenticator) accepts {@link #GOOD_SIGNATURE} only,
+   * requestCertificate() is recorded, the rest is a no-op.
+   */
   @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals", "ReferenceEquality"}) // the caller picks the generic interface type; a stub has no type arguments to check, and equals() is proxy identity
   <T> T stub(Class<?> type) {
     return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
@@ -99,6 +114,16 @@ public class AuditProtocolAuthResponseTest {
           return env.getTimeSource().currentTimeMillis();
         case "getIdentifierExtractor":
           return (IdentifierExtractor<Id, Id>) h -> h;
+        case "hasCertificate":
+          return hasSubjectCertificate;
+        case "verify":
+          if (args.length == 2 && args[1] instanceof Authenticator authenticator) {
+            return Arrays.equals(GOOD_SIGNATURE, authenticator.getSignature());
+          }
+          return defaultValue(method.getReturnType());
+        case "requestCertificate":
+          certificateRequests.add((Id) args[1]);
+          return null;
         case "hashCode":
           return System.identityHashCode(proxy);
         case "equals":
@@ -136,7 +161,11 @@ public class AuditProtocolAuthResponseTest {
   }
 
   static Authenticator auth(long seq) {
-    return new Authenticator(seq, new byte[] {1}, new byte[] {2});
+    return new Authenticator(seq, new byte[] {1}, GOOD_SIGNATURE);
+  }
+
+  static Authenticator forged(long seq) {
+    return new Authenticator(seq, new byte[] {1}, FORGED_SIGNATURE);
   }
 
   @Test
@@ -161,5 +190,45 @@ public class AuditProtocolAuthResponseTest {
     audit.handleIncomingDatagram(new Id(9), new AuthResponse<Id>(subject, auth(15), auth(30)));
     assertSame(from, investigation.getAuthFrom());
     assertEquals(30, investigation.getAuthTo().getSeq());
+  }
+
+  @Test
+  public void authResponseWithAForgedFromIsIgnored() {
+    Id subject = new Id(7);
+    audit.investigate(subject, 0);
+
+    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, forged(10), auth(20)));
+
+    PendingInvestigation<Id> investigation = audit.activeInvestigation.get(subject);
+    assertNull(investigation.getAuthFrom());
+    assertNull(investigation.getAuthTo());
+  }
+
+  @Test
+  public void authResponseWithAForgedToIsIgnored() {
+    Id subject = new Id(7);
+    audit.investigate(subject, 0);
+    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, auth(10), auth(20)));
+
+    // a forged authenticator beyond the end of the subject's log must not widen the range
+    audit.handleIncomingDatagram(new Id(9), new AuthResponse<Id>(subject, auth(5), forged(Long.MAX_VALUE)));
+
+    PendingInvestigation<Id> investigation = audit.activeInvestigation.get(subject);
+    assertEquals(10, investigation.getAuthFrom().getSeq());
+    assertEquals(20, investigation.getAuthTo().getSeq());
+  }
+
+  @Test
+  public void authResponseWithoutTheSubjectsCertificateIsIgnoredAndTheCertificateRequested() {
+    Id subject = new Id(7);
+    audit.investigate(subject, 0);
+    hasSubjectCertificate = false;
+
+    audit.handleIncomingDatagram(new Id(8), new AuthResponse<Id>(subject, auth(10), auth(20)));
+
+    PendingInvestigation<Id> investigation = audit.activeInvestigation.get(subject);
+    assertNull(investigation.getAuthFrom());
+    assertNull(investigation.getAuthTo());
+    assertEquals(List.of(subject), certificateRequests);
   }
 }
