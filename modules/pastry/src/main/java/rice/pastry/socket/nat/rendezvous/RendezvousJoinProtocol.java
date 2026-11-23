@@ -118,7 +118,12 @@ public class RendezvousJoinProtocol extends ConsistentJoinProtocol {
       return;
     }
 
-    // TODO: Throw exception if can't directly contact the bootstrap
+    if (!bootstrap.canContactDirect()) {
+      // this node is NATted and the bootstrap is firewalled, and not behind the same firewall: no pilot can reach it
+      logger.warn("cannot join through {}: it is firewalled, and this NATted node cannot contact it directly", bootstrap);
+      deliverJRToMe.receiveException(new NodeIsFirewalledException(bootstrap));
+      return;
+    }
 
     // open the pilot before sending the JoinRequest.
     logger.debug("opening pilot to {}", bootstrap);
