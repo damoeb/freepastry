@@ -101,6 +101,7 @@ final class ScribeTestSupport {
           (proxy, method, args) -> switch (method.getName()) {
             case "isAlive" -> true;
             case "getId" -> local.getId();
+            case "getLocalNodeHandle" -> local;
             case "replicaSet" -> replicaSet((Id) args[0]);
             case "route" -> {
               routed.add(new Routed((Id) args[0], args[1], (NodeHandle) args[2]));

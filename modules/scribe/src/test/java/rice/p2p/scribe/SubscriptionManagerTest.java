@@ -29,6 +29,7 @@ class SubscriptionManagerTest {
   private TopicRegistry registry;
   private SubscriptionManager manager;
   private final List<Collection<Topic>> successes = new ArrayList<>();
+  private final List<Collection<Topic>> failures = new ArrayList<>();
 
   private final ScribeMultiClient client = new ScribeMultiClient() {
     @Override
@@ -46,7 +47,9 @@ class SubscriptionManagerTest {
     public void childRemoved(Topic topic, NodeHandle child) {}
 
     @Override
-    public void subscribeFailed(Collection<Topic> topics) {}
+    public void subscribeFailed(Collection<Topic> topics) {
+      failures.add(topics);
+    }
 
     @Override
     public void subscribeSuccess(Collection<Topic> topics) {
@@ -145,5 +148,62 @@ class SubscriptionManagerTest {
 
     // the timer already fired for an ack that completed the subscribe: must not throw
     manager.lostMessageReceived(new rice.p2p.scribe.messaging.SubscribeLostMessage(local, List.of(topic), id, client));
+  }
+
+  @Test
+  void unsolicitedAckDoesNotReplaceTheParent() {
+    Topic topic = ScribeTestSupport.topic(1);
+    Handle parent = new Handle(3);
+    registry.create(topic).setParent(parent, new ArrayList<>());
+
+    // no subscribe is outstanding: neither a made-up id nor the maintenance id binds the ack to one
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), emptyPaths(1), 42));
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), emptyPaths(1),
+        rice.p2p.scribe.maintenance.MaintainableScribe.MAINTENANCE_ID));
+
+    assertEquals(parent, registry.getParent(topic));
+    // the sender is told that we do not want it, so it does not keep us as a child
+    assertEquals(List.of(fake.remote, fake.remote), unsubscribes().stream().map(Routed::hint).toList());
+  }
+
+  @Test
+  void ackForAnotherSubscribesTopicDoesNotReplaceTheParent() {
+    Topic asked = ScribeTestSupport.topic(1);
+    Topic other = ScribeTestSupport.topic(2);
+    Handle parent = new Handle(3);
+    int id = subscribe(new ArrayList<>(List.of(asked)));
+    registry.create(asked);
+    registry.create(other).setParent(parent, new ArrayList<>());
+
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(other)), emptyPaths(1), id));
+
+    assertEquals(parent, registry.getParent(other));
+  }
+
+  @Test
+  void ackFromTheCurrentParentUpdatesThePathToTheRoot() {
+    Topic topic = ScribeTestSupport.topic(1);
+    registry.create(topic).setParent(fake.remote, new ArrayList<>());
+    List<List<Id>> path = List.of(List.of(ScribeTestSupport.id(7)));
+
+    manager.subscribeAckReceived(new SubscribeAckMessage(fake.remote, new ArrayList<>(List.of(topic)), path,
+        rice.p2p.scribe.maintenance.MaintainableScribe.MAINTENANCE_ID));
+
+    assertEquals(fake.remote, registry.getParent(topic));
+    assertEquals(List.of(), unsubscribes());
+  }
+
+  @Test
+  void subscribesBeyondThePendingBoundAreRefused() {
+    int subscribes = 5000;
+    for (int i = 0; i < subscribes; i++) {
+      Topic topic = ScribeTestSupport.topic(10 + i);
+      registry.create(topic);
+      manager.sendSubscribe(new ArrayList<>(List.of(topic)), client, null, fake.remote);
+    }
+
+    long sent = fake.routed.stream().filter(r -> r.message() instanceof SubscribeMessage).count();
+    assertEquals(4096, sent, "subscribes sent while 4096 are outstanding");
+    assertEquals(subscribes - 4096, failures.size(), "the refused ones are reported as failed");
   }
 }
