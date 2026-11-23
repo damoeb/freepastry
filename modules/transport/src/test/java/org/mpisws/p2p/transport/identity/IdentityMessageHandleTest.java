@@ -81,4 +81,20 @@ class IdentityMessageHandleTest {
     assertFalse(testObj.cancel());
     assertTrue(pendingMessages(identity).isEmpty());
   }
+
+  @Test
+  @DisplayName("a lower send handed over after the handle was cancelled is cancelled at once")
+  void aLowerSendHandedOverAfterCancelIsCancelled() {
+    IdentityLayerCore<InetSocketAddress, InetSocketAddress, ByteBuffer, InetSocketAddress> identity = identity();
+    IdentityLayerCore<InetSocketAddress, InetSocketAddress, ByteBuffer, InetSocketAddress>.IdentityMessageHandle testObj =
+        identity.new IdentityMessageHandle(PEER, ByteBuffer.allocate(3), null, null);
+    identity.addPendingMessage(PEER, testObj);
+    // the peer is found dead while the lower layer is still inside sendMessage(), before it returned its handle
+    testObj.cancel();
+    AtomicInteger lowerCancels = new AtomicInteger();
+
+    testObj.setSubCancellable(() -> lowerCancels.incrementAndGet() > 0);
+
+    assertEquals(1, lowerCancels.get());
+  }
 }
