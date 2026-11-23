@@ -977,11 +977,6 @@ public class LeafSet implements Iterable<NodeHandle> {
    *   + ccw 2nd       +  ...          + ...           + ccw Nth       +
    *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    *
-   *   TODO 2.23.2006 the synchronization of LeafSet is nonexistent
-   *   and it's difficult to add because the listener interface should not
-   *   be called while holding a lock, but the lock should be acquired once while
-   *   making the change
-   *
    */
   public synchronized void serialize(OutputBuffer buf) throws IOException {
     HashSet<NodeHandle> superset = new HashSet<NodeHandle>();
