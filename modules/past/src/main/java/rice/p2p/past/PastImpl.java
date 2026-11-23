@@ -37,10 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -296,51 +296,15 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
           boolean canWrite) {
         logger.trace("Reading from {}", socket);
         try {
-          ByteBuffer[] buffers = pendingSocketTransactions.get(socket);
-          if (buffers == null) {
-            // this is a new message
-
-            // read the size
-            buffers = new ByteBuffer[1];
-            buffers[0] = ByteBuffer.allocate(Integer.BYTES);
-            if (socket.read(buffers[0]) == -1) {
-              close(socket);
-              return;
-            }
-
-            // TODO: handle a partial read of the 4-byte size header
-            byte[] sizeBytes = buffers[0].array();
-            int size = MathUtils.byteArrayToInt(sizeBytes);
-
-            logger.trace("Found object of size {} from {}", size, socket);
-
-            // allocate a buffer to store the object, save it in the pst
-            buffers[0] = ByteBuffer.allocate(size);
-            pendingSocketTransactions.put(socket,buffers);
-          }
-
-          // now we have a bb
-
-          // read some bytes
-          if (socket.read(buffers[0]) == -1) {
-            close(socket);
-          }
-
-          // deserialize or reregister
-          if (buffers[0].remaining() == 0) {
-            // make sure to clear things up so we can keep receiving
-            pendingSocketTransactions.remove(socket);
-
-            logger.trace("bb[0].limit() {} bb[0].remaining() {} from {}", buffers[0].limit(), buffers[0].remaining(), socket);
-
+          byte[] message = socketReader.read(socket);
+          if (message != null) {
             // deserialize the object
-            SimpleInputBuffer inputBuffer = new SimpleInputBuffer(buffers[0].array());
+            SimpleInputBuffer inputBuffer = new SimpleInputBuffer(message);
 
             short type = inputBuffer.readShort();
 
             PastMessage result = (PastMessage)endpoint.getDeserializer().deserialize(inputBuffer,type,(byte)0,null);
             deliver(null,result);
-
           }
 
           // there will be more data on the socket if we haven't received everything yet
@@ -349,6 +313,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
             socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
 
             // no recursive call to read the next object: calling read when not ready throws an exception
+        } catch (EOFException e) {
+          close(socket);
         } catch (IOException e) {
           receiveException(socket, e);
         }
@@ -362,7 +328,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
       void close(AppSocket socket) {
         if (socket == null) return;
-        pendingSocketTransactions.remove(socket);
+        socketReader.forget(socket);
         socket.close();
       }
 
@@ -466,7 +432,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * Used for receiving the objects.
    */
-  WeakHashMap<AppSocket, ByteBuffer[]> pendingSocketTransactions = new WeakHashMap<AppSocket, ByteBuffer[]>();
+  private final PastSocketReader socketReader = new PastSocketReader(Integer.MAX_VALUE);
 
   private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
     if (continuation != null) {
