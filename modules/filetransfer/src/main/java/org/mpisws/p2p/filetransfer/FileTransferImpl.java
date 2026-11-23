@@ -865,7 +865,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     public boolean cancel() {
       if (this.equals(queue.inFlight())) {
         if (!started) {
-          // TODO: can still cancel the message, but have to have special behavior when the socket calls us back
+          // nothing was written yet, so the message can still be cancelled: its receipt is cancelled too, and when the
+          // socket calls back, receiveSelectResult() sees that and drops the message without writing it
           return true;
         } else {
           return false;

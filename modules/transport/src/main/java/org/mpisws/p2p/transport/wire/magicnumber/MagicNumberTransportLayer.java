@@ -306,7 +306,8 @@ public class MagicNumberTransportLayer<Identifier> implements
     @Override
     public void receiveSelectResult(P2PSocket<Identifier> socket, boolean canRead, boolean canWrite) throws IOException {
       // TODO: Optimization: Check array at each step, to fail faster
-      // TODO: Make timeout/cancellable
+      // no read timeout of its own is needed here: the constructor schedules this receiver's run(), which closes the socket
+      // if the header has not arrived within SOCKET_TIMEOUT, and the header's arrival cancels that timer
       if (canWrite) throw new IOException("Never asked to write!");
       if (!canRead) throw new IOException("Can't read!");
       long bytesRead;
