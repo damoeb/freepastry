@@ -147,15 +147,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // the policy used for application-specific behavior
   protected PastPolicy policy;
 
-  // the unique ids used by the messages sent across the wire
-  private int id;
-
-  // the hashtable of outstanding messages
-  // (requests may be sent from application threads while the selector thread delivers responses and timeouts)
-  private final Map<Integer, Continuation<?, Exception>> outstanding;
-
-  // the hashtable of outstanding timer tasks
-  private final Map<Integer, CancellableTask> timers;
+  // the requests that wait for a response
+  private final PendingRequests pending;
 
   // the instance name we are running with
   private final String instance;
@@ -273,10 +266,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     this.instance = instance;
     this.trash = trash;
 
-    this.id = Integer.MIN_VALUE;
-    // concurrent, and like the Hashtables they replace they reject null keys and values
-    this.outstanding = new ConcurrentHashMap<Integer, Continuation<?, Exception>>();
-    this.timers = new ConcurrentHashMap<Integer, CancellableTask>();
+    this.pending = new PendingRequests(logger);
     this.replicationFactor = replicas;
 
     this.replicaManager = buildReplicationManager(node, instance);
@@ -374,8 +364,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @return A new id
    */
-  protected synchronized int nextRequestId() {
-    return id++;
+  protected int nextRequestId() {
+    return pending.nextRequestId();
   }
 
   /**
@@ -438,7 +428,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
     if (continuation != null) {
       CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(msg.getUID(), getLocalNodeHandle(), null, msg, handle), MESSAGE_TIMEOUT);
-      insertPending(msg.getUID(), timer, continuation);
+      pending.insert(msg.getUID(), timer, continuation);
     }
 
     // create a bb[] to be written
@@ -538,39 +528,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   protected void sendRequest(Id id, PastMessage message, NodeHandle hint, Continuation<?, Exception> command) {
     logger.atTrace().log(() -> "Sending request message " + message + " {"+message.getUID()+"} to id " + id + " via " + hint);
     CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(message.getUID(), getLocalNodeHandle(), id, message, hint), MESSAGE_TIMEOUT);
-    insertPending(message.getUID(), timer, command);
+    pending.insert(message.getUID(), timer, command);
     endpoint.route(id, message, hint);
-  }
-
-  /**
-   * Loads the provided continuation into the pending table
-   *
-   * @param uid The id of the message
-   * @param command The continuation to run
-   */
-  private void insertPending(int uid, CancellableTask timer, Continuation<?, Exception> command) {
-    logger.trace("Loading continuation {} into pending table", uid);
-    timers.put(Integer.valueOf(uid), timer);
-    outstanding.put(Integer.valueOf(uid), command);
-  }
-
-  /**
-   * Removes and returns the provided continuation from the pending table
-   *
-   * @param uid The id of the message
-   * @return The continuation to run
-   */
-  private Continuation<Object, Exception> removePending(int uid) {
-    logger.trace("Removing and returning continuation {} from pending table", uid);
-    CancellableTask timer = timers.remove(Integer.valueOf(uid));
-
-    if (timer != null)
-      timer.cancel();
-
-    // the response arrives untyped from the wire; each pending continuation expects the response type of its request
-    @SuppressWarnings("unchecked")
-    Continuation<Object, Exception> command = (Continuation<Object, Exception>) outstanding.remove(Integer.valueOf(uid));
-    return command;
   }
 
   /**
@@ -580,7 +539,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   private void handleResponse(PastMessage message) {
     logger.debug("handling reponse message {} from the request", message);
-    Continuation<Object, Exception> command = removePending(message.getUID());
+    Continuation<Object, Exception> command = pending.remove(message.getUID());
 
     if (command != null) {
       message.returnResponse(command, environment, instance);
