@@ -51,6 +51,7 @@ import rice.Continuation;
 import rice.Continuation.ListenerContinuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -299,7 +300,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
 
         logger.debug("REFRESH: GOT {} SET OF HANDLES!", nodeHandleSet);
 
-        getEndpoint().process(() -> {
+        Futures.forward(getEndpoint().process(() -> {
           logger.debug("REFRESH: ON PROCESSING THREAD!");
 
           for (int i=0; i<array.length; i++) {
@@ -320,7 +321,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
 
           return null;
-        }, new StandardContinuation<Object, Object, Exception>(parent) {
+        }), new StandardContinuation<Object, Object, Exception>(parent) {
           @Override
           public void receiveResult(Object previousResult) {
             logger.debug("REFRESH: BACK ON NORMAL THREAD!");
@@ -365,7 +366,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
 
             send.receiveResult(null);
           }
-        });
+        }, getEndpoint().getEnvironment());
       }
     });
   }

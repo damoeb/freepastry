@@ -38,6 +38,7 @@ package rice.p2p.aggregation;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -288,7 +289,7 @@ final class ObjectRetriever {
   }
 
   private void validateAndExtract(final AggregateDescriptor aggregate, final int objDescIndex, final Aggregate fetchedAggregate, final Continuation<? super ExpiringPastContent, Exception> command) {
-    endpoint.process(() -> factory.buildId(fetchedAggregate.getContentHash()), new Continuation<Id, Exception>() {
+    Futures.forward(endpoint.process(() -> factory.buildId(fetchedAggregate.getContentHash())), new Continuation<Id, Exception>() {
       @Override
       public void receiveResult(Id result) {
         if (result != null) {
@@ -320,6 +321,6 @@ final class ObjectRetriever {
         logger.warn("retrieveObjectFromAggregate cannot determine content hash, exception ", e);
         command.receiveException(e);
       }
-    });
+    }, endpoint.getEnvironment());
   }
 }

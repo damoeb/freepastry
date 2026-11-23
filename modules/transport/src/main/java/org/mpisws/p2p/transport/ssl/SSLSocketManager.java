@@ -56,6 +56,7 @@ import org.mpisws.p2p.transport.util.ByteBuffers;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
@@ -349,7 +350,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   private void runDelegatedTasks() {
     if (status == HandshakeStatus.NEED_TASK) {
       runningTaskLock = true;
-      sslTL.getEnvironment().getProcessor().process(() -> {
+      Futures.forward(sslTL.getEnvironment().getProcessor().process(() -> {
         Runnable runnable;
         while ((runnable = engine.getDelegatedTask()) != null) {
           runnable.run();
@@ -360,7 +361,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           return null;
         }
         return null;
-      },new Continuation<Object, Exception>() {
+      }, sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager()), new Continuation<Object, Exception>() {
         @Override
         public void receiveException(Exception exception) {
           logger.warn("SSL handshake task failed", exception);
@@ -370,8 +371,7 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
           runningTaskLock = false;
           continueHandshaking();
         };
-      }
-      , sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager());
+      }, sslTL.getEnvironment());
     }
   }
 

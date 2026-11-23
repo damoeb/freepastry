@@ -45,6 +45,7 @@ import rice.Executable;
 import rice.Continuation.ListenerContinuation;
 import rice.Continuation.MultiContinuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -221,7 +222,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
     final NodeHandleSet handles = endpoint.neighborSet(Integer.MAX_VALUE);
     final IdRange ourRange = endpoint.range(handle, 0, handle.getId());
 
-    endpoint.process(new BloomFilterExecutable(ourRange), new ListenerContinuation<IdBloomFilter, Exception>("Creation of our bloom filter", environment) {
+    Futures.forward(endpoint.process(new BloomFilterExecutable(ourRange)), new ListenerContinuation<IdBloomFilter, Exception>("Creation of our bloom filter", environment) {
       int total = 0;
 
       @Override
@@ -236,7 +237,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
             final IdRange range = handleRange.intersectRange(getTotalRange());
 
             if ((range != null) && ! range.intersectRange(getTotalRange()).isEmpty()) {
-              endpoint.process(new BloomFilterExecutable(range), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
+              Futures.forward(endpoint.process(new BloomFilterExecutable(range)), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
                 @Override
                 public void receiveResult(IdBloomFilter rangeBloomFilter) {
                   IdBloomFilter filter = (IdBloomFilter) rangeBloomFilter;
@@ -246,7 +247,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
                   RequestMessage request = new RequestMessage(ReplicationImpl.this.handle, new IdRange[] {range, ourRange}, new IdBloomFilter[] {filter, ourFilter});
                   endpoint.route(null, request, handle);
                 }
-              });
+              }, endpoint.getEnvironment());
             }
           } catch (RangeCannotBeDeterminedException ignored) {
             // not an error 99.99% of the time, since we're probably just at one end of the range
@@ -255,7 +256,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
 
         logger.debug("COUNT: Done sending replications requests with {} in instance {}", total, instance);
       }
-    });
+    }, endpoint.getEnvironment());
   }
 
 
@@ -320,7 +321,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
 
         for (int i=0; i<rm.getRanges().length; i++) {
           final int j = i;
-          endpoint.process(new Executable<Object, Exception>() {
+          Futures.forward(endpoint.process(new Executable<Object, Exception>() {
             @Override
             public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
             @Override
@@ -330,7 +331,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
 
               return idSet;
             }
-          }, continuation.getSubContinuation(i));
+          }), continuation.getSubContinuation(i), endpoint.getEnvironment());
         }
       }
       case ReplicationResponseMessage rm -> {

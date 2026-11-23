@@ -40,6 +40,7 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -550,7 +551,7 @@ final class GlacierRetriever {
    * manifest.
    */
   private void reencodeFragment(final FragmentKey key, final Manifest manifest, final PastContent retrievedObject, final GlacierContinuation continuation) {
-    endpoint.process(() -> {
+    Futures.forward(endpoint.process(() -> {
       logger.debug("Reencode object: {}", key.versionKey());
       boolean generateFragment[] = new boolean[numFragments];
       Arrays.fill(generateFragment, false);
@@ -558,7 +559,7 @@ final class GlacierRetriever {
       Fragment[] result = policy.encodeObject(retrievedObject, generateFragment);
       logger.debug("Reencode complete: {}", key.versionKey());
       return result;
-    }, new Continuation<Fragment[], Exception>() {
+    }), new Continuation<Fragment[], Exception>() {
       @Override
       public void receiveResult(Fragment[] frag) {
         if (!manifest.validatesFragment(frag[key.fragmentId()], key.fragmentId(), environment.getLogManager().getLogger(Manifest.class, instance))) {
@@ -574,7 +575,7 @@ final class GlacierRetriever {
         logger.error("Recovered object, but re-encode failed: ", e);
         continuation.receiveException(new GlacierException("Recovered object, but re-encode failed: "+e));
       }
-    });
+    }, endpoint.getEnvironment());
   }
 
   void rateLimitedRetrieveFragment(final FragmentKey key, final Manifest manifest, final char tag, final GlacierContinuation continuation) {

@@ -41,6 +41,7 @@ import java.io.IOException;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.time.TimeSource;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -102,10 +103,10 @@ final class AggregateStorer {
 
   void storeAggregate(final Aggregate aggregate, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {
     logger.debug("storeAggregate() schedules content hash computation...");
-    endpoint.process(() -> {
+    Futures.forward(endpoint.process(() -> {
       logger.debug("storeAggregate() starts working on content hash...");
       return factory.buildId(aggregate.getContentHash());
-    }, new Continuation<Id, Exception>() {
+    }), new Continuation<Id, Exception>() {
       @Override
       public void receiveResult(Id result) {
         if (result != null) {
@@ -121,7 +122,7 @@ final class AggregateStorer {
         logger.warn("storeAggregate() cannot determine content hash, exception ", e);
         command.receiveException(e);
       }
-    });
+    }, endpoint.getEnvironment());
   }
 
   private void insertAggregate(final Aggregate aggregate, final long expiration, final ObjectDescriptor[] desc, final Id[] pointers, final Continuation<? super Boolean, Exception> command) {

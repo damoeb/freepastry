@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.processing.WorkRequest;
 import rice.p2p.util.MathUtils;
 
@@ -159,28 +160,24 @@ class OutgoingFileReceipt extends OutgoingReceipt implements FileReceipt {
 
       };
 
-      sender.transfer.processor.processBlockingIO(new WorkRequest<Object>(c, sender.transfer.environment.getSelectorManager()) {
+      Futures.forward(sender.transfer.processor.processBlockingIO(() -> {
+        byte[] chunkBytes = new byte[1+4+4+amtToRead];
 
-        @Override
-        public Object doWork() throws Exception {
-          byte[] chunkBytes = new byte[1+4+4+amtToRead];
+        chunkBytes[0] = MSG_CHUNK;
+        MathUtils.intToByteArray(uid,chunkBytes,1);
+        MathUtils.intToByteArray(amtToRead,chunkBytes,5);
 
-          chunkBytes[0] = MSG_CHUNK;
-          MathUtils.intToByteArray(uid,chunkBytes,1);
-          MathUtils.intToByteArray(amtToRead,chunkBytes,5);
-
-          // blocking
-          long ret = file.read(chunkBytes,9,amtToRead);
-          if (ret < 0) {
-            throw new EOFException("Unexpected EOF... cancelling "+uid+" "+f+".");
-          }
-
-          ArrayList<ByteBuffer> foo = new ArrayList<ByteBuffer>();
-          foo.add(ByteBuffer.wrap(chunkBytes));
-          sender.enqueue(new MessageWrapperImpl(sender, OutgoingFileReceipt.this,seq,foo));
-          return null;
+        // blocking
+        long ret = file.read(chunkBytes,9,amtToRead);
+        if (ret < 0) {
+          throw new EOFException("Unexpected EOF... cancelling "+uid+" "+f+".");
         }
-      });
+
+        ArrayList<ByteBuffer> foo = new ArrayList<ByteBuffer>();
+        foo.add(ByteBuffer.wrap(chunkBytes));
+        sender.enqueue(new MessageWrapperImpl(sender, OutgoingFileReceipt.this,seq,foo));
+        return null;
+      }, sender.transfer.environment.getSelectorManager()), c, sender.transfer.environment);
 
       if (ptr == lastByte) {
         // schedule close
@@ -210,13 +207,10 @@ class OutgoingFileReceipt extends OutgoingReceipt implements FileReceipt {
       }
 
     };
-    sender.transfer.processor.processBlockingIO(new WorkRequest<Object>(c2, sender.transfer.environment.getSelectorManager()) {
-      @Override
-      public Object doWork() throws Exception {
-        file.close();
-        return null;
-      }
-    });
+    Futures.forward(sender.transfer.processor.processBlockingIO(() -> {
+      file.close();
+      return null;
+    }, sender.transfer.environment.getSelectorManager()), c2, sender.transfer.environment);
   }
 
   @Override
@@ -291,15 +285,8 @@ class OutgoingFileReceipt extends OutgoingReceipt implements FileReceipt {
       }
     };
 
-    sender.transfer.processor.processBlockingIO(new WorkRequest<Object>(c,sender.transfer.environment.getSelectorManager()) {
-
-      @Override
-      public Object doWork() throws Exception {
-        // do nothing, just used to call the above continuation after flushing out any existing stuff in the processor
-        return null;
-      }
-
-    });
+    // does nothing, just calls the above continuation after flushing out any existing stuff in the processor
+    Futures.forward(sender.transfer.processor.processBlockingIO(() -> null, sender.transfer.environment.getSelectorManager()), c, sender.transfer.environment);
     return true; // this is a lie, we don't know for sure whether or not we successfully cancelled
   }
 

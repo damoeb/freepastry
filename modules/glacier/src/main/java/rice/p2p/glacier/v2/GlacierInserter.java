@@ -40,6 +40,7 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -95,11 +96,11 @@ final class GlacierInserter {
 
     logger.atInfo().log(() -> "insert(" + content + " (id=" + versionKey.toStringFull() + ", mutable=" + content.isMutable() + ")");
 
-    endpoint.process(() -> {
+    Futures.forward(endpoint.process(() -> {
       boolean[] generateFragment = new boolean[numFragments];
       Arrays.fill(generateFragment, true);
       return policy.encodeObject(content, generateFragment);
-    }, new Continuation<Fragment[], Exception>() {
+    }), new Continuation<Fragment[], Exception>() {
       @Override
       public void receiveResult(Fragment[] fragments) {
         if (fragments == null) {
@@ -115,7 +116,7 @@ final class GlacierInserter {
         logger.error("EncodeObject failed: e=", e);
         command.receiveException(new GlacierException("EncodeObject failed: e="+e));
       }
-    });
+    }, endpoint.getEnvironment());
   }
 
   /**
@@ -123,7 +124,7 @@ final class GlacierInserter {
    * thread, then sends fragments and manifests to their holders.
    */
   private void createManifestsAndDistribute(final VersionKey versionKey, final PastContent content, final Fragment[] fragments, final long expiration, final Continuation<? super Boolean[], Exception> command) {
-    endpoint.process(() -> policy.createManifests(versionKey, content, fragments, expiration), new Continuation<Manifest[], Exception>() {
+    Futures.forward(endpoint.process(() -> policy.createManifests(versionKey, content, fragments, expiration)), new Continuation<Manifest[], Exception>() {
       @Override
       public void receiveResult(Manifest[] results) {
         if (results != null) {
@@ -150,7 +151,7 @@ final class GlacierInserter {
         logger.atWarn().log(() -> "insert(" + versionKey.toStringFull() + ") cannot create manifests - exception e="+e);
         command.receiveException(e);
       }
-    });
+    }, endpoint.getEnvironment());
   }
 
   /** Refreshes the objects stored under the given storage ids, which only their owner can. */

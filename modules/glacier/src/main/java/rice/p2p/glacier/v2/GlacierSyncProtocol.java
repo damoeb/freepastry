@@ -42,6 +42,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -139,7 +140,7 @@ final class GlacierSyncProtocol {
           logger.info("Range response (offset: {}): {}, original={}", offset, refreshResponseMessage.getCommonRange(), originalRange);
 
           final IdSet keySet = fragmentStorage.scan();
-          endpoint.process(() -> {
+          Futures.forward(endpoint.process(() -> {
             FragmentBloomFilter bloomFilter = new FragmentBloomFilter((2*keySet.numElements()+5)*config.syncBloomFilterBitsPerKey(), config.syncBloomFilterNumHashes(), environment.getRandomSource());
             Iterator<Id> iter = keySet.getIterator();
 
@@ -161,7 +162,7 @@ final class GlacierSyncProtocol {
             }
 
             return bloomFilter;
-          }, new Continuation<FragmentBloomFilter, Exception>() {
+          }), new Continuation<FragmentBloomFilter, Exception>() {
             @Override
             public void receiveResult(FragmentBloomFilter result) {
               if (result != null) {
@@ -182,7 +183,7 @@ final class GlacierSyncProtocol {
             public void receiveException(Exception e) {
               logger.warn("Exception while processing range response: {} -- discarding request", e, e);
             }
-          });
+          }, endpoint.getEnvironment());
         } else {
           logger.warn("Unknown result in sync continuation: {} -- discarded", received);
         }

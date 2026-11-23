@@ -37,11 +37,12 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
-import rice.environment.processing.WorkRequest;
 
 /**
  * Runs work on the environment's blocking IO thread ({@code Processor.processBlockingIO()}) and delivers its
@@ -63,18 +64,22 @@ final class BlockingIO {
   }
 
   /**
-   * @param description describes the work, as the WorkRequest's toString()
+   * @param description describes the work, as its toString()
    * @param continuation receives the result on the selector thread
    * @param work the work
    */
   <R> void run(final Supplier<String> description, Continuation<? super R, Exception> continuation, final Work<R> work) {
-    environment.getProcessor().processBlockingIO(new WorkRequest<R>(continuation, environment.getSelectorManager()) {
+    Callable<R> describedWork = new Callable<R>() {
       @Override
-      public String toString() { return description.get(); }
-      @Override
-      public R doWork() throws Exception {
+      public R call() throws Exception {
         return work.doWork();
       }
-    });
+
+      @Override
+      public String toString() {
+        return description.get();
+      }
+    };
+    Futures.forward(environment.getProcessor().processBlockingIO(describedWork, environment.getSelectorManager()), continuation, environment);
   }
 }
