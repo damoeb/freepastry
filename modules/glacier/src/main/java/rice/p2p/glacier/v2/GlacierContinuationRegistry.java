@@ -149,8 +149,11 @@ final class GlacierContinuationRegistry {
         if (!continuation.hasTerminated() && currentTimeout < (now + 1*GlacierConfig.SECONDS)) {
           logger.debug("Timer: Resuming [{}]", continuation);
           continuation.syncTimeoutExpired();
-          if (!continuation.hasTerminated() && (continuation.getTimeout() <= currentTimeout))
-            panic("Continuation does not set new timeout: "+continuation);
+          if (!continuation.hasTerminated() && (continuation.getTimeout() <= currentTimeout)) {
+            // a local bug: the continuation would expire again at once, forever; stop it, keep the others running
+            logger.error("Terminating {}: its timeout expired and it did not set a later one", continuation);
+            continuation.terminate();
+          }
         }
 
         if (!continuation.hasTerminated()) {
@@ -175,16 +178,5 @@ final class GlacierContinuationRegistry {
       nextContinuationTimeout = earliestTimeout;
       setTimer((int)Math.max(earliestTimeout - environment.getTimeSource().currentTimeMillis(), 1*GlacierConfig.SECONDS));
     } else logger.debug("No more timeouts");
-  }
-
-  /**
-   * This method is called when Glacier encounters a fatal error
-   *
-   * @param message Message describing the error, which is logged
-   * @throws Error always
-   */
-  private void panic(String message) throws Error {
-    logger.error("PANIC: {}", message);
-    throw new Error("Panic");
   }
 }
