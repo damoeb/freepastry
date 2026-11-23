@@ -78,6 +78,16 @@ public class AuthenticatorPushProtocol<Handle extends RawSerializable, Identifie
 
   Logger logger;
 
+  /** Parameter: authenticators the pending store keeps per subject; further ones are dropped. */
+  public static final String PENDING_MAX_PER_SUBJECT_PARAM = "peerreview_pending_authenticators_max_per_subject";
+  /** Parameter: authenticators the pending store keeps in all; beyond that the oldest subjects are dropped. */
+  public static final String PENDING_MAX_TOTAL_PARAM = "peerreview_pending_authenticators_max_total";
+
+  /**
+   * @param pendingStore holds authenticators whose subject's certificate is still missing; any peer can push
+   *     authenticators for made-up subjects into it, so this protocol bounds it with
+   *     {@value #PENDING_MAX_PER_SUBJECT_PARAM} and {@value #PENDING_MAX_TOTAL_PARAM}
+   */
   public AuthenticatorPushProtocol(
       PeerReview<Handle, Identifier> peerreview, AuthenticatorStore<Identifier> inStore,
       AuthenticatorStore<Identifier> outStore, AuthenticatorStore<Identifier> pendingStore,
@@ -87,6 +97,7 @@ public class AuthenticatorPushProtocol<Handle extends RawSerializable, Identifie
     this.authInStore = inStore;
     this.authOutStore = outStore;
     this.authPendingStore = pendingStore;
+    pendingStore.setBounds(env.getParameters().getInt(PENDING_MAX_PER_SUBJECT_PARAM), env.getParameters().getInt(PENDING_MAX_TOTAL_PARAM));
     this.transport = transport;
     this.infoStore = infoStore;
     this.peerreview = peerreview;
@@ -225,8 +236,12 @@ public class AuthenticatorPushProtocol<Handle extends RawSerializable, Identifie
         addAuthenticatorsIfValid(entry.getValue(), id);
       } else {
         logger.debug("  Missing certificate for this subject; requesting from {} and recording auths as pending", source);
+        int dropped = 0;
         for (Authenticator authenticator : entry.getValue()) {
-          authPendingStore.addAuthenticator(id, authenticator);
+          if (!authPendingStore.addAuthenticator(id, authenticator)) dropped++;
+        }
+        if (dropped > 0) {
+          logger.debug("  Dropped {} pending authenticators for <{}> from {}: the subject holds as many as allowed", dropped, id, source);
         }
         peerreview.requestCertificate(source, id);
       }

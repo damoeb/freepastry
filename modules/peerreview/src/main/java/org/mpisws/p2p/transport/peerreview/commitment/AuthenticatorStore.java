@@ -39,7 +39,8 @@ package org.mpisws.p2p.transport.peerreview.commitment;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -62,7 +63,16 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
   private final boolean allowDuplicateSeqs;
   RandomAccessFileIOBuffer authFile;
 
+  /** by subject, in the order the subjects were first added */
   Map<Identifier,SortedSet<Authenticator>> authenticators;
+
+  /** how many authenticators {@link #authenticators} holds in all */
+  private int storedCount;
+  /** how many records the file holds: the ones written by the last rewrite plus the ones appended since */
+  private long recordsInFile;
+  /** see {@link #setBounds}; unbounded unless set */
+  private int maxPerSubject = Integer.MAX_VALUE;
+  private int maxTotal = Integer.MAX_VALUE;
 
   Serializer<Identifier> idSerializer;
   AuthenticatorSerializer authenticatorSerializer;
@@ -74,11 +84,22 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
 
   public AuthenticatorStore(PeerReview<?, Identifier> peerreview, boolean allowDuplicateSeqs) {
     this.allowDuplicateSeqs = allowDuplicateSeqs;
-    this.authenticators = new HashMap<Identifier, SortedSet<Authenticator>>();
+    this.authenticators = new LinkedHashMap<Identifier, SortedSet<Authenticator>>();
     this.authFile = null;
     this.authenticatorSerializer = peerreview.getAuthenticatorSerializer();
     this.idSerializer = peerreview.getIdSerializer();
 
+  }
+
+  /**
+   * Bounds the store, for authenticators that arrive from other nodes before they can be checked: an authenticator
+   * for a subject that already holds maxPerSubject is dropped, and once more than maxTotal are stored the subjects
+   * added first are dropped as a whole. The file is rewritten once it holds more than twice maxTotal records.
+   */
+  public void setBounds(int maxPerSubject, int maxTotal) {
+    if (maxPerSubject < 1 || maxTotal < 1) throw new IllegalArgumentException("bounds must be positive: "+maxPerSubject+", "+maxTotal);
+    this.maxPerSubject = maxPerSubject;
+    this.maxTotal = maxTotal;
   }
 
   /**
@@ -115,6 +136,8 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
     // clobber anything in the file after the ioexception
     authFile.setLength(pos);
     authFile.seek(authFile.length());
+    recordsInFile = storedCount;
+    evictOldestSubjects(null);
   }
 
   /**
@@ -128,6 +151,7 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
       list = new TreeSet<Authenticator>();
       authenticators.put(id, list);
     }
+    int sizeBefore = list.size();
     if (!allowDuplicateSeqs) {
       SortedSet<Authenticator> sub = list.subSet(
           new Authenticator(authenticator.getSeq()+1, null, null),
@@ -139,6 +163,18 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
       }
     }
     list.add(authenticator);
+    storedCount += list.size() - sizeBefore;
+  }
+
+  /** Drops the subjects added first, but not keep, until at most maxTotal authenticators are stored. */
+  private void evictOldestSubjects(Identifier keep) {
+    Iterator<Map.Entry<Identifier, SortedSet<Authenticator>>> oldest = authenticators.entrySet().iterator();
+    while (storedCount > maxTotal && oldest.hasNext()) {
+      Map.Entry<Identifier, SortedSet<Authenticator>> entry = oldest.next();
+      if (entry.getKey().equals(keep)) continue;
+      storedCount -= entry.getValue().size();
+      oldest.remove();
+    }
   }
 
   /**
@@ -150,7 +186,10 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
     SortedSet<Authenticator> list = authenticators.get(id);
 
     if (list != null) {
+      int sizeBefore = list.size();
       list.removeAll(getAuthenticators(id, minseq, maxseq));
+      storedCount -= sizeBefore - list.size();
+      if (list.isEmpty()) authenticators.remove(id);
     }
   }
 
@@ -160,14 +199,26 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
 
   /**
    * Also writes it to disk.
+   *
+   * @return false if the authenticator was dropped because its subject holds as many as {@link #setBounds} allows
    */
-  public void addAuthenticator(Identifier id, Authenticator authenticator) {
+  public boolean addAuthenticator(Identifier id, Authenticator authenticator) {
     try {
+      SortedSet<Authenticator> list = authenticators.get(id);
+      if (list != null && list.size() >= maxPerSubject && !list.contains(authenticator)) {
+        return false;
+      }
       if (authFile != null) {
         idSerializer.serialize(id,authFile);
         authenticator.serialize(authFile);
+        recordsInFile++;
       }
       addAuthenticatorToMemory(id, authenticator);
+      evictOldestSubjects(id);
+      if (maxTotal != Integer.MAX_VALUE && recordsInFile > 2L * maxTotal) {
+        garbageCollect();
+      }
+      return true;
     } catch (IOException ioe) {
       throw new RuntimeException("Error in addAuthenticator("+id+","+authenticator+","+authFile+")",ioe);
     }
@@ -196,6 +247,7 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
     authFile.setLength(0);
     authFile.seek(0);
 
+    recordsInFile = storedCount;
     // write all the elements
     for (Identifier identifier : authenticators.keySet()) {
       SortedSet<Authenticator> list = authenticators.get(identifier);
@@ -262,7 +314,8 @@ public class AuthenticatorStore<Identifier extends RawSerializable> {
   }
 
   public void flush(Identifier id) {
-    authenticators.remove(id);
+    SortedSet<Authenticator> removed = authenticators.remove(id);
+    if (removed != null) storedCount -= removed.size();
   }
 
 }
