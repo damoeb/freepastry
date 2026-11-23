@@ -38,9 +38,9 @@ advised of the possibility of such damage.
 package rice.p2p.past.messaging;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
@@ -93,16 +93,16 @@ public final class MessageLostMessage extends PastMessage {
   /**
    * Method by which this message is supposed to return it's response -
    * in this case, it lets the continuation know that a the message was
-   * lost via the receiveException method.
+   * lost by failing its future.
    *
-   * @param continuation The continuation to return the reponse to.
+   * @param request The future of the lost request.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
+  public void returnResponse(CompletableFuture<Object> request, Environment env, String instance) {
     Logger logger = env.getLogManager().getLogger(getClass(), instance);
     Exception e = new PastException("Outgoing message '" + messageString + "' to " + id + "/" + hint + " was lost - please try again.");
     logger.warn("ERROR: Outgoing PAST message {} with UID {} was lost", messageString, getUID(), e);
-    continuation.receiveException(e);
+    request.completeExceptionally(e);
   }
 
   /**

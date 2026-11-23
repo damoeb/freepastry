@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.past.messaging;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -72,11 +72,11 @@ public final class GCCollectMessage extends PastMessage {
    * in this case, it lets the continuation know that a the message was
    * lost via the receiveException method.
    *
-   * @param continuation The continuation to return the reponse to.
+   * @param request The future of the request.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
-    continuation.receiveException(new PastException("Should not be called!"));
+  public void returnResponse(CompletableFuture<Object> request, Environment env, String instance) {
+    request.completeExceptionally(new PastException("Should not be called!"));
   }
 
   /**

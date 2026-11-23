@@ -38,6 +38,7 @@ advised of the possibility of such damage.
 package rice.p2p.past.messaging;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import rice.Continuation;
 import rice.environment.Environment;
@@ -107,14 +108,14 @@ public sealed abstract class ContinuationMessage extends PastMessage implements 
   /**
     * Method by which this message is supposed to return it's response.
    *
-   * @param continuation The continuation to return the reponse to.
+   * @param request The future of the request this message answers.
    */
   @Override
-  public void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance) {
+  public void returnResponse(CompletableFuture<Object> request, Environment env, String instance) {
     if (exception == null)
-      continuation.receiveResult(response);
+      request.complete(response);
     else
-      continuation.receiveException(exception);
+      request.completeExceptionally(exception);
   }
 
   /**

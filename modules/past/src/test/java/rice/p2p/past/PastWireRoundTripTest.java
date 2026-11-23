@@ -18,7 +18,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.IdFactory;
@@ -176,17 +175,12 @@ class PastWireRoundTripTest {
   /** What the requester sees as the result of a message: the result and the exception. */
   private static Object[] outcome(PastMessage message) {
     Object[] result = new Object[2];
-    message.returnResponse(new Continuation<Object, Exception>() {
-      @Override
-      public void receiveResult(Object response) {
-        result[0] = response;
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        result[1] = e;
-      }
-    }, env, "test");
+    java.util.concurrent.CompletableFuture<Object> request = new java.util.concurrent.CompletableFuture<Object>();
+    message.returnResponse(request, env, "test");
+    var _ = request.whenComplete((response, failure) -> {
+      result[0] = response;
+      result[1] = failure;
+    });
     return result;
   }
 

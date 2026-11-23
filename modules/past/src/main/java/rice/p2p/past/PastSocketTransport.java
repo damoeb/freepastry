@@ -41,9 +41,9 @@ package rice.p2p.past;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.p2p.commonapi.CancellableTask;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.NodeHandle;
@@ -136,10 +136,16 @@ final class PastSocketTransport {
 
     });  }
 
-  void send(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
-    if (continuation != null) {
+  /**
+   * Writes a message to a new socket to the node.
+   *
+   * @param response for a request, the future its response completes (it fails if writing fails); null for a
+   *     response
+   */
+  void send(final NodeHandle handle, final PastMessage msg, final CompletableFuture<Object> response) {
+    if (response != null) {
       CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(msg.getUID(), past.getLocalNodeHandle(), null, msg, handle), past.MESSAGE_TIMEOUT);
-      pending.insert(msg.getUID(), timer, continuation);
+      pending.insert(msg.getUID(), timer, response);
     }
 
     // create a bb[] to be written
@@ -149,7 +155,7 @@ final class PastSocketTransport {
       outputBuffer.writeShort(msg.getType());
       msg.serialize(outputBuffer);
     } catch (IOException e) {
-      if (continuation != null) continuation.receiveException(e);
+      if (response != null) response.completeExceptionally(e);
     }
 
     // add the size back to the beginning...
@@ -181,8 +187,8 @@ final class PastSocketTransport {
         try {
           socket.write(buffers[0]);
         } catch (IOException e) {
-          if (continuation != null)
-            continuation.receiveException(e);
+          if (response != null)
+            response.completeExceptionally(e);
           else
             logger.warn("Error sending {}", msg, e);
           return; // don't continue to try to send
@@ -196,7 +202,7 @@ final class PastSocketTransport {
 
       @Override
       public void receiveException(AppSocket socket, Exception e) {
-        if (continuation != null) continuation.receiveException(e);
+        if (response != null) response.completeExceptionally(e);
       }
     },
     SOCKET_TIMEOUT_MILLIS);

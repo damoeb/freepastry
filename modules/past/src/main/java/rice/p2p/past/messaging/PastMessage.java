@@ -38,8 +38,8 @@ advised of the possibility of such damage.
 package rice.p2p.past.messaging;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -149,11 +149,12 @@ public sealed abstract class PastMessage implements RawMessage
   }
 
   /**
-   * Method by which this message is supposed to return it's response.
+   * Method by which this message is supposed to return it's response: completes the future of the request it
+   * answers, on the selector thread.
    *
-   * @param continuation The continuation to return the reponse to.
+   * @param request the future of the request, completed with the response or its exception
    */
-  public abstract void returnResponse(Continuation<Object, Exception> continuation, Environment env, String instance);
+  public abstract void returnResponse(CompletableFuture<Object> request, Environment env, String instance);
 
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
     id = buf.readInt();

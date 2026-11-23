@@ -38,12 +38,12 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
-import rice.Continuation.NamedContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.Futures;
 import rice.environment.Environment;
@@ -84,7 +84,6 @@ import rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl;
 import rice.p2p.replication.manager.ReplicationManagerClient;
 import rice.persistence.Cache;
 import rice.persistence.CachedStorage;
-import rice.persistence.LockManager;
 import rice.persistence.LockManager;
 
 /**
@@ -359,7 +358,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         continuationMessage.receiveResult(result);
         PastContent content = (PastContent)result;
         if (socketStrategy.sendAlongSocket(SocketStrategy.TYPE_FETCH, content)) {
-          sendViaSocket(msg.getSource(), continuationMessage, null);
+          socketTransport.send(msg.getSource(), continuationMessage, null);
         } else {
           endpoint.route(null, continuationMessage, msg.getSource());
         }
@@ -373,48 +372,65 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     };
   }
 
-  void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
-    socketTransport.send(handle, msg, continuation);
+  /**
+   * Sends a request over a socket of its own; see {@link #sendRequest(Id, PastMessage, NodeHandle)} for the future.
+   */
+  <T> CompletableFuture<T> sendViaSocket(final NodeHandle handle, final PastMessage msg) {
+    CompletableFuture<Object> response = newRequest();
+    socketTransport.send(handle, msg, response);
+    return castResponse(response);
   }
 
   /**
-   * Sends a request message across the wire, and stores the appropriate
-   * continuation.
+   * Sends a request message across the wire; see {@link #sendRequest(Id, PastMessage, NodeHandle)}.
    *
    * @param id The destination id
    * @param message The message to send.
-   * @param command The command to run once a result is received
+   * @return completed by the response
    */
-  protected void sendRequest(Id id, PastMessage message, Continuation<?, Exception> command) {
-    sendRequest(id, message, null, command);
+  protected <T> CompletableFuture<T> sendRequest(Id id, PastMessage message) {
+    return sendRequest(id, message, null);
   }
 
   /**
-   * Sends a request message across the wire, and stores the appropriate
-   * continuation.
+   * Sends a request message across the wire; see {@link #sendRequest(Id, PastMessage, NodeHandle)}.
    *
    * @param handle The node handle to send directly too
    * @param message The message to send.
-   * @param command The command to run once a result is received
+   * @return completed by the response
    */
-  protected void sendRequest(NodeHandle handle, PastMessage message, Continuation<?, Exception> command) {
-    sendRequest(null, message, handle, command);
+  protected <T> CompletableFuture<T> sendRequest(NodeHandle handle, PastMessage message) {
+    return sendRequest(null, message, handle);
   }
 
   /**
-   * Sends a request message across the wire, and stores the appropriate
-   * continuation.  Sends the message using the provided handle as a hint.
+   * Sends a request message across the wire, using the provided handle as a hint, and waits for its response.
    *
    * @param id The destination id
    * @param message The message to send.
    * @param hint The first hop hint
-   * @param command The command to run once a result is received
+   * @return completed on the selector thread with the response, or failed with the exception the responder sent
+   *     (a {@link PastRemoteException}), with a {@link PastException} if no response came within the message
+   *     timeout, or with an {@code EnvironmentDestroyedException}; its type is the response type of the message
    */
-  protected void sendRequest(Id id, PastMessage message, NodeHandle hint, Continuation<?, Exception> command) {
+  protected <T> CompletableFuture<T> sendRequest(Id id, PastMessage message, NodeHandle hint) {
     logger.atTrace().log(() -> "Sending request message " + message + " {"+message.getUID()+"} to id " + id + " via " + hint);
+    CompletableFuture<Object> response = newRequest();
     CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(message.getUID(), getLocalNodeHandle(), id, message, hint), MESSAGE_TIMEOUT);
-    pending.insert(message.getUID(), timer, command);
+    pending.insert(message.getUID(), timer, response);
     endpoint.route(id, message, hint);
+    return castResponse(response);
+  }
+
+  /** A future for the response of a request, failed when the environment is destroyed. */
+  private CompletableFuture<Object> newRequest() {
+    return environment.track(new CompletableFuture<Object>());
+  }
+
+  /** The response arrives untyped from the wire; the requester knows its type from the message it sent. */
+  @SuppressWarnings("unchecked")
+  private static <T> CompletableFuture<T> castResponse(CompletableFuture<Object> response) {
+    return (CompletableFuture<T>) (CompletableFuture<?>) response;
   }
 
   /**
@@ -424,10 +440,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    */
   private void handleResponse(PastMessage message) {
     logger.debug("handling reponse message {} from the request", message);
-    Continuation<Object, Exception> command = pending.remove(message.getUID());
+    CompletableFuture<Object> request = pending.remove(message.getUID());
 
-    if (command != null) {
-      message.returnResponse(command, environment, instance);
+    if (request != null) {
+      message.returnResponse(request, environment, instance);
     }
   }
 
@@ -614,8 +630,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
     logger.debug("Retrieving handle for id {} from node {}", id, handle);
 
-    sendRequest(handle, new FetchHandleMessage(nextRequestId(), id, getLocalNodeHandle(), handle.getId()),
-                new NamedContinuation<PastContentHandle, Exception>("FetchHandleMessage to " + handle + " for " + id, command));
+    Futures.forward(this.<PastContentHandle>sendRequest(handle, new FetchHandleMessage(nextRequestId(), id, getLocalNodeHandle(), handle.getId())), command);
   }
 
   /**
@@ -648,8 +663,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         }
       }
     };
-    sendRequest(nodeHandle, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), nodeHandle.getId()),
-                new NamedContinuation<PastContent, Exception>("FetchMessage to " + handle.getNodeHandle() + " for " + handle.getId(), checked));
+    Futures.forward(this.<PastContent>sendRequest(nodeHandle, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), nodeHandle.getId())), checked);
   }
 
   /**

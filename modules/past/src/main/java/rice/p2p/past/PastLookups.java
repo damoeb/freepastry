@@ -81,7 +81,7 @@ final class PastLookups {
    * failed, all replicas are tried, just in case; this may fail too, but at least we tried.
    */
   private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    past.sendRequest(id, new LookupMessage(past.nextRequestId(), id, past.getLocalNodeHandle(), id), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
+    Futures.forward(past.<PastContent>sendRequest(id, new LookupMessage(past.nextRequestId(), id, past.getLocalNodeHandle(), id)), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
       @Override
       public void receiveResult(final PastContent content) {
         if (content != null && past.isAuthentic(id, content)) {

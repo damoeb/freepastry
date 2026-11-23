@@ -291,8 +291,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
     logger.debug("REFRESH: GETTINGS ALL HANDLES OF {}", start);
 
 
-    sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id()),
-                new NamedContinuation<Object, Exception>("GCLookupHandles for " + start.id(), command) {
+    Futures.forward(sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id())), new NamedContinuation<Object, Exception>("GCLookupHandles for " + start.id(), command) {
       @Override
       public void receiveResult(Object response) {
         final NodeHandleSet nodeHandleSet = (NodeHandleSet) response;
@@ -339,8 +338,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
                   logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, sent);
 
 
-                  sendRequest(next, new GCRefreshMessage(nextRequestId(), sent, getLocalNodeHandle(), next.getId()),
-                              new NamedContinuation<Object, Exception>("GCRefresh to " + next, new StandardContinuation<Object, Object, Exception>(this) {
+                  Futures.forward(sendRequest(next, new GCRefreshMessage(nextRequestId(), sent, getLocalNodeHandle(), next.getId())), new NamedContinuation<Object, Exception>("GCRefresh to " + next, new StandardContinuation<Object, Object, Exception>(this) {
                     @Override
                     public void receiveResult(Object answers) {
                       if (answers instanceof Boolean[] booleans && booleans.length == sentIds.length) {

@@ -39,14 +39,14 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.p2p.commonapi.CancellableTask;
 
 /**
- * The requests of a {@link PastImpl} that wait for their response: the continuation of each, the timer that reports
+ * The requests of a {@link PastImpl} that wait for their response: the future each response completes, the timer that reports
  * the request lost, and the counter that numbers the requests. Requests may be sent from application threads while
  * the selector thread delivers responses and timeouts.
  */
@@ -58,7 +58,7 @@ final class PastPendingRequests {
 
   // the hashtable of outstanding messages
   // concurrent, and like the Hashtables they replace they reject null keys and values
-  private final Map<Integer, Continuation<?, Exception>> outstanding = new ConcurrentHashMap<Integer, Continuation<?, Exception>>();
+  private final Map<Integer, CompletableFuture<Object>> outstanding = new ConcurrentHashMap<Integer, CompletableFuture<Object>>();
 
   // the hashtable of outstanding timer tasks
   private final Map<Integer, CancellableTask> timers = new ConcurrentHashMap<Integer, CancellableTask>();
@@ -77,33 +77,32 @@ final class PastPendingRequests {
   }
 
   /**
-   * Loads the provided continuation into the pending table
+   * Loads the future of a request into the pending table
    *
    * @param uid The id of the message
-   * @param command The continuation to run
+   * @param timer reports the request lost
+   * @param response completed by the response
    */
-  void insert(int uid, CancellableTask timer, Continuation<?, Exception> command) {
-    logger.trace("Loading continuation {} into pending table", uid);
+  void insert(int uid, CancellableTask timer, CompletableFuture<Object> response) {
+    logger.trace("Loading request {} into pending table", uid);
     timers.put(Integer.valueOf(uid), timer);
-    outstanding.put(Integer.valueOf(uid), command);
+    outstanding.put(Integer.valueOf(uid), response);
   }
 
   /**
-   * Removes and returns the provided continuation from the pending table
+   * Removes and returns the future of a request from the pending table
    *
    * @param uid The id of the message
-   * @return The continuation to run
+   * @return The future to complete, or null if no request waits under this id
    */
-  Continuation<Object, Exception> remove(int uid) {
-    logger.trace("Removing and returning continuation {} from pending table", uid);
+  CompletableFuture<Object> remove(int uid) {
+    logger.trace("Removing and returning request {} from pending table", uid);
     CancellableTask timer = timers.remove(Integer.valueOf(uid));
 
     if (timer != null)
       timer.cancel();
 
-    // the response arrives untyped from the wire; each pending continuation expects the response type of its request
-    @SuppressWarnings("unchecked")
-    Continuation<Object, Exception> command = (Continuation<Object, Exception>) outstanding.remove(Integer.valueOf(uid));
-    return command;
+    // the response arrives untyped from the wire; the requester's dependent stages expect the type of its request
+    return outstanding.remove(Integer.valueOf(uid));
   }
 }

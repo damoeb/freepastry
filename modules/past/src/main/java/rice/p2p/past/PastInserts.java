@@ -44,6 +44,7 @@ import rice.Continuation.MultiContinuation;
 import rice.Continuation.NamedContinuation;
 import rice.Continuation.SimpleContinuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -76,7 +77,7 @@ final class PastInserts {
     if (nodeHandleSet.size() == max) {
       command.receiveResult(nodeHandleSet);
     } else {
-      past.sendRequest(id, new LookupHandlesMessage(past.nextRequestId(), id, max, past.getLocalNodeHandle(), id), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
+      Futures.forward(past.<NodeHandleSet>sendRequest(id, new LookupHandlesMessage(past.nextRequestId(), id, max, past.getLocalNodeHandle(), id)), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
         @Override
         public void receiveResult(NodeHandleSet replicas) {
 
@@ -139,11 +140,7 @@ final class PastInserts {
           NodeHandle handle = replicas.getHandle(i);
           PastMessage msg = builder.buildMessage();
           Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multiContinuation.getSubContinuation(i));
-          if (useSocket) {
-            past.sendViaSocket(handle, msg, continuation);
-          } else {
-            past.sendRequest(handle, msg, continuation);
-          }
+          Futures.forward(useSocket ? past.sendViaSocket(handle, msg) : past.sendRequest(handle, msg), continuation);
         }
       }
     });
