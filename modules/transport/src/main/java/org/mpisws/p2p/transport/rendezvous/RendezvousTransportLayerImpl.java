@@ -167,6 +167,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
   private final RandomSource random;
   private final EphemeralIdentifierRegistry<Identifier, HighIdentifier> ephemeralDB;
   private final ContactDirectStrategy<HighIdentifier> contactDirectStrategy;
+  private final ExpectedIncomingSockets<Identifier, HighIdentifier> expectedIncomingSockets;
   private ErrorHandler<Identifier> errorHandler;
 
   /** Parameter: how long a rendezvous node keeps a connector waiting for its acceptor; 0 keeps it until the socket closes. */
@@ -204,6 +205,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     this.ephemeralDB = new EphemeralIdentifierRegistry<Identifier, HighIdentifier>(env,EphemeralIdentifierRegistry.DEFAULT_STALE_PORT_MILLIS); // TODO: make this a configurable parameter
     this.logger = env.getLogManager().getLogger(RendezvousTransportLayerImpl.class, null);
     this.errorHandler = new DefaultErrorHandler<Identifier>(logger);
+    this.expectedIncomingSockets = new ExpectedIncomingSockets<Identifier, HighIdentifier>(logger);
     Parameters parameters = env.getParameters();
     this.connectorTimeoutMillis = parameters.contains(CONNECTOR_TIMEOUT_MILLIS_KEY)
         ? ConfigChecks.requireNonNegative(CONNECTOR_TIMEOUT_MILLIS_KEY, parameters.getInt(CONNECTOR_TIMEOUT_MILLIS_KEY))
@@ -296,7 +298,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
     logger.trace("opening a socket using routing to {}", contact);
 
     final int uid = random.nextInt();
-    putExpectedIncomingSocket(contact, uid, deliverSocketToMe, handle);
+    expectedIncomingSockets.put(contact, uid, deliverSocketToMe, handle);
 
     rendezvousStrategy.openChannel(contact, localNodeHandle, localNodeHandle, uid, new Continuation<Integer, Exception>() {
 
@@ -334,7 +336,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       SocketRequestHandle<Identifier> handle,
       SocketCallback<Identifier> deliverSocketToMe, @Nullable Map<String, Object> options) {
     int uid = random.nextInt();
-    putExpectedIncomingSocket(contact, uid, deliverSocketToMe, handle);
+    expectedIncomingSockets.put(contact, uid, deliverSocketToMe, handle);
 
     if (incomingPilots.containsKey(contact)) {
       // use the pilot if possible
@@ -342,7 +344,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
       try {
         incomingPilots.get(contact).requestSocket(localNodeHandle, uid);
       } catch (IOException ioe) {
-        removeExpectedIncomingSocket(contact, uid);
+        expectedIncomingSockets.remove(contact, uid);
         deliverSocketToMe.receiveException(handle, ioe);
       }
       return true;
@@ -560,7 +562,7 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
           if (opener.equals(localNodeHandle)) {
             // I requested this, look up in expectedIncomingSockets
-            final Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>> deliverSocketToMe = removeExpectedIncomingSocket(target, uid);
+            final Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>> deliverSocketToMe = expectedIncomingSockets.remove(target, uid);
             if (deliverSocketToMe == null) {
               logger.warn("Got accept socket to me, that I'm not expecting: t:{} o:{} uid:{} {}", target, opener, uid, acceptorSocket);
               new ByteWriter<>(CONNECTION_RESPONSE_FAILURE,new Continuation<P2PSocket<Identifier>, Exception>(){
@@ -680,59 +682,6 @@ public class RendezvousTransportLayerImpl<Identifier, HighIdentifier extends Ren
 
     receiver.receiveSelectResult(acceptorSocket, true, false);
   }
-
-  Map<HighIdentifier, Map<Integer, Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>>> expectedIncomingSockets =
-    new HashMap<HighIdentifier, Map<Integer, Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>>>();
-
-  protected void putExpectedIncomingSocket(HighIdentifier contact, int uid,
-      SocketCallback<Identifier> deliverSocketToMe, SocketRequestHandle<Identifier> requestHandle) {
-    logger.atTrace().log(() -> "putExpectedIncomingSocket("+contact+"@"+System.identityHashCode(contact)+","+uid+","+deliverSocketToMe+","+requestHandle+")");
-    Map<Integer, Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>> socketsByUid = expectedIncomingSockets.get(contact);
-    if (socketsByUid == null) {
-      socketsByUid = new HashMap<Integer, Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>>();
-      expectedIncomingSockets.put(contact, socketsByUid);
-    }
-
-    if (socketsByUid.containsKey(uid)) {
-      throw new IllegalStateException("putExpectedIncomingSockets("+contact+","+uid+","+deliverSocketToMe+") already contains "+socketsByUid.get(uid));
-    }
-
-    socketsByUid.put(uid, new Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>(deliverSocketToMe, requestHandle));
-  }
-
-  protected @Nullable Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>> removeExpectedIncomingSocket(HighIdentifier target, int uid) {
-    logger.atTrace().log(() -> "removeExpectedIncomingSocket("+target+"@"+System.identityHashCode(target)+","+uid+")");
-
-    Map<Integer, Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>>> socketsByUid = expectedIncomingSockets.get(target);
-    if (socketsByUid == null) {
-      if (logger.isTraceEnabled()) {
-        String text = "";
-        for (HighIdentifier highIdentifier : expectedIncomingSockets.keySet()) {
-          text+=" "+highIdentifier;
-        }
-        logger.trace("removeExpectedIncomingSocket("+target+"@"+System.identityHashCode(target)+","+uid+") had no first level entry for target"+text);
-      }
-      return null;
-    }
-    Tuple<SocketCallback<Identifier>, SocketRequestHandle<Identifier>> ret = socketsByUid.get(uid);
-
-    if (ret == null) {
-      if (logger.isTraceEnabled()) {
-          String s = "";
-        for (Integer h : socketsByUid.keySet()) {
-          s+=" "+h;
-        }
-        logger.trace("removeExpectedIncomingSocket("+target+"@"+System.identityHashCode(target)+","+uid+") had no uid for target"+s);
-      }
-    } else {
-      socketsByUid.remove(uid);
-    }
-    if (socketsByUid.isEmpty()) expectedIncomingSockets.remove(target);
-
-    return ret;
-  }
-
-
 
   protected void createForwarder(P2PSocket<Identifier> socket, P2PSocket<Identifier> b, HighIdentifier connector, HighIdentifier acceptor, int uid) {
     logger.atDebug().log(() -> "createForwarder("+socket+","+b+","+connector+","+acceptor+","+uid+")");
