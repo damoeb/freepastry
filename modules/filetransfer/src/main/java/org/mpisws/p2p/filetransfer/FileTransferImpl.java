@@ -36,31 +36,20 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.filetransfer;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.mpisws.p2p.transport.ClosedChannelException;
-import org.mpisws.p2p.transport.util.BoundedPriorityWriteQueue;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.environment.params.Parameters;
 import rice.environment.processing.Processor;
-import rice.environment.processing.WorkRequest;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
-import rice.p2p.util.MathUtils;
-import rice.selector.SelectorLoop;
 
 /**
  * @author Jeff Hoye
