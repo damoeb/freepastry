@@ -38,15 +38,14 @@ advised of the possibility of such damage.
 package rice.persistence;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import rice.Continuation;
-import rice.Futures;
 import rice.environment.Environment;
 
 /**
  * Runs work on the environment's blocking IO thread ({@code Processor.processBlockingIO()}) and delivers its
- * result, or the exception it throws, to a Continuation on the selector thread.
+ * result, or the exception it throws, through a future completed on the selector thread.
  */
 final class BlockingIO {
 
@@ -65,10 +64,11 @@ final class BlockingIO {
 
   /**
    * @param description describes the work, as its toString()
-   * @param continuation receives the result on the selector thread
    * @param work the work
+   * @return completes on the selector thread with the result of the work, or the exception it threw; tracked by
+   *     the Environment, so destroying it fails a pending one
    */
-  <R> void run(final Supplier<String> description, Continuation<? super R, Exception> continuation, final Work<R> work) {
+  <R> CompletableFuture<R> run(final Supplier<String> description, final Work<R> work) {
     Callable<R> describedWork = new Callable<R>() {
       @Override
       public R call() throws Exception {
@@ -80,6 +80,6 @@ final class BlockingIO {
         return description.get();
       }
     };
-    Futures.forward(environment.getProcessor().processBlockingIO(describedWork, environment.getSelectorManager()), continuation, environment);
+    return environment.track(environment.getProcessor().processBlockingIO(describedWork, environment.getSelectorManager()));
   }
 }

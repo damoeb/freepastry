@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import rice.Futures;
 import rice.environment.Environment;
+import rice.environment.EnvironmentDestroyedException;
 import rice.p2p.commonapi.Id;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.testing.TestStorageSerializer;
@@ -151,5 +152,21 @@ class StorageFutureTest {
     Completion renameOfNoOpCache = completionOf(env, () -> cached.rename(id, factory.buildId("renamed")));
     assertInstanceOf(IllegalArgumentException.class, renameOfNoOpCache.outcome());
     assertTrue(renameOfNoOpCache.synchronous());
+  }
+
+  @Test
+  void aPendingOperationFailsWhenTheEnvironmentIsDestroyed() throws Exception {
+    Environment env = Environment.directEnvironment(1);
+    PastryIdFactory factory = new PastryIdFactory(env);
+    PersistentStorage storage = new PersistentStorage(factory, new TestStorageSerializer(), root.toString(), 1000000, env);
+    CompletableFuture<CompletableFuture<Boolean>> started = new CompletableFuture<CompletableFuture<Boolean>>();
+    env.getSelectorManager().invoke(() -> {
+      started.complete(storage.store(factory.buildId("pending"), null, "value"));
+      env.destroy();
+    });
+    CompletableFuture<Boolean> pending = started.get(WAIT_MILLIS, TimeUnit.MILLISECONDS);
+    Throwable failure = pending.handle((value, throwable) -> throwable).get(WAIT_MILLIS, TimeUnit.MILLISECONDS);
+    // the simulator's blocking IO was still queued on the selector when destroy() failed the tracked future
+    assertInstanceOf(EnvironmentDestroyedException.class, failure);
   }
 }

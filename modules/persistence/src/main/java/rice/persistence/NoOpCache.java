@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.CompletableFuture;
 /*
  * @(#) LRUCache.java
  *
@@ -47,7 +48,6 @@ package rice.persistence;
  */
 import java.util.SortedMap;
 
-import rice.Continuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -78,32 +78,32 @@ public class NoOpCache implements Cache {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveException(new IllegalArgumentException("NoOpCache has no objects!"));
+  public CompletableFuture<Boolean> rename(final Id oldId, final Id newId) {
+    return CompletableFuture.failedFuture(new IllegalArgumentException("NoOpCache has no objects!"));
   }
 
   /**
    * Caches an object in this storage. This method is non-blocking.
    * If the object has already been stored at the location id, this
    * method has the effect of calling <code>uncachr(id)</code> followed
-   * by <code>cache(id, obj)</code>. This method finishes by calling
-   * receiveResult() on the provided continuation with whether or not
+   * by <code>cache(id, obj)</code>. This method completes the future
+   * with whether or not
    * the object was cached.  Note that the object may not actually be
    * cached due to the cache replacement policy.
    *
    * Returns <code>True</code> if the cache actaully stores the object, else
-   * <code>False</code> (through receiveResult on c).
+   * <code>False</code> (through the future).
    *
    * @param id The object's id.
    * @param obj The object to cache.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveResult(Boolean.valueOf(true));
+  public CompletableFuture<Boolean> cache(Id id, Object metadata, Object obj) {
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
@@ -112,14 +112,14 @@ public class NoOpCache implements Cache {
    * nothing happens and <code>False</code> is returned.
    *
    * Returns <code>True</code> if the action succeeds, else
-   * <code>False</code>  (through receiveResult on c).
+   * <code>False</code>  (through the future).
    *
    * @param id The object's id
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveResult(Boolean.valueOf(true));
+  public CompletableFuture<Boolean> uncache(Id id) {
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
@@ -137,11 +137,11 @@ public class NoOpCache implements Cache {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @return completes with the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
-    continuation.receiveResult(null);
+  public CompletableFuture<Object> getObject(Id id) {
+    return CompletableFuture.completedFuture(null);
   }
 
   /**
@@ -159,16 +159,16 @@ public class NoOpCache implements Cache {
 
   /**
    * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
+   * value.  As this may require a disk access, the result
+   * comes through the future.
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveResult(Boolean.valueOf(true));
+  public CompletableFuture<Boolean> setMetadata(Id id, Object metadata) {
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
@@ -283,21 +283,21 @@ public class NoOpCache implements Cache {
    * object being evicted from the cache.
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param continuation The command to run once the operation is complete; receives the success or failure of the setSize operation
+   * @return completes with the success or failure of the setSize operation
    */
   @Override
-  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveResult(Boolean.TRUE);
+  public CompletableFuture<Boolean> setMaximumSize(final int size) {
+    return CompletableFuture.completedFuture(Boolean.TRUE);
   }
 
   /**
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param continuation The command to run once done
+   * @return completes once the operation is done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> continuation) {
-    continuation.receiveResult(Boolean.TRUE);
+  public CompletableFuture<Boolean> flush() {
+    return CompletableFuture.completedFuture(Boolean.TRUE);
   }
 }

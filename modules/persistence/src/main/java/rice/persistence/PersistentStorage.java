@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.CompletableFuture;
 /*
  * @(#) PersistenceManager.java
  *
@@ -49,7 +50,6 @@ import java.io.IOException;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
-import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
@@ -202,13 +202,13 @@ public class PersistentStorage implements Storage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> rename(final Id oldId, final Id newId) {
     printStats();
 
-    blockingIO.run(() -> "rename " + oldId + " " + newId, continuation, () -> objectFiles.rename(oldId, newId));
+    return blockingIO.run(() -> "rename " + oldId + " " + newId, () -> objectFiles.rename(oldId, newId));
   }
 
   /**
@@ -221,24 +221,22 @@ public class PersistentStorage implements Storage {
    * and store the new object, or fail and leave the previous
    * object intact.
    *
-   * This method completes by calling receiveResult() of the provided continuation
-   * with the success or failure of the operation.
+   * The future completes on the selector thread with the success or failure of the operation.
    *
    * @param obj The object to be made persistent.
    * @param id The object's id.
    * @param metadata The object's metadata
-   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void store(final Id id, final Object metadata, final Object obj, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> store(final Id id, final Object metadata, final Object obj) {
     if (id == null || obj == null) {
-      continuation.receiveResult(Boolean.valueOf(false));
-      return;
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
     }
 
     printStats();
 
-    blockingIO.run(() -> "store " + id, continuation, () -> objectFiles.store(id, metadata, obj));
+    return blockingIO.run(() -> "store " + id, () -> objectFiles.store(id, metadata, obj));
   }
 
   /**
@@ -250,17 +248,16 @@ public class PersistentStorage implements Storage {
    * This method also guarantees that the data on disk will remain consistent,
    * even after a crash by performing the delete atomically.
    *
-   * This method completes by calling receiveResult() of the provided continuation
-   * with the success or failure of the operation.
+   * The future completes on the selector thread with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void unstore(final Id id, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> unstore(final Id id) {
     printStats();
 
-    blockingIO.run(() -> "unstore " + id, continuation, () -> objectFiles.unstore(id));
+    return blockingIO.run(() -> "unstore " + id, () -> objectFiles.unstore(id));
   }
 
   /**
@@ -297,21 +294,21 @@ public class PersistentStorage implements Storage {
 
   /**
    * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
+   * value.  As this may require a disk access, the result
+   * comes through the future.
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> setMetadata(final Id id, final Object metadata) {
     printStats();
 
     if (! exists(id)) {
-      continuation.receiveResult(Boolean.valueOf(false));
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
     } else {
-      blockingIO.run(() -> "setMetadata " + id, continuation, () -> objectFiles.setMetadata(id, metadata));
+      return blockingIO.run(() -> "setMetadata " + id, () -> objectFiles.setMetadata(id, metadata));
     }
   }
 
@@ -319,16 +316,16 @@ public class PersistentStorage implements Storage {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @return completes with the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(final Id id, Continuation<? super Object, Exception> continuation) {
+  public CompletableFuture<Object> getObject(final Id id) {
     printStats();
 
     if (index && ! exists(id)) {
-      continuation.receiveResult(null);
+      return CompletableFuture.completedFuture(null);
     } else {
-      blockingIO.run(() -> "getObject " + id, continuation, () -> objectFiles.getObject(id));
+      return blockingIO.run(() -> "getObject " + id, () -> objectFiles.getObject(id));
     }
   }
 
@@ -473,11 +470,11 @@ public class PersistentStorage implements Storage {
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param continuation The command to run once done
+   * @return completes once the operation is done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> continuation) {
-    blockingIO.run(() -> "flush", continuation, () -> objectFiles.flush());
+  public CompletableFuture<Boolean> flush() {
+    return blockingIO.run(() -> "flush", () -> objectFiles.flush());
   }
 
   /*****************************************************************/

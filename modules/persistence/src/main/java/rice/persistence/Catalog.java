@@ -40,8 +40,6 @@ package rice.persistence;
 import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
-import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
@@ -72,23 +70,12 @@ public interface Catalog {
   public boolean exists(Id id);
 
   /**
-   * Returns the object identified by the given id, or <code>null</code> if
-   * there is no corresponding object (through receiveResult on c).
-   *
-   * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete
-   */
-  public void getObject(Id id, Continuation<? super Object, Exception> continuation);
-
-  /**
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
    * @return completes with the object, or <code>null</code> if there is no corresponding object
    */
-  default CompletableFuture<Object> getObject(Id id) {
-    return Futures.call(continuation -> getObject(id, continuation));
-  }
+  CompletableFuture<Object> getObject(Id id);
 
   /**
    * Returns the metadata associated with the provided object, or null if
@@ -107,36 +94,13 @@ public interface Catalog {
   public Object getMetadata(Id id);
 
   /**
-   * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
-   *
-   * @param id The id for the metadata
-   * @param metadata The metadata to store
-   * @param command The command to run once the operation is complete
-   */
-  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command);
-
-  /**
    * Updates the metadata stored under the given key to be the provided value.
    *
    * @param id The id of the object in question.
    * @param metadata The metadata to store
    * @return completes with whether the object exists (and its metadata was set)
    */
-  default CompletableFuture<Boolean> setMetadata(Id id, Object metadata) {
-    return Futures.call(continuation -> setMetadata(id, metadata, continuation));
-  }
-
-  /**
-   * Renames the given object to the new id.  This method is potentially faster
-   * than store/cache and unstore/uncache.
-   *
-   * @param oldId The id of the object in question.
-   * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
-   */
-  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> continuation);
+  CompletableFuture<Boolean> setMetadata(Id id, Object metadata);
 
   /**
    * Renames the given object to the new id.
@@ -145,9 +109,7 @@ public interface Catalog {
    * @param newId The new id of the object in question.
    * @return completes with whether the object was renamed
    */
-  default CompletableFuture<Boolean> rename(Id oldId, Id newId) {
-    return Futures.call(continuation -> rename(oldId, newId, continuation));
-  }
+  CompletableFuture<Boolean> rename(Id oldId, Id newId);
 
  /**
    * Return the objects identified by the given range of ids. The IdSet
@@ -221,19 +183,9 @@ public interface Catalog {
   public long getTotalSize();
 
   /**
-   * Method which is used to erase all data stored in the Catalog.
-   * Use this method with care!
-   *
-   * @param continuation The command to run once done
-   */
-  public void flush(Continuation<? super Boolean, Exception> continuation);
-
-  /**
    * Removes all stored objects.
    *
    * @return completes with <code>true</code> once the catalog is empty
    */
-  default CompletableFuture<Boolean> flush() {
-    return Futures.call(continuation -> flush(continuation));
-  }
+  CompletableFuture<Boolean> flush();
 }

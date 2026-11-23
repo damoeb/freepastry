@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.CompletableFuture;
 /*
  * @(#) CachedStorage.java
  *
@@ -47,8 +48,6 @@ package rice.persistence;
  */
 import java.util.SortedMap;
 
-import rice.Continuation;
-import rice.Continuation.StandardContinuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -123,41 +122,23 @@ public class CachedStorageImpl implements CachedStorage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
-    cache.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
-      @Override
-      public void receiveResult(Boolean result) {
-        storage.rename(oldId, newId, parent);
-      }
-      @Override
-      public String toString() { return "rename of " + oldId + " to " + newId; }
-    });
+  public CompletableFuture<Boolean> rename(final Id oldId, final Id newId) {
+    return cache.rename(oldId, newId).thenCompose(ignored -> storage.rename(oldId, newId));
   }
 
   /**
    * Returns the object identified by the given id, or <code>null</code> if
-   * there is no corresponding object (through receiveResult on c).
+   * there is no corresponding object (through the future).
    *
    * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void getObject(final Id id, Continuation<? super Object, Exception> continuation) {
-    cache.getObject(id, new StandardContinuation<Object, Object, Exception>(continuation) {
-      @Override
-      public void receiveResult(Object result) {
-        if (result != null) {
-          parent.receiveResult(result);
-        } else {
-          storage.getObject(id, parent);
-        }
-      }
-      @Override
-      public String toString() { return "getObject of " + id; }
-    });
+  public CompletableFuture<Object> getObject(final Id id) {
+    return cache.getObject(id).thenCompose(cached -> (cached != null) ? CompletableFuture.completedFuture(cached) : storage.getObject(id));
   }
 
   /**
@@ -175,23 +156,16 @@ public class CachedStorageImpl implements CachedStorage {
 
   /**
    * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
+   * value.  As this may require a disk access, the result
+   * comes through the future.
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param command The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMetadata(final Id id, final Object metadata, Continuation<? super Boolean, Exception> command) {
-    cache.setMetadata(id, metadata, new StandardContinuation<Boolean, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Boolean result) {
-        storage.setMetadata(id, metadata, parent);
-      }
-      @Override
-      public String toString() { return "setMetadata of " + id; }
-    });
+  public CompletableFuture<Boolean> setMetadata(final Id id, final Object metadata) {
+    return cache.setMetadata(id, metadata).thenCompose(ignored -> storage.setMetadata(id, metadata));
   }
 
   /**
@@ -293,21 +267,21 @@ public class CachedStorageImpl implements CachedStorage {
    * Stores an object in this storage. This method is non-blocking.
    * If the object has already been stored at the location id, this
    * method has the effect of calling <code>unstore(id)</code> followed
-   * by <code>store(id, obj)</code>. This method finishes by calling
-   * receiveResult() on the provided continuation with the success
+   * by <code>store(id, obj)</code>. This method completes the future
+   * with the success
    * or failure of the store.
    *
    * Returns <code>True</code> if the action succeeds, else
-   * <code>False</code> (through receiveResult on c).
+   * <code>False</code> (through the future).
    *
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to store.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
-    storage.store(id, metadata, obj, continuation);
+  public CompletableFuture<Boolean> store(Id id, Object metadata, Object obj) {
+    return storage.store(id, metadata, obj);
   }
 
   /**
@@ -316,36 +290,36 @@ public class CachedStorageImpl implements CachedStorage {
    * nothing happens and <code>False</code> is returned.
    *
    * Returns <code>True</code> if the action succeeds, else
-   * <code>False</code>  (through receiveResult on c).
+   * <code>False</code>  (through the future).
    *
    * @param id The object's persistence id
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void unstore(Id id, Continuation<? super Boolean, Exception> continuation) {
-    storage.unstore(id, continuation);
+  public CompletableFuture<Boolean> unstore(Id id) {
+    return storage.unstore(id);
   }
 
   /**
    * Caches an object in this storage. This method is non-blocking.
    * If the object has already been stored at the location id, this
    * method has the effect of calling <code>uncachr(id)</code> followed
-   * by <code>cache(id, obj)</code>. This method finishes by calling
-   * receiveResult() on the provided continuation with whether or not
+   * by <code>cache(id, obj)</code>. This method completes the future
+   * with whether or not
    * the object was cached.  Note that the object may not actually be
    * cached due to the cache replacement policy.
    *
    * Returns <code>True</code> if the cache actaully stores the object, else
-   * <code>False</code> (through receiveResult on c).
+   * <code>False</code> (through the future).
    *
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to cache.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void cache(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
-    cache.cache(id, metadata, obj, continuation);
+  public CompletableFuture<Boolean> cache(Id id, Object metadata, Object obj) {
+    return cache.cache(id, metadata, obj);
   }
 
   /**
@@ -354,14 +328,14 @@ public class CachedStorageImpl implements CachedStorage {
    * nothing happens and <code>False</code> is returned.
    *
    * Returns <code>True</code> if the action succeeds, else
-   * <code>False</code>  (through receiveResult on c).
+   * <code>False</code>  (through the future).
    *
    * @param id The object's id
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
-    cache.uncache(id, continuation);
+  public CompletableFuture<Boolean> uncache(Id id) {
+    return cache.uncache(id);
   }
 
   /**
@@ -380,29 +354,24 @@ public class CachedStorageImpl implements CachedStorage {
    * object being evicted from the cache.
    *
    * Returns the success or failure of the setSize operation
-   * (through receiveResult on c).
+   * (through the future).
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMaximumSize(int size, Continuation<? super Boolean, Exception> continuation) {
-    cache.setMaximumSize(size, continuation);
+  public CompletableFuture<Boolean> setMaximumSize(int size) {
+    return cache.setMaximumSize(size);
   }
 
   /**
    * Method which is used to erase all data stored in the Catalog.
    * Use this method with care!
    *
-   * @param continuation The command to run once done
+   * @return completes once the operation is done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> continuation) {
-    cache.flush(new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
-      @Override
-      public void receiveResult(Boolean result) {
-        storage.flush(parent);
-      }
-    });
+  public CompletableFuture<Boolean> flush() {
+    return cache.flush().thenCompose(ignored -> storage.flush());
   }
 }

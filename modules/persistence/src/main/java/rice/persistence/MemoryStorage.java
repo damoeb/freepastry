@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.CompletableFuture;
 /*
  * @(#) PersistenceManager.java
  *
@@ -50,7 +51,6 @@ import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import rice.Continuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -99,16 +99,16 @@ public class MemoryStorage implements Storage {
    * Method which is used to erase all data stored in the Storage.
    * Use this method with care!
    *
-   * @param continuation The command to run once done
+   * @return completes once the operation is done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> flush() {
     storage = new HashMap<Id, Object>();
     metadata = new ReverseTreeMap<Id, Object>();
     idSet = factory.buildIdSet();
     currentSize = 0;
 
-    continuation.receiveResult(Boolean.TRUE);
+    return CompletableFuture.completedFuture(Boolean.TRUE);
   }
 
   /**
@@ -117,13 +117,12 @@ public class MemoryStorage implements Storage {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void rename(Id oldId, Id newId, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> rename(Id oldId, Id newId) {
     if (! idSet.isMemberId(oldId)) {
-      continuation.receiveResult(Boolean.valueOf(false));
-      return;
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
     }
 
     idSet.removeId(oldId);
@@ -135,26 +134,25 @@ public class MemoryStorage implements Storage {
     metadata.put(newId, metadata.get(oldId));
     metadata.remove(oldId);
 
-    continuation.receiveResult(Boolean.valueOf(true));
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
    * Stores the object under the key <code>id</code>.  If there is already
    * an object under <code>id</code>, that object is replaced.
    *
-   * This method completes by calling receiveResult() of the provided continuation
+   * The future completes, before this method returns,
    * with the success or failure of the operation.
    *
    * @param obj The object to be made persistent.
    * @param id The object's id.
    * @param metadata The object's metadata
-   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void store(Id id, Object metadata, Object obj, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> store(Id id, Object metadata, Object obj) {
     if (id == null || obj == null) {
-      continuation.receiveResult(Boolean.valueOf(false));
-      return;
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
     }
 
     currentSize += getSize(obj);
@@ -162,7 +160,7 @@ public class MemoryStorage implements Storage {
     this.storage.put(id, obj);
     this.metadata.put(id, metadata);
     idSet.addId(id);
-    continuation.receiveResult(Boolean.valueOf(true));
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
@@ -170,23 +168,23 @@ public class MemoryStorage implements Storage {
    * in the cached list in the first place, nothing happens and <code>false</code>
    * is returned.
    *
-   * This method completes by calling receiveResult() of the provided continuation
+   * The future completes, before this method returns,
    * with the success or failure of the operation.
    *
    * @param id The object's persistence id
-   * @param continuation The command to run once the operation is complete; receives <code>true</code> if the action succeeds, else <code>false</code>
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
    */
   @Override
-  public void unstore(Id id, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> unstore(Id id) {
     Object stored = storage.remove(id);
     metadata.remove(id);
     idSet.removeId(id);
 
     if (stored != null) {
       currentSize -= getSize(stored);
-      continuation.receiveResult(Boolean.valueOf(true));
+      return CompletableFuture.completedFuture(Boolean.valueOf(true));
     } else {
-      continuation.receiveResult(Boolean.valueOf(false));
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
     }
   }
 
@@ -216,31 +214,31 @@ public class MemoryStorage implements Storage {
 
   /**
    * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
+   * value.  As this may require a disk access, the result
+   * comes through the future.
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param command The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> setMetadata(Id id, Object metadata) {
     if (exists(id))
       this.metadata.put(id, metadata);
 
-    command.receiveResult(Boolean.valueOf(exists(id)));
+    return CompletableFuture.completedFuture(Boolean.valueOf(exists(id)));
   }
 
   /**
    * Returns the object identified by the given id, or <code>null</code> if
-   * there is no corresponding object (through receiveResult on c).
+   * there is no corresponding object (through the future).
    *
    * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
-    continuation.receiveResult(storage.get(id));
+  public CompletableFuture<Object> getObject(Id id) {
+    return CompletableFuture.completedFuture(storage.get(id));
   }
 
   /**

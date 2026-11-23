@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.persistence;
 
+import java.util.concurrent.CompletableFuture;
 /*
  * @(#) LRUCache.java
  *
@@ -51,8 +52,6 @@ import java.util.Map;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
@@ -122,19 +121,16 @@ public class LRUCache implements Cache {
    *
    * @param oldId The id of the object in question.
    * @param newId The new id of the object in question.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void rename(final Id oldId, final Id newId, Continuation<? super Boolean, Exception> continuation) {
-    storage.rename(oldId, newId, new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
-      @Override
-      public void receiveResult(Boolean result) {
-        if (Boolean.TRUE.equals(result)) {
-          forget(oldId);
-          touch(newId);
-        }
-        parent.receiveResult(result);
+  public CompletableFuture<Boolean> rename(final Id oldId, final Id newId) {
+    return storage.rename(oldId, newId).thenApply(result -> {
+      if (Boolean.TRUE.equals(result)) {
+        forget(oldId);
+        touch(newId);
       }
+      return result;
     });
   }
 
@@ -142,56 +138,38 @@ public class LRUCache implements Cache {
    * Caches an object in this storage. This method is non-blocking.
    * If the object has already been stored at the location id, this
    * method has the effect of calling <code>uncachr(id)</code> followed
-   * by <code>cache(id, obj)</code>. This method finishes by calling
-   * receiveResult() on the provided continuation with whether or not
+   * by <code>cache(id, obj)</code>. This method completes the future
+   * with whether or not
    * the object was cached.  Note that the object may not actually be
    * cached due to the cache replacement policy.
    *
    * Returns <code>True</code> if the cache actaully stores the object, else
-   * <code>False</code> (through receiveResult on c).
+   * <code>False</code> (through the future).
    *
    * @param id The object's id.
    * @param metadata The object's metadata
    * @param obj The object to cache.
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void cache(final Id id, final Object metadata, final Object obj, final Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> cache(final Id id, final Object metadata, final Object obj) {
     final int size = getSize(obj);
 
     if (exists(id)) {
       touch(id);
-
-      continuation.receiveResult(Boolean.valueOf(true));
-      return;
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
     if (size > maximumSize) {
-      continuation.receiveResult(Boolean.valueOf(false));
-      return;
+      return CompletableFuture.completedFuture(Boolean.FALSE);
     }
 
-
-    final Continuation<Boolean, Exception> store = new Continuation<Boolean, Exception>() {
-      @Override
-      public void receiveResult(Boolean result) {
-        touch(id);
-
-        storage.store(id, metadata, obj, continuation);
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        continuation.receiveException(e);
-      }
-    };
-
     long totalSize = storage.getTotalSize();
-
-    if (maximumSize - size < totalSize)
-      resize(maximumSize - size, store);
-    else
-      store.receiveResult(Boolean.TRUE);
+    CompletableFuture<Boolean> room = (maximumSize - size < totalSize) ? resize(maximumSize - size) : CompletableFuture.completedFuture(Boolean.TRUE);
+    return room.thenCompose(ignored -> {
+      touch(id);
+      return storage.store(id, metadata, obj);
+    });
   }
 
   /**
@@ -200,16 +178,16 @@ public class LRUCache implements Cache {
    * nothing happens and <code>False</code> is returned.
    *
    * Returns <code>True</code> if the action succeeds, else
-   * <code>False</code>  (through receiveResult on c).
+   * <code>False</code>  (through the future).
    *
    * @param id The object's id
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void uncache(Id id, Continuation<? super Boolean, Exception> continuation) {
+  public CompletableFuture<Boolean> uncache(Id id) {
     forget(id);
 
-    storage.unstore(id, continuation);
+    return storage.unstore(id);
   }
 
   /**
@@ -227,18 +205,17 @@ public class LRUCache implements Cache {
    * Returns the object identified by the given id.
    *
    * @param id The id of the object in question.
-   * @param continuation The command to run once the operation is complete; receives the object, or <code>null</code> if there is no corresponding object
+   * @return completes with the object, or <code>null</code> if there is no corresponding object
    */
   @Override
-  public void getObject(Id id, Continuation<? super Object, Exception> continuation) {
+  public CompletableFuture<Object> getObject(Id id) {
     if (! exists(id)) {
-      continuation.receiveResult(null);
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     touch(id);
 
-    storage.getObject(id, continuation);
+    return storage.getObject(id);
   }
 
   /**
@@ -256,16 +233,16 @@ public class LRUCache implements Cache {
 
   /**
    * Updates the metadata stored under the given key to be the provided
-   * value.  As this may require a disk access, the requestor must
-   * also provide a continuation to return the result to.
+   * value.  As this may require a disk access, the result
+   * comes through the future.
    *
    * @param id The id for the metadata
    * @param metadata The metadata to store
-   * @param command The command to run once the operation is complete
+   * @return completes once the operation is done
    */
   @Override
-  public void setMetadata(Id id, Object metadata, Continuation<? super Boolean, Exception> command) {
-    storage.setMetadata(id, metadata, command);
+  public CompletableFuture<Boolean> setMetadata(Id id, Object metadata) {
+    return storage.setMetadata(id, metadata);
   }
 
   /**
@@ -380,29 +357,15 @@ public class LRUCache implements Cache {
    * object being evicted from the cache.
    *
    * @param size The new maximum size, in bytes, of the cache.
-   * @param continuation The command to run once the operation is complete; receives the success or failure of the setSize operation
+   * @return completes with the success or failure of the setSize operation
    */
   @Override
-  public void setMaximumSize(final int size, final Continuation<? super Boolean, Exception> continuation) {
-    Continuation<Boolean, Exception> local = new Continuation<Boolean, Exception>() {
-      @Override
-      public void receiveResult(Boolean result) {
-        maximumSize = size;
-
-        continuation.receiveResult(Boolean.valueOf(true));
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        continuation.receiveException(e);
-      }
-    };
-
-    if (size < maximumSize) {
-      resize(size, local);
-    } else {
-      local.receiveResult(Boolean.valueOf(true));
-    }
+  public CompletableFuture<Boolean> setMaximumSize(final int size) {
+    CompletableFuture<Boolean> fits = (size < maximumSize) ? resize(size) : CompletableFuture.completedFuture(Boolean.TRUE);
+    return fits.thenApply(ignored -> {
+      maximumSize = size;
+      return Boolean.TRUE;
+    });
   }
 
   /**
@@ -410,26 +373,20 @@ public class LRUCache implements Cache {
    * is smaller than the specified size
    *
    * @param size The maximum number of bytes to make the cache
-   * @param continuation The command to run once the operation is complete
+   * @return completes once the operation is done
    */
-  private void resize(final int size, Continuation<? super Boolean, Exception> continuation) {
-    final Continuation<Boolean, Exception> remove = new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
-      @Override
-      public void receiveResult(Boolean result) {
-        if (storage.getTotalSize() > size) {
-          Id last = eldest();
-          if (last == null) {
-            parent.receiveException(new IllegalStateException("Cache exceeds its size limit, but holds no evictable objects"));
-            return;
-          }
-          uncache(last, this);
-        } else {
-          parent.receiveResult(Boolean.valueOf(true));
-        }
-      }
-    };
-
-    remove.receiveResult(Boolean.TRUE);
+  /**
+   * Evicts the least recently used objects until the storage holds at most {@code size} bytes.
+   */
+  private CompletableFuture<Boolean> resize(final int size) {
+    if (storage.getTotalSize() <= size) {
+      return CompletableFuture.completedFuture(Boolean.TRUE);
+    }
+    Id last = eldest();
+    if (last == null) {
+      return CompletableFuture.failedFuture(new IllegalStateException("Cache exceeds its size limit, but holds no evictable objects"));
+    }
+    return uncache(last).thenCompose(ignored -> resize(size));
   }
 
   /**
@@ -453,18 +410,15 @@ public class LRUCache implements Cache {
    * Method which is used to erase all data stored in the Cache.
    * Use this method with care!
    *
-   * @param continuation The command to run once done
+   * @return completes once the operation is done
    */
   @Override
-  public void flush(Continuation<? super Boolean, Exception> continuation) {
-    storage.flush(new StandardContinuation<Boolean, Boolean, Exception>(continuation) {
-      @Override
-      public void receiveResult(Boolean result) {
-        synchronized (order) {
-          order.clear();
-        }
-        parent.receiveResult(Boolean.TRUE);
+  public CompletableFuture<Boolean> flush() {
+    return storage.flush().thenApply(ignored -> {
+      synchronized (order) {
+        order.clear();
       }
+      return Boolean.TRUE;
     });
   }
 }
