@@ -313,6 +313,28 @@ public class FuturesTest {
   }
 
   @Test
+  void forwardWithoutAnEnvironmentReportsToTheSelectorItRunsOn() throws Exception {
+    Environment environment = environment();
+    Reported reported = new Reported(environment);
+    IllegalStateException bug = new IllegalStateException("bug in receiveResult");
+    CompletableFuture<String> source = new CompletableFuture<String>();
+    Futures.forward(source, new Continuation<String, Exception>() {
+      @Override
+      public void receiveResult(String result) {
+        throw bug;
+      }
+
+      @Override
+      public void receiveException(Exception exception) {
+      }
+    });
+    environment.getSelectorManager().invoke(() -> source.complete("x"));
+    assertTrue(reported.first.await(WAIT_MILLIS, TimeUnit.MILLISECONDS));
+    assertEquals(List.of(bug), reported.throwables);
+    assertEquals(List.<Object>of(environment.getSelectorManager()), reported.sources);
+  }
+
+  @Test
   void callCompletesWhereTheContinuationIsCalled() throws Exception {
     Environment environment = environment();
     SelectorLoop selector = environment.getSelectorManager();

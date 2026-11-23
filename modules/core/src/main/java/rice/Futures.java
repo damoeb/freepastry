@@ -117,6 +117,30 @@ public final class Futures {
   }
 
   /**
+   * Like {@link #forward(CompletionStage, Continuation, Environment)}, for code without an Environment at hand: an
+   * exception thrown by the continuation on a selector thread goes to that selector's {@code ExceptionStrategy},
+   * with the selector as source, exactly as if the continuation had thrown inside the selector loop. Thrown on
+   * another thread (only when the stage completes off the selector, such as in a test), it is logged.
+   *
+   * @param stage the stage
+   * @param continuation receives its value or failure
+   */
+  public static <R extends @Nullable Object> void forward(CompletionStage<? extends R> stage,
+      Continuation<? super R, Exception> continuation) {
+    var _ = FutureContinuation.forward(stage, continuation).whenComplete((_, throwable) -> {
+      if (throwable != null) reportOnCurrentSelector(unwrap(throwable));
+    });
+  }
+
+  private static void reportOnCurrentSelector(Throwable cause) {
+    if (Thread.currentThread() instanceof SelectorLoop selector) {
+      selector.getEnvironment().getExceptionStrategy().handleException(selector, cause);
+    } else {
+      LOG.error("A Continuation threw outside the selector thread", cause);
+    }
+  }
+
+  /**
    * Removes the {@link CompletionException} and {@link ExecutionException} wrappers that dependent stages,
    * {@code join()} and {@code get()} put around the failure of a future.
    *
