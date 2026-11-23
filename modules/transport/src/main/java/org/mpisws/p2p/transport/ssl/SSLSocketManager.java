@@ -176,12 +176,8 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
     if (canRead) {
       if (doneHandshaking) {
-        if (read()) {
-          if (registeredToRead != null) {
-            P2PSocketReceiver<Identifier> temp = registeredToRead;
-            registeredToRead = null;
-            temp.receiveSelectResult(this, true, false);
-          }
+        if (read() && registeredToRead != null) {
+          deliverBufferedReads(true);
         }
       } else {
         read();
@@ -379,26 +375,11 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
   public void register(boolean wantToRead, boolean wantToWrite,
       P2PSocketReceiver<Identifier> receiver) {
     if (wantToRead) {
-      // try to read, decrypt
-      if (readMe.isEmpty() && !unwrapMe.isEmpty()) {
-        // records that arrived together with the end of the handshake are already buffered
-        try {
-          unwrap();
-        } catch (SSLException ssle) {
-          receiver.receiveException(this, ssle);
-          return;
-        }
-      }
-      if (!readMe.isEmpty()) {
-        try {
-          receiver.receiveSelectResult(this, true, false);
-        } catch (IOException ioe) {
-          receiver.receiveException(this, ioe);
-        }
-      } else {
-        // TODO: check that no other receiver is registered to read; it would be silently replaced
-        registeredToRead = receiver;
-        socket.register(true, false, this);
+      // TODO: check that no other receiver is registered to read; it would be silently replaced
+      registeredToRead = receiver;
+      if (!deliveringBufferedReads) {
+        // a receiver registering from inside a read callback is served by the running loop, not by a nested call
+        deliverBufferedReads(false);
       }
     }
 
@@ -419,6 +400,76 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   @Nullable P2PSocketReceiver<Identifier> registeredToRead;
   @Nullable P2PSocketReceiver<Identifier> registeredToWrite;
+
+  /** true while deliverBufferedReads() runs read callbacks; a register() from one of them only records the receiver */
+  private boolean deliveringBufferedReads = false;
+  /** a deliverBufferedReads() is queued on the selector for the plaintext left over from an exhausted turn */
+  private boolean deliveryContinuationQueued = false;
+
+  /**
+   * Hands decrypted bytes to the receiver registered to read, one callback after another in a loop: a receiver that
+   * reads a little and registers again (the priority layer does so for every frame) is called again by this loop,
+   * not from inside its own register(), so the stack depth does not grow with the bytes buffered. After
+   * {@link SSLTransportLayer#getMaxReadCallbacksPerSelect()} callbacks the rest waits for a later turn of the selector,
+   * so that one socket cannot keep the selector thread from other sockets. Callbacks run in the order of the
+   * registrations, on the bytes in the order received.
+   *
+   * @param bytesJustRead the selector reported the socket readable and bytes were read: call the receiver once even
+   *     if they do not complete a TLS record yet, as before (it reads 0 bytes and registers again)
+   */
+  private void deliverBufferedReads(boolean bytesJustRead) {
+    deliveringBufferedReads = true;
+    try {
+      int callbacks = 0;
+      P2PSocketReceiver<Identifier> receiver;
+      while ((receiver = registeredToRead) != null) {
+        if (!(bytesJustRead && callbacks == 0)) {
+          try {
+            if (!hasBufferedPlaintext()) {
+              // nothing decrypted is left: wait for the wire
+              socket.register(true, false, this);
+              return;
+            }
+          } catch (SSLException ssle) {
+            registeredToRead = null;
+            receiver.receiveException(this, ssle);
+            return;
+          }
+          if (callbacks >= sslTL.getMaxReadCallbacksPerSelect()) {
+            queueDeliveryContinuation();
+            return;
+          }
+        }
+        registeredToRead = null;
+        callbacks++;
+        try {
+          receiver.receiveSelectResult(this, true, false);
+        } catch (IOException ioe) {
+          receiver.receiveException(this, ioe);
+        }
+      }
+    } finally {
+      deliveringBufferedReads = false;
+    }
+  }
+
+  /** whether decrypted bytes are ready for read(ByteBuffer), decrypting buffered records if needed */
+  private boolean hasBufferedPlaintext() throws SSLException {
+    if (readMe.isEmpty() && !unwrapMe.isEmpty()) {
+      // for example records that arrived together with the end of the handshake
+      unwrap();
+    }
+    return !readMe.isEmpty();
+  }
+
+  private void queueDeliveryContinuation() {
+    if (deliveryContinuationQueued) return;
+    deliveryContinuationQueued = true;
+    sslTL.getEnvironment().getSelectorManager().invoke(() -> {
+      deliveryContinuationQueued = false;
+      if (!deliveringBufferedReads) deliverBufferedReads(false);
+    });
+  }
 
   @Override
   public long read(ByteBuffer dsts) throws IOException {

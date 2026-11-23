@@ -62,6 +62,8 @@ import org.slf4j.event.Level;
 import rice.Continuation;
 import rice.environment.Environment;
 
+import static rice.environment.params.ConfigChecks.requirePositive;
+
 /**
  * Optionally Encrypts or Authenticates sockets.
  *
@@ -76,6 +78,8 @@ public class SSLTransportLayer<Identifier, MessageType>
   public static final String OPTION_CERT_SUBJECT = "ssl_certificate_subject";
   public static final int CLIENT_AUTH_NONE = 0;
   public static final int CLIENT_AUTH_REQUIRED = 1;
+  /** the parameter that bounds the read callbacks one TLS socket runs per selector turn */
+  public static final String MAX_READ_CALLBACKS_PER_SELECT_PARAM = "transport_ssl_max_read_callbacks_per_select";
 
   private final TransportLayer<Identifier, MessageType> transportLayer;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
@@ -89,6 +93,9 @@ public class SSLTransportLayer<Identifier, MessageType>
   private int clientAuth;
 
   private final Predicate<String> subjectValidator;
+
+  /** read callbacks one socket runs on buffered plaintext before the selector thread turns to other work */
+  private final int maxReadCallbacksPerSelect;
 
   public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
     this(transportLayer,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
@@ -120,6 +127,7 @@ public class SSLTransportLayer<Identifier, MessageType>
     if (clientAuth != CLIENT_AUTH_NONE && clientAuth != CLIENT_AUTH_REQUIRED) throw new IllegalArgumentException("clientAuth type:"+clientAuth+" not supported.");
 
     this.environment = env;
+    this.maxReadCallbacksPerSelect = requirePositive(MAX_READ_CALLBACKS_PER_SELECT_PARAM, env.getParameters().getInt(MAX_READ_CALLBACKS_PER_SELECT_PARAM));
     this.logger = env.getLogManager().getLogger(SSLTransportLayer.class, null);
     this.transportLayer = transportLayer;
     errorHandler = new DefaultErrorHandler<Identifier>(logger, Level.WARN);
@@ -259,6 +267,10 @@ public class SSLTransportLayer<Identifier, MessageType>
 
   public Environment getEnvironment() {
     return environment;
+  }
+
+  int getMaxReadCallbacksPerSelect() {
+    return maxReadCallbacksPerSelect;
   }
 
   public Logger getLogger() {

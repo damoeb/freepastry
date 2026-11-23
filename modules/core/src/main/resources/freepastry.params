@@ -28,6 +28,9 @@ transport_wire_handshake_timeout_millis = 10000
 transport_wire_max_handshaking_sockets_per_address = 32
 # datagrams read in one selection before the selector thread turns to other work
 transport_wire_max_datagrams_per_read = 64
+# read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
+# waits for the next turn, so that a burst on one socket neither nests calls nor starves others
+transport_ssl_max_read_callbacks_per_select = 64
 transport_epoch_max_num_addresses = 2
 transport_sr_max_num_hops = 5
 
