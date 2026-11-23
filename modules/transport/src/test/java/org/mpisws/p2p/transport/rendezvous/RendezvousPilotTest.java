@@ -27,12 +27,17 @@ import org.mpisws.p2p.transport.SocketCallback;
 import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
+import rice.Continuation;
 import rice.environment.Environment;
+import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
-/** Drives the pilot lifecycle of a {@link RendezvousTransportLayerImpl} through fake sockets. */
+/**
+ * Drives a {@link RendezvousTransportLayerImpl} through fake sockets: the pilot lifecycle, the connector and acceptor
+ * headers a rendezvous node reads, and how long it keeps a connector waiting for its acceptor.
+ */
 class RendezvousPilotTest {
   private record Contact(String name, boolean direct) implements RendezvousContact {
     @Override
@@ -44,6 +49,9 @@ class RendezvousPilotTest {
   private static final Contact LOCAL = new Contact("me", false);
   private static final Contact SUPERNODE = new Contact("super", true);
   private static final Contact NATTED = new Contact("natted", false);
+  private static final Contact OPENER = new Contact("opener", false);
+  private static final String CONTACT_OPTION = "rendezvous.contact";
+  private static final int UID = 42;
 
   private static class Serializer implements ContactDeserializer<String, Contact> {
     @Override
@@ -85,7 +93,7 @@ class RendezvousPilotTest {
     final ByteArrayOutputStream written = new ByteArrayOutputStream();
     final ByteArrayOutputStream toRead = new ByteArrayOutputStream();
     int readPosition;
-    boolean closed;
+    volatile boolean closed;
     @Nullable P2PSocketReceiver<String> receiver;
 
     void feed(byte... data) {
@@ -234,7 +242,37 @@ class RendezvousPilotTest {
     }
   }
 
+  /** Records the channel requests the layer sends through the overlay as {@code target<-source#uid}. */
+  private static class RecordingRendezvousStrategy implements RendezvousStrategy<Contact> {
+    final List<String> openedChannels = new ArrayList<>();
+
+    @Override
+    public Cancellable openChannel(
+        Contact target,
+        Contact rendezvous,
+        Contact source,
+        int uid,
+        @Nullable Continuation<Integer, Exception> deliverResultToMe,
+        @Nullable Map<String, Object> options) {
+      openedChannels.add(target.name() + "<-" + source.name() + "#" + uid);
+      return () -> true;
+    }
+
+    @Override
+    public @Nullable MessageRequestHandle<Contact, ByteBuffer> sendMessage(
+        Contact identifier,
+        ByteBuffer msg,
+        @Nullable MessageCallback<Contact, ByteBuffer> deliverAckToMe,
+        @Nullable Map<String, Object> options) {
+      return null;
+    }
+
+    @Override
+    public void setTransportLayer(RendezvousTransportLayer<Contact> transportLayer) {}
+  }
+
   private Environment env;
+  private final RecordingRendezvousStrategy rendezvousStrategy = new RecordingRendezvousStrategy();
   private final FakeLower lower = new FakeLower();
   private final RecordingListener outgoingEvents = new RecordingListener();
   private final RecordingListener incomingEvents = new RecordingListener();
@@ -243,19 +281,24 @@ class RendezvousPilotTest {
   @BeforeEach
   void setUp() {
     env = Environment.directEnvironment(1);
-    layer = new RendezvousTransportLayerImpl<>(
+    layer = newLayer();
+    layer.addOutgoingPilotListener(outgoingEvents);
+    layer.addIncomingPilotListener(incomingEvents);
+  }
+
+  /** A layer that reads the parameters of {@link #env} as they are now. */
+  private RendezvousTransportLayerImpl<String, Contact> newLayer() {
+    return new RendezvousTransportLayerImpl<>(
         lower,
-        "rendezvous.contact",
+        CONTACT_OPTION,
         LOCAL,
         new Serializer(),
         new RendezvousGenerationStrategy<>() {},
         c -> null,
-        null,
+        rendezvousStrategy,
         null,
         c -> false,
         env);
-    layer.addOutgoingPilotListener(outgoingEvents);
-    layer.addIncomingPilotListener(incomingEvents);
   }
 
   @AfterEach
@@ -437,5 +480,104 @@ class RendezvousPilotTest {
     assertNull(layer.incomingPilots.get(NATTED));
     assertTrue(socket.closed);
     assertEquals(List.of("open:natted", "closed:natted"), incomingEvents.events);
+  }
+
+  /** The header a connector or an acceptor sends a rendezvous node: socket type, target, opener and uid. */
+  private static byte[] header(byte socketType, Contact target, Contact opener, int uid) throws IOException {
+    SimpleOutputBuffer sob = new SimpleOutputBuffer();
+    sob.writeByte(socketType);
+    sob.writeUTF(target.name());
+    sob.writeBoolean(target.direct());
+    sob.writeUTF(opener.name());
+    sob.writeBoolean(opener.direct());
+    sob.writeInt(uid);
+    ByteBuffer buffer = sob.getByteBuffer();
+    byte[] header = new byte[buffer.remaining()];
+    buffer.get(header);
+    return header;
+  }
+
+  /** The socket type byte and the first bytes of the header arrive, the rest is still on the way. */
+  private static final int FIRST_CHUNK_BYTES = 4;
+
+  private static byte[] firstChunk(byte[] header) {
+    return java.util.Arrays.copyOfRange(header, 0, FIRST_CHUNK_BYTES);
+  }
+
+  private static byte[] secondChunk(byte[] header) {
+    return java.util.Arrays.copyOfRange(header, FIRST_CHUNK_BYTES, header.length);
+  }
+
+  @Test
+  @DisplayName("a connector header that arrives in two chunks is read once it is complete")
+  void connectorHeaderInTwoChunks() throws Exception {
+    byte[] header = header(RendezvousTransportLayerImpl.CONNECTOR_SOCKET, NATTED, OPENER, UID);
+    FakeSocket connector = new FakeSocket();
+    connector.feed(firstChunk(header));
+
+    layer.incomingSocket(connector);
+
+    assertFalse(connector.closed);
+    assertEquals(List.of(), rendezvousStrategy.openedChannels);
+
+    connector.feed(secondChunk(header));
+    connector.fire(true, false);
+
+    assertFalse(connector.closed);
+    assertEquals(List.of("natted<-opener#" + UID), rendezvousStrategy.openedChannels);
+    assertEquals(connector, layer.removeConnectSocket(OPENER, NATTED, UID));
+  }
+
+  @Test
+  @DisplayName("an acceptor header that arrives in two chunks is read once it is complete, and both sides get success")
+  void acceptorHeaderInTwoChunks() throws Exception {
+    FakeSocket connector = new FakeSocket();
+    layer.putConnectSocket(OPENER, NATTED, UID, connector);
+    byte[] header = header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, NATTED, OPENER, UID);
+    FakeSocket acceptor = new FakeSocket();
+    acceptor.feed(firstChunk(header));
+
+    layer.incomingSocket(acceptor);
+
+    assertFalse(acceptor.closed);
+    assertEquals(0, connector.writtenBytes().length);
+
+    acceptor.feed(secondChunk(header));
+    acceptor.fire(true, false);
+
+    byte[] success = {RendezvousTransportLayerImpl.CONNECTION_RESPONSE_SUCCESS};
+    assertArrayEquals(success, connector.writtenBytes());
+    assertArrayEquals(success, acceptor.writtenBytes());
+    assertFalse(connector.closed);
+    assertFalse(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("a socket opened without options goes to the lower layer directly, as a normal socket")
+  void nullOptionsOpenANormalSocket() throws Exception {
+    List<P2PSocket<String>> delivered = new ArrayList<>();
+    layer.openSocket("peer", recordingCallback(delivered, new ArrayList<>()), null);
+
+    assertEquals(List.of("peer"), lower.opened);
+    FakeSocket socket = new FakeSocket();
+    lower.callbacks.get(0).receiveResult(lower.handles.get(0), socket);
+    socket.fire(false, true);
+
+    assertArrayEquals(new byte[] {RendezvousTransportLayerImpl.NORMAL_SOCKET}, socket.writtenBytes());
+    assertEquals(List.of(socket), delivered);
+  }
+
+  private static SocketCallback<String> recordingCallback(List<P2PSocket<String>> delivered, List<Exception> failures) {
+    return new SocketCallback<>() {
+      @Override
+      public void receiveResult(SocketRequestHandle<String> cancellable, P2PSocket<String> socket) {
+        delivered.add(socket);
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<String> request, Exception exception) {
+        failures.add(exception);
+      }
+    };
   }
 }
