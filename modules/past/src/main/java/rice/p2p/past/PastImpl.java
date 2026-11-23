@@ -107,7 +107,6 @@ import rice.persistence.LockManager;
 @SuppressWarnings("unchecked")
 public class PastImpl implements Past, Application, ReplicationManagerClient {
   /** Timeout for opening, reading and writing the app sockets that carry large messages. */
-  private static final int SOCKET_TIMEOUT_MILLIS = 10000;
 
 
 
@@ -146,6 +145,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   // the policy used for application-specific behavior
   protected PastPolicy policy;
+
+  // sends and receives the messages that go over a socket of their own
+  private final PastSocketTransport socketTransport;
 
   // the requests that wait for a response
   private final PendingRequests pending;
@@ -254,7 +256,6 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     PastConfig config = PastConfig.fromParameters(environment.getParameters());
     MESSAGE_TIMEOUT = config.messageTimeout();
     SUCCESSFUL_INSERT_THRESHOLD = config.successfulInsertThreshold();
-    this.socketReader = new PastSocketReader(config.maxSocketMessageBytes());
     this.socketStrategy = strategy;
     this.storage = manager;
     this.backup = backup;
@@ -273,57 +274,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
     this.lockManager = new LockManager(environment);
 
-    this.endpoint.accept(new AppSocketReceiver() {
-
-      @Override
-      public void receiveSocket(AppSocket socket) {
-        logger.debug("Received Socket from {}", socket);
-        socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
-        endpoint.accept(this);
-      }
-
-      @Override
-      public void receiveSelectResult(AppSocket socket, boolean canRead,
-          boolean canWrite) {
-        logger.trace("Reading from {}", socket);
-        try {
-          byte[] message = socketReader.read(socket);
-          if (message != null) {
-            // deserialize the object
-            SimpleInputBuffer inputBuffer = new SimpleInputBuffer(message);
-
-            short type = inputBuffer.readShort();
-
-            PastMessage result = (PastMessage)endpoint.getDeserializer().deserialize(inputBuffer,type,(byte)0,null);
-            deliver(null,result);
-          }
-
-          // there will be more data on the socket if we haven't received everything yet
-          // need to register either way to be able to read from the sockets when they are closed remotely, could alternatively close early
-          // cause we are currently only sending 1 message per socket, but it's better to just keep reading in case we one day reuse sockets
-            socket.register(true, false, SOCKET_TIMEOUT_MILLIS, this);
-
-            // no recursive call to read the next object: calling read when not ready throws an exception
-        } catch (EOFException e) {
-          close(socket);
-        } catch (IOException e) {
-          receiveException(socket, e);
-        }
-      }
-
-      @Override
-      public void receiveException(AppSocket socket, Exception e) {
-        logger.warn("Error receiving message", e);
-        close(socket);
-      }
-
-      void close(AppSocket socket) {
-        if (socket == null) return;
-        socketReader.forget(socket);
-        socket.close();
-      }
-
-    });
+    this.socketTransport = new PastSocketTransport(this, endpoint, pending, logger, config.maxSocketMessageBytes());
+    socketTransport.acceptSockets();
     endpoint.register();
   }
 
@@ -418,79 +370,9 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     };
   }
 
-  /**
-   * AppSocket -> ByteBuffer[]
-   *
-   * Used for receiving the objects.
-   */
-  private final PastSocketReader socketReader;
-
   private void sendViaSocket(final NodeHandle handle, final PastMessage msg, final Continuation<?, Exception> continuation) {
-    if (continuation != null) {
-      CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(msg.getUID(), getLocalNodeHandle(), null, msg, handle), MESSAGE_TIMEOUT);
-      pending.insert(msg.getUID(), timer, continuation);
-    }
-
-    // create a bb[] to be written
-    SimpleOutputBuffer outputBuffer = new SimpleOutputBuffer();
-    try {
-      outputBuffer.writeInt(0); // place holder for size...
-      outputBuffer.writeShort(msg.getType());
-      msg.serialize(outputBuffer);
-    } catch (IOException e) {
-      if (continuation != null) continuation.receiveException(e);
-    }
-
-    // add the size back to the beginning...
-    int size = outputBuffer.getWritten()-Integer.BYTES; // remove the size of the size :)
-    logger.trace("Sending size of {} to {} to send {}", size, handle, msg);
-    byte[] bytes = outputBuffer.getBytes();
-    MathUtils.intToByteArray(size,bytes,0);
-
-    // prepare the bytes for writing
-    final ByteBuffer[] buffers = new ByteBuffer[1];
-    buffers[0] = ByteBuffer.wrap(bytes, 0, outputBuffer.getWritten()); // the whole thing
-
-
-    logger.debug("Opening socket to {} to send {}", handle, msg);
-    endpoint.connect(handle, new AppSocketReceiver() {
-
-      @Override
-      public void receiveSocket(AppSocket socket) {
-        logger.trace("Opened socket to {}:{} to send {}", handle, socket, msg);
-        socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
-      }
-
-      @Override
-      public void receiveSelectResult(AppSocket socket, boolean canRead,
-          boolean canWrite) {
-        logger.trace("Writing to {}:{} to send {}", handle, socket, msg);
-
-
-        try {
-          socket.write(buffers[0]);
-        } catch (IOException e) {
-          if (continuation != null)
-            continuation.receiveException(e);
-          else
-            logger.warn("Error sending {}", msg, e);
-          return; // don't continue to try to send
-        }
-        if (buffers[0].remaining() > 0) {
-          socket.register(false, true, SOCKET_TIMEOUT_MILLIS, this);
-        } else {
-          socket.close();
-        }
-      }
-
-      @Override
-      public void receiveException(AppSocket socket, Exception e) {
-        if (continuation != null) continuation.receiveException(e);
-      }
-    },
-    SOCKET_TIMEOUT_MILLIS);
+    socketTransport.send(handle, msg, continuation);
   }
-
 
   /**
    * Sends a request message across the wire, and stores the appropriate
