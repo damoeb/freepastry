@@ -38,9 +38,9 @@ package rice.p2p.util;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import rice.Futures;
 import rice.selector.SelectorLoop;
 
 public interface DebugCommandHandler {
@@ -64,7 +64,7 @@ public interface DebugCommandHandler {
       return "error: result not available, and can't wait for it on the selector thread";
     }
     try {
-      return result.get(timeoutMillis, TimeUnit.MILLISECONDS);
+      return Futures.await(result, selector, timeoutMillis);
     } catch (TimeoutException timeoutException) {
       return "timeout: no result after "+timeoutMillis+" ms";
     } catch (InterruptedException ie) {

@@ -97,6 +97,7 @@ import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.FutureContinuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.environment.logging.LogManager;
 import rice.environment.random.RandomSource;
@@ -913,7 +914,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
       environment.getSelectorManager().invoke(task);
     }
     try {
-      return result.future().get();
+      return Futures.await(result.future(), environment.getSelectorManager());
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(ie);
