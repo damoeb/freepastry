@@ -29,6 +29,7 @@ import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.environment.time.simulated.DirectTimeSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
@@ -508,6 +509,20 @@ class RendezvousPilotTest {
     return java.util.Arrays.copyOfRange(header, FIRST_CHUNK_BYTES, header.length);
   }
 
+  private FakeSocket waitingConnector(int uid) throws IOException {
+    FakeSocket connector = new FakeSocket();
+    connector.feed(header(RendezvousTransportLayerImpl.CONNECTOR_SOCKET, NATTED, OPENER, uid));
+    layer.incomingSocket(connector);
+    return connector;
+  }
+
+  private static void awaitClosed(FakeSocket socket) throws InterruptedException {
+    long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    while (!socket.closed && System.nanoTime() < deadline) {
+      Thread.sleep(10);
+    }
+  }
+
   @Test
   @DisplayName("a connector header that arrives in two chunks is read once it is complete")
   void connectorHeaderInTwoChunks() throws Exception {
@@ -550,6 +565,74 @@ class RendezvousPilotTest {
     assertArrayEquals(success, acceptor.writtenBytes());
     assertFalse(connector.closed);
     assertFalse(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("a connector whose acceptor never comes is closed and forgotten after the connector timeout")
+  void waitingConnectorTimesOut() throws Exception {
+    env.getParameters().setInt("transport_rendezvous_connector_timeout_millis", 1_000);
+    layer = newLayer();
+    FakeSocket connector = waitingConnector(UID);
+    assertFalse(connector.closed);
+
+    synchronized (env.getSelectorManager()) {
+      ((DirectTimeSource) env.getTimeSource()).incrementTime(1_000);
+    }
+    env.getSelectorManager().invoke(() -> {});
+    awaitClosed(connector);
+
+    assertTrue(connector.closed, "the connector is closed after the timeout");
+    assertNull(layer.removeConnectSocket(OPENER, NATTED, UID), "the connector is forgotten after the timeout");
+  }
+
+  @Test
+  @DisplayName("a connector that finds its acceptor in time is not closed by the connector timeout")
+  void matchedConnectorOutlivesTheTimeout() throws Exception {
+    env.getParameters().setInt("transport_rendezvous_connector_timeout_millis", 1_000);
+    layer = newLayer();
+    FakeSocket connector = waitingConnector(UID);
+    FakeSocket acceptor = new FakeSocket();
+    acceptor.feed(header(RendezvousTransportLayerImpl.ACCEPTOR_SOCKET, NATTED, OPENER, UID));
+    layer.incomingSocket(acceptor);
+
+    synchronized (env.getSelectorManager()) {
+      ((DirectTimeSource) env.getTimeSource()).incrementTime(1_000);
+    }
+    java.util.concurrent.CountDownLatch selectorRan = new java.util.concurrent.CountDownLatch(2);
+    env.getSelectorManager().invoke(() -> {
+      selectorRan.countDown();
+      env.getSelectorManager().invoke(selectorRan::countDown); // a second round, after the due timers ran
+    });
+    assertTrue(selectorRan.await(5, java.util.concurrent.TimeUnit.SECONDS));
+
+    assertFalse(connector.closed);
+    assertFalse(acceptor.closed);
+  }
+
+  @Test
+  @DisplayName("a rendezvous node keeps at most the configured number of connectors waiting, and closes the rest at once")
+  void waitingConnectorsAreCapped() throws Exception {
+    env.getParameters().setInt("transport_rendezvous_max_waiting_connectors", 1);
+    layer = newLayer();
+
+    FakeSocket first = waitingConnector(UID);
+    FakeSocket second = waitingConnector(UID + 1);
+
+    assertFalse(first.closed);
+    assertTrue(second.closed);
+    assertNull(layer.removeConnectSocket(OPENER, NATTED, UID + 1));
+    assertEquals(first, layer.removeConnectSocket(OPENER, NATTED, UID));
+  }
+
+  @Test
+  @DisplayName("destroying the layer closes the connectors that still wait for their acceptor")
+  void destroyClosesWaitingConnectors() throws Exception {
+    FakeSocket connector = waitingConnector(UID);
+
+    layer.destroy();
+
+    assertTrue(connector.closed);
+    assertNull(layer.removeConnectSocket(OPENER, NATTED, UID));
   }
 
   @Test
