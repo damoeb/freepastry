@@ -37,18 +37,13 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.Continuation.NamedContinuation;
-import rice.Continuation.SimpleContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -63,8 +58,6 @@ import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.NodeHandleSet;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.commonapi.appsocket.AppSocket;
-import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
 import rice.p2p.past.PastPolicy.DefaultPastPolicy;
@@ -88,9 +81,6 @@ import rice.p2p.replication.Replication;
 import rice.p2p.replication.manager.ReplicaFetchCoordinator;
 import rice.p2p.replication.manager.ReplicaFetchCoordinatorImpl;
 import rice.p2p.replication.manager.ReplicationManagerClient;
-import rice.p2p.util.MathUtils;
-import rice.p2p.util.rawserialization.SimpleInputBuffer;
-import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.persistence.Cache;
 import rice.persistence.CachedStorage;
 import rice.persistence.LockManager;
