@@ -398,6 +398,87 @@ The implementations:
 
 **Where the code of the big classes lives.** `GlacierImpl`, `ScribeImpl`, `AggregationImpl`, `PersistentStorage` and `PriorityTransportLayer` are facades: each keeps its public API and delegates to package-private collaborators in its own package. Examples are `GlacierInserter`, `GlacierRetriever` and `GlacierSyncProtocol`; `SubscriptionManager`, `Publisher`, `AnycastHandler` and `TreeRepair`; `AggregateFlusher`, `AggregateConsolidator` and `ObjectRetriever`; `ObjectFiles`, `StorageRecovery` and `MetadataIndex`; and `PeerMessageWriter` with `PrimarySocketOpener`. Look there for the logic behind a public method.
 
+## Known improvements (TODO backlog)
+
+These are open `TODO` comments in the main sources. None is a known defect; each is a feature wish, a tuning option or a cleanup. Paths are relative to `modules/<module>/src/main/java/`.
+
+### core
+
+- `rice/environment/time/TimeSource.java` (wait): add `wait(lock, timeout)` that behaves like `lock.wait(timeout)` but also works in the simulator.
+
+### filetransfer
+
+- `org/mpisws/p2p/filetransfer/FileTransferImpl.java` (chunk sending): allow more than one outstanding chunk; one chunk in flight is correct but slow on high-latency links.
+
+### multiring
+
+- `rice/p2p/multiring/messaging/RingMessage.java` (deserialization): deserialize the inner message lazily in `getMessage()` instead of eagerly.
+
+### pastry
+
+- `rice/pastry/PastryNode.java` (receiveException on a null request handle): pass a small handle with a proper `toString()` for diagnostics.
+- `rice/pastry/boot/Bootstrapper.java` (`boot()`): give the caller a way to learn about errors; today failures are only logged.
+- `rice/pastry/direct/NetworkSimulator.java` (listeners): add a listener on the top-level transport layer to notify simulator listeners.
+- `rice/pastry/leafset/LeafSet.java` (iteration order): offer an iterator ordered from the nearest to the farthest neighbor (cw[0], ccw[0], cw[1], ccw[1], ...); the current iterator is deliberately unordered.
+- `rice/pastry/leafset/LeafSetHalf.java` (entries copied from the routing table): make sure the copied entries are alive; leafset repair removes dead ones later.
+- `rice/pastry/messaging/MessageDispatch.java` (before `isReady()`): make explicit which applications may receive messages before `PastryNode.isReady()`; today the receiver decides.
+- `rice/pastry/pns/ProximityNeighborSelectionApplication.java` (ping round): finish early once every ping has failed; the set that tracks failures is filled but never read, so such a round waits for the timeouts.
+- `rice/pastry/pns/ProximityNeighborSelectionApplication.java` (proximity lookup): make the hard-coded 10 s proximity timeout configurable.
+- `rice/pastry/pns/ProximityNeighborSelectionApplication.java` (proximity of a handle): fail early if the handle is already known to be faulty instead of spending one timeout.
+- `rice/pastry/routing/RouteSet.java` (ping on insert): only ping handles that came from the deserializer; handles with unknown proximity cause extra pings.
+- `rice/pastry/socket/nat/connectivityverifiier/ConnectivityVerifier.java` (`findExternalNodes`): make sure the probed addresses are Internet routable (filter private and loopback ranges).
+- `rice/pastry/socket/nat/connectivityverifiier/ConnectivityVerifier.java` (`findExternalNodes`): add a timeout that starts the next probe after about a second and cancels the rest once one answers; probes run one after another with no overall timeout.
+- `rice/pastry/socket/nat/connectivityverifiier/ConnectivityVerifier.java` (`findExternalAddress`): make sure the probed addresses are Internet routable (filter private and loopback ranges).
+- `rice/pastry/socket/nat/connectivityverifiier/ConnectivityVerifier.java` (`findExternalAddress`): add the same probe timeout as for `findExternalNodes`.
+- `rice/pastry/socket/nat/rendezvous/RendezvousApplication.java` (`sendMessage`): use the newer send method in `PastryAppl`.
+- `rice/pastry/socket/nat/rendezvous/RendezvousJoinProtocol.java` (class Javadoc): override `respondToJoiner()` and `completeJoin()` for NATted joiners (use the bootstrap's pilot, close it before `super.completeJoin()`).
+- `rice/pastry/socket/nat/rendezvous/RendezvousPNSApplication.java` (proximity): make the proximity of firewalled nodes `MAX_VALUE`.
+- `rice/pastry/socket/nat/rendezvous/RendezvousPNSApplication.java` (connection choice): let the rendezvous layer check the `MultiInetSocketAddress` to see whether two nodes can contact each other directly.
+- `rice/pastry/standard/ConsistentJoinProtocol.java` (ready handshake): repeat the message while the node is alive, so a rare message drop cannot stall going ready.
+- `rice/pastry/standard/RapidRerouter.java` (dropped messages): notify an error handler, not just the message's own callback, when a message is dropped after the maximum number of retries.
+- `rice/pastry/transport/TransportLayerDeserializer.java` (unknown address): consider a default deserializer; an unknown address currently fails the whole message.
+- `rice/pastry/transport/TransportLayerDeserializer.java` (unknown address): throw a dedicated `UnknownAddressException` instead of a plain `IOException`.
+
+### peerreview
+
+- `org/mpisws/p2p/transport/peerreview/audit/AuditProtocol.java` (appending to the log): verify older authenticators against the appended history to expose log forks earlier.
+- `org/mpisws/p2p/transport/peerreview/authpush/AuthenticatorPushProtocol.java` (push messages): use UDP or smaller `AuthPushMessage`s to save bandwidth.
+- `org/mpisws/p2p/transport/peerreview/identity/IdentityTransportLayerImpl.java` (certificate store): store known certificates in a file and check the revocation server periodically.
+- `org/mpisws/p2p/transport/peerreview/identity/IdentityTransportLayerImpl.java` (`loadTableStore`): use a parameter to load the store from a file; non-null input is rejected today.
+- `org/mpisws/p2p/transport/peerreview/replay/ReplaySocket.java` (class): make it extensible by putting it behind a factory.
+- `org/mpisws/p2p/transport/peerreview/replay/Verifier.java` (read events): change the replay when multiple reads become a single log event; replay assumes one read per event.
+- `org/mpisws/p2p/transport/peerreview/replay/Verifier.java` (write events): change the replay when multiple writes become a single log event; replay assumes one write per event.
+- `org/mpisws/p2p/transport/peerreview/replay/playback/ReplaySelectorManager.java` (`isSuccess`): let the caller decide what happens on success instead of destroying the environment inside a predicate.
+- `org/mpisws/p2p/transport/peerreview/statement/StatementProtocol.java` (proof verification): pass the `extInfo` of the proof to the verifier; it is null today, as in the C++ PeerReview port.
+
+### scribe
+
+- `rice/p2p/scribe/AnycastHandler.java` (raw-serialized content, first site): use a faster constructor when the content is raw-serialized.
+- `rice/p2p/scribe/AnycastHandler.java` (raw-serialized content, second site): use a faster constructor when the content is raw-serialized.
+- `rice/p2p/scribe/TopicTreeState.java` (maintenance): send a dedicated update message instead of reusing a `SubscribeAckMessage`.
+- `rice/p2p/splitstream/Stripe.java` (resubscribe): retry with a random exponential backoff instead of a fixed delay to avoid resubscribe storms after a parent fails.
+
+### transport
+
+- `org/mpisws/p2p/transport/direct/DirectAppSocket.java` (read at close): simulate a socket reset instead of returning -1 (EOF).
+- `org/mpisws/p2p/transport/direct/DirectAppSocket.java` (connect delay): take a real delay into account; the acceptor has already been removed from the simulator at that point.
+- `org/mpisws/p2p/transport/direct/DirectTransportLayer.java` (connect timeout): make `CONNECT_TIMEOUT_MILLIS` configurable.
+- `org/mpisws/p2p/transport/liveness/LivenessTransportLayer.java` (connect failure): count a number of failures (for example 3, or 1 with source routes) before marking a peer faulty; one failure marks it faulty today.
+- `org/mpisws/p2p/transport/priority/MessageWrapper.java` (`drop`): review that everything necessary is cleaned up; no leak is known.
+- `org/mpisws/p2p/transport/priority/PeerMessageWriter.java` (locking): review the synchronization; the writer is locked on some paths and the queue on others.
+- `org/mpisws/p2p/transport/priority/PeerMessageWriter.java` (cancel of the in-flight message): handle the later socket callback after a cancel, so a cleared message cannot be written.
+- `org/mpisws/p2p/transport/proximity/MinRTTProximityProvider.java` (`pingThrottle`): make the 5 s ping throttle configurable.
+- `org/mpisws/p2p/transport/rendezvous/RendezvousTransportLayerImpl.java` (ephemeral registry): make the stale-port time a configurable parameter.
+- `org/mpisws/p2p/transport/rendezvous/RendezvousTransportLayerImpl.java` (requestor contact): when the requestor can be contacted directly, just do that; this may need protocol changes.
+- `org/mpisws/p2p/transport/sourceroute/factory/WireSourceRouteFactory.java` (serialization): special-case the single hop, as is done for multi-inet addresses.
+- `org/mpisws/p2p/transport/sourceroute/manager/SourceRouteSelectingTransportLayer.java` (route probing): keep track of when routes were checked so that unanswered ones can go to `markDead`.
+- `org/mpisws/p2p/transport/ssl/SSLSocketManager.java` (read registration): check that no other receiver is registered to read; it would be silently replaced.
+- `org/mpisws/p2p/transport/ssl/SSLSocketManager.java` (write registration): check that no other receiver is registered to write; it would be silently replaced.
+- `org/mpisws/p2p/transport/ssl/SSLTransportLayer.java` (handshake): support SSL session resumption; every connection does a full handshake today.
+- `org/mpisws/p2p/transport/util/SocketWrapperSocket.java` (fields): replace direct field access with getters.
+- `org/mpisws/p2p/transport/wire/TCPLayer.java` (simulation): add a flag to disable this behavior to simulate a silent fault.
+- `org/mpisws/p2p/transport/wire/magicnumber/MagicNumberTransportLayer.java` (magic number check): check the array at each step to fail faster instead of after the full magic number is read.
+
 ## Where to go next
 
 - The tutorials in `modules/tutorials/src/main/java/rice/tutorial/` (lesson1 to lesson4, `past`, `scribe`, `splitstream`, `rawserialization`, `transportlayer`, `ssl`, …) are small, runnable programs. The HTML that goes with them is in `html/rawtutorial/`.
