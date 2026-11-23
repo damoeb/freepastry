@@ -542,7 +542,12 @@ public class CommitmentProtocol<Handle extends RawSerializable, Identifier exten
     /* Acknowledgment: Log it (if we don't have it already) and send the next message, if any */
 
     logger.debug("Received an ACK from {}", source);
-    // TODO: check that ackMessage came from the source
+    /* The receiver sends its ACK itself. An ACK naming another node would let the receiver avoid
+       logging the RECV, and our log would show an ACK from a node we never sent to. */
+    if (!ackMessage.getNodeId().equals(peerreview.getIdentifierExtractor().extractIdentifier(source))) {
+      logger.warn("ACK from {} claims to come from <{}>; discarding", source, ackMessage.getNodeId());
+      return;
+    }
 
     if (transport.hasCertificate(ackMessage.getNodeId())) {
       PeerCommitmentState<Handle> peerCommitmentState = lookupPeer(source);
