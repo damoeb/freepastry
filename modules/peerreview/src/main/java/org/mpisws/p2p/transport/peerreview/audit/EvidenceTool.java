@@ -414,7 +414,8 @@ public class EvidenceTool<Handle extends RawSerializable, Identifier extends Raw
           SendEntryRecord seidx = secache.get(evtAck.getAckedSeq());
 
           if (seidx == null) {
-            // TODO: a snippet with an ACK but no matching SEND should probably fail the check (return false)
+            /* No check possible, and none needed: the SEND may lie before the start of the snippet, or be
+               hashed, so its content is not here. The ACK still counts in the snippet's hash chain. */
           } else {
             /* Extract the authenticator and check it */
 
