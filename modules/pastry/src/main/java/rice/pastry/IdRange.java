@@ -137,7 +137,7 @@ public class IdRange implements rice.p2p.commonapi.IdRange {
    *
    * @return the numerical distance of the range
    */
-  private Id.Distance size() {
+  private IdDistance size() {
     if (counterClockwiseId.clockwise(clockwiseId))
       return counterClockwiseId.distance(clockwiseId);
     else

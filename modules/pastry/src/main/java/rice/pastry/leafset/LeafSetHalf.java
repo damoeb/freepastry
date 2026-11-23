@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import rice.pastry.Id;
+import rice.pastry.IdDistance;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSetEventSource;
 import rice.pastry.NodeSetListener;
@@ -449,8 +450,8 @@ public class LeafSetHalf implements NodeSetEventSource {
     return theSize;
   }
 
-  Id.Distance d1 = new Id.Distance();
-  Id.Distance d = new Id.Distance();
+  IdDistance d1 = new IdDistance();
+  IdDistance d = new IdDistance();
   /**
    * Impl that doesn't produce garbage
    *
@@ -466,8 +467,8 @@ public class LeafSetHalf implements NodeSetEventSource {
     if (theSize == 0)
       return -1;
 
-    Id.Distance other = d;
-    Id.Distance minDist = ln.getNodeId().distance(nodeId, d1);
+    IdDistance other = d;
+    IdDistance minDist = ln.getNodeId().distance(nodeId, d1);
     int min = -1;
 
     for (int i = 0; i < theSize; i++) {
@@ -475,7 +476,7 @@ public class LeafSetHalf implements NodeSetEventSource {
       int cmp = other.compareTo(minDist);
       if ((!clockwise && cmp < 0) || (clockwise && cmp <= 0)) {
         // swap buffers
-        Id.Distance tmp = minDist;
+        IdDistance tmp = minDist;
         minDist = other;
         other = tmp;
 

@@ -39,6 +39,7 @@ advised of the possibility of such damage.
 package rice.pastry.leafset;
 
 import rice.pastry.Id;
+import rice.pastry.IdDistance;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSet;
 
@@ -119,8 +120,8 @@ final class LeafSetReplicas {
       // determine next nearest node
       NodeHandle cwNode = leafSet.get(cw);
       NodeHandle ccwNode = leafSet.get(ccw);
-      Id.Distance cwDist = cwNode.getNodeId().distance(key);
-      Id.Distance ccwDist = ccwNode.getNodeId().distance(key);
+      IdDistance cwDist = cwNode.getNodeId().distance(key);
+      IdDistance ccwDist = ccwNode.getNodeId().distance(key);
 
       if (cwDist.compareTo(ccwDist) <= 0) {
         // cwNode is closer to key

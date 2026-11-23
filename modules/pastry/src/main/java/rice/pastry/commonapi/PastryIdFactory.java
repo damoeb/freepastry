@@ -180,7 +180,7 @@ public class PastryIdFactory implements IdFactory {
    */
   @Override
   public Id.Distance buildIdDistance(byte[] material) {
-    return new rice.pastry.Id.Distance(material);
+    return new rice.pastry.IdDistance(material);
   }
 
   /**

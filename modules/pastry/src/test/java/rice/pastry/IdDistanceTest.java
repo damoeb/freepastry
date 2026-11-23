@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 
 /** Pins the arithmetic of the distance between two ids on the circle. */
 class IdDistanceTest {
-  private static Id.Distance distance(int lowWord, int highWord) {
-    return new Id.Distance(new int[] {lowWord, 0, 0, 0, highWord});
+  private static IdDistance distance(int lowWord, int highWord) {
+    return new IdDistance(new int[] {lowWord, 0, 0, 0, highWord});
   }
 
   @Test
@@ -20,9 +20,9 @@ class IdDistanceTest {
     bytes[0] = 0x01;
     bytes[4] = 0x02;
 
-    Id.Distance actual = new Id.Distance(bytes);
+    IdDistance actual = new IdDistance(bytes);
 
-    assertEquals(new Id.Distance(new int[] {1, 2, 0, 0, 0}), actual);
+    assertEquals(new IdDistance(new int[] {1, 2, 0, 0, 0}), actual);
     assertArrayEquals(bytes, actual.copy());
   }
 
@@ -39,8 +39,8 @@ class IdDistanceTest {
 
   @Test
   void comparesUnsignedFromTheMostSignificantWord() {
-    Id.Distance small = distance(0xFFFFFFFF, 1);
-    Id.Distance large = distance(0, 2);
+    IdDistance small = distance(0xFFFFFFFF, 1);
+    IdDistance large = distance(0, 2);
 
     assertTrue(small.compareTo(large) < 0);
     assertTrue(large.compareTo(small) > 0);
@@ -58,7 +58,7 @@ class IdDistanceTest {
   @Test
   void shiftingRightDividesAndFillsFromTheTop() {
     assertEquals(distance(2, 0), distance(4, 0).shift(1, 0));
-    assertEquals(new Id.Distance(new int[] {0, 0, 0, 0x80000000, 0}), distance(0, 1).shift(1, 0));
+    assertEquals(new IdDistance(new int[] {0, 0, 0, 0x80000000, 0}), distance(0, 1).shift(1, 0));
     assertEquals(distance(0, 0x80000000), distance(0, 0).shift(1, 1));
   }
 
@@ -71,13 +71,13 @@ class IdDistanceTest {
   @Test
   void shiftingLeftMultipliesAndFillsFromTheBottom() {
     assertEquals(distance(8, 0), distance(4, 0).shift(-1, 0));
-    assertEquals(new Id.Distance(new int[] {0, 1, 0, 0, 0}), distance(0x80000000, 0).shift(-1, 0));
+    assertEquals(new IdDistance(new int[] {0, 1, 0, 0, 0}), distance(0x80000000, 0).shift(-1, 0));
     assertEquals(distance(1, 0), distance(0, 0).shift(-1, 1));
   }
 
   @Test
   void shiftReturnsTheDistanceItself() {
-    Id.Distance target = distance(4, 0);
+    IdDistance target = distance(4, 0);
 
     assertSame(target, target.shift(1, 0));
     assertSame(target, target.shiftDistance(1, 0));

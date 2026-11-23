@@ -39,6 +39,7 @@ package rice.pastry.testing;
 import rice.environment.Environment;
 import rice.environment.random.RandomSource;
 import rice.pastry.Id;
+import rice.pastry.IdDistance;
 
 /**
  * NodeIdUnit tests the NodeId class.
@@ -110,9 +111,9 @@ public class NodeIdUnit {
     Id b = createNodeId();
 
     for (int i = 0; i < 100; i++) {
-      Id.Distance adist = nid.distance(a);
-      Id.Distance adist2 = a.distance(nid);
-      Id.Distance bdist = nid.distance(b);
+      IdDistance adist = nid.distance(a);
+      IdDistance adist2 = a.distance(nid);
+      IdDistance bdist = nid.distance(b);
       System.out.println("adist =" + adist + "\n bdist=" + bdist);
 
       if (adist.equals(adist2) == true)
@@ -136,8 +137,8 @@ public class NodeIdUnit {
       else
         System.out.println("b is counter-clockwise from a");
 
-      Id.Distance abs = a.distance(b);
-      Id.Distance abl = a.longDistance(b);
+      IdDistance abs = a.distance(b);
+      IdDistance abl = a.longDistance(b);
       if (abs.compareTo(abl) >= 0)
         System.out.println("ERROR: abs.compareTo(abl)=" + abs.compareTo(abl));
 
@@ -241,10 +242,10 @@ public class NodeIdUnit {
     Id a = createNodeId();
     Id b = createNodeId();
 
-    Id.Distance adist = nid.distance(a);
-    Id.Distance bdist = nid.distance(b);
-    Id.Distance aldist = nid.longDistance(a);
-    Id.Distance bldist = nid.longDistance(b);
+    IdDistance adist = nid.distance(a);
+    IdDistance bdist = nid.distance(b);
+    IdDistance aldist = nid.longDistance(a);
+    IdDistance bldist = nid.longDistance(b);
 
     System.out.println("nid.dist(a)=" + adist);
     System.out.println("nid.longDist(a)=" + aldist);

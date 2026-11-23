@@ -52,6 +52,7 @@ import org.jspecify.annotations.Nullable;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
 import rice.pastry.Id;
+import rice.pastry.IdDistance;
 import rice.pastry.IdRange;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
@@ -343,8 +344,8 @@ public class LeafSet implements Iterable<NodeHandle> {
    * @return the index of the numerically closest node (0 if baseId is the closest).
    */
   public int mostSimilar(Id nodeId) {
-    Id.Distance cwMinDist;
-    Id.Distance ccwMinDist;
+    IdDistance cwMinDist;
+    IdDistance ccwMinDist;
     int cwMS;
     int ccwMS;
 

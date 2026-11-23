@@ -47,6 +47,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.slf4j.Logger;
 import rice.pastry.Id;
+import rice.pastry.IdDistance;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeSet;
 import rice.pastry.NodeSetEventSource;
@@ -179,7 +180,7 @@ public class RoutingTable implements NodeSetEventSource {
       return null;
     int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
     int myDigit = myNodeId.getDigit(diffDigit, idBaseBitLength);
-    Id.Distance bestDistance = myNodeId.distance(key);
+    IdDistance bestDistance = myNodeId.distance(key);
     NodeHandle alt = null;
     boolean finished = false;
 
@@ -193,7 +194,7 @@ public class RoutingTable implements NodeSetEventSource {
           NodeHandle nodeHandle = routeSet.get(k);
 
           if (nodeHandle.getLiveness() <= minLiveness /* isAlive() */) {
-            Id.Distance nDist = nodeHandle.getNodeId().distance(key);
+            IdDistance nDist = nodeHandle.getNodeId().distance(key);
 
             if (bestDistance.compareTo(nDist) > 0) {
               bestDistance = nDist;
@@ -224,7 +225,7 @@ public class RoutingTable implements NodeSetEventSource {
       return set;
     int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
     int myDigit = myNodeId.getDigit(diffDigit, idBaseBitLength);
-    Id.Distance myDistance = myNodeId.distance(key);
+    IdDistance myDistance = myNodeId.distance(key);
     boolean finished = false;
     int count = 0;
 
@@ -241,7 +242,7 @@ public class RoutingTable implements NodeSetEventSource {
           NodeHandle nodeHandle = routeSet.get(k);
 
           if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-            Id.Distance nDist = nodeHandle.getNodeId().distance(key);
+            IdDistance nDist = nodeHandle.getNodeId().distance(key);
 
             if (myDistance.compareTo(nDist) > 0) {
               set.put(nodeHandle);
@@ -269,7 +270,7 @@ public class RoutingTable implements NodeSetEventSource {
     final int diffDigit = myNodeId.indexOfMostSignificantDifferingDigit(key, idBaseBitLength);
     if (diffDigit < 0)
       return Collections.EMPTY_LIST.iterator(); // return an empty iterator
-    final Id.Distance myDistance = myNodeId.distance(key);
+    final IdDistance myDistance = myNodeId.distance(key);
 
     return new Iterator<NodeHandle>() {
       int keyDigit = key.getDigit(diffDigit, idBaseBitLength);
@@ -298,7 +299,7 @@ public class RoutingTable implements NodeSetEventSource {
                 NodeHandle nodeHandle = rs.get(k);
 
                 if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_DEAD) {
-                  Id.Distance nDist = nodeHandle.getNodeId().distance(key);
+                  IdDistance nDist = nodeHandle.getNodeId().distance(key);
 
                   k++;
                   if (myDistance.compareTo(nDist) > 0) {
