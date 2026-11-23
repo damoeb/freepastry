@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
+import rice.p2p.commonapi.Cancellable;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -392,6 +393,7 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
   class IdentityMessageHandle extends MessageRequestHandleImpl<UpperIdentifier, UpperMsgType> implements MessageCallback<MiddleIdentifier, UpperMsgType> {
 
     private final @Nullable MessageCallback<UpperIdentifier, UpperMsgType> deliverAckToMe;
+    private boolean cancelRequested = false;
 
     public IdentityMessageHandle(
         UpperIdentifier identifier,
@@ -411,8 +413,19 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
      */
     @Override
     public boolean cancel() {
+      cancelRequested = true;
       removePendingMessage(getIdentifier(), this);
       return super.cancel();
+    }
+
+    /**
+     * The lower layer can find the peer dead while still inside sendMessage(), before it returned its handle; the
+     * message it is about to send must then be cancelled as soon as the handle arrives.
+     */
+    @Override
+    public void setSubCancellable(@Nullable Cancellable cancellable) {
+      super.setSubCancellable(cancellable);
+      if (cancelRequested && cancellable != null) cancellable.cancel();
     }
 
     @Override

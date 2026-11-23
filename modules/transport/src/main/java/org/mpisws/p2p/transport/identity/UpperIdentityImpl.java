@@ -195,9 +195,8 @@ class UpperIdentityImpl<UpperIdentifier, MiddleIdentifier, UpperMsgType, LowerId
       ret = identity.new IdentityMessageHandle(upperIdentifier, upperMsgType, options, deliverAckToMe);
       identity.addPendingMessage(upperIdentifier, ret);
 
-    // the synchronization problem is here, if it goes dead now, then this message won't
-    // be cancelled... TODO: get this correct, it's probably currently broken, maybe
-    // need cancelled bit in ret so that it knows it's cancelled.
+    // if the peer is found dead while the lower layer is still sending, ret is cancelled before it has the lower
+    // handle; setSubCancellable() then cancels the lower send as soon as it arrives
     ret.setSubCancellable(tl.sendMessage(middle, upperMsgType, ret, options));
     return ret;
   }
