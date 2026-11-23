@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.OptionalLong;
+import java.util.concurrent.CompletableFuture;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -84,6 +85,9 @@ public class Environment implements Destructible {
   private ExceptionStrategy exceptionStrategy;
 
   private HashSet<Destructible> destructables = new HashSet<Destructible>();
+
+  // the data-path futures still pending; destroy() fails them
+  private final PendingFutures pendingFutures = new PendingFutures();
 
   /**
    * Constructor.  You can provide null values for all parameters except params, which will result
@@ -251,7 +255,9 @@ public class Environment implements Destructible {
   }
 
   /**
-   * Tears down the environment.  Calls params.store(), selectorManager.destroy().
+   * Tears down the environment.  Calls params.store(), then on the selector thread destroys the
+   * Destructables, fails the {@linkplain #track tracked} futures that are still pending with an
+   * {@link EnvironmentDestroyedException}, and destroys the selector and the processor.
    */
   @Override
   public void destroy() {
@@ -271,8 +277,30 @@ public class Environment implements Destructible {
     for (Destructible destructible : new ArrayList<Destructible>(destructables)) {
       destructible.destroy();
     }
+    // nothing will complete them now: the selector is going away
+    pendingFutures.failAll();
     selectorManager.destroy();
     processor.destroy();
+  }
+
+  /**
+   * Registers a pending data-path future of this environment: {@link #destroy()} fails it with an
+   * {@link EnvironmentDestroyedException} (on the selector thread) if it is still pending then, instead of leaving
+   * its callers waiting forever. Once the environment is destroyed, a tracked future fails at once. A future is
+   * forgotten when it completes. Every source of a data-path future that may stay pending calls this.
+   *
+   * @param future the future
+   * @return {@code future}
+   */
+  public <T extends @Nullable Object> CompletableFuture<T> track(CompletableFuture<T> future) {
+    return pendingFutures.track(future);
+  }
+
+  /**
+   * @return how many tracked futures are still pending
+   */
+  int pendingFutureCount() {
+    return pendingFutures.size();
   }
 
   public void addDestructable(Destructible destructable) {
