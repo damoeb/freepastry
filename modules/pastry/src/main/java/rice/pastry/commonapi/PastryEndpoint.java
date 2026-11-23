@@ -594,7 +594,7 @@ public class PastryEndpoint extends PastryAppl implements Endpoint {
           if (getNodeId().equals(nextHop.getNodeId())) {
             PastryEndpointMessage pMsg = (PastryEndpointMessage) routeMessage.unwrap(deserializer);
             logger.trace("[{}] deliver {} from {}", thePastryNode, pMsg, pMsg.getSenderId());
-            application.deliver(routeMessage.getTarget(), pMsg.getMessage());
+            application.deliver(routeMessage.getTarget(), pMsg.getMessage(), routeMessage.getReceivedFrom());
             routeMessage.sendSuccess(thePastryNode.getLocalHandle());
           } else {
             // route the message

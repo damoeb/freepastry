@@ -37,6 +37,8 @@ advised of the possibility of such damage.
 
 package rice.p2p.commonapi;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  *
  *
@@ -72,6 +74,22 @@ public interface Application {
    * @param message The message being sent
    */
   public void deliver(Id id, Message message);
+
+  /**
+   * Like {@link #deliver(Id, Message)}, and also tells the application which node the message arrived from: the
+   * previous hop as the transport saw it, not a sender named inside the message. In certified mode the endpoint
+   * delivers nothing whose previous hop is not authenticated, so for a message sent directly to this node
+   * ({@code route(null, message, handle)}, delivered with a null id) the previous hop is its authenticated sender.
+   * For a message routed over several hops it is only the last relay. The default ignores the previous hop.
+   *
+   * @param id The destination id of the message, null for a message sent directly to this node
+   * @param message The message being sent
+   * @param previousHop the node the message arrived from, or null if it was created on this node or the endpoint
+   *     cannot tell (a wrapper such as multiring that calls {@link #deliver(Id, Message)})
+   */
+  default void deliver(Id id, Message message, @Nullable NodeHandle previousHop) {
+    deliver(id, message);
+  }
 
   /**
    * This method is invoked to inform the application that the given node
