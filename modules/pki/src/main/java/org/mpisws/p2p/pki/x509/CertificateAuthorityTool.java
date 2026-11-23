@@ -40,10 +40,13 @@ import java.io.Console;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.FileSystems;
 import java.util.Arrays;
@@ -53,7 +56,9 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.GeneralSecurityException;
 import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
@@ -69,9 +74,11 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
+import java.util.List;
 import javax.security.auth.x500.X500Principal;
 
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -79,24 +86,21 @@ import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.cert.CertIOException;
-import org.bouncycastle.cert.X509v1CertificateBuilder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509ExtensionUtils;
-import org.bouncycastle.cert.jcajce.JcaX509v1CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import rice.environment.Environment;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 import rice.p2p.util.SecurityUtils;
 import rice.p2p.util.tuples.Tuple;
 import rice.pastry.Id;
 import rice.pastry.standard.NodeIdCertificate;
-import rice.pastry.standard.RandomNodeIdFactory;
 
 public class CertificateAuthorityTool {
 
@@ -110,12 +114,42 @@ public class CertificateAuthorityTool {
   /** Type of the key stores this tool reads and writes (was BouncyCastle's legacy "UBER"). */
   public static final String DEFAULT_KEYSTORE_TYPE = "PKCS12";
 
+  /** Suffix of the issuance log next to the CA store {@code <name>-store}. */
+  public static final String ISSUANCE_LOG_SUFFIX = "-issued.log";
+
   X509Certificate cert;
   KeyPair keyPair;
+  /** where every certificate this CA issues is recorded, or null for none */
+  Path issuanceLog;
 
   public CertificateAuthorityTool(X509Certificate cert, KeyPair caPair) {
     this.cert = cert;
     this.keyPair = caPair;
+  }
+
+  /**
+   * Records every certificate this tool issues from now on, one line per certificate appended to file (created
+   * readable by its owner only): issue time, serial (hex), id (the common name), subject and end of validity,
+   * separated by tabs. {@link #getCATool} sets it to {@code <name>}{@value #ISSUANCE_LOG_SUFFIX}.
+   */
+  public void setIssuanceLog(Path file) {
+    this.issuanceLog = file;
+  }
+
+  /** Appends issued to the issuance log; issuing fails if it cannot be recorded. */
+  private X509Certificate recordIssuance(String commonName, X509Certificate issued) {
+    if (issuanceLog == null) return issued;
+    String line = String.join("\t", DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
+        "serial=" + issued.getSerialNumber().toString(16), "id=" + commonName,
+        "subject=" + issued.getSubjectX500Principal().getName(),
+        "notAfter=" + DateTimeFormatter.ISO_INSTANT.format(issued.getNotAfter().toInstant()));
+    try {
+      if (!Files.exists(issuanceLog)) newPrivateOutputStream(issuanceLog).close();
+      Files.write(issuanceLog, List.of(line), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+    } catch (IOException ioe) {
+      throw new UncheckedIOException("Could not record the issued certificate in " + issuanceLog, ioe);
+    }
+    return issued;
   }
 
   public X509Certificate getCertificate() {
@@ -145,6 +179,9 @@ public class CertificateAuthorityTool {
       caCert = (X509Certificate)store.getCertificate(CA_STORE_CERT);
       PrivateKey priv = (PrivateKey)store.getKey(CA_STORE_PRIVATE, chars);
       caPair = new KeyPair(caCert.getPublicKey(),priv);
+      if (caCert.getVersion() < 3) {
+        System.err.println("The CA certificate in "+caStoreFile+" is version 1 (no basicConstraints CA:true); re-issue it with -reissue-ca");
+      }
     } else {
       // make a self-signed cert
       Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(10).toInstant();
@@ -152,29 +189,65 @@ public class CertificateAuthorityTool {
       caCert = pair.first();
       caPair = pair.second();
 
-      Certificate[] chain = new Certificate[1];
-      chain[0] = caCert;
-
       System.out.println(caCert);
 
-      // store it
-      // PKCS12 cannot hold a bare public key: it is read back from the certificate
-      KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
-      store.load(null, null);
-      store.setKeyEntry(CA_STORE_PRIVATE, caPair.getPrivate(), chars, chain);
-      store.setCertificateEntry(CA_STORE_CERT, caCert);
-
-      try (OutputStream fos = newPrivateOutputStream(caStoreFile)) {
-        store.store(fos, chars);
-      }
+      writeCAStore(caStoreFile, caCert, caPair.getPrivate(), chars);
     }
-    return new CertificateAuthorityTool(caCert, caPair);
+    CertificateAuthorityTool tool = new CertificateAuthorityTool(caCert, caPair);
+    tool.setIssuanceLog(Path.of(CN+ISSUANCE_LOG_SUFFIX));
+    return tool;
+  }
+
+  private static void writeCAStore(Path caStoreFile, X509Certificate caCert, PrivateKey caKey, char[] chars) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+    // PKCS12 cannot hold a bare public key: it is read back from the certificate
+    KeyStore store = KeyStore.getInstance(DEFAULT_KEYSTORE_TYPE);
+    store.load(null, null);
+    store.setKeyEntry(CA_STORE_PRIVATE, caKey, chars, new Certificate[] {caCert});
+    store.setCertificateEntry(CA_STORE_CERT, caCert);
+
+    try (OutputStream fos = newPrivateOutputStream(caStoreFile)) {
+      store.store(fos, chars);
+    }
+  }
+
+  /**
+   * Replaces the CA certificate in the store {@code <CN>-store} with a version 3 one for the same key and subject
+   * (see {@link #reissueCA}), valid for ten years from now. Node certificates issued before stay valid under it;
+   * nodes need the new CA certificate in their key stores.
+   *
+   * @return the tool with the new CA certificate
+   * @throws IOException if there is no such store
+   */
+  public static CertificateAuthorityTool reissueCATool(String CN, char[] chars) throws GeneralSecurityException, IOException {
+    Path caStoreFile = Path.of(CN+"-store");
+    if (!Files.exists(caStoreFile)) throw new IOException("No CA store "+caStoreFile);
+    CertificateAuthorityTool old = getCATool(CN, chars);
+    X509Certificate reissued = reissueCA(old.getCertificate(), old.keyPair, Instant.now(), ZonedDateTime.now(ZoneOffset.UTC).plusYears(10).toInstant());
+    writeCAStore(caStoreFile, reissued, old.keyPair.getPrivate(), chars);
+    CertificateAuthorityTool tool = new CertificateAuthorityTool(reissued, old.keyPair);
+    tool.setIssuanceLog(Path.of(CN+ISSUANCE_LOG_SUFFIX));
+    return tool;
+  }
+
+  /**
+   * A version 3 CA certificate for an existing CA: same key, same subject and same serial number as caCertificate,
+   * new validity period. Node certificates issued under caCertificate verify under the new one, also by PKIX path
+   * building: their authority key identifier names the CA key by the SHA-1 hash of its encoded public key and the
+   * old certificate's issuer and serial number, all of which the new certificate keeps.
+   *
+   * @param caKeys the CA's key pair; its public key must be the one in caCertificate
+   */
+  public static X509Certificate reissueCA(X509Certificate caCertificate, KeyPair caKeys, Instant startDate, Instant expiryDate) throws CertificateEncodingException, InvalidKeyException {
+    if (!caCertificate.getPublicKey().equals(caKeys.getPublic())) {
+      throw new InvalidKeyException("The key pair is not the one of the CA certificate "+caCertificate.getSubjectX500Principal());
+    }
+    return generateCA(caCertificate.getSubjectX500Principal(), startDate, expiryDate, caCertificate.getSerialNumber(), caKeys, DEFAULT_SIGNATURE_ALGORITHM);
   }
 
   public static Tuple<X509Certificate, KeyPair> generateNewCA(String CN, Instant expiryDate) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException, InvalidAlgorithmParameterException {
     KeyPair caPair = generateKeyPair();
 
-    X509Certificate cert = generateNewCA(CN,Instant.now(), expiryDate, 1, caPair, DEFAULT_SIGNATURE_ALGORITHM);
+    X509Certificate cert = generateCA(new X500Principal("CN="+CN), Instant.now(), expiryDate, randomSerial(), caPair, DEFAULT_SIGNATURE_ALGORITHM);
 
     return new Tuple<X509Certificate, KeyPair>(cert,caPair);
   }
@@ -191,15 +264,31 @@ public class CertificateAuthorityTool {
   /**
    *
    * @param CN common name
-   * @return the CA cert
+   * @return the CA cert, see {@link #generateCA}
    */
   public static X509Certificate generateNewCA(String CN, Instant startDate, Instant expiryDate, long serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    X500Principal dnName = new X500Principal("CN="+CN);
+    return generateCA(new X500Principal("CN="+CN), startDate, expiryDate, BigInteger.valueOf(serialNumber), keyPair, signatureAlgorithm);
+  }
 
-    X509v1CertificateBuilder certGen = new JcaX509v1CertificateBuilder(
-        dnName, BigInteger.valueOf(serialNumber), Date.from(startDate), Date.from(expiryDate),
+  /**
+   * A self-signed version 3 CA certificate (was version 1, which strict PKIX consumers do not accept as a CA):
+   * basicConstraints CA:true with path length 0 (it signs node certificates only), keyUsage keyCertSign and cRLSign,
+   * both critical, and a subject key identifier, the SHA-1 hash of the encoded public key (the key identifier that
+   * node certificates issued under the earlier version 1 CA certificate carry).
+   */
+  static X509Certificate generateCA(X500Principal dnName, Instant startDate, Instant expiryDate, BigInteger serialNumber, KeyPair keyPair, String signatureAlgorithm) throws CertificateEncodingException, InvalidKeyException {
+    X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
+        dnName, serialNumber, Date.from(startDate), Date.from(expiryDate),
         dnName,                                         // note: same as issuer
         keyPair.getPublic());
+    try {
+      byte[] keyIdentifier = MessageDigest.getInstance("SHA-1").digest(keyPair.getPublic().getEncoded());
+      certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(0));
+      certGen.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
+      certGen.addExtension(Extension.subjectKeyIdentifier, false, new SubjectKeyIdentifier(keyIdentifier));
+    } catch (CertIOException | NoSuchAlgorithmException e) {
+      throw new CertificateEncodingException(e);
+    }
 
     return generate(certGen.build(signer(signatureAlgorithm, keyPair.getPrivate())));
   }
@@ -226,12 +315,28 @@ public class CertificateAuthorityTool {
 
   public X509Certificate sign(String CN, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Instant exp = ZonedDateTime.now(ZoneOffset.UTC).plusYears(1).toInstant();
-    return sign(CN,key,Instant.now(),exp,randomSerial(),cert,keyPair.getPrivate());
+    return recordIssuance(CN, sign(CN,key,Instant.now(),exp,randomSerial(),cert,keyPair.getPrivate()));
+  }
+
+  /**
+   * @return a node id the CA chooses: 160 bits from {@link SecureRandom}, so that a requester cannot place itself
+   *     next to a key it wants to attack (was {@code RandomNodeIdFactory}, a {@code java.util.Random} seeded from
+   *     the clock and the interface addresses)
+   */
+  public static Id randomNodeId() {
+    return Id.makeRandomId(random);
+  }
+
+  /** Issues the certificate for a node id the CA chooses ({@link #randomNodeId()}), see {@link #signNodeId(Id, PublicKey)}. */
+  public X509Certificate signRandomNodeId(PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
+    return signNodeId(randomNodeId(), key);
   }
 
   /**
    * Issues the certificate that binds a node id to a public key, valid for one year: the subject is
-   * {@link NodeIdCertificate#subjectFor(Id)}, which peers and {@code CertifiedNodeIdFactory} check.
+   * {@link NodeIdCertificate#subjectFor(Id)}, which peers and {@code CertifiedNodeIdFactory} check. The id is the
+   * caller's choice: an operator who lets requesters choose it gives up Sybil resistance (a requester can pick an
+   * id next to a target key); use {@link #signRandomNodeId} for ids nobody chooses.
    */
   public X509Certificate signNodeId(Id id, PublicKey key) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
     Instant now = Instant.now();
@@ -243,7 +348,7 @@ public class CertificateAuthorityTool {
    * @param notAfter end of the validity period
    */
   public X509Certificate signNodeId(Id id, PublicKey key, Instant notBefore, Instant notAfter) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    return sign(id.toStringFull(), key, notBefore, notAfter, randomSerial(), cert, keyPair.getPrivate());
+    return recordIssuance(id.toStringFull(), sign(id.toStringFull(), key, notBefore, notAfter, randomSerial(), cert, keyPair.getPrivate()));
   }
 
   public static X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber, X509Certificate caCert, PrivateKey privateKey) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
@@ -293,7 +398,7 @@ public class CertificateAuthorityTool {
   }
 
   public X509Certificate sign(String CN, PublicKey publicKey, Instant expiryDate, long serialNumber) throws CertificateParsingException, CertificateEncodingException, InvalidKeyException, IllegalStateException, NoSuchProviderException, NoSuchAlgorithmException, SignatureException {
-    return sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate());
+    return recordIssuance(CN, sign(CN,publicKey,expiryDate,serialNumber,cert,keyPair.getPrivate()));
   }
 
 
@@ -352,24 +457,34 @@ public class CertificateAuthorityTool {
   public static final String CA_STORE_PRIVATE = NodeIdCertificate.NODE_KEY_ALIAS;
   public static final String CA_STORE_CERT = NodeIdCertificate.CA_CERT_ALIAS;
 
+  /** Operator flag that allows {@code -cn}: without it the CA chooses every node id. */
+  public static final String ALLOW_CHOSEN_ID_FLAG = "-allow-chosen-id";
+  /** Command that re-issues the CA certificate as version 3 for the same key and subject, see {@link #reissueCATool}. */
+  public static final String REISSUE_CA_COMMAND = "-reissue-ca";
+
   /**
    *
-   * -ca CAname -cn newCN [-store] [-test]
+   * -ca CAname [-cn newCN -allow-chosen-id] [-store] [-test] | -ca CAname -reissue-ca
    * <p>
    * The password of the CA store comes from the environment variable {@value #CA_PASSWORD_ENV}, else it is asked
    * on the console; it must not be empty. The old {@code -p password} option is refused: a password on the command
    * line is visible to every user of the machine in {@code ps}. With {@code -store} the node store and its key get
    * the password in {@value #NODE_PASSWORD_ENV} (or the console), and the file is readable by its owner only.
    * <p>
-   * Without -cn the node gets a random node id as its common name, which binds the id to the
-   * certificate (see {@link NodeIdCertificate}); -cn must be a node id (40 hex digits) to be usable with
-   * {@code CertifiedNodeIdFactory}.
+   * Without -cn the node gets a random node id the CA chooses ({@link #randomNodeId()}) as its common name, which
+   * binds the id to the certificate (see {@link NodeIdCertificate}). -cn lets whoever asks for the certificate pick
+   * the id, and is refused unless the operator adds {@value #ALLOW_CHOSEN_ID_FLAG} (tests, migrating existing ids);
+   * it must be a node id (40 hex digits) to be usable with {@code CertifiedNodeIdFactory}. Every certificate is
+   * recorded in {@code <CAname>}{@value #ISSUANCE_LOG_SUFFIX}. {@value #REISSUE_CA_COMMAND} replaces the CA
+   * certificate with a version 3 one for the same key and subject (see {@link #reissueCATool}) and issues nothing.
    */
   public static void main(String[] args) throws Exception {
     String caName = "MyCA";
     String CN = null;
     boolean test = false;
     boolean store = false;
+    boolean allowChosenId = false;
+    boolean reissueCA = false;
     for (int c = 0; c < args.length; c++) {
       if (args[c].equalsIgnoreCase("-p")) {
         throw new IllegalArgumentException("-p is no longer supported: a password on the command line is visible in ps. Set "+CA_PASSWORD_ENV+" or enter it on the console.");
@@ -381,17 +496,28 @@ public class CertificateAuthorityTool {
         test = true;
       } else if (args[c].equalsIgnoreCase("-store")) {
         store = true;
+      } else if (args[c].equalsIgnoreCase(ALLOW_CHOSEN_ID_FLAG)) {
+        allowChosenId = true;
+      } else if (args[c].equalsIgnoreCase(REISSUE_CA_COMMAND)) {
+        reissueCA = true;
       }
+    }
+    if (CN != null && !allowChosenId) {
+      throw new IllegalArgumentException("-cn lets the requester choose the node id (and place itself next to a target key); the CA chooses ids unless the operator adds "+ALLOW_CHOSEN_ID_FLAG);
     }
 
     char[] chars = readPassword(CA_PASSWORD_ENV, "Password of the CA store "+caName+"-store: ");
+    if (reissueCA) {
+      CertificateAuthorityTool reissued = reissueCATool(caName, chars);
+      Arrays.fill(chars, '\0');
+      System.out.println(reissued.getCertificate());
+      System.out.println("Re-issued the CA certificate in "+caName+"-store; put it into the node stores (alias "+NodeIdCertificate.CA_CERT_ALIAS+")");
+      return;
+    }
     char[] nodePw = store ? readPassword(NODE_PASSWORD_ENV, "Password of the new node store: ") : null;
 
-    Environment env = null;
     if (CN == null) {
-      env = new Environment();
-      Id id = new RandomNodeIdFactory(env).generateNodeId();
-      CN = id.toStringFull();
+      CN = randomNodeId().toStringFull();
     }
 
     CertificateAuthorityTool caTool = getCATool(caName,chars);
@@ -481,6 +607,5 @@ public class CertificateAuthorityTool {
     }
     Arrays.fill(chars, '\0');
     if (nodePw != null) Arrays.fill(nodePw, '\0');
-    if (env != null) env.destroy();
   }
 }
