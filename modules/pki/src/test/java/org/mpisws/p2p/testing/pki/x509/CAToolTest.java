@@ -140,4 +140,41 @@ public class CAToolTest {
     assertTrue(first.bitLength() > 64 && second.bitLength() > 64, "not a millisecond clock: " + first);
     assertFalse(first.equals(second));
   }
+
+  @Test
+  void caCertificateIsAVersion3CaForCertificateSigning() throws Exception {
+    X509Certificate ca = CertificateAuthorityTool.getCATool(new File(dir.toFile(), "TestCA").getPath(), "pw".toCharArray()).getCertificate();
+
+    assertEquals(3, ca.getVersion());
+    assertTrue(ca.getBasicConstraints() >= 0, "basicConstraints CA:true");
+    assertTrue(ca.getCriticalExtensionOIDs().contains("2.5.29.19"), "basicConstraints is critical");
+    boolean[] usage = ca.getKeyUsage();
+    assertTrue(usage != null && usage[5], "keyCertSign");
+    assertTrue(ca.getCriticalExtensionOIDs().contains("2.5.29.15"), "keyUsage is critical");
+  }
+
+  @Test
+  void requesterChosenIdIsRefusedWithoutOperatorFlag() {
+    String ca = new File(dir.toFile(), "TestCA").getPath();
+
+    IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> CertificateAuthorityTool.main(new String[] {"-ca", ca, "-cn", "0000000000000000000000000000000000000001"}));
+    assertTrue(e.getMessage().contains("-cn"), e.getMessage());
+    assertFalse(new File(ca + "-store").exists(), "refused before the CA is touched");
+  }
+
+  @Test
+  void everyIssuanceIsAppendedToTheIssuanceLog() throws Exception {
+    String cn = new File(dir.toFile(), "TestCA").getPath();
+    CertificateAuthorityTool certificateAuthorityTool = CertificateAuthorityTool.getCATool(cn, "pw".toCharArray());
+    java.security.PublicKey key = CertificateAuthorityTool.generateKeyPair().getPublic();
+    rice.pastry.Id id = rice.pastry.Id.build("00000000000000000000000000000000000000ab");
+
+    X509Certificate first = certificateAuthorityTool.signNodeId(id, key);
+    X509Certificate second = CertificateAuthorityTool.getCATool(cn, "pw".toCharArray()).signNodeId(id, key);
+
+    java.util.List<String> lines = Files.readAllLines(Path.of(cn + "-issued.log"));
+    assertEquals(2, lines.size(), lines.toString());
+    assertTrue(lines.get(0).contains(first.getSerialNumber().toString(16)) && lines.get(0).contains(id.toStringFull()), lines.get(0));
+    assertTrue(lines.get(1).contains(second.getSerialNumber().toString(16)), lines.get(1));
+  }
 }
