@@ -42,6 +42,7 @@ import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -153,6 +154,19 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
 
   boolean handshakeFail = false;
 
+  /** the wire returned the end of its stream after the handshake (selector thread only) */
+  private boolean hasPeerClosedWire = false;
+  /** read(ByteBuffer) returned -1 (selector thread only) */
+  private boolean hasDeliveredEndOfStream = false;
+
+  /**
+   * Whether no more plaintext can come: the peer sent close_notify, or its TCP connection ended (without close_notify
+   * that is a truncation, which the reader sees as the same end of the stream; what is buffered is still delivered).
+   */
+  private boolean isAtEndOfStream() {
+    return hasPeerClosedWire || engine.isInboundDone();
+  }
+
   @Override
   public void receiveSelectResult(P2PSocket<Identifier> socket,
       boolean canRead, boolean canWrite) throws IOException {
@@ -166,18 +180,15 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         iterator.remove();
       }
       if (writeMe.isEmpty()) {
-        if (registeredToWrite != null) {
-          P2PSocketReceiver<Identifier> temp = registeredToWrite;
-          registeredToWrite = null;
-          temp.receiveSelectResult(this, false, true);
-        }
+        deliverWritable();
       } else {
         socket.register(false, true, this);
       }
     }
     if (canRead) {
       if (doneHandshaking) {
-        if (read() && registeredToRead != null) {
+        // bytes, or the end of the stream: either way the reader must hear of it
+        if ((read() || hasPeerClosedWire) && registeredToRead != null) {
           deliverBufferedReads(true);
         }
       } else {
@@ -187,10 +198,21 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
   }
 
+  /**
+   * Reads cipher text off the wire into unwrapMe.
+   *
+   * @return whether bytes were read
+   */
   protected boolean read() throws IOException {
+    if (hasPeerClosedWire) return false;
     ByteBuffer foo = ByteBuffer.allocate(netBufferMax);
     if (socket.read(foo) < 0) {
-      fail(new ClosedChannelException("Unexpected socket closure "+this));
+      if (doneHandshaking) {
+        // after the handshake the reader learns of it: read(ByteBuffer) returns -1 once the plaintext is consumed
+        hasPeerClosedWire = true;
+      } else {
+        fail(new ClosedChannelException("Unexpected socket closure "+this));
+      }
     }
     if (foo.position() != 0) {
       foo.flip();
@@ -387,17 +409,47 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     }
 
     if (wantToWrite) {
-      if (writeMe.isEmpty()) {
+      // TODO: check that no other receiver is registered to write; it would be silently replaced
+      registeredToWrite = receiver;
+      if (!deliveringWritable) {
+        // a receiver registering from inside a write callback is served by the running loop, not by a nested call
+        deliverWritable();
+      }
+    }
+  }
+
+  /** true while deliverWritable() runs write callbacks; a register() from one of them only records the receiver */
+  private boolean deliveringWritable = false;
+
+  /**
+   * Tells the receiver registered to write that it can write, as long as no cipher text waits for the wire, one
+   * callback after another in a loop: a receiver that writes a little and registers again is called again by this
+   * loop, not from inside its own register(), so the stack depth does not grow with the writes. After
+   * {@link SSLTransportLayer#getMaxReadCallbacksPerSelect()} callbacks (the same budget as for reads) the rest waits
+   * for a later turn of the selector, so that one socket cannot keep the selector thread from other sockets.
+   */
+  private void deliverWritable() {
+    if (deliveringWritable) return; // the running loop calls the receiver that registered meanwhile
+    deliveringWritable = true;
+    try {
+      int callbacks = 0;
+      P2PSocketReceiver<Identifier> receiver;
+      while ((receiver = registeredToWrite) != null) {
+        if (!writeMe.isEmpty() || callbacks >= sslTL.getMaxReadCallbacksPerSelect()) {
+          // the wire calls receiveSelectResult() when it can take more, at the latest on the next turn
+          socket.register(false, true, this);
+          return;
+        }
+        registeredToWrite = null;
+        callbacks++;
         try {
           receiver.receiveSelectResult(this, false, true);
         } catch (IOException ioe) {
           receiver.receiveException(this, ioe);
         }
-      } else {
-        // TODO: check that no other receiver is registered to write; it would be silently replaced
-        registeredToWrite = receiver;
-        socket.register(false, true, this);
       }
+    } finally {
+      deliveringWritable = false;
     }
   }
 
@@ -429,9 +481,14 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         if (!(bytesJustRead && callbacks == 0)) {
           try {
             if (!hasBufferedPlaintext()) {
-              // nothing decrypted is left: wait for the wire
-              socket.register(true, false, this);
-              return;
+              if (isAtEndOfStream()) {
+                // the receiver reads -1, once: after that it is not called again
+                if (hasDeliveredEndOfStream) return;
+              } else {
+                // nothing decrypted is left: wait for the wire
+                socket.register(true, false, this);
+                return;
+              }
             }
           } catch (SSLException ssle) {
             registeredToRead = null;
@@ -507,6 +564,10 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
         }
       }
     }
+    if (dsts.position() == start && dsts.hasRemaining() && readMe.isEmpty() && isAtEndOfStream()) {
+      hasDeliveredEndOfStream = true;
+      return -1;
+    }
     return dsts.position()-start;
   }
 
@@ -548,8 +609,22 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     engine.closeOutbound();
   }
 
+  /**
+   * The wire socket failed (for example a connection reset). During the handshake that fails the handshake; after it
+   * the receivers registered to read and to write are told, as a plain socket would tell them.
+   */
   @Override
   public void receiveException(P2PSocket<Identifier> socket, Exception ioe) {
-    continuation.receiveException(ioe);
+    if (!doneHandshaking) {
+      continuation.receiveException(ioe);
+      return;
+    }
+    P2PSocketReceiver<Identifier> reader = registeredToRead;
+    P2PSocketReceiver<Identifier> writer = registeredToWrite;
+    registeredToRead = null;
+    registeredToWrite = null;
+    if (reader != null) reader.receiveException(this, ioe);
+    // the same receiver may be registered for both: tell it once
+    if (writer != null && !Objects.equals(writer, reader)) writer.receiveException(this, ioe);
   }
 }
