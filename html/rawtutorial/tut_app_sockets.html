@@ -41,14 +41,14 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <a name="intro"/><h2>Explanation</h2>
 <h3>Overview</h3>
-<p>Similar to the selection mechanism in Java's non-blocking I/O facility, FreePastry notifies you of events (can read / can write / socket available), and then your code can handle the events immeadiately or later.  FreePastry always makes these notifications by calling your implementation of the AppSocketReceiver on the Slector Thread.  Since these calls are issued on the FreePastry's network thread, if you must do computationally intense or blocking I/O operations you need to do so on a different thread.  If you spend too much time on FreePastry's selector you will interfere with overlay maintenance and responses to liveness checks, which will result in degraded performance.  You can do time consuming operations on your own thread or on FreePastry's <a href="http://freepastry.org/FreePastry/javadoc20b/rice/environment/processing/Processor.html">Processor or Blocking-I/O threads</a> before calling <code>read()</code>/<code>write()</code>.  See the <a href="tut_environment.html#lesson0b">Environment tutorial</a> for more information.</i></p>
+<p>Similar to the selection mechanism in Java's non-blocking I/O facility, FreePastry notifies you of events (can read / can write / socket available), and then your code can handle the events immeadiately or later.  FreePastry always makes these notifications by calling your implementation of the AppSocketReceiver on the Slector Thread.  Since these calls are issued on the FreePastry's network thread, if you must do computationally intense or blocking I/O operations you need to do so on a different thread.  If you spend too much time on FreePastry's selector you will interfere with overlay maintenance and responses to liveness checks, which will result in degraded performance.  You can do time consuming operations on your own thread or on FreePastry's <code>Processor or Blocking-I/O threads</code> before calling <code>read()</code>/<code>write()</code>.  See the <a href="tut_environment.html#lesson0b">Environment tutorial</a> for more information.</i></p>
 
-<p>Unlike FreePastry's routing/messaging interface, the AppSocket interface does not use any serialization technique.  You will simply be able to send/receive <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/nio/ByteBuffer.html">ByteBuffer</a>s.</p>
+<p>Unlike FreePastry's routing/messaging interface, the AppSocket interface does not use any serialization technique.  You will simply be able to send/receive <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/ByteBuffer.html">ByteBuffer</a>s.</p>
 
 
 <h3>Why may applications need their own socket interface?</h3>
 <ul>
-  <li>Complete control of serialization of data: No need to chunk or aggregate into individual messages.  No need to use Java Serialization or FreePastry serialization which may not be optimal for bulk data transfers.</li>
+  <li>Complete control of serialization of data: No need to chunk or aggregate into individual messages.  No need to use FreePastry's message serialization, which may not be optimal for bulk data transfers.</li>
   
   <li>Control resources more closely, and provide end to end flow control:
     <p>For example, your application is disk bound.  It is receiving a bulk data transfer over FreePastry.  You accomplished this by chunking the data into multiple messages.  If your receiver cannot write the items to disk fast enough, you have 3 options:</p>
@@ -78,18 +78,18 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 <p>Let's take a look at the code to do this.</p>
 
 <h3>Download the tutorial files: 
-<a href="./src/appsocket/Tutorial.java">Tutorial.java</a>
-<a href="./src/appsocket/MyApp.java">MyApp.java</a>, into a directory called rice/tutorial/appsocket/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/appsocket/Tutorial.java">Tutorial.java</a>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/appsocket/MyApp.java">MyApp.java</a>, into a directory called rice/tutorial/appsocket/.</h3>
 
-<p>First the command line args are more sophisticated.  You can either use the previous syntax of <code>localbindport bootIP bootPort numNodes</code> to use sockets, or specify <code>-direct numNodes</code> to use the simulator.</p>
+<p>First the command line args are more sophisticated.  You can either use the previous syntax of <code>localbindport bootIP bootPort numNodes</code> to use sockets, or specify <code>-direct numNodes</code> to use the simulator.  Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>, and run the tutorial from it.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.</p>
 <pre>
-Usage: 
-java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes
+Usage:
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial localbindport bootIP bootPort numNodes
   or
-java [-cp FreePastry-<version>.jar] rice.tutorial.appsocket.Tutorial -direct numNodes
+java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.appsocket.Tutorial -direct numNodes
 
-example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001 10
-example java rice.tutorial.DistTutorial -direct 10
+example java rice.tutorial.appsocket.Tutorial 9001 pokey.cs.almamater.edu 9001 10
+example java rice.tutorial.appsocket.Tutorial -direct 10
 </pre>
 
 
@@ -100,52 +100,52 @@ example java rice.tutorial.DistTutorial -direct 10
       if (args[0].equalsIgnoreCase("-direct")) {
         useDirect = true;
       } else {
-        useDirect = false; 
+        useDirect = false;
       }
-            
+
       // Loads pastry settings
       Environment env;
       if (useDirect) {
         env = Environment.directEnvironment();
       } else {
-        env = new Environment(); 
-        
+        env = new Environment();
+
         // disable the UPnP setting (in case you are testing this on a NATted LAN)
-        env.getParameters().setString("nat_search_policy","never");      
+        env.getParameters().setString("nat_search_policy","never");
       }
-    
+
       int bindport = 0;
       InetSocketAddress bootaddress = null;
-      
+
       // the number of nodes to use is always the last param
-      int numNodes = Integer.parseInt(args[args.length-1]);    
-      
+      int numNodes = Integer.parseInt(args[args.length-1]);
+
       if (!useDirect) {
         // the port to use locally
         bindport = Integer.parseInt(args[0]);
-        
+
         // build the bootaddress from the command line args
         InetAddress bootaddr = InetAddress.getByName(args[1]);
         int bootport = Integer.parseInt(args[2]);
-        bootaddress = new InetSocketAddress(bootaddr,bootport);    
-      }      
-</pre> 
+        bootaddress = new InetSocketAddress(bootaddr,bootport);
+      }
+</pre>
 
 The constructor is similar to previous tutorials, and will simply ignore the irrevelent arguments if using the simulator.
 
 <pre>
   /**
-   * This constructor launches numNodes PastryNodes.  They will bootstrap 
+   * This constructor launches numNodes PastryNodes.  They will bootstrap
    * to an existing ring if one exists at the specified location, otherwise
    * it will start a new ring.
-   * 
-   * @param bindport the local port to bind to 
+   *
+   * @param bindport the local port to bind to
    * @param bootaddress the IP:port of the node to boot from
    * @param numNodes the number of nodes to create in this JVM
    * @param env the environment for these nodes
    * @param useDirect true for the simulator, false for the socket protocol
    */
-  public DistTutorial(int bindport, InetSocketAddress bootaddress, int numNodes, Environment env, boolean useDirect) throws Exception {
+  public Tutorial(int bindport, InetSocketAddress bootaddress, int numNodes, Environment env, boolean useDirect) throws Exception {
 </pre>
 
 This code builds the appropriate PastryNodeFactory.
@@ -154,23 +154,36 @@ This code builds the appropriate PastryNodeFactory.
     // construct the PastryNodeFactory
     PastryNodeFactory factory;
     if (useDirect) {
-      NetworkSimulator sim = new EuclideanNetwork(env);
+      NetworkSimulator&lt;DirectNodeHandle,RawMessage&gt; sim = new EuclideanNetwork&lt;DirectNodeHandle,RawMessage&gt;(env);
       factory = new DirectPastryNodeFactory(nidFactory, sim, env);
     } else {
       factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
     }
 </pre>
 
-This code properly manages the bootHandle.
+This code properly manages the bootHandle.  In the simulator, the first node boots alone and the others boot from its handle; with sockets, every node boots from the boot address.  The loop then waits with <code>node.awaitReadyOrJoinFailed()</code> until the node is ready, as in the earlier lessons.
 
 <pre>
+      node.boot(bootHandle);
+
       if (bootHandle == null) {
         if (useDirect) {
           bootHandle = node.getLocalHandle();
         } else {
           // This will return null if we there is no node at that location
-          bootHandle = ((SocketPastryNodeFactory)factory).getNodeHandle(bootaddress);
+          bootHandle = bootaddress;
         }
+      }
+
+      // the node may require sending several messages to fully boot into the ring
+      while(!node.isReady() &amp;&amp; !node.joinFailed()) {
+        // delay so we don't busy-wait
+        node.awaitReadyOrJoinFailed(500, TimeUnit.MILLISECONDS);
+      }
+
+      // abort if can't join
+      if (node.joinFailed()) {
+        throw new IOException("Could not join the FreePastry ring.  Reason:"+node.joinFailedReason());
       }
 </pre>
 
@@ -184,9 +197,9 @@ We must note a few more changes to the code before proceeding.
 </ul>
 
 <a name="appsockets"/><h2>AppSockets</h2>
-<p>When requested, FreePastry will provide your application with an <a href="http://freepastry.org/FreePastry/javadoc20b/rice/p2p/commonapi/appsocket/AppSocket.html">AppSocket</a> which you will use to read and write your data.  The <code>read()</code> and <code>write()</code> calls are non-blocking, and calling them when the socket is not ready to read or write will be a waste of time: it will read or write zero bytes.  Thus FreePastry needs to notify you when the socket is ready.</p>
+<p>When requested, FreePastry will provide your application with an <code>AppSocket</code> which you will use to read and write your data.  The <code>read()</code> and <code>write()</code> calls are non-blocking, and calling them when the socket is not ready to read or write will be a waste of time: it will read or write zero bytes.  Thus FreePastry needs to notify you when the socket is ready.</p>
 
-<p>The <a href="http://freepastry.org/FreePastry/javadoc20b/rice/p2p/commonapi/appsocket/AppSocketReceiver.html">AppSocketReceiver</a> interface is how FreePastry's Application Socket Interface notifies your application that it may read or write or that a new socket is available.  As you can see from the JavaDoc, it has 3 callbacks:
+<p>The <code>AppSocketReceiver</code> interface is how FreePastry's Application Socket Interface notifies your application that it may read or write or that a new socket is available.  As you can see from the JavaDoc, it has 3 callbacks:
 <ul>
   <li><code>receiveSocket()</code> -- called when the socket has been established.</li>
   <li><code>receiveSelectResult()</code> -- called whenever your app has permission to read or write.</li>
@@ -213,16 +226,16 @@ We must note a few more changes to the code before proceeding.
 <p>Our example will skip the routing/messaging component from the above example.  We expect that you should be able to accomplish this if you have completed tutorial less #4.</p>
 
 <a name="accept"/><h2>Accepting a Socket</h2>
-Take a look at the constructor of <a href="./src/appsocket/MyApp.java">MyApp.java</a>.
+Take a look at the constructor of <a href="../../modules/tutorials/src/main/java/rice/tutorial/appsocket/MyApp.java">MyApp.java</a>.
 <p>To accept a socket, you must call <code>endpoint.accept()</code> with an AppSocketReceiver.  When another node's application attempts to <a href="#connect">connect</a> to your application, the new AppSocket will be delivered via the <code>receiveSocket()</code> method on this AppSocketReceiver.</p>
 
 
 <pre>
     // register the endpoint
     this.endpoint = node.buildEndpoint(this, "myinstance");
-    
+
     ...
-    
+
     // example receiver interface
     endpoint.accept(new AppSocketReceiver() {
       /**
@@ -230,24 +243,22 @@ Take a look at the constructor of <a href="./src/appsocket/MyApp.java">MyApp.jav
        */
       public void receiveSocket(AppSocket socket) {
         ... handle socket here ...
-        
+
         // it's critical to call this to be able to accept multiple times
         endpoint.accept(this);
-      }    
-      
+      }
+
       ... rest of the interface ...
-    }
-    
-    ...
-    
+    });
+
     // register after we have set the AppSocketReceiver
     endpoint.register();
 
 </pre>
 
-Note that we call <code>endpoint.accept()</code> before calling endpoint.register() so we can guarantee that it is ready before the applicaion completes registration.  <i>If we do this later in the code, it is possible that a connecting application will receive an <a href="http://freepastry.org/FreePastry/javadoc20b/rice/p2p/commonapi/exception/NoReceiverAvailableException.html">NoReceiverAvailableException</a>.</p>  
+Note that we call <code>endpoint.accept()</code> before calling endpoint.register() so we can guarantee that it is ready before the applicaion completes registration.  <i>If we do this later in the code, it is possible that a connecting application will receive an <code>NoReceiverAvailableException</code>.</p>  
 
-<p>You may receive an <a href="http://freepastry.org/FreePastry/javadoc20b/rice/p2p/commonapi/exception/AppNotRegisteredException.html">AppNotRegisteredException</a> if you attempt to open a socket on a remote node who has not yet registered the application.</i></p>
+<p>You may receive an <code>AppNotRegisteredException</code> if you attempt to open a socket on a remote node who has not yet registered the application.</i></p>
 
 Note the other call to <code>endpoint.accept()</code> in your <code>receiveSocket()</code> method.  Each call to <code>accept()</code> is only valid for accepting 1 socket.  To accept the next socket, you must call <code>accept()</code> again.  This allows a simple flow-control mechanism for accepting sockets.  If you only want to handle transaction at a time, don't call <code>accept()</code> here, but instead do it later when you have completed your previous transaction.  If you wish to limit the number of concurrent connections to say <i>5</i> simultanious transactions, you can do so by only calling <code>accept()</code> when you have less than <i>5</i> outstanding transactions.  <i>Note, it is not possible to "pre-call" <code>accept()</code> with multiple AppSocketReceivers.  If you call <code>accept()</code> twice without first getting an AppSocketReceiver.receive() call, you will only overwrite the previous AppSocketReceiver in your endpoint.</i></p>
 
@@ -277,7 +288,7 @@ Note the other call to <code>endpoint.accept()</code> in your <code>receiveSocke
 As you can see, our example code reuses "this" AppSocketReceiver, and registers for reading only; with a 30 second timeout.  
 
 <pre>
-        // this code reuses "this" AppSocketReceiver, and registers for reading only, and a timeout of 30000. 
+        // this code reuses "this" AppSocketReceiver, and registers for reading only, and a timeout of 30000.
         socket.register(true, false, 30000, this);
 </pre>
 
@@ -285,41 +296,42 @@ Here is the code for our AppSocketReceiver.receiveSelectResult()
 
 <pre>
       public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
+        in.clear();
+        try {
+          // read from the socket into ins
+          long ret = socket.read(in);
 
-        ...
-	      
-        // read from the socket into ins
-        long ret = socket.read(ins, 0, ins.length);    
+          ...
 
-        ...
-        
-        // only need to do this if expecting more messages
-        // socket.register(true, false, 3000, this);        
+        } catch (IOException ioe) {
+          ioe.printStackTrace();
+        }
+        // if expecting more messages, call socket.register(true, false, 3000, this) here
       }
 </pre>
 
 <p>The AppSocket is the socket who can now read or write.  The booleans canRead and canWrite tell you what operations you can do on the socket.  Since we only registered to read on this socket, we don't need to check these arguments.  If you registerd to read and write when you registered the AppSocketReceiver, it would be important to examine these booleans before reading/writing from the AppSocket.</p>
 
-<p>The call to read() is pretty straightforward.  It is nearly identical to <a href="http://java.sun.com/j2se/1.4.2/docs/api/java/nio/channels/SocketChannel.html#read(java.nio.ByteBuffer[],%20int,%20int)">SocketChannel.read()</a>.</p>
+<p>The call to read() is pretty straightforward.  It is nearly identical to <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/channels/SocketChannel.html#read(java.nio.ByteBuffer)">SocketChannel.read(ByteBuffer)</a>.</p>
 
-<p>The socket.register() call works in a similar way to endpoint.accept().  You only get notified once each time you register, and must re-register for additional data once you are ready to read or write more data.  Usually, you will re-register with the same arguments as the initial registration.  In our example, we don't expect to send additional data, thus we don't re-retister.  (The call is commented out.)</p>
+<p>The socket.register() call works in a similar way to endpoint.accept().  You only get notified once each time you register, and must re-register for additional data once you are ready to read or write more data.  Usually, you will re-register with the same arguments as the initial registration.  In our example, we don't expect to send additional data, thus we don't re-register.  (The final comment shows where the call would go.)</p>
 
 <h3>Congratulations!  You now know how to register for notificaton of read events and read from the AppSocket.</h3>
 
 <a name="connect"/><h2>Connecting a Socket</h2>
-This code is in the <code>sendMyMsgDirect()</code> method of <a href="./src/appsocket/MyApp.java">MyApp.java</a>.  It is similar to the <a href="#accept">accept</a> code earlier in this tutorial.  The additional parameters in <code>endpoint.connect()</code> are the NodeHandle to connect to, and the timeout for the connection to occur (in millis).  
+This code is in the <code>sendMyMsgDirect()</code> method of <a href="../../modules/tutorials/src/main/java/rice/tutorial/appsocket/MyApp.java">MyApp.java</a>.  It is similar to the <a href="#accept">accept</a> code earlier in this tutorial.  The additional parameters in <code>endpoint.connect()</code> are the NodeHandle to connect to, and the timeout for the connection to occur (in millis).  
 <pre>
-    endpoint.connect(nh, new AppSocketReceiver() {
-      
+    endpoint.connect(nodeHandle, new AppSocketReceiver() {
+
       /**
        * Called when the socket comes available.
        */
       public void receiveSocket(AppSocket socket) {
         // handle the socket once it connects
-        
+
         ...
-        
-      }    
+
+      }
 
       /**
        * Called if there is a problem.
@@ -327,7 +339,7 @@ This code is in the <code>sendMyMsgDirect()</code> method of <a href="./src/apps
       public void receiveException(AppSocket socket, Exception e) {
         e.printStackTrace();
       }
-      
+
       ...
 
     }, 30000);
@@ -345,22 +357,23 @@ And similarly in the <code>receiveSelectResult()</code> method, we have a call t
       /**
        * Example of how to write some bytes
        */
-      public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {   
-
-	      ...
-	      
-	      long ret = socket.write(outs,0,outs.length);        
-	      
-	      ...
-	      
-        // keep writing
-        socket.register(false, true, 30000, this); 
-
-        ...  
-        
+      public void receiveSelectResult(AppSocket socket, boolean canRead, boolean canWrite) {
+        try {
+          long ret = socket.write(out);
+          // see if we are done
+          if (!out.hasRemaining()) {
+            socket.close();
+            out.clear();
+          } else {
+            // keep writing
+            socket.register(false, true, 30000, this);
+          }
+        } catch (IOException ioe) {
+          ioe.printStackTrace();
+        }
       }
     }, 30000);
-  }  
+  }
 </pre>
 
 

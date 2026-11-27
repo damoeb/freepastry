@@ -1,0 +1,13 @@
+<section id="risks" class="paper">
+<p class="eyebrow atk">LIMITS · ACCEPTED RISKS AND GAPS</p>
+<h2>Whom a node still has to trust</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:20%">Trust anchor</th><th style="width:38%">What a compromise allows</th><th style="width:42%">Status</th></tr>
+<tr><td>Bootstrap node</td><td>Answer a joiner with colluders, keep it apart from the honest ring, see who joins</td><td>Gap. It must hold a CA certificate, its answer must be authenticated and every returned handle is probed. Planned (C4): join via three or more bootstraps, density test</td></tr>
+<tr><td>Bootstrap in plain mode</td><td>Anyone on the network path can pose as it</td><td>Accepted: plain mode only on trusted networks</td></tr>
+<tr><td>The CA and its key</td><td>Mint any number of valid identities</td><td>Accepted: keep the key offline; issuances are logged. Revocation planned (C7)</td></tr>
+<tr><td>A majority of nodes</td><td>Outvote quorums and own most routes</td><td>Accepted: out of scope by design</td></tr>
+</table>
+<p class="note note-atk">How bootstraps are managed today: there is no dedicated bootstrap server. Any running node can be one, and the operator hands its address to new nodes out of band (on the command line in the tutorials). FreePastry ships no bootstrap list, rotation or health check, so operators should run several bootstrap nodes on hardened hosts.</p>
+<aside>Does a joining node trust its bootstrap? In certified mode it trusts it to be a certified node, not to tell the truth: the bootstrap only forwards the JoinRequest, but if the bootstrap or the root it reaches is malicious, the joiner cannot tell a forged leaf set from the real one, because it has only one answer. Probing proves that each returned node exists at its address, not that it is the right neighbour. Leaf-set maintenance later pulls in honest neighbours if any of them reach the new node. Wave C4 fixes this properly: ask several independent bootstraps, keep the numerically closest answers, and check that the ids in the leaf set are not suspiciously dense.</aside>
+</section>

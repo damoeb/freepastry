@@ -1,0 +1,61 @@
+<section id="eclipse" class="paper">
+<p class="eyebrow">DEFENCE · ONE ATTACK IN DETAIL</p>
+<h2>The address takeover that could cut a node off</h2>
+<div class="panels">
+<div class="panel rise" style="--i:0">
+<p class="chip chip-atk">Before: the attack works</p>
+<div class="stage">
+<svg aria-label="Before the fix: insider M connects to victim V claiming B's address; V's link to B is crossed out." width="800" height="440" viewBox="0 0 800 440" style="position:absolute;left:0;top:0;width:800px;height:440px">
+<line x1="400" y1="220" x2="120" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="120" y2="370" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="70" stroke="#9AA3B2" stroke-width="4" stroke-dasharray="12 10"/>
+<line x1="522" y1="127" x2="558" y2="163" stroke="#B4491A" stroke-width="6"/>
+<line x1="558" y1="127" x2="522" y2="163" stroke="#B4491A" stroke-width="6"/>
+<line x1="400" y1="220" x2="680" y2="370" stroke="#B4491A" stroke-width="8"/>
+<circle cx="400" cy="220" r="34" fill="#14213D"/>
+<circle cx="120" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="70" r="34" fill="#C9CED8"/>
+<circle cx="120" cy="370" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="370" r="34" fill="#B4491A"/>
+</svg>
+<p class="node-l" style="left:366px;top:200px">V</p>
+<p class="node-l" style="left:86px;top:50px">A</p>
+<p class="node-l" style="left:646px;top:50px;color:#14213D">B</p>
+<p class="node-l" style="left:86px;top:350px">C</p>
+<p class="node-l" style="left:646px;top:350px">M</p>
+<p class="tag tag-dim" style="left:350px;top:262px;width:100px;text-align:center">victim</p>
+<p class="tag tag-atk" style="left:620px;top:410px;width:120px;text-align:center">insider</p>
+<p class="tag tag-atk" style="left:560px;top:236px;width:240px">claims B’s address</p>
+<p class="tag tag-atk" style="left:380px;top:92px;width:180px">marked dead</p>
+</div>
+<p class="caption">M opens TLS with its own certificate but names B’s address in the header before TLS. V rebinds that address to M and marks B dead for good. Repeated for each neighbour, V talks only to M.</p>
+</div>
+<div class="panel rise" style="--i:1">
+<p class="chip chip-ok">After: the fix</p>
+<div class="stage">
+<svg aria-label="After the fix: V keeps its links to A, B and C; M's connection only proves M's id and is probed first." width="800" height="440" viewBox="0 0 800 440" style="position:absolute;left:0;top:0;width:800px;height:440px">
+<line x1="400" y1="220" x2="120" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="120" y2="370" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="370" stroke="#B4491A" stroke-width="5" stroke-dasharray="12 10"/>
+<circle cx="400" cy="220" r="34" fill="#14213D"/>
+<circle cx="120" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="120" cy="370" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="370" r="34" fill="#B4491A"/>
+</svg>
+<p class="node-l" style="left:366px;top:200px">V</p>
+<p class="node-l" style="left:86px;top:50px">A</p>
+<p class="node-l" style="left:646px;top:50px">B</p>
+<p class="node-l" style="left:86px;top:350px">C</p>
+<p class="node-l" style="left:646px;top:350px">M</p>
+<p class="tag tag-dim" style="left:350px;top:262px;width:100px;text-align:center">victim</p>
+<p class="tag tag-atk" style="left:620px;top:410px;width:120px;text-align:center">insider</p>
+<p class="tag tag-atk" style="left:560px;top:236px;width:240px">probed first</p>
+<p class="tag tag-ok" style="left:380px;top:92px;width:180px">stays bound</p>
+</div>
+<p class="caption">An incoming connection proves only M’s id. Only a connection V dialled proves an address, so B stays bound and M is probed at its own address before it is admitted.</p>
+</div>
+</div>
+<aside>This was finding O1 of the overlay analysis, fixed in wave A. The test builds a certified ring with real TLS and a test CA: on the old code node A marked the real B dead; now B stays in A’s leaf set and M’s handle at B’s address is neither authenticated nor admitted.</aside>
+</section>

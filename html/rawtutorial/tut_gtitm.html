@@ -25,23 +25,20 @@ href="http://freepastry.org/">FreePastry</a> version @freepastry_version@.  Main
 
 <a name="lessonGtitm"><h1>Simulator Tutorial 2</h1></a>
 <h2>FreePastry's Direct Simulator (Using Latency Matrix)</h2>
-<h3>Download the tutorial files: 
-<a href="./src/gtitm/DirectTutorial.java">DirectTutorial.java</a>
-<a href="./src/gtitm/MyApp.java">MyApp.java</a>,
-<a href="./src/gtitm/MyMsg.java">MyMsg.java</a> into a directory called rice/tutorial/gtitm/.</h3>
+<h3>Tutorial source: <code>modules/tutorials/src/main/java/rice/tutorial/gtitm/</code> (DirectTutorial.java, MyApp.java, MyMsg.java).</h3>
 
   <p>Before completing this Tutorial, we recommend completing <a href="tut_simulator.html">Simulator Tutorial</a> of the FreePastry tutorial.</p>
   <p>FreePastry's Simulator is a Discreet Event Simulator.  The puropse of this tutorial is to show you how to use the GenericNetwork to use a <b>latency matrix</b> to more accurately simulate your application with FreePastry's Discreet Event Simulator.
   
 Changes:
-  There is only 1 change to the code... the Netowork Topology, and a command line argument to specify the file name:
+  There is only one change to the code, the network topology, plus a command line argument to specify the file name (it defaults to <code>GNPINPUT</code>):
   
 <pre>
-  new GenericNetwork(env, new File(fileName))
+    NetworkSimulator&lt;DirectNodeHandle,RawMessage&gt; simulator = new GenericNetwork&lt;DirectNodeHandle,RawMessage&gt;(env, Path.of(fileName));
 </pre>  
 
 <p>The format of this file is a matrix of floats representing the table of latency values.  It should be N lines with N floats on each line representing N latencies.</p>  
-<p>You should also specify the <a href="params.html">parameter</a>: <code>pastry_direct_gtitm_max_overlay_size</code> if you want to provide an input file over 2000 nodes.  Note that FreePastry will automatically accpet a smaller file, but to save memory, it will not read more than <code>pastry_direct_gtitm_max_overlay_size</code> lines in an input file.</p>
+<p>You should also specify the <a href="params.html">parameter</a> <code>pastry_direct_gtitm_max_overlay_size</code> if you want to provide an input file over 1000 nodes (the default in <code>freepastry.params</code>). FreePastry automatically accepts a smaller file, but to save memory it will not read more than <code>pastry_direct_gtitm_max_overlay_size</code> lines of an input file. The matrix size is logged at <code>info</code> level through SLF4J.</p>
 
 <p><i>If anyone has an example of how to use the <a href="http://www.cc.gatech.edu/fac/Ellen.Zegura/graphs.html">GT-ITM Topology Generator</a> to generate a latency matrix, please let <a href="mailto:jeffh@mpi-sws.mpg.de">me</a> know so I can integrate it into this tutorial.</i></p>
   
@@ -52,13 +49,11 @@ Changes:
       simulator.setMaxSpeed(curNode+1);
 </pre>
 
-<p/>Complie and execute this code as before, but this time provide a Matrix file.  The tutorial directory includes <a href="GNPINPUT">this file</a> which must be copied to the working directory to execute this tutorial.
+<p/>Build and run this code as in the <a href="tut_simulator.html">previous tutorial</a>, but this time provide a matrix file. The tutorial directory includes <a href="GNPINPUT">this file</a> (<code>html/rawtutorial/GNPINPUT</code> in the source tree). The program opens the file name you pass as the second argument relative to the directory you start Java from (it only falls back to the bare name <code>GNPINPUT</code> if you pass none), so either run from <code>html/rawtutorial</code> or give the path from where you are, as below.
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.gtitm.DistTutorial 10 GNPINPUT</span>
-<span class="output">Size of Generic Network matrix= 1000
-:rice.pastry.direct.DirectPastryNodeFactory:0:No bootstrap node provided, starting a new ring...
-Finished creating new node Pastry node <0x7B5ABF..>
+<span class="input">java -cp modules/all/target/freepastry-@freepastry_version@-jar-with-dependencies.jar rice.tutorial.gtitm.DirectTutorial 10 html/rawtutorial/GNPINPUT</span>
+<span class="output">Finished creating new node Pastry node <0x7B5ABF..>
 Finished creating new node Pastry node <0xFFA2A6..>
 Finished creating new node Pastry node <0x74A71D..>
 Finished creating new node Pastry node <0x7B2F8A..>

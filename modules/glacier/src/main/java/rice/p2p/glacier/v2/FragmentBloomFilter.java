@@ -1,0 +1,159 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.glacier.v2;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import rice.environment.random.RandomSource;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.rawserialization.WireLengths;
+
+public class FragmentBloomFilter {
+
+  private byte bitfield[];
+  private int hashParams[];
+
+  public FragmentBloomFilter(int length, int numHashes, RandomSource rand) {
+    bitfield = new byte[(length+7)/8];
+    Arrays.fill(bitfield, (byte)0);
+
+    int numPrimeCandidates = numHashes*100;
+    if (numPrimeCandidates >= (length - 5))
+      numPrimeCandidates = length - 5;
+    int maxFactor = (int) Math.sqrt(length);
+    int offset = length - numPrimeCandidates + 1;
+    boolean[] isPrimeH = new boolean[numPrimeCandidates];
+    boolean[] isPrimeL = new boolean[maxFactor + 1];
+    Arrays.fill(isPrimeH, true);
+    Arrays.fill(isPrimeL, true);
+
+    for (int i=2; i<=maxFactor; i++) {
+      if (isPrimeL[i]) {
+        for (int j=0; j<=(int)(maxFactor/i); j++)
+          isPrimeL[j*i] = false;
+        for (int j=(int)((offset+i-1)/i); j<=(int)(length/i); j++)
+          isPrimeH[j*i - offset] = false;
+      }
+    }
+
+    hashParams = new int[numHashes];
+    for (int i=0; i<numHashes; i++) {
+      int index = rand.nextInt(numPrimeCandidates);
+      while (!isPrimeH[index])
+        index = (index+1) % numPrimeCandidates;
+      isPrimeH[index] = false;
+      hashParams[i] = offset + index;
+    }
+  }
+
+  private int[] getHashes(byte[] data) {
+    long cache = 0;
+    int ctr = 0;
+    int[] hash = new int[hashParams.length];
+    Arrays.fill(hash, 0);
+
+    for (int i=0; i<data.length; i++) {
+      cache = (cache<<8) + data[i] + ((data[i]<0) ? 256 : 0);
+      if ((++ctr == 7) || (i==(data.length-1))) {
+        for (int j=0; j<hashParams.length; j++)
+          // reduced at every step (the same remainder as at the end), so that a long key cannot overflow the sum
+          hash[j] = (int) ((hash[j] + cache % hashParams[j]) % hashParams[j]);
+        ctr = 0;
+        cache = 0;
+      }
+    }
+
+    for (int j=0; j<hashParams.length; j++)
+      hash[j] = hash[j] % hashParams[j];
+
+    return hash;
+  }
+
+  public void add(byte[] data) {
+    int[] hash = getHashes(data);
+
+
+    for (int i=0; i<hashParams.length; i++)
+      bitfield[hash[i]/8] = (byte) (bitfield[hash[i]/8] | (1<<(hash[i]&7)));
+  }
+
+  public boolean contains(byte[] data) {
+    int[] hash = getHashes(data);
+
+
+    for (int i=0; i<hashParams.length; i++)
+      if ((bitfield[hash[i]/8] & (1<<(hash[i]&7))) == 0)
+        return false;
+
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    String result = "[BV "+(bitfield.length*8)+"bit = { ";
+    for (int i=0; i<hashParams.length; i++)
+      result = result + ((i==0) ? "" : ", ") + hashParams[i];
+    result = result + " }]";
+    return result;
+  }
+
+  public FragmentBloomFilter(InputBuffer buf) throws IOException {
+    hashParams = new int[WireLengths.readInt(buf, Integer.BYTES)];
+    for (int i = 0; i < hashParams.length; i++) {
+      hashParams[i] = buf.readInt();
+    }
+    bitfield = WireLengths.readBytes(buf);
+    // each hash is a remainder modulo its parameter and indexes a bit: 0 divides by zero, more than the bits overruns
+    long bits = (long) bitfield.length * 8;
+    for (int hashParam : hashParams) {
+      if (hashParam <= 0 || hashParam > bits) {
+        throw new IOException("Hash parameter " + hashParam + " outside 1.." + bits);
+      }
+    }
+  }
+
+  public void serialize(OutputBuffer buf) throws IOException {
+    buf.writeInt(hashParams.length);
+    for (int hashParam : hashParams) {
+      buf.writeInt(hashParam);
+    }
+    buf.writeInt(bitfield.length);
+    buf.write(bitfield, 0, bitfield.length);
+  }
+}

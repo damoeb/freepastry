@@ -1,0 +1,413 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry.client;
+
+import java.io.IOException;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import rice.p2p.commonapi.appsocket.AppSocket;
+import rice.p2p.commonapi.appsocket.AppSocketReceiver;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.NodeSetEventSource;
+import rice.pastry.NodeSetListener;
+import rice.pastry.PastryNode;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.Message;
+import rice.pastry.messaging.PastryRawMessage;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RoutingTable;
+import rice.pastry.routing.SendOptions;
+import rice.pastry.standard.StandardAddress;
+
+/**
+ * A PastryAppl is an abstract class that every Pastry application
+ * extends.  This is the external Pastry API.
+ *
+ * @version $Id: PastryAppl.java 4226 2008-05-28 14:56:19Z jeffh $
+ *
+ * @author Peter Druschel
+ */
+public abstract class PastryAppl
+{
+  protected MessageDeserializer deserializer;
+
+  // private block
+  protected String instance;
+
+  protected final PastryNode thePastryNode;
+
+  private int address;
+
+  protected Logger logger;
+
+  protected Map<String, Object> options;
+
+  private class LeafSetObserver implements NodeSetListener {
+    @Override
+    public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
+      leafSetChange(handle, added);
+    }
+  }
+
+  private class RouteSetObserver implements NodeSetListener {
+    @Override
+    public void nodeSetUpdate(NodeSetEventSource nodeSetEventSource, NodeHandle handle, boolean added) {
+      routeSetChange(handle, added);
+    }
+  }
+
+  // constructor
+
+  /**
+   * Constructor.
+   *
+   * @param pn the pastry node that client will attach to.
+   */
+  public PastryAppl(PastryNode pn) {
+    this(pn, null);
+  }
+
+  /**
+   * Constructor.  This constructor will perform the same tasks as the
+   * above constructor, but will also create a Pastry address for this
+   * application, which is dependent upon the given instance name and
+   * the class name.
+   *
+   * @param pn the pastry node that client will attach to.
+   * @param instance The instance name of this appl.
+   */
+  public PastryAppl(PastryNode pn, String instance) {
+    this(pn, instance, 0, null);
+    register();
+  }
+
+  public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer deserializer) {
+    this(pn, instance, address, deserializer, null);
+  }
+
+  public PastryAppl(PastryNode pn, String instance, int address, MessageDeserializer md, Logger logger) {
+    this.address = address;
+    if (instance != null) {
+      this.instance = instance;
+    }
+    if (address == 0)
+      this.address = StandardAddress.getAddress(this.getClass(), instance, pn.getEnvironment());
+
+    thePastryNode = pn;
+    this.logger = logger;
+    if (this.logger == null) {
+      this.logger = pn.getEnvironment().getLogManager().getLogger(getClass(), instance);
+    }
+    deserializer = md;
+    if (deserializer == null)
+      deserializer = MessageDeserializer.NONE;
+  }
+
+  /**
+   * Constructor.  This constructor will perform the same tasks as the
+   * above constructor, but will also create a Pastry address for this
+   * application, using the specified port.
+   *
+   * Need to call register on this.
+   *
+   * @param pn the pastry node that client will attach to.
+   * @param port the address of this application.
+   */
+  public PastryAppl(PastryNode pn, int port) {
+    this(pn, null, port, null);
+  }
+
+  public void register() {
+    thePastryNode.registerReceiver(getAddress(), this);
+
+    thePastryNode.addLeafSetListener(new LeafSetObserver());
+    thePastryNode.addRouteSetListener(new RouteSetObserver());
+
+    thePastryNode.registerApp(this); // just adds it to a list
+
+  }
+
+  /**
+   * Returns the address of this application.
+   *
+   * @return the address.
+   */
+  public int getAddress() {
+    return address;
+  }
+
+  // internal methods
+
+  protected void setDeserializer(MessageDeserializer deserializer) {
+    this.deserializer = deserializer;
+  }
+
+  public MessageDeserializer getDeserializer() {
+    return this.deserializer;
+  }
+
+  /**
+   * Called by pastry to deliver a message to this client.
+   *
+   * <p>While the node is not ready, a route message that arrived from another node is dropped unless
+   * {@link #deliverWhenNotReady()} or the message is addressed to this node by its destination handle. Messages
+   * created on this node are always handed on.
+   *
+   * @param msg the message that is arriving.
+   */
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
+  public void receiveMessage(Message msg) {
+
+    logger.trace("[{}] recv {}", thePastryNode, msg);
+    if (msg instanceof RouteMessage routeMessage) {
+
+        // if the message has a destinationHandle, it should be for me, and it should always be delivered
+        NodeHandle destinationHandle = routeMessage.getDestinationHandle();
+        if (deliverWhenNotReady() ||
+            thePastryNode.isReady() ||
+            routeMessage.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
+            (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
+          // continue to enrouteMessage()
+        } else {
+          if (routeMessage.sendFailed(new NodeIsNotReadyException(thePastryNode.getLocalHandle()))) {
+            logger.info("Dropping {} because node is not ready.", msg);
+          } else {
+            logger.warn("Dropping {} because node is not ready.", msg);
+
+          }
+
+          return;
+        }
+
+      try {
+        Message innerMessage = routeMessage.unwrap(deserializer);
+        if (enrouteMessage(innerMessage, routeMessage.getTarget(), routeMessage.getNextHop(), routeMessage.getOptions())) {
+          if (routeMessage.getDestinationHandle() == thePastryNode.getLocalHandle()) {
+            messageForApplication(innerMessage);
+          } else {
+            thePastryNode.getRouter().route(routeMessage);
+          }
+        }
+      } catch (IOException ioe) {
+        throw new RuntimeException("Error deserializing message "+routeMessage,ioe);
+      }
+    } else {
+      messageForApplication(msg);
+    }
+  }
+
+  // useful API methods
+
+  /**
+   * Gets the node id associated with this client.
+   *
+   * @return the node id.
+   */
+  public final Id getNodeId() { return thePastryNode.getNodeId(); }
+
+  /**
+   * Gets the handle of the Pastry node associated with this client
+   *
+   * @return the node handle
+   */
+  public NodeHandle getNodeHandle() {
+    return thePastryNode.getLocalHandle();
+  }
+
+  /**
+   * Routes a message to the live node D with nodeId numerically
+   * closest to key (at the time of delivery).  The message is
+   * delivered to the application with address addr at D, and at
+   * each Pastry node encountered along the route to D.
+   *
+   * @param key the key
+   * @param msg the message to deliver.
+   * @param opt send options that describe how the message is to be routed.
+   */
+  public void routeMessage(Id key, PastryRawMessage msg, SendOptions opt) {
+    logger.trace("[{}] routemsg {} to {}", thePastryNode, msg, key);
+    RouteMessage routeMessage = new RouteMessage(key, msg, opt,
+        thePastryNode.getConfig().routeMsgVersion());
+    routeMessage.setTransportLayerOptions(options);
+    thePastryNode.getRouter().route(routeMessage);
+  }
+
+  /**
+   * Called by a layered Pastry application to obtain a copy of the leaf
+   * set. The leaf set contains the nodeId to IP address binding of the
+   * l/2 nodes with numerically closest counterclockwise and the l/2 nodes with
+   * numerically closest clockwise nodeIds, relatively to the local node's
+   * id.
+   *
+   * @return the local node's leaf set
+   */
+  public LeafSet getLeafSet() {
+    return thePastryNode.getLeafSet().copy();
+  }
+
+  /**
+   * Called by a layered Pastry application to obtain a copy of the
+   * routing table. The routing table contains the nodeId to IP
+   * address bindings of R nodes that share the local node's id in
+   * the first n digits, and differ in the n+1th digit, for 0 &lt;= n
+   * &lt;= ceiling(log_2^b N), where N is the total number of currently
+   * live nodes in the Pastry network. The routing table may be
+   * incomplete, may contain nodes that cannot be reached from the
+   * local node or have failed, and the table may change at any
+   * time.
+   */
+  public RoutingTable getRoutingTable() {
+    return thePastryNode.getRoutingTable();
+  }
+
+  // abstract methods, to be overridden by the derived application object
+
+  /**
+   * Called by pastry when a message arrives for this application.
+   *
+   * @param msg the message that is arriving.
+   */
+  public abstract void messageForApplication(Message msg);
+
+  /**
+   * Called by pastry when a message is enroute and is passing through this node.  If this
+   * method is not overridden, the default behaviour is to let the message pass through.
+   *
+   * @param msg the message that is passing through.
+   * @param key the key
+   * @param nextHop the default next hop for the message.
+   * @param options the send options the message was sent with.
+   *
+   * @return true if the message should be routed, false if the message should be cancelled.
+   */
+  public boolean enrouteMessage(Message msg, Id key, NodeHandle nextHop, SendOptions options) {
+    return true;
+  }
+
+  /**
+   * Called by pastry when the leaf set changes.
+   *
+   * @param nodeHandle the handle of the node that was added or removed.
+   * @param wasAdded true if the node was added, false if the node was removed.
+   */
+  public void leafSetChange(NodeHandle nodeHandle, boolean wasAdded) {}
+
+  /**
+   * Called by pastry when the route set changes.
+   *
+   * @param nodeHandle the handle of the node that was added or removed.
+   * @param wasAdded true if the node was added, false if the node was removed.
+   */
+  public void routeSetChange(NodeHandle nodeHandle, boolean wasAdded) {}
+
+  /**
+   * Invoked when the Pastry node has joined the overlay network and
+   * is ready to send and receive messages
+   *
+   * As of FreePastry 1.4.1, replaced by {@link rice.pastry.PastryNodeListener}.
+   */
+  public void notifyReady() {}
+
+  /**
+   * Instructs the MessageDispatch how to behave when the PastryNode is not ready.
+   *
+   * An application can override this method to return true if it wishes to receive
+   * messages before Pastry is ready().
+   *
+   * Most applications should leave this as false, so that their application does
+   * not have inconsistent routing.  However Pastry's protocols (such as the join protocol)
+   * need to receive messages before pastry is ready().  This is because they are attempting
+   * to make pastry ready().
+   *
+   * @return false unless the node is a service
+   */
+  public boolean deliverWhenNotReady() {
+    return false;
+  }
+
+  /**
+   * Called when PastryNode is destroyed.  Can be overloaded by applications.
+   */
+  public void destroy() {}
+
+
+  // *******************  Applicatoin Socket Interface *****************
+  /**
+   * Called to open an ApplicationLevelSocket
+   */
+  public void connect(rice.p2p.commonapi.NodeHandle handle, AppSocketReceiver receiver, int timeout) {
+    thePastryNode.connect((rice.pastry.NodeHandle)handle, receiver, this, timeout);
+  }
+
+  /**
+   * Sets an AppSocketReceiver to be called when the next socket arrives.
+   */
+  public void accept(AppSocketReceiver receiver) {
+    this.receiver = receiver;
+  }
+
+  /**
+   * holds the receiverSocket
+   */
+  private AppSocketReceiver receiver;
+
+  /**
+   * @return true if a receiver is waiting for a socket
+   */
+  public boolean canReceiveSocket() {
+    return receiver != null;
+  }
+
+  /**
+   * Calls receiver.receiveSocket(), then sets receiver to null.
+   *
+   * It sets it to null to allow the application to provide SocketInitiationBackpressure
+   *
+   * @param socket the new socket from the network
+   * @throws IOException if the receiver throws it
+   */
+  public void finishReceiveSocket(AppSocket socket) throws IOException {
+    AppSocketReceiver theReceiver = receiver;
+    receiver = null;
+    theReceiver.receiveSocket(socket);
+  }
+
+}

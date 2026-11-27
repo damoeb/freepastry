@@ -1,0 +1,15 @@
+<section id="notyet">
+<p class="eyebrow atk">LIMITS · NOT STOPPED YET</p>
+<h2>Insiders can still steer routing and answers</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:38%">Attack</th><th style="width:30%">Why it still works</th><th style="width:32%">Planned fix</th></tr>
+<tr><td>Colluders fill a victim’s routing table</td><td>Slots go to the lowest round-trip time</td><td>D1: constrained table, redundant routing</td></tr>
+<tr><td>A malicious bootstrap answers a join with colluders</td><td>One answer is enough</td><td>C4: several bootstraps, density test</td></tr>
+<tr><td>A wrong node answers a Past or Glacier request</td><td>Responses match by counter only</td><td>B2: random ids, expected responder</td></tr>
+<tr><td>One malicious replica answers a lookup</td><td>Mutable content trusts one answer</td><td>C6: quorum or signed content</td></tr>
+<tr><td>A node on the path fakes liveness</td><td>The nonce stops only off-path senders</td><td>C5: HMAC per peer, windowed RTT</td></tr>
+<tr><td>A caught insider stays trusted</td><td>No revocation; certificates last a year</td><td>C7: short-lived certificates, deny list</td></tr>
+<tr><td>Many addresses flood one node</td><td>No per-peer budgets or fair queuing</td><td>C1–C3: budgets and token buckets</td></tr>
+</table>
+<aside>Other known limits: a hop still relays to any routable non-Pastry host that passes the address policy; anyone may refresh a Past object up to the lease cap; NAT nodes can only run plain mode; any node can subscribe to a multiring gateway topic. Plain mode trusts its network by design. The letters refer to the roadmap on the next slide.</aside>
+</section>

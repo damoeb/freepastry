@@ -1,0 +1,345 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package org.mpisws.p2p.transport.util;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+
+import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.ClosedChannelException;
+import org.mpisws.p2p.transport.P2PSocket;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+
+/**
+ * An easy way to read a complete object in from a socket.  Wraps a Socket as an InputBuffer
+ * Throws an InsufficientBytesException when there is not enough data available locally, but
+ * caches the data so you can attempt to deserialize the object from the beginning when there are
+ * additional bytes.
+ *
+ * Not thread safe!
+ *
+ * The read operations will either:
+ *   a) succeed
+ *   b) throw a InsufficientBytesException, which you should probably retry later when there are more bytes (automatically calls reset)
+ *   c) throw a ClosedChannelException, which means the socket was closed,
+ *   d) other IOException
+ *
+ * If you don't complete reading the object, and want to start from the beginning of the cache, call reset().
+ *
+ * If you complete reading the object, but want to reuse the SocketInputBuffer, call clear().
+ *
+ * Note that the bytesRemaining() field always returns UNKNOWN because Java's socket api doesn't give us this information
+ *
+ * To find the size of the cache call size().  This is the amount of usable bytes in the cache, not the capacity.
+ *
+ * SocketInputBuffer automatically grows.
+ *
+ * Implementation notes: readPtr/writePtr are operating on the same byte[] called cache
+ *
+ * @author Jeff Hoye
+ */
+public class SocketInputBuffer implements InputBuffer {
+  /** Initial read buffer size in bytes. */
+  public static final int DEFAULT_INITIAL_SIZE = 1024;
+
+  P2PSocket<?> socket;
+  /**
+   * readPtr/writePtr are essentially pointers to the byte[] cache.
+   *
+   * writePtr points to where we are writing data into the cache, from the socket
+   * readPtr points to where the user is reading from, and is where we are reading in from the method call
+   *
+   * we throw an InsufficientBytesException if the readPtr would cross past the writePtr
+   * (after we read what we could from the socket)
+   */
+  ByteBuffer readPtr, writePtr;
+  byte[] cache;
+  @Nullable ByteBuffer one, two, four, eight; // to reduce object allocation, reuse common sizes.  Lazily constructed
+  int initialSize;
+
+  @SuppressWarnings("NullAway.Init") // set by resetDis(), which the constructor calls
+  DataInputStream dis;
+  public SocketInputBuffer(P2PSocket<?> socket) {
+    this(socket,DEFAULT_INITIAL_SIZE);
+  }
+
+  public SocketInputBuffer(P2PSocket<?> socket, int size) {
+    this.socket = socket;
+    initialSize = size;
+    cache = new byte[size];
+    readPtr = ByteBuffer.wrap(cache);
+    writePtr = ByteBuffer.wrap(cache);
+    resetDis();
+  }
+
+  /**
+   * Handle the case if DataInputStream.markSupported() is false.
+   */
+  private void resetDis() {
+    if (dis != null && dis.markSupported()) {
+      try {
+        dis.reset();
+        return;
+      } catch (IOException ioe) {
+        // replace the stream below
+      }
+    }
+    dis = new DataInputStream(new InputStream() {
+
+      @Override
+      public int read(byte[] bytes) throws IOException {
+        return readInternal(bytes);
+      }
+
+      @Override
+      public int read(byte[] b, int off, int length) throws IOException {
+        return readInternal(b, off, length);
+      }
+
+      @Override
+      public int read() throws IOException {
+        return readInternal();
+      }
+    });
+  }
+
+  @Override
+  public int bytesRemaining() {
+    return UNKNOWN;
+  }
+
+  /**
+   * Resets the read pointer to the beginning of the cache.
+   */
+  public void reset() {
+    readPtr.clear();
+  }
+
+  /**
+   * Note that this is not the number of bytes that can be read without throwing
+   * an exception, since some of these bytes may already have been consumed.
+   * This is mostly useful for debugging.
+   *
+   * @return the number of useful bytes in the cache
+   */
+  public int size() {
+    return writePtr.position();
+  }
+
+  /**
+   * Fills the range completely or throws: a short read would be misparsed by callers.
+   *
+   * @return the number of bytes read, always len
+   * @throws InsufficientBytesException if fewer than len bytes are available (the read pointer is rewound)
+   */
+  public int readInternal(byte[] bytes, int off, int length) throws IOException {
+    needBytes(length, true);
+    readPtr.get(bytes, off, length);
+    return length;
+  }
+
+  /**
+   * Fills the array completely or throws: a short read would be misparsed by callers.
+   *
+   * @return the number of bytes read, always b.length
+   * @throws InsufficientBytesException if fewer than b.length bytes are available (the read pointer is rewound)
+   */
+  public int readInternal(byte[] bytes) throws IOException {
+    return readInternal(bytes, 0, bytes.length);
+  }
+
+  /**
+   *
+   *
+   * @return the value of one byte
+   */
+  public int readInternal() throws IOException {
+    needBytes(1, true);
+    return (readPtr.get() & 0xFF);
+  }
+
+
+  @Override
+  public int read(byte[] bytes, int off, int length) throws IOException {
+    return dis.read(bytes, off, length);
+  }
+
+  @Override
+  public int read(byte[] bytes) throws IOException {
+    return dis.read(bytes);
+  }
+
+  @Override
+  public byte readByte() throws IOException {
+    return dis.readByte();
+  }
+
+  @Override
+  public boolean readBoolean() throws IOException {
+    return dis.readBoolean();
+  }
+
+  @Override
+  public char readChar() throws IOException {
+    return dis.readChar();
+  }
+
+  @Override
+  public double readDouble() throws IOException {
+    return dis.readDouble();
+  }
+
+  @Override
+  public float readFloat() throws IOException {
+    return dis.readFloat();
+  }
+
+  @Override
+  public int readInt() throws IOException {
+    return dis.readInt();
+  }
+
+  @Override
+  public long readLong() throws IOException {
+    return dis.readLong();
+  }
+
+  @Override
+  public short readShort() throws IOException {
+    return dis.readShort();
+  }
+
+  @Override
+  public String readUTF() throws IOException {
+    return dis.readUTF();
+  }
+
+  /**
+   * Returns the number of bytes available in the cache,
+   * reads bytes from socket into cache if need be
+   *
+   * @param num the number of bytes you need
+   * @param fail true if you want it to throw an exception if there aren't enough bytes
+   * @return the actual number of bytes read
+   */
+  private int needBytes(int num, boolean fail) throws IOException {
+    int bytesToReadIntoCache = num - (writePtr.position() - readPtr.position());
+    if (bytesToReadIntoCache > 0) {
+      readBytesIntoCache(bytesToReadIntoCache);
+    }
+    int ret = writePtr.position()-readPtr.position();
+    if (ret > num) ret = num;
+    if (fail && ret < num) {
+      reset();
+      throw new InsufficientBytesException(num, ret);
+    }
+    return ret;
+  }
+
+  /**
+   * Reads this many bytes into the cache, grows the cache if needed
+   *
+   * Increases the writeBB
+   */
+  private int readBytesIntoCache(int num) throws IOException {
+    ByteBuffer buffer;
+    switch(num) {
+    case 0:
+      return 0;
+    case 1:
+      if (one == null) one = ByteBuffer.allocate(num);
+      one.clear();
+      buffer = one;
+      break;
+    case 2:
+      if (two == null) two = ByteBuffer.allocate(num);
+      two.clear();
+      buffer = two;
+      break;
+    case 4:
+      if (four == null) four = ByteBuffer.allocate(num);
+      four.clear();
+      buffer = four;
+      break;
+    case 8:
+      if (eight == null) eight = ByteBuffer.allocate(num);
+      eight.clear();
+      buffer = eight;
+      break;
+    default:
+      buffer = ByteBuffer.allocate(num);
+    }
+
+    int ret = (int)socket.read(buffer);
+    if (ret == -1) throw new ClosedChannelException("Socket "+socket+" is already closed. (during read)");
+    buffer.flip();
+    while (writePtr.remaining() < ret) {
+      grow();
+    }
+    writePtr.put(buffer);
+
+    return ret;
+  }
+
+  /**
+   * Clears the cache from memory, resetting it to the initial size.  This is a
+   * good thing to do after you read an object.
+   */
+  public void clear() throws IOException {
+    if (cache.length > initialSize)
+      cache = new byte[initialSize];
+    readPtr = ByteBuffer.wrap(cache);
+    writePtr = ByteBuffer.wrap(cache);
+    resetDis();
+  }
+
+  private void grow() {
+    byte[] newCache = new byte[cache.length * 2];
+    System.arraycopy(cache, 0, newCache, 0, cache.length);
+    ByteBuffer newReadPtr = ByteBuffer.wrap(newCache);
+    ByteBuffer newWritePtr = ByteBuffer.wrap(newCache);
+
+    newReadPtr.position(readPtr.position());
+    newWritePtr.position(writePtr.position());
+
+    cache = newCache;
+    readPtr = newReadPtr;
+    writePtr = newWritePtr;
+  }
+}

@@ -1,0 +1,128 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+/*
+ * Created on Aug 16, 2005
+ */
+package rice.environment.processing.simple;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rice.environment.processing.WorkRequest;
+
+/**
+ * The queue of the blocking IO thread.
+ *
+ * @author Jeff Hoye
+ */
+public class WorkQueue {
+  private static final Logger LOG = LoggerFactory.getLogger(WorkQueue.class);
+
+  /**
+   * Put into the queue by {@link #destroy()} to wake up the threads blocked in {@link #dequeue()}.
+   */
+  private static final WorkRequest<Object> STOP = new WorkRequest<Object>();
+
+  private final BlockingQueue<WorkRequest<?>> blockingQueue = new LinkedBlockingQueue<WorkRequest<?>>();
+  /* A negative capacity, is equivalent to infinite capacity */
+  private final int capacity;
+
+  private final Object enqueueLock = new Object();
+
+  private volatile boolean running = true;
+
+  public WorkQueue() {
+    this(-1);
+  }
+
+  public WorkQueue(int capacity) {
+     this.capacity = capacity;
+  }
+
+  public void enqueue(WorkRequest<?> request) {
+    // only enqueue() adds work, so the size can't grow between the check and the add
+    synchronized (enqueueLock) {
+      if (capacity < 0 || blockingQueue.size() < capacity) {
+        blockingQueue.add(request);
+        return;
+      }
+    }
+    request.returnError(new WorkQueueOverflowException());
+  }
+
+  /**
+   * Blocks until there is work, or the queue is destroyed.
+   *
+   * @return the next request, or null once the queue is destroyed
+   */
+  @SuppressWarnings("ReferenceEquality") // STOP is a sentinel instance
+  public @Nullable WorkRequest<?> dequeue() {
+    boolean interrupted = false;
+    try {
+      while (running) {
+        try {
+          WorkRequest<?> request = blockingQueue.take();
+          if (request == STOP) {
+            // put it back for the other waiting threads
+            blockingQueue.add(STOP);
+            return null;
+          }
+          if (!running) return null;
+          return request;
+        } catch (InterruptedException e) {
+          LOG.warn("Interrupted while waiting for work", e);
+          interrupted = true;
+        }
+      }
+      return null;
+    } finally {
+      if (interrupted) {
+        // keep waiting for work, but let the caller see the interrupt
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  public void destroy() {
+    running = false;
+    blockingQueue.add(STOP);
+  }
+
+}

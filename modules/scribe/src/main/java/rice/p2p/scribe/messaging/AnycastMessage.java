@@ -1,0 +1,298 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.p2p.scribe.messaging;
+
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Objects;
+
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.scribe.ScribeContent;
+import rice.p2p.scribe.Topic;
+import rice.p2p.scribe.rawserialization.ScribeContentDeserializer;
+import rice.p2p.util.rawserialization.WireLengths;
+
+/**
+ * The anycast message.
+ *
+ * @version $Id: AnycastMessage.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @author Alan Mislove
+ */
+public sealed class AnycastMessage extends ScribeMessage permits SubscribeMessage {
+
+  /**
+   * the content of this message
+   */
+  private ScribeContent content;
+
+  /**
+   * the list of nodes which we have visited
+   */
+  protected ArrayList<NodeHandle> visited;
+
+  /**
+   * the list of nodes which we are going to visit
+   */
+  protected ArrayDeque<NodeHandle> toVisit;
+
+  private final NodeHandle initialRequestor;
+
+  /**
+   * Constructor which takes a unique integer Id
+   *
+   * @param source The source address
+   * @param topic The topic
+   * @param content The content
+   */
+  public AnycastMessage(NodeHandle source, Topic topic, ScribeContent content) {
+    super(Objects.requireNonNull(source, "an anycast message needs a source"), topic);
+    this.initialRequestor = source;
+    this.content = content;
+    this.visited = new ArrayList<NodeHandle>();
+    this.toVisit = new ArrayDeque<NodeHandle>();
+
+    addVisited(source);
+  }
+
+  /**
+   * Returns the content
+   *
+   * @return The content
+   */
+  public ScribeContent getContent() {
+    if (content == null) return null;
+    return content;
+  }
+
+  public ScribeContent getRawContent() {
+    return content;
+  }
+
+  /**
+   * Sets the content
+   *
+   * @param content The content
+   */
+  public void setContent(ScribeContent content) {
+    this.content = content;
+  }
+
+  /**
+   * Returns the next handle to visit and removes the
+   * node from the list.
+   *
+   * @return The next handle to visit
+   */
+  public NodeHandle removeNextToVisit() {
+    if (toVisit.size() == 0) {
+      return null;
+    }
+
+    return (NodeHandle) toVisit.removeFirst();
+  }
+
+  /**
+   * Adds a node to the visited list
+   *
+   * @param handle The node to add
+   */
+  public void addVisited(NodeHandle handle) {
+    if (handle == null) {
+      return;
+    }
+
+    if (!visited.contains(handle)) {
+      visited.add(handle);
+    }
+
+    while (toVisit.remove(handle)) {
+      toVisit.remove(handle);
+    }
+  }
+
+  /**
+   * Adds a node to the front of the to-visit list
+   *
+   * @param handle The handle to add
+   */
+  public void addFirst(NodeHandle handle) {
+    if (handle == null) {
+      return;
+    }
+
+    if (!toVisit.contains(handle) && !visited.contains(handle)) {
+      toVisit.addFirst(handle);
+    }
+  }
+
+  /**
+   * Adds a node to the end of the to-visit list
+   *
+   * @param handle The handle to add
+   */
+  public void addLast(NodeHandle handle) {
+    if (handle == null) {
+      return;
+    }
+
+    if (!toVisit.contains(handle) && !visited.contains(handle)) {
+      toVisit.addLast(handle);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return "Anycast["+getTopic()+" "+content+"]";
+  }
+
+  public NodeHandle getInitialRequestor() {
+    return initialRequestor;
+  }
+
+  public NodeHandle getLastVisited() {
+    if (visited.size() == 0) {
+      return null;
+    } else {
+      return visited.get(visited.size()-1);
+    }
+  }
+
+  /**
+   * Removes the node handle from the to visit and visited lists
+   *
+   * @param handle The handle to remove
+   */
+  public void remove(NodeHandle handle) {
+    if (handle == null) {
+      return;
+    }
+
+    toVisit.remove(handle);
+    visited.remove(handle);
+  }
+
+  public int getVisitedSize() {
+    return visited.size();
+  }
+
+  /** *************** Raw Serialization ************************************** */
+  @Override
+  public short getType() {
+    return ScribeMessageType.ANYCAST.id();
+  }
+
+  @Override
+  public void serialize(OutputBuffer buf) throws IOException {
+    // no super.serialize(buf): the version byte comes first, and a deserializing constructor's super(...) call can't read it
+    buf.writeByte((byte)1); // version
+    serializeHelper(buf);
+
+  }
+
+  /**
+   * Use this to allow SubscribeMessage to extend this, but not have the version number
+   * nor the content.
+   */
+  protected void serializeHelper(OutputBuffer buf) throws IOException {
+    super.serialize(buf);
+
+    initialRequestor.serialize(buf);
+
+    buf.writeInt(toVisit.size());
+    for (NodeHandle nodeHandle : toVisit) {
+      nodeHandle.serialize(buf);
+    }
+
+    buf.writeInt(visited.size());
+    for (NodeHandle nh : visited) {
+      nh.serialize(buf);
+    }
+
+    if (content == null) {
+      buf.writeBoolean(false);
+    } else {
+      buf.writeBoolean(true);
+      buf.writeShort(content.getType());
+      content.serialize(buf);
+    }
+  }
+
+  public static AnycastMessage build(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scd) throws IOException {
+    byte version = buf.readByte();
+    switch(version) {
+      case 1:
+        return new AnycastMessage(buf, endpoint, scd);
+      default:
+        throw new IOException("Unknown Version: "+version);
+    }
+  }
+
+  /**
+   * Protected because it should only be called from an extending class, to get version
+   * numbers correct.
+   *
+   */
+  protected AnycastMessage(InputBuffer buf, Endpoint endpoint, ScribeContentDeserializer scribeContentDeserializer) throws IOException {
+    super(buf, endpoint);
+
+    initialRequestor = endpoint.readNodeHandle(buf);
+
+    toVisit = new ArrayDeque<NodeHandle>();
+    int toVisitLength = WireLengths.readInt(buf, 1);
+    for (int i = 0; i < toVisitLength; i++) {
+      toVisit.addLast(endpoint.readNodeHandle(buf));
+    }
+
+    int visitedLength = WireLengths.readInt(buf, 1);
+    visited = new ArrayList<NodeHandle>(visitedLength);
+    for (int i = 0; i < visitedLength; i++) {
+      visited.add(endpoint.readNodeHandle(buf));
+    }
+
+    // this can be done lazilly to be more efficient, must cache remaining bits, endpoint, cd, and implement own InputBuffer
+    if (buf.readBoolean()) {
+      short contentType = buf.readShort();
+      content = scribeContentDeserializer.deserializeScribeContent(buf, endpoint, contentType);
+    }
+  }
+
+}

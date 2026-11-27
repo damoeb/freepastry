@@ -1,0 +1,1145 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.p2p.past.testing;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+
+import rice.Continuation;
+import rice.Futures;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.Node;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.p2p.commonapi.testing.CommonAPITest;
+import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
+import rice.p2p.past.PastContentHandle;
+import rice.p2p.past.PastException;
+import rice.p2p.past.PastImpl;
+import rice.p2p.past.PastStorageSerializer;
+import rice.p2p.past.messaging.LookupMessage;
+import rice.p2p.past.rawserialization.PastContentDeserializer;
+import rice.persistence.CachedStorage;
+import rice.persistence.CachedStorageImpl;
+import rice.persistence.LRUCache;
+import rice.persistence.MemoryStorage;
+import rice.persistence.PersistentStorage;
+
+/**
+ * Provides regression testing for the Past service
+ *
+ * @version $Id: PastRegrTest.java 3157 2006-03-19 12:16:58Z jeffh $
+ *
+ * @author Alan Mislove
+ */
+
+@SuppressWarnings("unchecked")
+public class RawPastRegrTest extends CommonAPITest {
+
+  // the instance name to use
+  public static String INSTANCE = "PastRegrTest";
+
+  // the replication factor in Past
+  public static final int REPLICATION_FACTOR = 3;
+
+  // the storage services in the ring
+  protected CachedStorage storages[];
+
+  // the past impls in the ring
+  protected PastImpl pasts[];
+
+  protected boolean running = true;
+  /**
+   * Constructor which sets up all local variables
+   */
+  public RawPastRegrTest(Environment env) throws IOException {
+    super(env);
+    pasts = new PastImpl[NUM_NODES];
+    storages = new CachedStorage[NUM_NODES];
+
+    if (PROTOCOL_DIRECT.equalsIgnoreCase(PROTOCOL)) {
+      new Thread() {
+        @Override
+        public void run() {
+          while (running) {
+            try {
+              sleep(50);
+              simulate();
+            } catch (Exception e) {
+              System.out.println(e + " blah");
+            }
+          }
+        }
+      }.start();
+    }
+  }
+
+  /**
+   * The directory below which the nodes' PersistentStorages keep their files, set before start()
+   */
+  public String storageRoot = ".";
+
+  /**
+   * Method which should process the given newly-created node
+   *
+   * @param node The newly created node
+   * @param nodeIndex The number of this node
+   */
+  @Override
+  protected void processNode(int nodeIndex, Node node) {
+    try {
+      final int index = nodeIndex;
+      storages[nodeIndex] = new CachedStorageImpl(FACTORY,
+                                             new PersistentStorage(FACTORY, new PastStorageSerializer(() -> pasts[index]), "root-" + nodeIndex, storageRoot, 1000000, environment),
+                                             new LRUCache(new MemoryStorage(FACTORY), 100000, environment));
+      pasts[nodeIndex] = new PastImpl(node, storages[nodeIndex], REPLICATION_FACTOR, INSTANCE);
+      pasts[nodeIndex].setContentDeserializer(new PastContentDeserializer() {
+
+        @Override
+        public PastContent deserializePastContent(InputBuffer buf, Endpoint endpoint,
+            short contentType) throws IOException {
+          switch(contentType) {
+            case TestPastContent.TYPE:
+              return new TestPastContent(buf, endpoint, this);
+            case VersionedTestPastContent.TYPE:
+              return new VersionedTestPastContent(buf, endpoint, this);
+            case NonOverwritingTestPastContent.TYPE:
+              return new NonOverwritingTestPastContent(buf, endpoint, this);
+          }
+          throw new IllegalArgumentException("Unknown type:"+contentType);
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    pasts[nodeIndex].setContentHandleDeserializer((buf, endpoint, contentType) -> {
+      switch(contentType) {
+        case TestPastContentHandle.TYPE:
+          return new TestPastContentHandle(buf, endpoint);
+      }
+      throw new IllegalArgumentException("Unknown type:"+contentType);
+    });
+  }
+
+  /**
+   * Method which should run the test - this is called once all of the
+   * nodes have been created and are ready.
+   */
+  @Override
+  protected void runTest() {
+    if (NUM_NODES < 2) {
+      System.out.println("The DistPastRegrTest must be run with at least 2 nodes for proper testing.  Use the '-nodes n' to specify the number of nodes.");
+      return;
+    }
+
+    // Run each test
+    testRouteRequest();
+  }
+
+  /* ---------- Test methods and classes ---------- */
+
+  /**
+   * Tests routing a Past request to a particular node.
+   */
+  protected void testRouteRequest() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final PastImpl remote = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final Id remoteId = remote.getLocalNodeHandle().getId();
+    final PastContent file = new TestPastContent(remoteId);
+
+    sectionStart("Simple Route Request");
+
+    // Check file doesn't exist
+    stepStart("Initial Lookup");
+    Futures.forward(local.lookup(remoteId), new TestCommand() {
+      @Override
+      public void receive(Object result) throws Exception {
+        assertTrue("File returned should be null", result == null);
+        stepDone();
+
+        // Insert file
+        stepStart("File Insertion");
+        Futures.forward(local.insert(file), new TestCommand() {
+          @Override
+          public void receive(Object result) throws Exception {
+            assertTrue("Insert of file result should not be null", result != null);
+            assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
+
+            for (int i=0; i<((Boolean[]) result).length; i++) {
+              assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
+              assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
+            }
+
+            stepDone();
+
+            // run replica maintenance
+            runReplicaMaintenance();
+
+            // Check file exists
+            stepStart("Remote File Lookup");
+            Futures.forward(local.lookup(remoteId), new TestCommand() {
+              @Override
+              public void receive(Object result) throws Exception {
+                assertTrue("File should not be null", result != null);
+                assertEquals("Lookup of file should be correct",
+                             file,
+                             result);
+                stepDone();
+
+                // Lookup file locally
+                stepStart("Local File Lookup");
+                Futures.forward(remote.getStorageManager().getObject(remoteId), new TestCommand() {
+                  @Override
+                  public void receive(Object result) throws Exception {
+                    assertTrue("File should be inserted at known node",
+                               result != null);
+                    assertEquals("Retrieved local file should be the same",
+                                 file, result);
+
+                    stepDone();
+                    sectionDone();
+
+                    testVersionControl();
+                  }
+                });
+                simulate();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }
+
+  /**
+    * Tests overwriting an exiting object with a new one
+   */
+  protected void testVersionControl() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final PastImpl remote = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final Id remoteId = remote.getLocalNodeHandle().getId();
+    final PastContent oldFile = new VersionedTestPastContent(remoteId, 0);
+    final PastContent newFile = new VersionedTestPastContent(remoteId, 1);
+    final PastContent newNewFile = new NonOverwritingTestPastContent(remoteId, 2);
+
+    sectionStart("Version Control");
+
+    // Insert file
+    stepStart("File Insertion");
+    Futures.forward(local.insert(oldFile), new TestCommand() {
+      @Override
+      public void receive(Object result) throws Exception {
+        assertTrue("Insert of file result should not be null", result != null);
+        assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
+
+        for (int i=0; i<((Boolean[]) result).length; i++) {
+          assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
+          assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
+        }
+
+        stepDone();
+
+        // run replica maintenance
+        runReplicaMaintenance();
+
+        // Check file exists
+        stepStart("Remote File Lookup");
+        Futures.forward(local.lookup(remoteId), new TestCommand() {
+          @Override
+          public void receive(Object result) throws Exception {
+            assertTrue("File should not be null", result != null);
+            assertEquals("Lookup of file should be correct",
+                         oldFile,
+                         result);
+            stepDone();
+
+            // Insert overwriting file
+            stepStart("Overwriting File Insertion");
+            Futures.forward(local.insert(newFile), new TestCommand() {
+              @Override
+              public void receive(Object result) throws Exception {
+                assertTrue("Insert of file result should not be null", result != null);
+                assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
+
+                for (int i=0; i<((Boolean[]) result).length; i++) {
+                  assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
+                  assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
+                }
+
+                stepDone();
+
+                // run replica maintenance
+                runReplicaMaintenance();
+
+                // Check correct file exists
+                stepStart("Remote Overwriting File Lookup");
+                Futures.forward(local.lookup(remoteId), new TestCommand() {
+                  @Override
+                  public void receive(Object result) throws Exception {
+                    assertTrue("Overwriting file should not be null", result != null);
+                    assertEquals("Lookup of overwriting file should be correct version",
+                                 newFile,
+                                 result);
+                    stepDone();
+
+                    // Insert overwriting file
+                    stepStart("Non-overwriting File Insertion");
+                    Futures.forward(local.insert(newNewFile), new TestCommand() {
+                      @Override
+                      public void receive(Object result) throws Exception {
+                        assertTrue("Insert of file result should not be null", result != null);
+                        assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
+
+                        for (int i=0; i<((Boolean[]) result).length; i++) {
+                          assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
+                          assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
+                        }
+
+                        stepDone();
+
+                        // run replica maintenance
+                        runReplicaMaintenance();
+
+                        // Check correct file exists
+                        stepStart("Remote Non-Overwriting File Lookup");
+                        Futures.forward(local.lookup(remoteId), new TestCommand() {
+                          @Override
+                          public void receive(Object result) throws Exception {
+                            assertTrue("Non-Overwriting file should not be null", result != null);
+                            assertEquals("Lookup of non-overwriting file should be correct (second) version",
+                                         newFile,
+                                         result);
+                            stepDone();
+                            sectionDone();
+
+                            testFetch();
+                          }
+                        });
+                        simulate();
+                      }
+                    });
+                    simulate();
+                  }
+                });
+                simulate();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }
+
+  /**
+    * Tests the parameter checking in Past.
+   *
+  protected void testParameterChecks() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final Id localId = local.getLocalNodeHandle().getId();
+
+    sectionStart("Parameter Checks Testing");
+
+    // Null insert should fail
+    stepStart("Insertion Of Null");
+    Futures.forward(local.insert(null), new TestExceptionCommand() {
+      public void receive(Object result) throws Exception {
+        assertTrue("Exception returned should not be null", result != null);
+        assertTrue("Exception should be return", result instanceof Exception);
+        stepDone();
+
+        // Null lookup should fail
+        stepStart("Lookup Of Null");
+        Futures.forward(local.lookup(null), new TestExceptionCommand() {
+          public void receive(Object result) throws Exception {
+            assertTrue("Exception returned should not be null", result != null);
+            assertTrue("Exception should be return", result instanceof Exception);
+            stepDone();
+
+            // Null fetch should fail
+            stepStart("Fetch Of Null");
+            Futures.forward(local.fetch((PastContentHandle) null), new TestExceptionCommand() {
+              public void receive(Object result) throws Exception {
+                assertTrue("Exception returned should not be null", result != null);
+                assertTrue("Exception should be return", result instanceof Exception);
+                stepDone();
+
+                // Null lookup handles should fail
+                stepStart("Lookup Handles Of Null");
+                Futures.forward(local.lookupHandles(null, 1), new TestExceptionCommand() {
+                  public void receive(Object result) throws Exception {
+                    assertTrue("Exception returned should not be null", result != null);
+                    assertTrue("Exception should be return", result instanceof Exception);
+                    stepDone();
+
+                    // Lookup handles of -4 should fail
+                    stepStart("Lookup Handles Of -4");
+                    Futures.forward(local.lookupHandles(localId, -4), new TestExceptionCommand() {
+                      public void receive(Object result) throws Exception {
+                        assertTrue("Exception returned should not be null", result != null);
+                        assertTrue("Exception should be return", result instanceof Exception);
+                        stepDone();
+
+                        // Lookup handles of 0 should fail
+                        stepStart("Lookup Handles Of 0");
+                        Futures.forward(local.lookupHandles(localId, 0), new TestExceptionCommand() {
+                          public void receive(Object result) throws Exception {
+                            assertTrue("Exception returned should not be null", result != null);
+                            assertTrue("Exception should be return", result instanceof Exception);
+                            stepDone();
+
+                            sectionDone();
+                            testFetch();
+                          }
+                        });
+                        simulate();
+                      }
+                    });
+                    simulate();
+                  }
+                });
+                simulate();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }*/
+
+  /**
+   * Tests the fetch function in Past.
+   */
+  // the nodes are compared by identity on purpose: the loop picks a Past that is not the same instance as remote1
+  @SuppressWarnings("ReferenceEquality")
+  protected void testFetch() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final PastImpl firstRemote = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    PastImpl randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+
+    while (randomPast == firstRemote) {
+      randomPast = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    }
+
+    final PastImpl secondRemote = randomPast;
+
+    final Id id = pasts[environment.getRandomSource().nextInt(NUM_NODES)].getLocalNodeHandle().getId();
+    final PastContent firstContent = new VersionedTestPastContent(id, 1);
+    final PastContent secondContent = new VersionedTestPastContent(id, 2);
+
+    final PastContentHandle firstHandle = new TestPastContentHandle(firstRemote, id);
+    final PastContentHandle secondHandle = new TestPastContentHandle(secondRemote, id);
+
+    sectionStart("Fetch Testing");
+
+    // Insert file
+    stepStart("File 1 Insertion");
+    Futures.forward(firstRemote.getStorageManager().store(id, null, firstContent), new TestCommand() {
+      @Override
+      public void receive(Object result) throws Exception {
+        assertTrue("Storage of file 1 should succeed", ((Boolean)result).booleanValue());
+
+        stepDone();
+
+        // Insert second file
+        stepStart("File 2 Insertion");
+        Futures.forward(secondRemote.getStorageManager().store(id, null, secondContent), new TestCommand() {
+          @Override
+          public void receive(Object result) throws Exception {
+            assertTrue("Storage of file 2 should succeed", ((Boolean)result).booleanValue());
+
+            stepDone();
+
+            // Retrieve first file
+            stepStart("File 1 Fetch");
+            Futures.forward(local.fetch(firstHandle), new TestCommand() {
+              @Override
+              public void receive(Object result) throws Exception {
+                assertTrue("Result should be non-null", result != null);
+                assertEquals("Result should be correct", firstContent, result);
+                assertTrue("Result should not be file 2", ! secondContent.equals(result));
+
+                final Object firstReceived = result;
+
+                stepDone();
+
+                // Retrieve second file
+                stepStart("File 2 Fetch");
+                Futures.forward(local.fetch(secondHandle), new TestCommand() {
+                  @Override
+                  public void receive(Object result) throws Exception {
+                    assertTrue("Result should be non-null", result != null);
+                    assertEquals("Result should be correct", secondContent, result);
+                    assertTrue("Result should not be file 1", ! firstContent.equals(result));
+
+                    final Object secondReceived = result;
+
+                    stepDone();
+
+                    // ensure different
+                    stepStart("File 1 and 2 Different");
+                    assertTrue("Files should not be equal", ! firstReceived.equals(secondReceived));
+                    stepDone();
+
+                    // remove file
+                    stepStart("File 1 Removal");
+                    Futures.forward(firstRemote.getStorageManager().unstore(id), new TestCommand() {
+                      @Override
+                      public void receive(Object result) throws Exception {
+                        assertTrue("Removal of file 1 should succeed", ((Boolean)result).booleanValue());
+
+                        stepDone();
+
+                        // remove second file
+                        stepStart("File 2 Removal");
+                        Futures.forward(secondRemote.getStorageManager().unstore(id), new TestCommand() {
+                          @Override
+                          public void receive(Object result) throws Exception {
+                            assertTrue("Removal of file 2 should succeed", ((Boolean)result).booleanValue());
+
+                            stepDone();
+                            sectionDone();
+
+                            testLookupHandles();
+                          }
+                        });
+                        simulate();
+                      }
+                    });
+                    simulate();
+                  }
+                });
+                simulate();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }
+
+  /**
+   * Tests the lookup handles function in Past.
+   */
+  protected void testLookupHandles() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final PastImpl remote = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final Id remoteId = remote.getLocalNodeHandle().getId();
+    final PastContent file = new TestPastContent(remoteId);
+
+    sectionStart("Lookup Handles Testing");
+
+    // Insert file
+    stepStart("File Insertion");
+    Futures.forward(local.insert(file), new TestCommand() {
+      @Override
+      public void receive(Object result) throws Exception {
+        assertTrue("Insert of file result should not be null", result != null);
+        assertTrue("Insert of file should return Boolean[]", result instanceof Boolean[]);
+
+        for (int i=0; i<((Boolean[]) result).length; i++) {
+          assertTrue("Insert of file should not return null at replica", ((Boolean[]) result)[i] != null);
+          assertTrue("Insert of file should succeed at replica", ((Boolean[]) result)[i].booleanValue());
+        }
+
+        stepDone();
+
+        // run replica maintenance
+        runReplicaMaintenance();
+
+        // Check file exists (at 1 replica)
+        stepStart("Remote Handles Lookup - 1 Replica");
+        Futures.forward(local.lookupHandles(remoteId, 1), new TestCommand() {
+          @Override
+          public void receive(Object result) throws Exception {
+            assertTrue("Replicas should not be null", result != null);
+            assertTrue("Replicas should be handle[]", result instanceof PastContentHandle[]);
+            assertTrue("Only 1 replica should be returned", ((PastContentHandle[]) result).length == 1);
+            if (((PastContentHandle[]) result)[0] == null) {
+              System.out.println("PastRegrTest.problem");
+
+            }
+            assertEquals("Replica should be for right object", remoteId, ((PastContentHandle[]) result)[0].getId());
+
+            stepDone();
+
+            // Check file exists (at all replicas)
+            stepStart("Remote Handles Lookup - All Replicas");
+            Futures.forward(local.lookupHandles(remoteId, REPLICATION_FACTOR+1), new TestCommand() {
+              @Override
+              public void receive(Object result) throws Exception {
+                assertTrue("Replicas should not be null", result != null);
+                assertTrue("Replicas should be handle[]", result instanceof PastContentHandle[]);
+
+                PastContentHandle[] handles = (PastContentHandle[]) result;
+
+                assertTrue("All replicas should be returned", (handles.length == REPLICATION_FACTOR+1) ||
+                           ((NUM_NODES < REPLICATION_FACTOR+1) && handles.length == NUM_NODES));
+
+                for (int i=0; i<handles.length; i++) {
+                  assertTrue("Replica " + i + " should not be null", handles[i] != null);
+                  assertEquals("Replica " + i + " should be for right object", remoteId, handles[i].getId());
+                }
+
+                for (int i=0; i<handles.length; i++) {
+                  for (int j=0; j<handles.length; j++) {
+                    if (i != j) {
+                      assertTrue("Handles " + handles[i] + " and " + handles[j] + " should be different",
+                                 ! handles[i].getNodeHandle().getId().equals(handles[j].getNodeHandle().getId()));
+                    }
+                  }
+                }
+
+                stepDone();
+
+                // Check file exists (at a huge number of replicas)
+                stepStart("Remote Handles Lookup - 12 Replicas");
+                Futures.forward(local.lookupHandles(remoteId, 12), new TestCommand() {
+                  @Override
+                  public void receive(Object result) throws Exception {
+                    assertTrue("Replicas should not be null", result != null);
+                    assertTrue("Replicas should be handle[]", result instanceof PastContentHandle[]);
+
+                    PastContentHandle[] handles = (PastContentHandle[]) result;
+
+                    assertTrue("All replicas should be returned, got " + handles.length, (handles.length >= REPLICATION_FACTOR+1) ||
+                               ((NUM_NODES < REPLICATION_FACTOR+1) && handles.length == NUM_NODES));
+
+                    int count = 0;
+
+                    for (int i=0; i<handles.length; i++) {
+                      if (handles[i] != null) {
+                        assertEquals("Replica " + i + " should be for right object", remoteId, handles[i].getId());
+                        count++;
+                      }
+                    }
+
+                    assertTrue("All replicas should be returned (got " + count + "/" + (REPLICATION_FACTOR+1) + ")", count == REPLICATION_FACTOR+1);
+
+
+                    for (int i=0; i<handles.length; i++) {
+                      for (int j=0; j<handles.length; j++) {
+                        if ((i != j) && (handles[i] != null) && (handles[j] != null)) {
+                          assertTrue("Handles " + handles[i] + " and " + handles[j] + " should be different",
+                                     ! handles[i].getNodeHandle().getId().equals(handles[j].getNodeHandle().getId()));
+                        }
+                      }
+                    }
+
+                    stepDone();
+                    sectionDone();
+
+                    testCaching();
+                  }
+                });
+                simulate();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }
+
+  /**
+    * Tests the dynamic caching function in Past.
+   */
+  protected void testCaching() {
+    final PastImpl local = pasts[environment.getRandomSource().nextInt(NUM_NODES)];
+    final Id firstId = generateId();
+    final Id secondId = generateId();
+    final PastContent firstContent = new TestPastContent(firstId);
+    final PastContent secondContent = new TestPastContent(secondId);
+    final PastContent nonMutableContent = new NonMutableTestPastContent(secondId);
+
+    sectionStart("Caching Testing");
+
+    // Manually insert file
+    stepStart("Manually Inserting Object Into Cache");
+
+    // check cache
+    Futures.forward(local.getStorageManager().getCache().cache(firstId, null, firstContent), new TestCommand() {
+      @Override
+      public void receive(Object result) throws Exception {
+        assertTrue("Object should not be null", result != null);
+        assertTrue("Object should be True", result.equals(Boolean.valueOf(true)));
+
+        stepDone();
+
+        // Check file exists
+        stepStart("Local Lookup Satisfied by Cache");
+        Futures.forward(local.lookup(firstId), new TestCommand() {
+          @Override
+          public void receive(Object result) throws Exception {
+            assertTrue("File should not be null", result != null);
+            assertEquals("Lookup of file should be correct",
+                         firstContent,
+                         result);
+            stepDone();
+
+            // Insert file
+            stepStart("Caching Mutable Object");
+            final LookupMessage lookupMessage = new LookupMessage(1, secondId, local.getLocalNodeHandle(), secondId);
+            lookupMessage.receiveResult(secondContent);
+
+            assertTrue("Message should continue to be routed",
+                       local.forward(new TestRouteMessage(secondId, null, lookupMessage)));
+
+            stepDone();
+
+            stepStart("Cache Shouldn't Contain Object");
+
+            // check cache
+            Futures.forward(local.getStorageManager().getObject(secondId), new TestCommand() {
+              @Override
+              public void receive(Object result) throws Exception {
+                assertTrue("Object should be null", result == null);
+
+                stepDone();
+
+                stepStart("Caching Non-Mutable Object");
+
+                lookupMessage.receiveResult(nonMutableContent);
+                assertTrue("Message should continue to be routed",
+                           local.forward(new TestRouteMessage(secondId, null, lookupMessage)));
+
+                stepDone();
+
+                // PastImpl caches only at the requester (lookup()), never in forward(), so there is no
+                // cached copy of file3 to check here; a lookup answered from the cache is covered by
+                // "Local Lookup Satisfied by Cache" above
+                sectionDone();
+
+                cleanUp();
+              }
+            });
+            simulate();
+          }
+        });
+        simulate();
+      }
+    });
+    simulate();
+  }
+
+  /**
+   * Private method which initiates the replica maintenance on all
+   * of the nodes
+   */
+  private void runReplicaMaintenance() {
+    for (int i=0; i<NUM_NODES; i++) {
+      pasts[i].getReplication().replicate();
+    }
+
+    simulate();
+  }
+
+  /**
+   * Private method which generates a random Id
+   *
+   * @return A new random Id
+   */
+  private Id generateId() {
+    byte[] data = new byte[20];
+    environment.getRandomSource().nextBytes(data);
+    return FACTORY.buildId(data);
+  }
+
+
+  /**
+   * Usage: RawPastRegrTest [-port p] [-bootstrap host[:port]] [-nodes n] [-protocol (direct|socket)] [-help]
+   */
+  public static void main(String args[]) throws Exception {
+      ArrayDeque<File> delme = new ArrayDeque<File>();
+      delme.add(new File("FreePastry-Storage-Root"));
+      while(!delme.isEmpty()) {
+        File file = (File)delme.removeFirst();
+        if (file.isDirectory()) {
+          File[] subs = file.listFiles();
+          if (subs.length == 0) {
+            file.delete();
+          } else {
+            delme.addAll(Arrays.asList(subs));
+            delme.addLast(file);
+          }
+        } else {
+          file.delete();
+        }
+      }
+
+      Environment env = parseArgs(args);
+      env.getParameters().setDouble("p2p_past_successfulInsertThreshold",1.0);
+      RawPastRegrTest pastTest = new RawPastRegrTest(env);
+      pastTest.start();
+  }
+
+  protected void cleanUp() {
+    running = false;
+    environment.destroy();
+  }
+
+  /**
+   * Common superclass for test commands.
+   */
+  protected class TestCommand implements Continuation<Object, Exception> {
+    @Override
+    public void receiveResult(Object result) {
+      try {
+        receive(result);
+      }
+      catch (Exception e) {
+        receiveException(e);
+      }
+    }
+    public void receive(Object result) throws Exception {}
+    @Override
+    public void receiveException(Exception e) {
+      stepException(e);
+    }
+  }
+
+  /**
+    * Common superclass for test commands which should throw an exception
+   */
+  protected class TestExceptionCommand implements Continuation<Object, Exception> {
+    @Override
+    public void receiveResult(Object result) {
+      stepDone(FAILURE, "Command should throw an exception - got " + result);
+    }
+    public void receive(Object result) throws Exception {}
+    @Override
+    public void receiveException(Exception e) {
+      try {
+        receive(e);
+      }
+      catch (Exception handlerException) {
+        receiveException(handlerException);
+      }
+    }
+  }
+
+  /**
+   * Utility class for past content objects
+   */
+  protected static class TestPastContent implements PastContent {
+    public static final short TYPE = 1;
+
+    protected Id id;
+
+    protected PastContent existing;
+
+    public TestPastContent(Id id) {
+      this.id = id;
+    }
+
+    @Override
+    public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
+      existing = (PastContent)existingContent;
+      return this;
+    }
+
+    @Override
+    public PastContentHandle getHandle(Past past) {
+      return new TestPastContentHandle(past, id);
+    }
+
+    @Override
+    public Id getId() {
+      return id;
+    }
+
+    @Override
+    public boolean isMutable() {
+      return true;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (! (object instanceof TestPastContent testPastContent)) return false;
+
+      return testPastContent.id.equals(id);
+    }
+
+    // subclasses refine equals with more fields, so id alone stays consistent
+    @Override
+    public int hashCode() {
+      return id.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return "TestPastContent(" + id + ")";
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    public TestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+      id = endpoint.readId(buf, buf.readShort());
+      if (buf.readBoolean()) {
+        short contentType = buf.readShort();
+        existing = (PastContent)contentDeserializer.deserializePastContent(buf, endpoint, contentType);
+      }
+    }
+
+    @Override
+    public void serialize(OutputBuffer buf) throws IOException {
+      buf.writeShort(id.getType());
+      id.serialize(buf);
+      if (existing == null) {
+        buf.writeBoolean(false);
+      } else {
+        buf.writeBoolean(true);
+        buf.writeShort(existing.getType());
+        existing.serialize(buf);
+      }
+    }
+  }
+
+  protected static class VersionedTestPastContent extends TestPastContent {
+    public static final short TYPE = 2;
+
+    protected int version = 0;
+
+    public VersionedTestPastContent(Id id, int version) {
+      super(id);
+      this.version = version;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (! (object instanceof VersionedTestPastContent versionedTestPastContent)) return false;
+
+      return (versionedTestPastContent.id.equals(id) &&
+              (versionedTestPastContent.version == version));
+    }
+
+    @Override
+    public String toString() {
+      return "VersionedTestPastContent(" + id + ", " + version + ")";
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    public VersionedTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+      super(buf, endpoint, contentDeserializer);
+      version = buf.readInt();
+    }
+
+    @Override
+    public void serialize(OutputBuffer buf) throws IOException {
+      super.serialize(buf);
+      buf.writeInt(version);
+    }
+  }
+
+  protected static class NonOverwritingTestPastContent extends VersionedTestPastContent {
+    public static final short TYPE = 3;
+
+    public NonOverwritingTestPastContent(Id id, int version) {
+      super(id, version);
+    }
+
+    @Override
+    public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
+      return existingContent;
+    }
+
+    @Override
+    public String toString() {
+      return "NonOverwritingTestPastContent(" + id + ", " + version + ")";
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    public NonOverwritingTestPastContent(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
+      super(buf, endpoint, contentDeserializer);
+    }
+
+
+    @Override
+    public boolean equals(Object object) {
+      if (! (object instanceof NonOverwritingTestPastContent nonOverwritingTestPastContent)) return false;
+
+      return (nonOverwritingTestPastContent.id.equals(id) &&
+              (nonOverwritingTestPastContent.version == version));
+    }
+  }
+
+  protected static class NonMutableTestPastContent extends TestPastContent {
+
+    public NonMutableTestPastContent(Id id) {
+      super(id);
+    }
+
+    @Override
+    public boolean isMutable() {
+      return false;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (! (object instanceof NonMutableTestPastContent nonMutableTestPastContent)) return false;
+
+      return nonMutableTestPastContent.id.equals(id);
+    }
+  }
+
+  /**
+    * Utility class for past content object handles
+   */
+  protected static class TestPastContentHandle implements PastContentHandle {
+    public static final short TYPE = 1;
+
+    protected NodeHandle handle;
+
+    protected Id id;
+
+    public TestPastContentHandle(Past past, Id id) {
+      this.handle = past.getLocalNodeHandle();
+      this.id = id;
+    }
+
+    @Override
+    public Id getId() {
+      return id;
+    }
+
+    @Override
+    public NodeHandle getNodeHandle() {
+      return handle;
+    }
+
+    @Override
+    public short getType() {
+      return TYPE;
+    }
+
+    public TestPastContentHandle(InputBuffer buf, Endpoint endpoint) throws IOException {
+      handle = endpoint.readNodeHandle(buf);
+      id = endpoint.readId(buf, buf.readShort());
+    }
+
+    @Override
+    public void serialize(OutputBuffer buf) throws IOException {
+      handle.serialize(buf);
+      buf.writeShort(id.getType());
+      id.serialize(buf);
+    }
+  }
+
+  /**
+   * Utility class which simulates a route message
+   */
+  protected static class TestRouteMessage implements RouteMessage {
+
+    private Id id;
+
+    private NodeHandle nextHop;
+
+    private Message message;
+
+    public TestRouteMessage(Id id, NodeHandle nextHop, Message message) {
+      this.id = id;
+      this.nextHop = nextHop;
+      this.message = message;
+    }
+
+    @Override
+    public Id getDestinationId() {
+      return id;
+    }
+
+    @Override
+    public NodeHandle getNextHopHandle() {
+      return nextHop;
+    }
+
+    @Override
+    public Message getMessage(MessageDeserializer messageDeserializer) {
+      return message;
+    }
+
+    @Override
+    public void setDestinationId(Id id) {
+      this.id = id;
+    }
+
+    @Override
+    public void setNextHopHandle(NodeHandle nextHop) {
+      this.nextHop = nextHop;
+    }
+
+    @Override
+    public void setMessage(RawMessage message) {
+      this.message = message;
+    }
+  }
+}

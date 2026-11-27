@@ -1,0 +1,767 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry.commonapi;
+
+import org.slf4j.event.Level;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+import org.mpisws.p2p.transport.priority.PriorityTransportLayer;
+import org.mpisws.p2p.transport.util.OptionsFactory;
+import rice.Destructible;
+import rice.Executable;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.DeliveryNotification;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdType;
+import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.MessageReceipt;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.NodeHandleSet;
+import rice.p2p.commonapi.NodeHandleSetType;
+import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.commonapi.rawserialization.MessageDeserializer;
+import rice.p2p.commonapi.rawserialization.RawMessage;
+import rice.pastry.NodeSet;
+import rice.pastry.PastryNode;
+import rice.pastry.client.PastryAppl;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.routing.RouteMessageNotification;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.SendOptions;
+import rice.pastry.standard.StandardAddress;
+
+/**
+ * This class serves as gluecode, which allows applications written for the common
+ * API to work with pastry.
+ *
+ * @version $Id: PastryEndpoint.java 4654 2009-01-08 16:33:07Z jeffh $
+ *
+ * @author Alan Mislove
+ * @author Peter Druschel
+ */
+public class PastryEndpoint extends PastryAppl implements Endpoint {
+
+  private final Application application;
+
+  class PEDeserializer implements MessageDeserializer {
+    @Override
+    public Message deserialize(InputBuffer buf, short type, int priority,
+        NodeHandle sender) throws IOException {
+      try {
+        return new PastryEndpointMessage(getAddress(),buf,appDeserializer,type, priority,(rice.pastry.NodeHandle)sender);
+      } catch (IllegalArgumentException exception) {
+        logger.warn("Unable to deserialize message of type {} {} {}", type, PastryEndpoint.this, appDeserializer);
+        throw exception;
+      }
+    }
+  }
+
+  /**
+   * Constructor.  Call register() once the application is ready to receive messages.
+   *
+   * @param pn the pastry node that the application attaches to.
+   */
+  public PastryEndpoint(PastryNode pn, Application application, String instance) {
+    this(pn, application, instance, 0);
+  }
+
+  /**
+   * Constructor.  Call register() once the application is ready to receive messages.
+   *
+   * @param pn the pastry node that the application attaches to.
+   */
+
+  public PastryEndpoint(PastryNode pn, Application application, String instance, int address) {
+    super(pn,
+        instance,
+        address == 0 ? StandardAddress.getAddress(application.getClass(),instance,pn.getEnvironment()): address,
+        null,
+        pn.getEnvironment().getLogManager().getLogger(application.getClass(),instance == null ? "-endpoint" : instance+"-endpoint"));
+
+    appDeserializer = deserializer; // use this as the apps default deserializer
+    deserializer = new PEDeserializer();
+    this.application = application;
+  }
+
+
+  /**
+   * The commonapi's deserializer, {@link MessageDeserializer#NONE} until the application sets one.
+   */
+  MessageDeserializer appDeserializer;
+
+  // API methods to be invoked by applications
+
+  /**
+   * Returns this node's id, which is its identifier in the namespace.
+   *
+   * @return The local node's id
+   */
+  @Override
+  public Id getId() {
+    return thePastryNode.getNodeId();
+  }
+
+  /**
+   * This operation forwards a message towards the root of
+   * key.  The optional hint argument specifies a node
+   * that should be used as a first hop in routing the message. A
+   * good hint, e.g. one that refers to the key's current root, can
+   * result in the message being delivered in one hop; a bad hint
+   * adds at most one extra hop to the route. Either K or hint may
+   * be NULL, but not both.  The operation provides a best-effort
+   * service: the message may be lost, duplicated, corrupted, or
+   * delayed indefinitely.
+   *
+   *
+   * @param key the key
+   * @param msg the message to deliver.
+   * @param hint the hint
+   */
+  /**
+   * This duplication of the above code is to make a fast path for the RawMessage.  Though the codeblock
+   * looks identical, it is actually calling a different PEM constructor.
+   */
+  @Override
+  public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint) {
+    return route(key, msg, hint, null);
+  }
+  @Override
+  public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe) {
+    return route(key, msg, hint, deliverAckToMe, null);
+  }
+  @Override
+  public MessageReceipt route(Id key, RawMessage msg, NodeHandle hint, DeliveryNotification deliverAckToMe, Map<String, Object> options) {
+    logger.trace("[{}] route {} to {}", thePastryNode, msg, key);
+
+    PastryEndpointMessage endpointMessage = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
+    return routeHelper(key, endpointMessage, hint, deliverAckToMe, options);
+  }
+
+  /**
+   * This method:
+   * a) constructs the RouteMessage
+   * b) adds a MessageReceipt to the RouteMessage
+   * c) sets the priority option
+   * d) calls router.route(rm);
+   *
+   */
+  private MessageReceipt routeHelper(Id key, final PastryEndpointMessage endpointMessage, final NodeHandle hint, final DeliveryNotification deliverAckToMe, Map<String, Object> options) {
+    if (options == null) options = this.options;
+    logger.debug("routeHelper({},{},{},{}).init()", key, endpointMessage, hint, deliverAckToMe);
+    if ((key == null) && (hint == null)) {
+      throw new IllegalArgumentException("key and hint are null!");
+    }
+    boolean noKey = false;
+    if (key == null) {
+      noKey = true;
+      key = hint.getId();
+    }
+
+    final rice.pastry.routing.RouteMessage routeMessage =
+      new rice.pastry.routing.RouteMessage(
+          (rice.pastry.Id) key,
+          endpointMessage,
+          (rice.pastry.NodeHandle) hint,
+        thePastryNode.getConfig().routeMsgVersion());
+
+    routeMessage.setPrevNode(thePastryNode.getLocalHandle());
+    if (noKey) {
+      routeMessage.getOptions().setMultipleHopsAllowed(false);
+      routeMessage.setDestinationHandle((rice.pastry.NodeHandle)hint);
+    }
+
+
+
+    final Id final_key = key;
+    // The receipt wraps the RouteMessage; PastryNode has no dedicated router for this, so the message goes through receiveMessage.
+    final MessageReceipt result = new MessageReceipt(){
+
+      @Override
+      public boolean cancel() {
+        logger.debug("routeHelper({},{},{},{}).cancel()", final_key, endpointMessage, hint, deliverAckToMe);
+        return routeMessage.cancel();
+      }
+
+      @Override
+      public Message getMessage() {
+        return endpointMessage.getMessage();
+      }
+
+      @Override
+      public Id getId() {
+        return final_key;
+      }
+
+      @Override
+      public NodeHandle getHint() {
+        return hint;
+      }
+    };
+
+    // NOTE: Installing this anyway if the LogLevel is high enough is kind of wild, but really useful for debugging
+    if ((deliverAckToMe != null) || logger.isDebugEnabled()) {
+      routeMessage.setRouteMessageNotification(new RouteMessageNotification() {
+        @Override
+        public void sendSuccess(rice.pastry.routing.RouteMessage message, rice.pastry.NodeHandle nextHop) {
+          logger.atDebug().log(() -> "routeHelper("+final_key+","+endpointMessage+","+hint+","+deliverAckToMe+").sendSuccess():"+nextHop);
+          if (deliverAckToMe != null) deliverAckToMe.sent(result);
+        }
+        @Override
+        public void sendFailed(rice.pastry.routing.RouteMessage message, Exception e) {
+          logger.atDebug().log(() -> "routeHelper("+final_key+","+endpointMessage+","+hint+","+deliverAckToMe+").sendFailed("+e+")");
+          if (deliverAckToMe != null) deliverAckToMe.sendFailed(result, e);
+        }
+      });
+    }
+
+    routeMessage.setTransportLayerOptions(OptionsFactory.addOption(options, PriorityTransportLayer.OPTION_PRIORITY, endpointMessage.getPriority()));
+
+    thePastryNode.getRouter().route(routeMessage);
+
+    return result;
+  }
+
+
+  /**
+   * Schedules a message to be delivered to this application after the provided number of
+   * milliseconds.
+   *
+   * @param message The message to be delivered
+   * @param delay The number of milliseconds to wait before delivering the message
+   */
+  @Override
+  public CancellableTask scheduleMessage(Message message, long delay) {
+    PastryEndpointMessage endpointMessage = new PastryEndpointMessage(this.getAddress(), message, thePastryNode.getLocalHandle());
+    return thePastryNode.scheduleMessage(endpointMessage, delay);
+  }
+
+  /**
+   * Schedules a message to be delivered to this application every period number of
+   * milliseconds, after delay number of milliseconds have passed.
+   *
+   * @param message The message to be delivered
+   * @param delay The number of milliseconds to wait before delivering the fist message
+   * @param delay The number of milliseconds to wait before delivering subsequent messages
+   */
+  @Override
+  public CancellableTask scheduleMessage(Message message, long delay, long period) {
+    PastryEndpointMessage endpointMessage = new PastryEndpointMessage(this.getAddress(), message, thePastryNode.getLocalHandle());
+    return thePastryNode.scheduleMessage(endpointMessage, delay, period);
+  }
+
+  /**
+   * Schedule the specified message for repeated fixed-rate delivery to the
+   * local node, beginning after the specified delay. Subsequent executions take
+   * place at approximately regular intervals, separated by the specified
+   * period.
+   *
+   * @param msg
+   *          a message that will be delivered to the local node after the
+   *          specified delay
+   * @param delay
+   *          time in milliseconds before message is to be delivered
+   * @param period
+   *          time in milliseconds between successive message deliveries
+   * @return the scheduled event object; can be used to cancel the message
+   */
+  @Override
+  public CancellableTask scheduleMessageAtFixedRate(Message msg,
+      long delay, long period) {
+    PastryEndpointMessage endpointMessage = new PastryEndpointMessage(this.getAddress(), msg, thePastryNode.getLocalHandle());
+    return thePastryNode.scheduleMessageAtFixedRate(endpointMessage, delay, period);
+  }
+
+  /**
+   * This method produces a list of nodes that can be used as next
+   * hops on a route towards key, such that the resulting route
+   * satisfies the overlay protocol's bounds on the number of hops
+   * taken.
+   * If safe is true, the expected fraction of faulty
+   * nodes in the list is guaranteed to be no higher than the
+   * fraction of faulty nodes in the overlay; if false, the set may
+   * be chosen to optimize performance at the expense of a
+   * potentially higher fraction of faulty nodes. This option allows
+   * applications to implement routing in overlays with byzantine
+   * node failures. Implementations that assume fail-stop behavior
+   * may ignore the safe argument.  The fraction of faulty
+   * nodes in the returned list may be higher if the safe
+   * parameter is not true because, for instance, malicious nodes
+   * have caused the local node to build a routing table that is
+   * biased towards malicious nodes~\cite{Castro02osdi}.
+   *
+   * @param key the message's key
+   * @param num the maximal number of next hops nodes requested
+   * @return the nodehandle set
+   */
+  @Override
+  public NodeHandleSet localLookup(Id key, int num, boolean safe) {
+    // safe ignored until we have the secure routing support
+
+    // get the nodes from the routing table
+    NodeHandleSet result = getRoutingTable().alternateRoutes((rice.pastry.Id) key, num);
+
+    if (result.size() == 0) {
+      // use the leafset
+      int index = getLeafSet().mostSimilar((rice.pastry.Id)key);
+      NodeHandle nodeHandle = getLeafSet().get(index);
+      NodeSet set = new NodeSet();
+      set.put((rice.pastry.NodeHandle)nodeHandle);
+      result = set;
+    }
+
+    return result;
+  }
+
+  /**
+   * This method produces an unordered list of nodehandles that are
+   * neighbors of the local node in the ID space. Up to num
+   * node handles are returned.
+   *
+   * @param num the maximal number of nodehandles requested
+   * @return the nodehandle set
+   */
+  @Override
+  public NodeHandleSet neighborSet(int num) {
+    return getLeafSet().neighborSet(num);
+  }
+
+  /**
+   * This method returns an ordered set of nodehandles on which
+   * replicas of the object with key can be stored. The call returns
+   * nodes with a rank up to and including max_rank.  If max_rank
+   * exceeds the implementation's maximum replica set size, then its
+   * maximum replica set is returned.  The returned nodes may be
+   * used for replicating data since they are precisely the nodes
+   * which become roots for the key when the local node fails.
+   *
+   * @param id the key
+   * @param maxRank the maximal number of nodehandles returned
+   * @return the replica set
+   */
+  @Override
+  public NodeHandleSet replicaSet(Id id, int maxRank) {
+    LeafSet leafset = getLeafSet();
+    if (maxRank > leafset.maxSize() / 2 + 1) {
+      throw new IllegalArgumentException("maximum replicaSet size for this configuration exceeded; asked for "+maxRank+" but max is "+(leafset.maxSize()/2+1));
+    }
+    if (maxRank > leafset.size()) {
+      logger.trace("trying to get a replica set of size {} but only {} nodes in leafset", maxRank, leafset.size());
+    }
+
+    return leafset.replicaSet((rice.pastry.Id) id, maxRank);
+  }
+
+  /**
+   * This methods returns an ordered set of nodehandles on which replicas of an object with
+   * a given id can be stored.  The call returns nodes up to and including a node with maxRank.
+   * This call also allows the application to provide a remote "center" node, as well as
+   * other nodes in the vicinity.
+   *
+   * @param id The object's id.
+   * @param maxRank The number of desired replicas.
+   * @param root The root handle of the replica set
+   * @param set The set of other nodes around the root handle
+   */
+  @Override
+  public NodeHandleSet replicaSet(Id id, int maxRank, NodeHandle root, NodeHandleSet set) {
+    LeafSet leaf = new LeafSet((rice.pastry.NodeHandle) root, getLeafSet().maxSize(), false);
+    for (int i=0; i<set.size(); i++)
+      leaf.put((rice.pastry.NodeHandle) set.getHandle(i));
+
+    return leaf.replicaSet((rice.pastry.Id) id, maxRank);
+  }
+
+  /**
+   * This method provides information about ranges of keys for which
+   * the node n is currently a r-root. The operations returns null
+   * if the range could not be determined. It is an error to query
+   * the range of a node not present in the neighbor set as returned
+   * by the update upcall or the neighborSet call.
+   *
+   * Some implementations may have multiple, disjoint ranges of keys
+   * for which a given node is responsible (Pastry has two). The
+   * parameter key allows the caller to specify which range should
+   * be returned.  If the node referenced by n is the r-root for
+   * key, then the resulting range includes key. Otherwise, the
+   * result is the nearest range clockwise from key for which n is
+   * responsible.
+   *
+   * @param nodeHandle nodeHandle of the node whose range is being queried
+   * @param rank the rank
+   * @param key the key
+   * @param cumulative if true, returns ranges for which n is an i-root for 0&lt;i&lt;=r
+   * @return the range of keys, or null if range could not be determined for the given node and rank
+   */
+  @Override
+  public IdRange range(NodeHandle nodeHandle, int rank, Id key, boolean cumulative) {
+    rice.pastry.Id pKey = (rice.pastry.Id) key;
+
+    if (cumulative)
+      return getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank);
+
+    rice.pastry.IdRange counterClockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank, false);
+    rice.pastry.IdRange clockwiseRange = getLeafSet().range((rice.pastry.NodeHandle) nodeHandle, rank, true);
+
+    if (clockwiseRange == null || counterClockwiseRange.contains(pKey) || pKey.isBetween(clockwiseRange.getClockwiseBound(), counterClockwiseRange.getCounterClockwiseBound())) return counterClockwiseRange;
+    else return clockwiseRange;
+  }
+
+  /**
+   * This method provides information about ranges of keys for which
+   * the node n is currently a r-root. The operations returns null
+   * if the range could not be determined. It is an error to query
+   * the range of a node not present in the neighbor set as returned
+   * by the update upcall or the neighborSet call.
+   *
+   * Some implementations may have multiple, disjoint ranges of keys
+   * for which a given node is responsible (Pastry has two). The
+   * parameter key allows the caller to specify which range should
+   * be returned.  If the node referenced by n is the r-root for
+   * key, then the resulting range includes key. Otherwise, the
+   * result is the nearest range clockwise from key for which n is
+   * responsible.
+   *
+   * @param nodeHandle nodeHandle of the node whose range is being queried
+   * @param rank the rank
+   * @param key the key
+   * @return the range of keys, or null if range could not be determined for the given node and rank
+   */
+  @Override
+  public IdRange range(NodeHandle nodeHandle, int rank, Id key) {
+    return range(nodeHandle, rank, key, false);
+  }
+
+  /**
+   * Returns a handle to the local node below this endpoint.
+   *
+   * @return A NodeHandle referring to the local node.
+   */
+  @Override
+  public NodeHandle getLocalNodeHandle() {
+    return thePastryNode.getLocalHandle();
+  }
+
+  // Upcall to Application support
+
+  /**
+   * Delivers a message that is not wrapped in a route message. Only this node sends such messages to an endpoint:
+   * the ones scheduled with {@link #scheduleMessage}. None arrives over the network: the transport reads a frame
+   * for this endpoint's address with the application's deserializer ({@link #getDeserializer()}), so it yields the
+   * application's own message, which is not a {@link PastryEndpointMessage}: it fails the cast to a pastry message
+   * in {@code PastryNode.messageReceived}, or, should the application's message be a pastry message, is dropped
+   * below as unknown. Nothing from another node reaches the application through here, which is why there is no
+   * identity check; the one for messages from other nodes is in {@link #receiveMessage}.
+   */
+  @Override
+  public final void messageForApplication(rice.pastry.messaging.Message msg) {
+    logger.trace("[{}] deliver {} from {}", thePastryNode, msg, msg.getSenderId());
+
+    if (msg instanceof PastryEndpointMessage pastryEndpointMessage) {
+      // null for now, when RouteMessage stuff is completed, then it will be different!
+      application.deliver(null, pastryEndpointMessage.getMessage());
+    } else {
+      logger.warn("Received unknown message {} - dropping on floor", msg);
+    }
+  }
+
+  @Override
+  public final boolean enrouteMessage(rice.pastry.messaging.Message msg, rice.pastry.Id key, rice.pastry.NodeHandle nextHop, SendOptions options) {
+    throw new RuntimeException("Should not be called, should only be handled by PastryEndpoint.receiveMessage()");
+  }
+
+  @Override
+  public void leafSetChange(rice.pastry.NodeHandle nodeHandle, boolean wasAdded) {
+    application.update(nodeHandle, wasAdded);
+  }
+
+  // PastryAppl support
+  /**
+   * Called by pastry to deliver a message to this client.  Not to be overridden.
+   *
+   * <p>While the node is not ready, a route message that arrived from another node is dropped unless this endpoint
+   * does not ask for consistent routing ({@link #deliverWhenNotReady()}) or the message is addressed to this node
+   * by its destination handle. Messages created on this node are always handed on.
+   *
+   * <p>Certified mode (the node has an identity policy, {@link PastryNode#setIdentityPolicy}): a route message
+   * that arrived from another node reaches the application ({@link Application#forward}, then
+   * {@link Application#deliver} or the next hop) only if the id of its previous hop
+   * ({@link rice.pastry.routing.RouteMessage#getReceivedFrom()}) is authenticated. Until it is, the message waits
+   * in the node's bounded queue ({@link PastryNode#deferUntilAuthenticated}); it goes on, in order, when the check
+   * succeeds and is dropped when the check fails or times out. The gate is before {@code forward}, not just before
+   * {@code deliver}: what is authenticated is the hop the message came from, which is known on receipt, so the
+   * application sees nothing an unverified hop sent, and this node relays nothing for it either. Messages created
+   * on this node are not gated.
+   *
+   * <p>Only the previous hop is authenticated. The originator named in the message (the sender of the wrapped
+   * message, or whatever the payload claims) is not: any authenticated node can route a message that names
+   * another node as its source. An application that needs to know who sent a message must sign it.
+   *
+   * <p>Without an identity policy nothing is checked.
+   *
+   * @param msg the message that is arriving.
+   */
+  @Override
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
+  public void receiveMessage(rice.pastry.messaging.Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "application upcalls run on the selector thread";
+    logger.trace("[{}] recv {}", thePastryNode, msg);
+
+    if (msg instanceof rice.pastry.routing.RouteMessage routeMessage) {
+      // if the message has a destinationHandle, it should be for me, and it should always be delivered
+      NodeHandle destinationHandle = routeMessage.getDestinationHandle();
+      if (deliverWhenNotReady() ||
+          thePastryNode.isReady() ||
+          routeMessage.getReceivedFrom() == null || // created on this node (the router has overwritten prevNode by now)
+          (destinationHandle != null && destinationHandle == thePastryNode.getLocalHandle())) {
+        // continue to receiveMessage()
+      } else {
+        logger.info("Dropping {} because node is not ready.", msg);
+
+        return;
+      }
+
+      rice.pastry.NodeHandle nextHop = routeMessage.getReceivedFrom();
+      if (nextHop != null && (thePastryNode.isAwaitingAuthentication(nextHop) || !thePastryNode.acceptsIdentity(nextHop))) {
+        // the check has been started; the message goes on when it succeeds, and is dropped when it fails or times out
+        if (!thePastryNode.deferUntilAuthenticated(nextHop, () -> forwardOrDeliver(routeMessage))) {
+          thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "endpoint.unauthenticated-queue-full").log("Dropping {} from {}: its id is not authenticated and too many messages wait", routeMessage, nextHop);
+        }
+        return;
+      }
+      forwardOrDeliver(routeMessage);
+    } else {
+
+      // if the message is not a RouteMessage, then it is for the local node and
+      // was scheduled with scheduleMessage(); see messageForApplication()
+      messageForApplication(msg);
+    }
+  }
+
+  /** hands a route message to the application, then delivers it here or routes it on */
+  @SuppressWarnings("ReferenceEquality") // the local node handle is a single instance
+  private void forwardOrDeliver(rice.pastry.routing.RouteMessage routeMessage) {
+    try {
+      // call application
+      logger.trace("[{}] forward {}", thePastryNode, routeMessage);
+      if (application.forward(routeMessage)) {
+        if (routeMessage.getNextHop() != null) {
+          rice.pastry.NodeHandle nextHop = routeMessage.getNextHop();
+
+          // if the message is for the local node, deliver it here
+          if (getNodeId().equals(nextHop.getNodeId())) {
+            PastryEndpointMessage pMsg = (PastryEndpointMessage) routeMessage.unwrap(deserializer);
+            logger.trace("[{}] deliver {} from {}", thePastryNode, pMsg, pMsg.getSenderId());
+            application.deliver(routeMessage.getTarget(), pMsg.getMessage(), routeMessage.getReceivedFrom());
+            routeMessage.sendSuccess(thePastryNode.getLocalHandle());
+          } else {
+            // route the message
+            // if getDestHandle() == me, rm destHandle()
+            // this message was directed just to me, but now we've decided to forward it, so,
+            // make it generally routable now
+            if (routeMessage.getDestinationHandle() == thePastryNode.getLocalHandle()) {
+              logger.warn("Warning, removing destNodeHandle: {} from {}", routeMessage.getDestinationHandle(), routeMessage);
+              routeMessage.setDestinationHandle(null);
+            }
+            thePastryNode.getRouter().route(routeMessage);
+          }
+        }
+      } else {
+        // forward consumed the message
+        routeMessage.sendSuccess(thePastryNode.getLocalHandle());
+      }
+    } catch (IOException ioe) {
+      logger.atError().setCause(ioe).log(() -> this.toString());
+    }
+  }
+
+  /**
+   * Schedules a job for processing on the dedicated processing thread.  CPU intensive jobs, such
+   * as encryption, erasure encoding, or bloom filter creation should never be done in the context
+   * of the underlying node's thread, and should only be done via this method.
+   *
+   * @param task The task to run on the processing thread
+   */
+  @Override
+  public <R> CompletableFuture<R> process(Executable<R, ? extends Exception> task) {
+    return thePastryNode.process(task);
+  }
+
+  /**
+   * Returns a unique instance name of this endpoint, sort of a mailbox name for this
+   * application.
+   *
+   * @return The unique instance name of this application
+   */
+  @Override
+  public String getApplicationInstanceName() {
+    return instance;
+  }
+
+  // see rice.p2p.commonapi.Endpoint#getEnvironment()
+  @Override
+  public Environment getEnvironment() {
+    return thePastryNode.getEnvironment();
+  }
+
+  @Override
+  public String toString() {
+    return "PastryEndpoint "+application+" "+instance+" "+getAddress();
+  }
+
+  @Override
+  public void setDeserializer(MessageDeserializer deserializer) {
+    appDeserializer = deserializer;
+  }
+
+  @Override
+  public MessageDeserializer getDeserializer() {
+    return appDeserializer;
+  }
+
+  @Override
+  public Id readId(InputBuffer buf, short type) throws IOException {
+    if (type != IdType.PASTRY_ID.id()) throw new IOException("Invalid type:"+type);
+    return rice.pastry.Id.build(buf);
+  }
+
+  @Override
+  public NodeHandle readNodeHandle(InputBuffer buf) throws IOException {
+    return thePastryNode.readNodeHandle(buf);
+  }
+
+  @Override
+  public IdRange readIdRange(InputBuffer buf) throws IOException {
+    return new rice.pastry.IdRange(buf);
+  }
+
+  @Override
+  public NodeHandle coalesce(NodeHandle newHandle) {
+    return thePastryNode.coalesce((rice.pastry.NodeHandle)newHandle);
+  }
+
+  @Override
+  public NodeHandleSet readNodeHandleSet(InputBuffer buf, short type) throws IOException {
+    return switch (NodeHandleSetType.find(type)) {
+      case NODE_SET -> new NodeSet(buf, thePastryNode);
+      case ROUTE_SET -> new RouteSet(buf, thePastryNode, thePastryNode);
+      // read by the multiring endpoint that wraps this one
+      case MULTIRING_NODE_HANDLE_SET -> throw new IOException("Unknown type: "+type);
+      case null -> throw new IOException("Unknown type: "+type);
+    };
+  }
+
+  @Override
+  public List<NodeHandle> networkNeighbors(int num) {
+    HashSet<NodeHandle> handles = new HashSet<NodeHandle>();
+    List<rice.pastry.NodeHandle> l = (List<rice.pastry.NodeHandle>)thePastryNode.getRoutingTable().asList();
+    for (rice.pastry.NodeHandle nodeHandle : l) {
+      handles.add(nodeHandle);
+    }
+    l = thePastryNode.getLeafSet().asList();
+    for (rice.pastry.NodeHandle currentHandle : l) {
+      handles.add(currentHandle);
+    }
+
+    NodeHandle[] array = handles.toArray(new NodeHandle[0]);
+
+    Arrays.sort(array,(a, b) -> thePastryNode.proximity((rice.pastry.NodeHandle)a)-thePastryNode.proximity((rice.pastry.NodeHandle)b));
+
+
+    if (array.length <= num) return Arrays.asList(array);
+
+    NodeHandle[] result = new NodeHandle[num];
+    System.arraycopy(array,0,result,0,num);
+
+    return Arrays.asList(result);
+  }
+
+  @Override
+  public void destroy() {
+    if (application != null) {
+      if (application instanceof Destructible destructable) {
+        destructable.destroy();
+      }
+    }
+    super.destroy();
+  }
+
+  @Override
+  public int proximity(NodeHandle nodeHandle) {
+    return thePastryNode.proximity((rice.pastry.NodeHandle)nodeHandle);
+  }
+
+  @Override
+  public boolean isAlive(NodeHandle nodeHandle) {
+    return thePastryNode.isAlive((rice.pastry.NodeHandle)nodeHandle);
+  }
+
+  boolean consistentRouting = true;
+  @Override
+  public void setRoutingConsistencyRequired(boolean required) {
+    consistentRouting = required;
+  }
+
+  @Override
+  public boolean deliverWhenNotReady() {
+    return !consistentRouting;
+  }
+
+  @Override
+  public boolean isRoutingConsistentFor(Id id) {
+    if (!thePastryNode.isReady()) return false;
+    NodeHandleSet set = replicaSet(id, 1);
+    if (set.size() == 0) return false;
+    return set.getHandle(0).equals(thePastryNode.getLocalHandle());
+  }
+
+  @Override
+  public void setSendOptions(Map<String, Object> options) {
+    this.options = options;
+  }
+
+
+}

@@ -1,0 +1,28 @@
+<section id="threats">
+<p class="eyebrow">DEFENCE · THREAT MODEL</p>
+<h2>Two kinds of attacker</h2>
+<div class="cards">
+<div class="card card-attack rise" style="--i:0">
+<p class="card-title">Outsider</p>
+<p class="body">Any host on the internet, without a certificate.</p>
+<ul class="list">
+<li>Sends malformed or truncated bytes</li>
+<li>Spoofs UDP datagrams and node handles</li>
+<li>Opens many slow or half-open connections</li>
+<li>Floods from many addresses</li>
+</ul>
+</div>
+<div class="card card-insider rise" style="--i:1">
+<p class="card-title">Certified insider</p>
+<p class="body">A minority of nodes with valid certificates, possibly colluding.</p>
+<ul class="list">
+<li>Lies about ids, addresses and senders</li>
+<li>Answers requests it was not asked</li>
+<li>Forges protocol messages and certificates</li>
+<li>Steers joins, routing and replicas</li>
+</ul>
+</div>
+</div>
+<p class="body">Out of scope: a compromised CA, a majority of malicious nodes, an attacker who controls the whole network path.</p>
+<aside>The 2026 analysis assumed certified mode on an untrusted network. Outsiders can reach any node but hold no certificate. Insiders hold a real certificate, so TLS alone does not stop them; what matters is that they cannot claim to be someone else or live somewhere else, and that protocols do not believe what an insider writes into a message.</aside>
+</section>

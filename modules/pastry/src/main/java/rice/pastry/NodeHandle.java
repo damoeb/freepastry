@@ -1,0 +1,191 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.pastry;
+
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import rice.p2p.commonapi.NodeHandleListener;
+import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.commonapi.rawserialization.RawSerializable;
+
+
+/**
+ * Interface for handles to remote nodes.
+ *
+ * @version $Id: NodeHandle.java 4654 2009-01-08 16:33:07Z jeffh $
+ *
+ * @author Andrew Ladd
+ */
+public abstract class NodeHandle extends rice.p2p.commonapi.NodeHandle implements RawSerializable
+{
+
+  public static final int LIVENESS_ALIVE = 1;
+  public static final int LIVENESS_SUSPECTED = 2;
+  public static final int LIVENESS_DEAD = 3;
+
+  // the local pastry node
+  protected PastryNode localnode;
+  protected Logger logger;
+
+  /**
+   * Gets the nodeId of this Pastry node.
+   *
+   * @return the node id.
+   */
+  public abstract Id getNodeId();
+
+  @Override
+  public rice.p2p.commonapi.Id getId() {
+    return getNodeId();
+  }
+
+  /**
+   * Returns the last known liveness of the node.  This can return 3 states:
+   *
+   * @return LIVENESS_ALIVE, LIVENESS_SUSPECTED, LIVENESS_DEAD
+   */
+  public abstract int getLiveness();
+
+  /**
+   * Method which FORCES a check of liveness of the remote node.  Note that
+   * this method should ONLY be called by internal Pastry maintenance algorithms -
+   * this is NOT to be used by applications.  Doing so will likely cause a
+   * blowup of liveness traffic.
+   *
+   * @return true if node is currently alive.
+   */
+  @Override
+  public boolean checkLiveness() {
+    return ping();
+  }
+
+  /**
+   * Ping the node. Refreshes the cached liveness status and proximity value of the Pastry node associated
+   * with this.
+   * Invoking this method causes network activity.
+   *
+   * @return true if node is currently alive.
+   */
+  public abstract boolean ping();
+
+  /**
+   * Accessor method.
+   */
+  public final PastryNode getLocalNode() {
+    return localnode;
+  }
+
+  /**
+   * May be called from handle etc methods to ensure that local node has
+   * been set, either on construction or on deserialization/receivemsg.
+   */
+  public void assertLocalNode() {
+    if (localnode == null) {
+      throw new RuntimeException("PANIC: localnode is null in " + this+"@"+System.identityHashCode(this));
+    }
+  }
+
+  /**
+   * Equality operator for nodehandles.
+   *
+   * @param obj a nodehandle object
+   * @return true if they are equal, false otherwise.
+   */
+  @Override
+  public abstract boolean equals(Object obj);
+
+  /**
+   * Hash codes for nodehandles.
+   *
+   * @return a hash code.
+   */
+  @Override
+  public abstract int hashCode();
+
+  @Override
+  public abstract void serialize(OutputBuffer buf) throws IOException;
+
+  /****************** Listeners with priority, see rice.p2p.commonapi.NodeHandleListener **********/
+
+  @Override
+  public void addNodeHandleListener(NodeHandleListener listener, int priority) {
+    logger.trace("{}.addNodeHandleListener({})", this, listener);
+    super.addNodeHandleListener(listener, priority);
+  }
+
+  @Override
+  protected void nodeHandleListenerPriorityChanged(NodeHandleListener listener, int oldPriority, int newPriority) {
+    // Should we warn?  Hopefully this won't happen very often...
+    logger.atWarn().log(() -> this+".addNodeHandleListener("+listener+","+newPriority+") changed priority, was:"+listener+":"+oldPriority);
+  }
+
+  @Override
+  public boolean removeNodeHandleListener(NodeHandleListener listener) {
+    logger.trace("{}.removeNodeHandleListener({})", this, listener);
+    boolean result = super.removeNodeHandleListener(listener);
+    if (result) {
+      logger.trace("{}.removeNodeHandleListener({}):success", this, listener);
+    } else {
+      logger.info("{}.removeNodeHandleListener({}):failure {} was not a listener.", this, listener, listener);
+    }
+    return result;
+  }
+
+  @Override
+  protected void notifyNodeHandleListeners(Object event) {
+    logger.atTrace().log(() -> this+".notifyNodeHandleListeners("+event+"):notifying "+countNodeHandleListeners()+" listeners");
+    super.notifyNodeHandleListeners(event);
+  }
+
+
+  /**
+   * Notifies the listeners of this node handle of the update.
+   *
+   * @param update The update
+   */
+  public void update(Object update) {
+    if (logger != null) {
+      logger.atDebug().log(() -> this+".update("+update+")"+countNodeHandleListeners());
+    }
+    notifyNodeHandleListeners(update);
+    if (logger != null) {
+      logger.atTrace().log(() -> this+".update("+update+")"+countNodeHandleListeners()+" done");
+    }
+  }
+}

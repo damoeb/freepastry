@@ -1,0 +1,15 @@
+<section id="insiders">
+<p class="eyebrow">DEFENCE · STOPPED: CERTIFIED INSIDERS</p>
+<h2>Insiders can no longer pose as someone else</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:48%">Attack</th><th style="width:52%">Defence now</th></tr>
+<tr><td>Advertise a trusted node’s id at the insider’s own address</td><td>A handle counts only for the exact (id, address, epoch) that showed the certificate; others are probed first</td></tr>
+<tr><td>Claim an honest neighbour’s address before TLS (eclipse)</td><td>Only a connection this node dialled proves an address; a claim never marks a node dead</td></tr>
+<tr><td>Answer a joining node with a forged leaf set</td><td>Answers only from authenticated senders; every handle probed before it enters the leaf set</td></tr>
+<tr><td>Forge Glacier manifests or squat fragments</td><td>Owner-signed manifests; storage ids derive from the owner’s key</td></tr>
+<tr><td>Store fake Past content under a content-hash id</td><td>The hash is checked on insert, cache and lookup</td></tr>
+<tr><td>Forge Scribe acks or unsubscribes, or publish as someone else</td><td>The source must be the authenticated previous hop; acks only for open subscribes</td></tr>
+<tr><td>Frame a node with a forged PeerReview certificate</td><td>Certificates must come from the CA for the asked id; a valid one is never replaced</td></tr>
+</table>
+<aside>An insider has a real certificate, so these defences are about binding what it says to what it proved. Also fixed: the CA tool now draws ids from SecureRandom and refuses a requester-chosen id unless the operator allows it, logs every issuance, and issues a v3 CA certificate. Leaf-set broadcast and join senders are being bound to the authenticated hop right now (wave B, in progress).</aside>
+</section>

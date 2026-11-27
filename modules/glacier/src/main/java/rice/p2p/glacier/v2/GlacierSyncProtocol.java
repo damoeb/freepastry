@@ -1,0 +1,421 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.glacier.v2;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.slf4j.Logger;
+import rice.Continuation;
+import rice.Futures;
+import rice.environment.Environment;
+import rice.p2p.commonapi.Endpoint;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.glacier.Fragment;
+import rice.p2p.glacier.FragmentKey;
+import rice.p2p.glacier.VersionKey;
+import rice.p2p.glacier.v2.messaging.GlacierDataMessage;
+import rice.p2p.glacier.v2.messaging.GlacierRangeForwardMessage;
+import rice.p2p.glacier.v2.messaging.GlacierRangeQueryMessage;
+import rice.p2p.glacier.v2.messaging.GlacierRangeResponseMessage;
+import rice.p2p.glacier.v2.messaging.GlacierSyncMessage;
+import rice.persistence.CachedStorage;
+
+/**
+ * The sync protocol, which lets a node recover the fragments it should hold: it periodically picks a
+ * random fragment offset, finds the nodes responsible for the peer range (range query, range forward,
+ * range response), and sends them a bloom filter of its fragments; they answer with the manifests of
+ * the fragments it lacks, which it then fetches.
+ */
+final class GlacierSyncProtocol {
+  private final GlacierConfig config;
+  private final int numFragments;
+  private final GlacierPolicy policy;
+  private final Endpoint endpoint;
+  private final GlacierContinuationRegistry scheduler;
+  private final GlacierMessageSender router;
+  private final FragmentLocator locator;
+  private final GlacierNeighborhood neighborhood;
+  private final GlacierTrafficShaper trafficShaper;
+  private final CachedStorage fragmentStorage;
+  private final IdFactory factory;
+  private final Environment environment;
+  private final Logger logger;
+  private long syncInterval;
+  private int syncMaxFragments;
+
+  GlacierSyncProtocol(GlacierConfig config, int numFragments, GlacierPolicy policy, Endpoint endpoint, GlacierContinuationRegistry scheduler, GlacierMessageSender router, FragmentLocator locator, GlacierNeighborhood neighborhood, GlacierTrafficShaper trafficShaper, CachedStorage fragmentStorage, IdFactory factory, Environment environment, Logger logger) {
+    this.config = config;
+    this.numFragments = numFragments;
+    this.policy = policy;
+    this.endpoint = endpoint;
+    this.scheduler = scheduler;
+    this.router = router;
+    this.locator = locator;
+    this.neighborhood = neighborhood;
+    this.trafficShaper = trafficShaper;
+    this.fragmentStorage = fragmentStorage;
+    this.factory = factory;
+    this.environment = environment;
+    this.logger = logger;
+    this.syncInterval = config.syncInterval();
+    this.syncMaxFragments = config.syncMaxFragments();
+  }
+
+  long getSyncInterval() {
+    return syncInterval;
+  }
+
+  int getSyncMaxFragments() {
+    return syncMaxFragments;
+  }
+
+  void setSyncMaxFragments(int syncMaxFragments) {
+    this.syncMaxFragments = syncMaxFragments;
+  }
+
+  /**
+   * @return the periodic task that asks the holders of a random peer fragment range which fragments
+   *         this node is missing
+   */
+  GlacierContinuation newSyncTask() {
+    return new GlacierContinuation() {
+      long nextTimeout;
+      int offset;
+
+      @Override
+      public String toString() {
+        return "Sync continuation";
+      }
+      @Override
+      public void init() {
+        nextTimeout = environment.getTimeSource().currentTimeMillis() + config.syncDelayAfterJoin();
+      }
+      @Override
+      public void receiveResult(Object received) {
+        if (received instanceof GlacierRangeResponseMessage refreshResponseMessage) {
+
+          Id counterClockwiseId = locator.getFragmentLocation(refreshResponseMessage.getCommonRange().getCounterClockwiseBound(), numFragments-offset, 0);
+          Id clockwiseId = locator.getFragmentLocation(refreshResponseMessage.getCommonRange().getClockwiseBound(), numFragments-offset, 0);
+          final IdRange originalRange = factory.buildIdRange(counterClockwiseId, clockwiseId);
+
+          logger.info("Range response (offset: {}): {}, original={}", offset, refreshResponseMessage.getCommonRange(), originalRange);
+
+          final IdSet keySet = fragmentStorage.scan();
+          Futures.forward(endpoint.process(() -> {
+            FragmentBloomFilter bloomFilter = new FragmentBloomFilter((2*keySet.numElements()+5)*config.syncBloomFilterBitsPerKey(), config.syncBloomFilterNumHashes(), environment.getRandomSource());
+            Iterator<Id> iter = keySet.getIterator();
+
+            while (iter.hasNext()) {
+              FragmentKey fragmentKey = (FragmentKey)iter.next();
+              Id thisPos = locator.getFragmentLocation(fragmentKey);
+              if (originalRange.containsId(thisPos)) {
+                FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fragmentKey);
+                if (metadata != null) {
+                  long currentExp = metadata.currentExpiration();
+                  long prevExp = metadata.previousExpiration();
+                  logger.trace(" - Adding {} as {}, ecur={}, eprev={}", fragmentKey, fragmentKey.versionKey().id(), currentExp, prevExp);
+                  bloomFilter.add(hashInput(fragmentKey.versionKey(), currentExp));
+                  bloomFilter.add(hashInput(fragmentKey.versionKey(), prevExp));
+                } else {
+                  logger.atWarn().log(() -> "SYNC Cannot read metadata of object "+fragmentKey.toStringFull()+", storage returned null");
+                }
+              }
+            }
+
+            return bloomFilter;
+          }), new Continuation<FragmentBloomFilter, Exception>() {
+            @Override
+            public void receiveResult(FragmentBloomFilter result) {
+              if (result != null) {
+                FragmentBloomFilter bloomFilter = (FragmentBloomFilter) result;
+                logger.debug("Got {}", bloomFilter);
+                logger.atInfo().log(() -> keySet.numElements()+" keys added, sending sync request...");
+
+                router.sendMessage(
+                  null,
+                  new GlacierSyncMessage(scheduler.getUID(), refreshResponseMessage.getCommonRange(), offset, bloomFilter, router.getLocalNodeHandle(), refreshResponseMessage.getSource().getId(), GlacierTags.SYNC),
+                  refreshResponseMessage.getSource()
+                );
+              } else {
+                logger.warn("While processing range response: Result is of unknown type: {} -- discarding request", result);
+              }
+            }
+            @Override
+            public void receiveException(Exception e) {
+              logger.warn("Exception while processing range response: {} -- discarding request", e, e);
+            }
+          }, endpoint.getEnvironment());
+        } else {
+          logger.warn("Unknown result in sync continuation: {} -- discarded", received);
+        }
+      }
+      @Override
+      public void receiveException(Exception e) {
+        logger.warn("Exception in sync continuation: ", e);
+        terminate();
+      }
+      @Override
+      public void timeoutExpired() {
+        if (trafficShaper.getActiveRestores() > 0) {
+          logger.info("Sync postponed; {} fetches pending", trafficShaper.getActiveRestores());
+          nextTimeout = environment.getTimeSource().currentTimeMillis() + config.jitterTerm(config.syncRetryInterval(), environment.getRandomSource());
+        } else {
+          nextTimeout = environment.getTimeSource().currentTimeMillis() + config.jitterTerm(syncInterval, environment.getRandomSource());
+          offset = 1+environment.getRandomSource().nextInt(numFragments-1);
+
+          Id dest = locator.getFragmentLocation(router.getLocalNodeHandle().getId(), offset, 0);
+          Id counterClockwiseId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getCounterClockwiseBound(), offset, 0);
+          Id clockwiseId = locator.getFragmentLocation(neighborhood.getResponsibleRange().getClockwiseBound(), offset, 0);
+          IdRange requestedRange = factory.buildIdRange(counterClockwiseId, clockwiseId);
+
+          logger.info("Sending range query for ({}) to {}", requestedRange, dest);
+          router.sendMessage(
+            dest,
+            new GlacierRangeQueryMessage(getMyUID(), requestedRange, router.getLocalNodeHandle(), dest, GlacierTags.SYNC),
+            null
+          );
+        }
+      }
+      @Override
+      public long getTimeout() {
+        return nextTimeout;
+      }
+    };
+  }
+
+  /**
+   * Compares the requester's bloom filter with the local fragments in the requested range, and sends the
+   * manifests of the fragments the requester is missing.
+   *
+   * <p>The requester names the offset between its fragment ids and the local ones; a sync task only ever picks one in
+   * {@code 1..numFragments-1}, and a request with any other offset is dropped.
+   */
+  void handleSyncRequest(final GlacierSyncMessage syncMessage) {
+    logger.info("SyncRequest from {} for {} offset {}", syncMessage.getSource().getId(), syncMessage.getRange(), syncMessage.getOffsetFID());
+    if (syncMessage.getOffsetFID() < 1 || syncMessage.getOffsetFID() >= numFragments) {
+      logger.warn("Dropping the sync request from {}: offset {} is outside 1..{}", syncMessage.getSource(), syncMessage.getOffsetFID(), numFragments - 1);
+      return;
+    }
+    logger.atDebug().log(() -> "Contains "+syncMessage.getBloomFilter());
+
+    Iterator<Id> iter = fragmentStorage.scan().getIterator();
+    final IdRange range = syncMessage.getRange();
+    final int offset = syncMessage.getOffsetFID();
+    final FragmentBloomFilter bloomFilter = syncMessage.getBloomFilter();
+    final long earliestAcceptableExpiration = environment.getTimeSource().currentTimeMillis() + config.syncMinRemainingLifetime();
+    final long latestAcceptableStoredSince = environment.getTimeSource().currentTimeMillis() - config.syncMinQuietTime();
+
+    final List<Id> missing = new ArrayList<Id>();
+
+    while (iter.hasNext()) {
+      FragmentKey fragmentKey = (FragmentKey)iter.next();
+      if (fragmentKey.fragmentId() < 0 || fragmentKey.fragmentId() >= numFragments) {
+        // the owner of an object signs its manifest and may list more fragments than this node uses
+        logger.warn("Not offering {}: its fragment id is outside 0..{}", fragmentKey, numFragments - 1);
+        continue;
+      }
+      Id thisPos = locator.getFragmentLocation(fragmentKey);
+      if (range.containsId(thisPos)) {
+        FragmentMetadata metadata = (FragmentMetadata) fragmentStorage.getMetadata(fragmentKey);
+        if (metadata != null) {
+          if (!bloomFilter.contains(hashInput(fragmentKey.versionKey(), metadata.currentExpiration()))) {
+            if (metadata.currentExpiration() >= earliestAcceptableExpiration) {
+              if (metadata.storedSince() <= latestAcceptableStoredSince) {
+                logger.trace("{} @{} - MISSING", fragmentKey, thisPos);
+                missing.add(fragmentKey);
+                if (missing.size() >= syncMaxFragments) {
+                  logger.info("Limit of {} missing fragments reached", syncMaxFragments);
+                  break;
+                }
+              } else {
+                logger.atDebug().log(() -> fragmentKey+" @"+thisPos+" - TOO FRESH (stored "+(environment.getTimeSource().currentTimeMillis()-metadata.storedSince())+"ms)");
+              }
+            } else {
+              logger.atDebug().log(() -> fragmentKey+" @"+thisPos+" - EXPIRES SOON (in "+(metadata.currentExpiration()-environment.getTimeSource().currentTimeMillis())+"ms)");
+            }
+          } else {
+            logger.trace("{} @{} - OK", fragmentKey, thisPos);
+          }
+        } else {
+          logger.atWarn().log(() -> "SYNC RESPONSE cannot read metadata in object "+fragmentKey.toStringFull()+", storage returned null");
+        }
+      } else logger.trace("{} @{} - OUT OF RANGE", fragmentKey, thisPos);
+    }
+
+    if (missing.isEmpty()) {
+      logger.info("No fragments missing. OK. ");
+      return;
+    }
+
+    logger.info("Sending {} fragments to {}", missing.size(), syncMessage.getSource().getId());
+
+    Futures.forward(fragmentStorage.getObject(missing.get(0)), new Continuation<Object, Exception>() {
+      int currentLookup = 0;
+      int manifestIndex = 0;
+      final int numLookups = missing.size();
+      Manifest[] manifests = new Manifest[Math.min(numLookups, config.manifestAggregationFactor())];
+      Fragment[] fragments = new Fragment[Math.min(numLookups, config.manifestAggregationFactor())];
+      FragmentKey[] keys = new FragmentKey[Math.min(numLookups, config.manifestAggregationFactor())];
+
+      @Override
+      public void receiveResult(Object result) {
+        final FragmentKey thisKey = (FragmentKey) missing.get(currentLookup);
+
+        if (result == null) {
+          logger.warn("SYN2: Fragment {} not found -- canceled SYN", thisKey);
+          return;
+        }
+
+        logger.debug("Retrieved manifest {} (dest={}, offset={})", thisKey, syncMessage.getSource().getId(), offset);
+
+        FragmentAndManifest fragmentAndManifest = (FragmentAndManifest) result;
+
+        if (!policy.checkSignature(fragmentAndManifest.getManifest(), thisKey.versionKey())) {
+          // every path that stores a fragment checks its signature first, so the local store is damaged
+          logger.warn("SYN2: The stored manifest of {} does not verify -- canceled SYN", thisKey);
+          return;
+        }
+
+        fragments[manifestIndex] = null;
+        manifests[manifestIndex] = fragmentAndManifest.getManifest();
+        // both the local fragment id and the offset were bounded above, so this is in 0..numFragments-1
+        int hisFID = thisKey.fragmentId() - offset;
+        if (hisFID < 0)
+          hisFID += numFragments;
+        keys[manifestIndex] = new FragmentKey(thisKey.versionKey(), hisFID);
+        logger.atDebug().log(() -> "He should have key "+keys[manifestIndex]+" @"+locator.getFragmentLocation(keys[manifestIndex]));
+        manifestIndex ++;
+        currentLookup ++;
+        if ((manifestIndex == config.manifestAggregationFactor()) || (currentLookup == numLookups)) {
+          logger.debug("Sending a packet with {} manifests to {}", keys.length, syncMessage.getSource().getId());
+
+          router.sendMessage(
+            null,
+            new GlacierDataMessage(scheduler.getUID(), keys, fragments, manifests, router.getLocalNodeHandle(), syncMessage.getSource().getId(), false, GlacierTags.SYNC_MANIFESTS),
+            syncMessage.getSource()
+          );
+
+          manifestIndex = 0;
+          manifests = new Manifest[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
+          keys = new FragmentKey[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
+          fragments = new Fragment[Math.min(numLookups - currentLookup, config.manifestAggregationFactor())];
+        }
+
+        if (currentLookup < numLookups)
+          Futures.forward(fragmentStorage.getObject(missing.get(currentLookup)), this);
+      }
+      @Override
+      public void receiveException(Exception e) {
+        logger.atWarn().log(() -> "SYN2: Exception while retrieving fragment "+missing.get(currentLookup)+", e="+e+" -- canceled SYN");
+      }
+    });
+  }
+
+  /**
+   * Forwards a range query to each neighbor whose range intersects the requested one.
+   */
+  void handleRangeQuery(final GlacierRangeQueryMessage rangeQueryMessage) {
+    IdRange requestedRange = rangeQueryMessage.getRequestedRange();
+
+    logger.info("Range query for {}", requestedRange);
+
+    Id[][] ranges = neighborhood.getNeighborRanges();
+
+    for (int i=0; i<ranges.length; i++) {
+      IdRange thisRange = factory.buildIdRange(ranges[i][0], ranges[i][2]);
+      IdRange intersectRange = requestedRange.intersectRange(thisRange);
+      if (!intersectRange.isEmpty()) {
+        logger.debug("     - Intersects: {}, sending RangeForward", intersectRange);
+        router.sendMessage(
+          ranges[i][1],
+          new GlacierRangeForwardMessage(rangeQueryMessage.getUID(), requestedRange, rangeQueryMessage.getSource(), router.getLocalNodeHandle(), ranges[i][1], rangeQueryMessage.getTag()),
+          null
+        );
+      }
+    }
+
+    logger.debug("Finished processing range query");
+  }
+
+  /**
+   * Answers a forwarded range query with the part of the requested range this node is responsible for.
+   */
+  void handleRangeForward(final GlacierRangeForwardMessage rangeForwardMessage) {
+    if (!rangeForwardMessage.getDestination().equals(router.getLocalNodeHandle().getId())) {
+      logger.warn("Not for us (dest={}, we={})", rangeForwardMessage.getDestination(), router.getLocalNodeHandle().getId());
+      return;
+    }
+
+    IdRange commonRange = neighborhood.getResponsibleRange().intersectRange(rangeForwardMessage.getRequestedRange());
+    if (!commonRange.isEmpty()) {
+      logger.info("Range forward: Returning common range {} to requestor {}", commonRange, rangeForwardMessage.getRequestor());
+      router.sendMessage(
+        null,
+        new GlacierRangeResponseMessage(rangeForwardMessage.getUID(), commonRange, router.getLocalNodeHandle(), rangeForwardMessage.getRequestor().getId(), rangeForwardMessage.getTag()),
+        rangeForwardMessage.getRequestor()
+      );
+    } else {
+      logger.warn("Received GRFM by {}, but no common range??!? -- ignored", rangeForwardMessage.getRequestor());
+    }
+  }
+
+  /**
+   * @return the bloom filter key of one version of an object with the given expiration
+   */
+  static byte[] hashInput(VersionKey versionKey, long expiration) {
+    byte[] a = versionKey.toByteArray();
+    byte[] b = new byte[a.length + 8];
+    for (int i=0; i<a.length; i++)
+      b[i] = a[i];
+
+    b[a.length + 0] = (byte)(0xFF & (expiration>>56));
+    b[a.length + 1] = (byte)(0xFF & (expiration>>48));
+    b[a.length + 2] = (byte)(0xFF & (expiration>>40));
+    b[a.length + 3] = (byte)(0xFF & (expiration>>32));
+    b[a.length + 4] = (byte)(0xFF & (expiration>>24));
+    b[a.length + 5] = (byte)(0xFF & (expiration>>16));
+    b[a.length + 6] = (byte)(0xFF & (expiration>>8));
+    b[a.length + 7] = (byte)(0xFF & expiration);
+
+    return b;
+  }
+}

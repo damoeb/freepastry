@@ -1,0 +1,55 @@
+<section id="roadmap" class="paper">
+<p class="eyebrow">LIMITS · THE PLAN</p>
+<h2>Four waves, from kill switches to secure routing</h2>
+<div class="waves">
+<div class="wave rise" style="--i:0">
+<p class="wave-letter">A</p>
+<p class="wave-title">Kill switches and eclipse</p>
+<div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+<p class="status">Done: 5 of 5</p>
+<ul class="wave-list">
+<li>Remote Error crashes</li>
+<li>Handle-cache memory exhaustion</li>
+<li>Address takeover</li>
+<li>TLS stack overflow</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:1">
+<p class="wave-letter">B</p>
+<p class="wave-title">Who sent what</p>
+<div class="bar"><div class="bar-fill" style="width:45%"></div></div>
+<p class="status">In progress</p>
+<ul class="wave-list">
+<li>Done: Scribe, PeerReview, CA tool</li>
+<li>Running: overlay senders, runtime</li>
+<li>Next: Past and Glacier responses</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:2">
+<p class="wave-letter">C</p>
+<p class="wave-title">Budgets and protocol upgrades</p>
+<div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+<p class="status status-plan">Planned</p>
+<ul class="wave-list">
+<li>Secure join</li>
+<li>Authenticated liveness</li>
+<li>Revocation</li>
+<li>Per-peer budgets</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:3">
+<p class="wave-letter">D</p>
+<p class="wave-title">Secure routing</p>
+<div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+<p class="status status-plan">Planned: design first</p>
+<ul class="wave-list">
+<li>Design together with rate limiting (C1–C3)</li>
+<li>Constrained routing table</li>
+<li>Signed Scribe topics</li>
+<li>PeerReview in deployments</li>
+<li>Certified NAT nodes</li>
+</ul>
+</div>
+</div>
+<aside>Status on 27 November 2026. Wave B’s Past and Glacier parts wait until those modules have moved from callbacks to CompletableFuture, so their request handling is rewritten only once. Wave D follows Castro et al., “Secure routing for structured peer-to-peer overlay networks”.</aside>
+</section>

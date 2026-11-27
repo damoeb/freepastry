@@ -1,0 +1,354 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.persistence;
+
+import java.util.concurrent.CompletableFuture;
+/*
+ * @(#) PersistenceManager.java
+ *
+ * @author Ansley Post
+ * @author Alan Mislove
+ *
+ * @version $Id: MemoryStorage.java 4654 2009-01-08 16:33:07Z jeffh $
+ */
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.IdFactory;
+import rice.p2p.commonapi.IdRange;
+import rice.p2p.commonapi.IdSet;
+import rice.p2p.util.ConcurrentRingMap;
+import rice.p2p.util.ReverseTreeMap;
+
+/**
+ * This class is an implementation of Storage which provides
+ * in-memory storage. This class is specifically *NOT* designed
+ * to provide persistent storage, and simply functions as an
+ * enhanced hash table.
+ */
+@SuppressWarnings("unchecked")
+public class MemoryStorage implements Storage {
+
+  // the map used to store the data
+  private HashMap<Id, Object> storage;
+
+  // the map used to store the metadata
+  private ReverseTreeMap<Id, Object> metadata;
+
+  // the current list of Ids
+  private IdSet idSet;
+
+  // the current total size
+  private int currentSize;
+
+  // the factory for manipulating the ids
+  private IdFactory factory;
+
+  /**
+   * Builds a MemoryStorage object.
+   *
+   * @param factory The factory to build protocol-specific Ids from.
+   */
+  public MemoryStorage(IdFactory factory) {
+    this.factory = factory;
+    idSet = factory.buildIdSet();
+    storage = new HashMap<Id, Object>();
+    metadata = new ReverseTreeMap<Id, Object>();
+    currentSize = 0;
+  }
+
+  /**
+   * Method which is used to erase all data stored in the Storage.
+   * Use this method with care!
+   *
+   * @return completes once the operation is done
+   */
+  @Override
+  public CompletableFuture<Boolean> flush() {
+    storage = new HashMap<Id, Object>();
+    metadata = new ReverseTreeMap<Id, Object>();
+    idSet = factory.buildIdSet();
+    currentSize = 0;
+
+    return CompletableFuture.completedFuture(Boolean.TRUE);
+  }
+
+  /**
+   * Renames the given object to the new id.  This method is potentially faster
+   * than store/cache and unstore/uncache.
+   *
+   * @param oldId The id of the object in question.
+   * @param newId The new id of the object in question.
+   * @return completes once the operation is done
+   */
+  @Override
+  public CompletableFuture<Boolean> rename(Id oldId, Id newId) {
+    if (! idSet.isMemberId(oldId)) {
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
+    }
+
+    idSet.removeId(oldId);
+    idSet.addId(newId);
+
+    storage.put(newId, storage.get(oldId));
+    storage.remove(oldId);
+
+    metadata.put(newId, metadata.get(oldId));
+    metadata.remove(oldId);
+
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
+  }
+
+  /**
+   * Stores the object under the key <code>id</code>.  If there is already
+   * an object under <code>id</code>, that object is replaced.
+   *
+   * The future completes, before this method returns,
+   * with the success or failure of the operation.
+   *
+   * @param obj The object to be made persistent.
+   * @param id The object's id.
+   * @param metadata The object's metadata
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
+   */
+  @Override
+  public CompletableFuture<Boolean> store(Id id, Object metadata, Object obj) {
+    if (id == null || obj == null) {
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
+    }
+
+    currentSize += getSize(obj);
+
+    this.storage.put(id, obj);
+    this.metadata.put(id, metadata);
+    idSet.addId(id);
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
+  }
+
+  /**
+   * Removes the object from the list of stored objects. If the object was not
+   * in the cached list in the first place, nothing happens and <code>false</code>
+   * is returned.
+   *
+   * The future completes, before this method returns,
+   * with the success or failure of the operation.
+   *
+   * @param id The object's persistence id
+   * @return completes with <code>true</code> if the action succeeds, else <code>false</code>
+   */
+  @Override
+  public CompletableFuture<Boolean> unstore(Id id) {
+    Object stored = storage.remove(id);
+    metadata.remove(id);
+    idSet.removeId(id);
+
+    if (stored != null) {
+      currentSize -= getSize(stored);
+      return CompletableFuture.completedFuture(Boolean.valueOf(true));
+    } else {
+      return CompletableFuture.completedFuture(Boolean.valueOf(false));
+    }
+  }
+
+  /**
+   * Returns whether or not the provided id exists
+   *
+   * @param id The id to check
+   * @return Whether or not the given id is stored
+   */
+  @Override
+  public boolean exists(Id id) {
+    return storage.containsKey(id);
+  }
+
+  /**
+   * Returns the metadata associated with the provided object, or null if
+   * no metadata exists.  The metadata must be stored in memory, so this
+   * operation is guaranteed to be fast and non-blocking.
+   *
+   * @param id The id for which the metadata is needed
+   * @return The metadata, or null of non exists
+   */
+  @Override
+  public Object getMetadata(Id id) {
+    return metadata.get(id);
+  }
+
+  /**
+   * Updates the metadata stored under the given key to be the provided
+   * value.  As this may require a disk access, the result
+   * comes through the future.
+   *
+   * @param id The id for the metadata
+   * @param metadata The metadata to store
+   * @return completes once the operation is done
+   */
+  @Override
+  public CompletableFuture<Boolean> setMetadata(Id id, Object metadata) {
+    if (exists(id))
+      this.metadata.put(id, metadata);
+
+    return CompletableFuture.completedFuture(Boolean.valueOf(exists(id)));
+  }
+
+  /**
+   * Returns the object identified by the given id, or <code>null</code> if
+   * there is no corresponding object (through the future).
+   *
+   * @param id The id of the object in question.
+   * @return completes once the operation is done
+   */
+  @Override
+  public CompletableFuture<Object> getObject(Id id) {
+    return CompletableFuture.completedFuture(storage.get(id));
+  }
+
+  /**
+   * Return the objects identified by the given range of ids. The IdSet
+   * returned contains the Ids of the stored objects. The range is
+   * partially inclusive, the lower range is inclusive, and the upper
+   * exclusive.
+   *
+   *
+   * NOTE: This method blocks so if the behavior of this method changes and
+   * the guys don't fit in memory, this method may be deprecated.
+   *
+   * @param range The range to query
+   * @return The idset containg the keys
+   */
+  @Override
+  public IdSet scan(IdRange range){
+    return idSet.subSet(range);
+  }
+
+  /**
+   * Return all objects currently stored by this catalog
+   *
+   * NOTE: This method blocks so if the behavior of this method changes and
+   * no longer stored in memory, this method may be deprecated.
+   *
+   * @return The idset containg the keys
+   */
+  @Override
+  public IdSet scan() {
+    return idSet;
+  }
+
+  /**
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
+   *
+   * @param range The range to query
+   * @return The map containg the keys
+   */
+  @Override
+  public SortedMap<Id, Object> scanMetadata(IdRange range) {
+    if (range.isEmpty())
+      return new ConcurrentRingMap<Id, Object>();
+    else if (range.getCounterClockwiseBound().equals(range.getClockwiseBound()))
+      return scanMetadata();
+    else
+      return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keySubMap(range.getCounterClockwiseBound(), range.getClockwiseBound())));
+  }
+
+  /**
+   * Returns a map which contains keys mapping ids to the associated
+   * metadata.
+   *
+   * @return The treemap mapping ids to metadata
+   */
+  @Override
+  public SortedMap<Id, Object> scanMetadata() {
+    return Collections.unmodifiableSortedMap(new TreeMap<Id, Object>(metadata.keyMap()));
+  }
+
+  /**
+   * Returns the submapping of ids which have metadata less than the provided
+   * value.
+   *
+   * @param value The maximal metadata value
+   * @return The submapping
+   */
+  @Override
+  public SortedMap<Id, Object> scanMetadataValuesHead(Object value) {
+    return Collections.unmodifiableSortedMap(metadata.valueHeadMap(value));
+  }
+
+  /**
+    * Returns the submapping of ids which have metadata null
+   *
+   * @return The submapping
+   */
+  @Override
+  public SortedMap<Id, Object> scanMetadataValuesNull() {
+    return Collections.unmodifiableSortedMap(metadata.valueNullMap());
+  }
+
+  /**
+   * Returns the total size of the stored data in bytes.
+   *
+   * @return The total size, in bytes, of data stored.
+   */
+  @Override
+  public long getTotalSize() {
+    return currentSize;
+  }
+
+  /**
+   * Returns the number of Ids currently stored in the catalog
+   *
+   * @return The number of ids in the catalog
+   */
+  @Override
+  public int getSize() {
+    return idSet.numElements();
+  }
+
+  /**
+   * Returns the size of the given object, in bytes.
+   *
+   * @param obj The object to determine the size of
+   * @return The size, in bytes
+   */
+  private int getSize(Object obj) {
+    return ObjectSizes.sizeOf(obj);
+  }
+}

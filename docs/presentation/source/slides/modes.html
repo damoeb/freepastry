@@ -1,0 +1,14 @@
+<section id="modes" class="paper">
+<p class="eyebrow">DEFENCE · TWO MODES</p>
+<h2>Plain mode trusts the network, certified mode proves who is talking</h2>
+<table class="tbl rise">
+<tr class="tbl-head"><th style="width:22%"></th><th style="width:36%">Plain mode</th><th style="width:42%">Certified mode</th></tr>
+<tr><td>Who can join</td><td>Anyone who can reach a node</td><td>Nodes holding a certificate from the deployment’s CA</td></tr>
+<tr><td>Who sent a message</td><td>Whatever the message says</td><td>The TLS certificate of the previous hop</td></tr>
+<tr><td>Where a node lives</td><td>Taken from its handle</td><td>Proven only by a connection this node dialled itself</td></tr>
+<tr><td>Join answers</td><td>Trusted as they arrive</td><td>Only from an authenticated sender; every handle is probed first</td></tr>
+<tr><td>Meant for</td><td>Trusted networks and the simulator</td><td>Untrusted networks</td></tr>
+</table>
+<p class="body">The rest of this deck assumes certified mode. In plain mode, anyone is an insider.</p>
+<aside>Plain mode is the historic FreePastry behaviour: a node believes the ids and addresses written in messages. Certified mode (CertifiedSocketPastryNodeFactory) runs every connection over TLS 1.3 with CA-issued node certificates and admits a handle only for the exact id, address and epoch that presented the certificate. Plain mode is now documented as trusted-network-only; the hardening against crashes and memory exhaustion applies to both modes.</aside>
+</section>

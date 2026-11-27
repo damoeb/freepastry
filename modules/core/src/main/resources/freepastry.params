@@ -1,0 +1,492 @@
+# this file holds the default values for pastry and it's applications
+# you do not need to modify the default.params file to override these values
+# instead you can use your own params file to set values to override the 
+# defaults.  You can specify this file by constructing your
+# rice.environment.Environment() with the filename you wish to use
+# typically, you will want to be able to pass this file name from the command 
+# line
+
+# max number of handles stored per routing table entry
+pastry_rtMax = 1
+pastry_rtBaseBitLength = 4
+
+# leafset size
+pastry_lSetSize = 24
+
+# maintenance frequencies
+pastry_leafSetMaintFreq = 60
+pastry_routeSetMaintFreq = 900
+
+# FP 2.1 uses the new transport layer
+transport_wire_datagram_receive_buffer_size = 131072
+transport_wire_datagram_send_buffer_size = 65536
+# an incoming socket must finish its handshake (magic number, source route, identity
+# and priority headers) within this time after accept, or it is closed; 0 = no deadline
+transport_wire_handshake_timeout_millis = 10000
+# incoming sockets one network prefix (transport_prefix_bits_v4/_v6) may have in the handshake at the
+# same time, and all peers together; further ones are closed at once, before a byte is read
+transport_wire_max_handshaking_sockets_per_prefix = 32
+transport_wire_max_handshaking_sockets = 256
+# token buckets of accepted sockets per network prefix and for all peers together (sockets per second,
+# and the burst a full bucket allows); a socket that finds a bucket empty is closed at once
+transport_wire_accept_rate_per_prefix_per_second = 10
+transport_wire_accept_burst_per_prefix = 20
+transport_wire_accept_rate_per_second = 100
+transport_wire_accept_burst = 200
+# datagrams read in one selection before the selector thread turns to other work
+transport_wire_max_datagrams_per_read = 64
+# token bucket of datagrams per network prefix; a datagram that finds it empty is dropped unread, unless its
+# source is pinned (leaf set, routing table): source addresses can be spoofed, so a flood in a neighbour's
+# name must not drop the neighbour's own datagrams (liveness pongs)
+transport_wire_datagram_rate_per_prefix_per_second = 200
+transport_wire_datagram_burst_per_prefix = 400
+# budgets that many addresses of one network share are kept per prefix of this length: an IPv4 /24, an IPv6 /64
+transport_prefix_bits_v4 = 24
+transport_prefix_bits_v6 = 64
+# the most prefixes or peers a budget keeps a token bucket for; the least recently used one is forgotten beyond
+pastry_socket_budget_max_peers = 10000
+# maintenance work a remote peer can make a node do at will (token buckets per peer, the authenticated sender in
+# certified mode); a request beyond its bucket is ignored, the honest requester asks again on its own schedule
+# route row requests a peer gets answered
+pastry_budget_route_row_requests_per_second = 1
+pastry_budget_route_row_request_burst = 5
+# route rows a peer sends that the node takes in (answers to its requests and unsolicited ones)
+pastry_budget_route_row_broadcasts_per_second = 0.2
+pastry_budget_route_row_broadcast_burst = 3
+# leaf set requests (and the leases they ask for) a peer gets answered
+pastry_budget_leaf_set_requests_per_second = 1
+pastry_budget_leaf_set_request_burst = 5
+# join requests the node answers as the root: per joiner id (2 per minute), and for all joiners together
+pastry_budget_joins_per_joiner_per_second = 0.0333
+pastry_budget_join_burst_per_joiner = 2
+pastry_budget_joins_per_second = 20
+pastry_budget_join_burst = 40
+# certified mode: verification connections (TLS probes) the node opens to unauthenticated handles that one peer
+# supplied in a message; beyond it the handle is not admitted now
+pastry_budget_identity_probes_per_second = 0.1
+pastry_budget_identity_probe_burst = 4
+# leaf set and routing table members get this many times the rate and burst
+pastry_budget_pinned_factor = 4
+# peers that have a bucket of a kind; beyond it the least recently used one is forgotten
+pastry_budget_max_peers = 10000
+# read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
+# waits for the next turn, so that a burst on one socket neither nests calls nor starves others
+transport_ssl_max_read_callbacks_per_select = 64
+# threads that run the CPU work (RSA, key exchange) of incoming TLS handshakes, off the selector and the
+# shared processing thread, and the incoming handshakes that may wait for one; a handshake that finds the
+# queue full is refused (its socket closed). Handshakes this node starts have a thread of their own
+transport_ssl_handshake_threads = 2
+transport_ssl_handshake_queue_length = 64
+# log lines of one kind that remote input can trigger at will (a dropped malformed datagram, a
+# refused handshake, an exception contained on the selector thread) per interval; further lines of
+# that kind are counted and reported in one summary line with the next line of the kind
+logging_rate_limit_max_lines = 10
+logging_rate_limit_interval_millis = 60000
+transport_epoch_max_num_addresses = 2
+transport_sr_max_num_hops = 5
+
+# proximity neighbor selection
+transport_use_pns = true
+
+# number of rows in the routing table to consider during PNS
+# valid values are ALL, or a number
+pns_num_rows_to_use = 10
+
+# commonapi testing parameters
+
+# direct or socket
+commonapi_testing_exit_on_failure = true
+commonapi_testing_protocol = direct
+commonapi_testing_startPort = 5009
+commonapi_testing_num_nodes = 10
+# set this to specify the bootstrap node
+#commonapi_testing_bootstrap = localhost:5009
+
+# random number generator's seed, "CLOCK" uses the current clock time
+random_seed = CLOCK
+
+# sphere, euclidean or gt-itm
+direct_simulator_topology = sphere
+# -1 starts the simulation with the current time
+direct_simulator_start_time = -1
+#pastry_direct_use_own_random = true
+#pastry_periodic_leafset_protocol_use_own_random = true
+pastry_direct_gtitm_matrix_file=GNPINPUT
+# the number of stubs in your network
+pastry_direct_gtitm_max_overlay_size=1000
+# the number of virtual nodes at each stub: this allows you to simulate multiple "LANs" and allows cheeper scaling
+pastry_direct_gtitm_nodes_per_stub=1
+# the factor to multiply your file by to reach millis.  Set this to 0.001 if your file is in microseconds.  Set this to 1000 if your file is in seconds.
+pastry_direct_gtitm_delay_factor=1.0
+#millis of the maximum network delay for the generated network topologies
+pastry_direct_max_diameter=200
+pastry_direct_min_delay=2
+#setting this to false will use the old protocols which are about 200 times as fast, but may cause routing inconsistency in a real network.  Probably won't in a simulator because it will never be incorrect about liveness
+pastry_direct_guarantee_consistency=true
+
+# rice.pastry.socket parameters
+# tells the factory you intend to use multiple nodes
+# this gives each node its own environment, and appends the node id to each of its logger names
+pastry_factory_multipleNodes = true
+pastry_factory_selectorPerNode = false
+pastry_factory_processorPerNode = false
+
+# the maximum number of outgoing messages to queue when a socket is slower than the number of messages you are queuing
+pastry_socket_writer_max_queue_length = 30
+pastry_socket_writer_max_msg_size = 20480
+# the largest message, in bytes, that is sent or accepted on a socket of its own; a peer announcing a bigger one is disconnected
+pastry_socket_writer_max_big_msg_size = 4194304
+# the most bytes, in total, that the node buffers for big messages that are still arriving (the buffer grows with the bytes received, not with the announced size); a reader that would exceed it stops reading its socket until there is room (TCP slows the sender)
+pastry_socket_receive_budget = 67108864
+# a peer may hold at most max(this, receive_budget / (2 x peers holding memory)) of the receive budget; a pinned peer (leaf set, routing table) always gets this much, even when the budget is used up
+pastry_socket_receive_min_share = 1048576
+# a big message must arrive at least this fast: its socket is closed, and its memory released, after max(min_deadline, size / min_rate)
+pastry_socket_receive_min_rate_bytes_per_second = 16384
+pastry_socket_receive_min_deadline_millis = 10000
+# messages one peer (the priority layer's identifier) may have delivered: a token bucket; when it is empty the node stops reading the peer's socket until the bucket refills (TCP slows the sender, nothing is dropped)
+pastry_socket_msg_rate_per_peer_per_second = 200
+pastry_socket_msg_burst_per_peer = 400
+# the same for all peers of one network prefix (transport_prefix_bits_v4/_v6) together
+pastry_socket_msg_rate_per_prefix_per_second = 1000
+pastry_socket_msg_burst_per_prefix = 2000
+# pinned peers (leaf set, routing table) get this many times the rate and burst of a peer, and do not wait for their prefix's bucket
+pastry_socket_pinned_rate_factor = 4
+# messages delivered in one pass of the selector loop, over all peers; the rest wait for the next pass
+pastry_socket_max_messages_per_pass = 256
+# peers and prefixes that have a message bucket; beyond it the least recently used one is forgotten
+pastry_socket_budget_max_peers = 10000
+# maintenance work a remote peer can make a node do at will (token buckets per peer, the authenticated sender in
+# certified mode); a request beyond its bucket is ignored, the honest requester asks again on its own schedule
+# route row requests a peer gets answered
+pastry_budget_route_row_requests_per_second = 1
+pastry_budget_route_row_request_burst = 5
+# route rows a peer sends that the node takes in (answers to its requests and unsolicited ones)
+pastry_budget_route_row_broadcasts_per_second = 0.2
+pastry_budget_route_row_broadcast_burst = 3
+# leaf set requests (and the leases they ask for) a peer gets answered
+pastry_budget_leaf_set_requests_per_second = 1
+pastry_budget_leaf_set_request_burst = 5
+# join requests the node answers as the root: per joiner id (2 per minute), and for all joiners together
+pastry_budget_joins_per_joiner_per_second = 0.0333
+pastry_budget_join_burst_per_joiner = 2
+pastry_budget_joins_per_second = 20
+pastry_budget_join_burst = 40
+# leaf set and routing table members get this many times the rate and burst
+pastry_budget_pinned_factor = 4
+# peers that have a bucket of a kind; beyond it the least recently used one is forgotten
+pastry_budget_max_peers = 10000
+# the time before it will retry a route that was already found dead
+pastry_socket_srm_check_dead_throttle = 300000
+pastry_socket_srm_default_rto = 3000
+pastry_socket_srm_rto_ubound = 10000
+pastry_socket_srm_rto_lbound = 50
+pastry_socket_srm_gain_h = 0.25
+pastry_socket_srm_gain_g = 0.125
+# established sockets (opened by this node, or incoming ones past their handshake: priority header, over
+# TLS also the TLS handshake); beyond it the least recently used idle socket that is not pinned (leaf set,
+# routing table, a message waiting to be written) is closed, or if there is none the newcomer is refused
+pastry_socket_scm_max_open_sockets = 300
+# incoming sockets still in their handshake; beyond it the oldest of them is closed. Kept apart from the
+# established sockets, so that half-open sockets never push out an established peer
+pastry_socket_scm_max_unauthenticated_sockets = 128
+# an established socket active more recently than this is never closed to make room for a newcomer
+pastry_socket_scm_min_idle_millis_before_eviction = 10000
+# the maximum number of source routes to attempt, setting this to 0 will 
+# effectively eliminate source route attempts
+# setting higher than the leafset does no good, it will be bounded by the leafset
+# a larger number tries more source routes, which could give you a more accurate 
+# determination, however, is more likely to lead to congestion collapse
+pastry_socket_srm_num_source_route_attempts = 8
+pastry_socket_scm_socket_buffer_size = 32768
+# this parameter is multiplied by the exponential backoff when doing a liveness check so the first will be 800, then 1600, then 3200 etc...
+pastry_socket_scm_ping_delay = 800
+# adds some fuzziness to the pings to help prevent congestion collapse, so this will make the ping be advanced or delayed by this factor
+pastry_socket_scm_ping_jitter = 0.1
+# how many pings until we call the node faulty
+pastry_socket_scm_num_ping_tries = 5
+# upper bound on the liveness trackers (one per route) a node keeps; any sender chooses the routes its datagrams
+# arrive on, so beyond this the least recently used trackers that are not checking a route are forgotten
+pastry_socket_liveness_max_trackers = 10000
+# upper bound on the address-to-node bindings of the identity layer; every datagram's identity header offers one, so
+# beyond this the least recently used bindings are forgotten, except those the bind strategy keeps (in certified mode,
+# a binding confirmed by the node's certificate) and those with messages waiting for them. Also bounds the node
+# handles remembered as dead forever.
+pastry_socket_identity_max_bindings = 10000
+pastry_socket_increment_port_after_construction = true
+# whether a node of CertifiedSocketPastryNodeFactory relays source routes for others (a plain node always does, so that
+# nodes behind a NAT can be reached through it): a relay forwards bytes from anyone to any address that passes the
+# address policy, also to hosts that are no Pastry node at all
+pastry_socket_relay_source_routes_certified = false
+# if you want to allow connection to 127.0.0.1, set this to true
+pastry_socket_allow_loopback = false
+# these params will be used if the computer attempts to bind to the loopback address, they will open a socket to this address/port to identify which network adapter to bind to
+pastry_socket_known_network_address = yahoo.com
+pastry_socket_known_network_address_port = 80
+# force the node to be a seed node
+rice_socket_seed = false
+
+# the parameter simulates some nodes being firewalled, base on rendezvous_test_num_firewalled
+rendezvous_test_firewall = false
+# probabilistic fraction of firewalled nodes
+rendezvous_test_num_firewalled = 0.3
+# don't firewall the first node, useful for testing
+rendezvous_test_makes_bootstrap = false
+# a rendezvous node closes a connector socket whose acceptor has not come within this time
+# (as long as transport_wire_handshake_timeout_millis by default); 0 = until the socket closes
+transport_rendezvous_connector_timeout_millis = 10000
+# connector sockets a rendezvous node keeps waiting for their acceptor; further ones are closed at once
+transport_rendezvous_max_waiting_connectors = 1024
+
+# NAT/UPnP settings
+nat_network_prefixes = 127.0.0.1;10.;192.168.
+# Enable and set this if you have already set up port forwarding and know the external address
+#external_address = 123.45.67.89:1234
+# possible values: always, never, prefix (prefix is if the localAddress matches any of the nat_network_prefixes
+# whether to search for a nat using UPnP (default: prefix)
+nat_search_policy = prefix
+# whether to verify connectivity (default: boot)
+firewall_test_policy = boot
+# policy for setting port forwarding the state of the firewall if there is already a conflicting rule: overwrite, fail (throw exception), change (use different port) 
+# you may want to set this to overwrite or fail on the bootstrap nodes, but most freepastry applications can run on any available port, so the default is change
+nat_state_policy = change
+# the name of the application in the firewall, set this if you want your application to have a more specific name
+nat_app_name = freepastry
+# how many searches to try to find a free firewall port
+nat_find_port_max_tries = 10
+# set this to a rice.pastry.socket.nat.FirewallPortOpener implementation (constructor: Environment, InetAddress)
+# to enable NAT port forwarding; the former SBBI UPnP handler was removed (its library is unmaintained)
+#nat_handler_class = 
+
+# if we are not scheduled for time on cpu in this time, we setReady(false)
+# otherwise there could be message inconsistency, because
+# neighbors may believe us to be dead.  Note that it is critical
+# to consider the amount of time it takes the transport layer to find a 
+# node faulty before setting this parameter, this parameter should be
+# less than the minimum time required to find a node faulty
+pastry_protocol_consistentJoin_max_time_to_be_scheduled = 15000
+
+# in case messages are dropped or something, how often it will retry to 
+# send the consistent join message, to get verification from the entire
+# leafset
+pastry_protocol_consistentJoin_retry_interval = 30000
+# parameter to control how long dead nodes are retained in the "failed set" in
+# CJP (see ConsistentJoinProtocol ctor) (15 minutes)
+pastry_protocol_consistentJoin_failedRetentionTime = 900000
+# how often to cleanup the failed set (5 mins) (see ConsistentJoinProtocol ctor)
+pastry_protocol_consistentJoin_cleanup_interval = 300000
+# the maximum number of entries to send in the failed set, only sends the most 
+recent detected failures (see ConsistentJoinProtocol ctor)
+pastry_protocol_consistentJoin_maxFailedToSend = 20
+
+# how often we send/expect to be sent updates
+pastry_protocol_periodicLeafSet_ping_neighbor_period = 20000
+pastry_protocol_periodicLeafSet_lease_period = 30000
+
+# what the grace period is to receive a periodic update, before checking 
+# liveness
+pastry_protocol_periodicLeafSet_request_lease_throttle = 10000
+
+# how many entries are kept in the partition handler's table
+partition_handler_max_history_size=20
+# how long entries in the partition handler's table are kept
+# 90 minutes
+partition_handler_max_history_age=5400000
+# what fraction of the time a bootstrap host is checked
+partition_handler_bootstrap_check_rate=0.05
+# how often to run the partition handler
+# 5 minutes
+partition_handler_check_interval=300000
+
+# the version number of the RouteMessage to transmit (it can receive anything that it knows how to)
+# this is useful if you need to migrate an older ring
+# you can change this value in realtime, so, you can start at 0 and issue a command to update it to 1
+pastry_protocol_router_routeMsgVersion = 1
+
+# should usually be equal to the pastry_rtBaseBitLength
+p2p_splitStream_stripeBaseBitLength = 4
+p2p_splitStream_policy_default_maximum_children = 24
+p2p_splitStream_stripe_max_failed_subscription = 5
+p2p_splitStream_stripe_max_failed_subscription_retry_delay = 1000
+
+#multiring
+p2p_multiring_base = 2
+
+#filetransfer
+# upper bounds on what a remote peer may announce to a FileTransfer; a peer that exceeds one is dropped (socket closed)
+# largest single message, in bytes (held in memory while it arrives)
+p2p_filetransfer_max_message_size = 16777216
+# total bytes of incoming messages that may be in flight on one socket at the same time
+p2p_filetransfer_max_message_bytes_in_flight = 67108864
+# largest file (offset is at most the length), in bytes; 4 GiB
+p2p_filetransfer_max_file_size = 4294967296
+# longest file metadata ("name"), in bytes
+p2p_filetransfer_max_name_size = 4096
+# largest chunk of a file the receiver accepts, in bytes (never below its own chunk size)
+p2p_filetransfer_max_chunk_size = 1048576
+# files a peer may have in progress at once (each has a file on disk); as many as a sender queues at most
+p2p_filetransfer_max_incoming_files = 1024
+# an incoming transfer that gets no byte for this long, while the receiver is reading, closes the socket; 0 = never
+p2p_filetransfer_read_timeout_millis = 120000
+
+#past
+p2p_past_messageTimeout = 30000
+p2p_past_successfulInsertThreshold = 0.5
+# the largest message, in bytes, that Past accepts over a socket (held in memory while it arrives); a peer announcing more is dropped; 16 MiB
+p2p_past_maxSocketMessageBytes = 16777216
+# ExpiringPast: the longest an insert, a refresh or a replica fetched from a peer may lease an object for, counted from its arrival, in milliseconds; 365 days.
+# One asking for more is capped to this. Refreshes never restore an object from the trash.
+p2p_past_gc_max_lease = 31536000000
+
+#replication
+
+# fetch delay is the delay between fetching successive keys
+p2p_replication_manager_fetch_delay = 500
+# the timeout delay is how long we take before we time out fetching a key
+p2p_replication_manager_timeout_delay = 20000
+# this is the number of keys to delete when we detect a change in the replica set
+p2p_replication_manager_num_delete_at_once = 100
+# this is how often replication will wake up and do maintainence; 10 mins
+p2p_replication_maintenance_interval = 600000 
+# the maximum number of keys replication will try to exchange in a maintainence message
+p2p_replication_max_keys_in_message = 1000
+
+#scribe
+p2p_scribe_maintenance_interval = 180000
+#time for a subscribe fail to be thrown (in millis)
+p2p_scribe_message_timeout = 15000
+# topics a node keeps state for; beyond it a node refuses new children for unknown topics and fails local subscribes
+p2p_scribe_max_topics = 4096
+# children a node accepts per topic from remote subscribes; further subscribers are passed on, nobody is evicted
+p2p_scribe_max_children_per_topic = 64
+# outstanding subscribes; beyond it a subscribe is not sent and its client gets subscribeFailed
+p2p_scribe_max_pending_subscribes = 4096
+# nodes an anycast (or a subscribe walking the tree) may have visited; beyond it the walk fails back to its requestor
+p2p_scribe_max_anycast_visited = 256
+
+#aggregation
+p2p_aggregation_flushDelayAfterJoin = 30000
+#5 MINS
+p2p_aggregation_flushStressInterval = 300000 
+#5 MINS
+p2p_aggregation_flushInterval = 300000 
+#1024*1024
+p2p_aggregation_maxAggregateSize = 1048576 
+p2p_aggregation_maxObjectsInAggregate = 25
+p2p_aggregation_maxAggregatesPerRun = 2
+p2p_aggregation_addMissingAfterRefresh = true
+p2p_aggregation_maxReaggregationPerRefresh = 100
+p2p_aggregation_nominalReferenceCount = 2
+p2p_aggregation_maxPointersPerAggregate = 100
+#14 DAYS
+p2p_aggregation_pointerArrayLifetime = 1209600000
+#1 DAY 
+p2p_aggregation_aggregateGracePeriod = 86400000
+#15 MINS 
+p2p_aggregation_aggrRefreshInterval = 900000 
+p2p_aggregation_aggrRefreshDelayAfterJoin = 70000
+#3 DAYS
+p2p_aggregation_expirationRenewThreshold = 259200000 
+p2p_aggregation_monitorEnabled = false
+#15 MINS
+p2p_aggregation_monitorRefreshInterval = 900000 
+#5 MINS
+p2p_aggregation_consolidationDelayAfterJoin = 300000 
+#15 MINS
+p2p_aggregation_consolidationInterval = 900000 
+#14 DAYS
+p2p_aggregation_consolidationThreshold = 1209600000 
+p2p_aggregation_consolidationMinObjectsInAggregate = 20
+p2p_aggregation_consolidationMinComponentsAlive = 0.8
+p2p_aggregation_reconstructionMaxConcurrentLookups = 10
+p2p_aggregation_aggregateLogEnabled = true
+#1 HOUR
+p2p_aggregation_statsGranularity = 3600000
+#3 WEEKS 
+p2p_aggregation_statsRange = 1814400000 
+p2p_aggregation_statsInterval = 60000
+p2p_aggregation_jitterRange = 0.1
+
+# glacier
+p2p_glacier_logStatistics = true
+p2p_glacier_faultInjectionEnabled = false
+p2p_glacier_insertTimeout = 30000
+p2p_glacier_minFragmentsAfterInsert = 3.0
+p2p_glacier_refreshTimeout = 30000
+p2p_glacier_expireNeighborsDelayAfterJoin = 30000
+#5 MINS
+p2p_glacier_expireNeighborsInterval = 300000 
+#5 DAYS
+p2p_glacier_neighborTimeout = 432000000 
+p2p_glacier_syncDelayAfterJoin = 30000
+#5 MINS
+p2p_glacier_syncMinRemainingLifetime = 300000 
+#insertTimeout
+p2p_glacier_syncMinQuietTime = 30000 
+p2p_glacier_syncBloomFilterNumHashes = 3
+p2p_glacier_syncBloomFilterBitsPerKey = 4
+p2p_glacier_syncPartnersPerTrial = 1
+#1 HOUR
+p2p_glacier_syncInterval = 3600000 
+#3 MINUTES
+p2p_glacier_syncRetryInterval = 180000 
+p2p_glacier_syncMaxFragments = 100
+p2p_glacier_fragmentRequestMaxAttempts = 0
+p2p_glacier_fragmentRequestTimeoutDefault = 10000
+p2p_glacier_fragmentRequestTimeoutMin = 10000
+p2p_glacier_fragmentRequestTimeoutMax = 60000
+p2p_glacier_fragmentRequestTimeoutDecrement = 1000
+p2p_glacier_manifestRequestTimeout = 10000
+p2p_glacier_manifestRequestInitialBurst = 3
+p2p_glacier_manifestRequestRetryBurst = 5
+p2p_glacier_manifestAggregationFactor = 5
+p2p_glacier_handoffDelayAfterJoin = 45000
+#4 MINUTES
+p2p_glacier_handoffInterval = 240000 
+p2p_glacier_handoffMaxFragments = 10
+#10 MINUTES
+p2p_glacier_garbageCollectionInterval = 600000 
+p2p_glacier_garbageCollectionMaxFragmentsPerRun = 100
+#10 MINUTES
+p2p_glacier_localScanInterval = 600000 
+p2p_glacier_localScanMaxFragmentsPerRun = 20
+p2p_glacier_restoreMaxRequestFactor = 4.0
+p2p_glacier_restoreMaxBoosts = 2
+p2p_glacier_rateLimitedCheckInterval = 30000
+p2p_glacier_rateLimitedRequestsPerSecond = 3
+p2p_glacier_enableBulkRefresh = true
+p2p_glacier_bulkRefreshProbeInterval = 3000
+p2p_glacier_bulkRefreshMaxProbeFactor = 3.0
+p2p_glacier_bulkRefreshManifestInterval = 30000
+p2p_glacier_bulkRefreshManifestAggregationFactor = 20
+p2p_glacier_bulkRefreshPatchAggregationFactor = 50
+#3 MINUTES
+p2p_glacier_bulkRefreshPatchInterval = 180000 
+p2p_glacier_bulkRefreshPatchRetries = 2
+p2p_glacier_bucketTokensPerSecond = 100000
+p2p_glacier_bucketMaxBurstSize = 200000
+p2p_glacier_jitterRange = 0.1
+#1 MINUTE
+p2p_glacier_statisticsReportInterval = 60000 
+p2p_glacier_maxActiveRestores = 3
+
+# PeerReview
+# certificates the identity layer keeps (the local one included); beyond that the oldest is forgotten and fetched again
+peerreview_identity_max_certificates = 10000
+# authenticators kept per subject while its certificate is missing; further ones are dropped
+peerreview_pending_authenticators_max_per_subject = 64
+# authenticators kept in all while certificates are missing; beyond that the oldest subject is dropped
+peerreview_pending_authenticators_max_total = 16384
+
+#transport layer testing params
+org.mpisws.p2p.testing.transportlayer.replay.Recorder_printlog = true
+
+# logging
+# FreePastry logs through SLF4J. Log levels, format and output files are configured in the SLF4J backend
+# the application puts on the classpath (e.g. simplelogger.properties for slf4j-simple, logback.xml for logback),
+# not here. Logger names are the class name, plus ".<instance>" and ".<node id>" where applicable.
+
+# the amount of time the LookupService tutorial app will wait before timing out
+# in milliseconds, default is 30 seconds
+lookup_service.timeout = 30000
+# how long to wait before the first retry
+lookup_service.firstTimeout = 500

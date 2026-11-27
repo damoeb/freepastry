@@ -1,0 +1,75 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.splitstream;
+
+import static rice.environment.params.ConfigChecks.requireNonNegative;
+import static rice.environment.params.ConfigChecks.requirePositive;
+
+import rice.environment.params.Parameters;
+
+/**
+ * The parameters of a {@link SplitStreamImpl}, its {@link Stripe}s and its default
+ * {@link SplitStreamScribePolicy}.
+ *
+ * @param defaultMaximumChildren {@code p2p_splitStream_policy_default_maximum_children}: the most
+ *        children a node accepts over all stripes
+ * @param maxFailedSubscription {@code p2p_splitStream_stripe_max_failed_subscription}: the failed
+ *        subscribe attempts after which a stripe waits before retrying
+ * @param stripeBaseBitLength {@code p2p_splitStream_stripeBaseBitLength}: a channel has 2^this stripes
+ * @param maxFailedSubscriptionRetryDelay
+ *        {@code p2p_splitStream_stripe_max_failed_subscription_retry_delay}: that wait, in milliseconds
+ */
+public record SplitStreamConfig(
+    int defaultMaximumChildren,
+    int maxFailedSubscription,
+    int stripeBaseBitLength,
+    int maxFailedSubscriptionRetryDelay) {
+
+  /**
+   * @throws IllegalArgumentException if stripeBaseBitLength is not positive or another value is negative
+   */
+  public static SplitStreamConfig fromParameters(Parameters parameters) {
+    return new SplitStreamConfig(
+      requireNonNegative("p2p_splitStream_policy_default_maximum_children",
+          parameters.getInt("p2p_splitStream_policy_default_maximum_children")),
+      requireNonNegative("p2p_splitStream_stripe_max_failed_subscription",
+          parameters.getInt("p2p_splitStream_stripe_max_failed_subscription")),
+      requirePositive("p2p_splitStream_stripeBaseBitLength", parameters.getInt("p2p_splitStream_stripeBaseBitLength")),
+      requireNonNegative("p2p_splitStream_stripe_max_failed_subscription_retry_delay",
+          parameters.getInt("p2p_splitStream_stripe_max_failed_subscription_retry_delay")));
+  }
+}

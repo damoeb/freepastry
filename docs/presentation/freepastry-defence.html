@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How FreePastry Defends</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+:root {
+  --dark: #14213D;
+  --light: #F7F6F2;
+  --paper: #E9E6DD;
+  --card: #FBFAF6;
+  --blue: #2F6FB3;
+  --blue-soft: #9DBEE6;
+  --blue-tint: #DDE6F1;
+  --orange: #B4491A;
+  --orange-soft: #F29B5C;
+  --muted: #4A5568;
+  --rule: #D5D1C6;
+  --on-dark: #C9D2E3;
+}
+
+body { font-family: 'IBM Plex Sans', Arial, sans-serif; color: var(--dark); }
+
+section { box-sizing: border-box; padding: 128px; background: var(--light); color: var(--dark); display: flex; flex-direction: column; gap: 32px; }
+section.dark { background: var(--dark); color: var(--light); }
+section.paper { background: var(--paper); }
+
+h1 { font-size: 96px; font-weight: 700; line-height: 1.05; margin: 0; }
+h2 { font-size: 64px; font-weight: 600; line-height: 1.1; margin: 0; }
+h3 { font-size: 32px; font-weight: 600; line-height: 1.25; margin: 0; }
+
+.eyebrow { font-size: 24px; font-weight: 600; letter-spacing: 3px; color: var(--blue); margin: 0; }
+section.dark .eyebrow { color: var(--blue-soft); }
+.lead { font-size: 32px; line-height: 1.4; color: var(--muted); margin: 0; }
+section.dark .lead { color: var(--on-dark); }
+.body { font-size: 30px; line-height: 1.4; color: var(--muted); margin: 0; }
+.small { font-size: 24px; line-height: 1.4; color: var(--muted); margin: 0; }
+.mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+.hl { color: var(--blue); font-weight: 600; }
+.atk { color: var(--orange); font-weight: 600; }
+
+.rise { animation: rise 520ms ease-out both; animation-delay: calc(var(--i, 0) * 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+.fadein { animation: fadein 700ms ease-out both; animation-delay: calc(var(--i, 0) * 150ms); }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* cover */
+.cover { justify-content: flex-end; }
+.cover-ring { position: absolute; left: 1150px; top: 150px; width: 640px; height: 640px; }
+.cover-text { width: 980px; display: flex; flex-direction: column; gap: 32px; }
+
+/* ring */
+.cols { display: flex; gap: 64px; flex: 1; align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: 28px; }
+.ringtext { width: 960px; }
+.ringbox { position: relative; width: 640px; height: 640px; flex: none; }
+.lbl { position: absolute; font-size: 24px; font-weight: 600; margin: 0; color: var(--dark); }
+.lbl-root { color: var(--blue); }
+.lbl-key { color: var(--orange); }
+.legend { display: flex; flex-direction: column; gap: 14px; }
+.legend-row { display: flex; align-items: center; gap: 16px; }
+.swatch { width: 28px; height: 28px; border-radius: 14px; flex: none; }
+.legend-text { font-size: 26px; color: var(--muted); margin: 0; }
+
+/* routing */
+.keyline { font-size: 32px; margin: 0; color: var(--dark); }
+.hops { display: flex; flex-direction: column; }
+.hop { display: flex; align-items: center; gap: 40px; padding: 18px 0; border-bottom: 2px solid var(--rule); }
+.hop-label { width: 160px; font-size: 26px; font-weight: 600; color: var(--muted); margin: 0; }
+.hop-id { width: 560px; font-size: 40px; margin: 0; font-family: 'JetBrains Mono', 'Courier New', monospace; color: var(--muted); }
+.hop-note { flex: 1; font-size: 26px; color: var(--muted); margin: 0; }
+
+/* stack */
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.layer { display: flex; align-items: center; gap: 40px; padding: 12px 32px; border-radius: 12px; background: var(--blue-tint); }
+.layer-cert { border-left: 10px solid var(--blue); }
+.layer-name { width: 440px; font-size: 26px; line-height: 1.3; font-weight: 600; margin: 0; color: var(--dark); }
+.layer-def { flex: 1; font-size: 26px; line-height: 1.35; color: var(--muted); margin: 0; }
+
+/* tables */
+.tbl { width: 100%; font-size: 26px; color: var(--dark); }
+.tbl-small { width: 100%; font-size: 24px; color: var(--dark); }
+.tbl-head { background: var(--paper); }
+section.paper .tbl-head { background: var(--card); }
+
+/* cards */
+.cards { display: flex; gap: 40px; }
+.card { flex: 1; background: var(--card); border-radius: 16px; padding: 48px; display: flex; flex-direction: column; gap: 20px; }
+.card-attack { border-top: 8px solid var(--orange); }
+.card-insider { border-top: 8px solid var(--dark); }
+.card-title { font-size: 40px; font-weight: 600; margin: 0; color: var(--dark); }
+.list { font-size: 28px; line-height: 1.45; color: var(--muted); margin: 0; padding-left: 36px; }
+
+/* eclipse */
+.panels { display: flex; gap: 64px; }
+.panel { width: 800px; display: flex; flex-direction: column; gap: 16px; }
+.chip { font-size: 24px; font-weight: 600; padding: 6px 18px; border-radius: 20px; margin: 0; align-self: flex-start; }
+.chip-atk { background: #F6DCCB; color: var(--orange); }
+.chip-ok { background: var(--blue-tint); color: var(--blue); }
+.stage { position: relative; width: 800px; height: 440px; }
+.node-l { position: absolute; width: 68px; font-size: 30px; font-weight: 700; text-align: center; margin: 0; color: var(--light); }
+.tag { position: absolute; font-size: 24px; font-weight: 600; margin: 0; }
+.tag-atk { color: var(--orange); }
+.tag-ok { color: var(--blue); }
+.tag-dim { color: var(--muted); }
+.caption { font-size: 26px; line-height: 1.4; color: var(--muted); margin: 0; }
+
+/* roadmap */
+.waves { display: flex; gap: 32px; flex: 1; }
+.wave { flex: 1; display: flex; flex-direction: column; gap: 18px; padding: 40px 32px; border-radius: 16px; background: var(--card); }
+.wave-letter { font-size: 96px; font-weight: 700; line-height: 1; margin: 0; color: var(--blue); }
+.wave-title { font-size: 32px; font-weight: 600; margin: 0; color: var(--dark); line-height: 1.2; }
+.bar { height: 12px; border-radius: 6px; background: var(--rule); overflow: hidden; }
+.bar-fill { height: 12px; background: var(--blue); }
+.status { font-size: 24px; font-weight: 600; margin: 0; color: var(--blue); }
+.status-plan { color: var(--muted); }
+.wave-list { font-size: 24px; line-height: 1.45; color: var(--muted); margin: 0; padding-left: 30px; }
+
+/* use cases */
+.uc { display: flex; gap: 64px; align-items: flex-start; }
+.seq { position: relative; width: 1060px; height: 600px; flex: none; }
+.seq-head { position: absolute; width: 200px; top: 14px; font-size: 24px; font-weight: 600; text-align: center; margin: 0; color: var(--light); }
+.seq-lbl { position: absolute; font-size: 24px; font-weight: 600; margin: 0; color: var(--blue); }
+.seq-lbl-probe { color: var(--orange); }
+.steps { font-size: 24px; line-height: 1.35; color: var(--muted); margin: 0; padding-left: 36px; flex: 1; }
+.hopsrow { display: flex; align-items: stretch; gap: 12px; }
+.hopcard { width: 362px; box-sizing: border-box; background: var(--card); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 14px; border-top: 8px solid var(--blue); }
+.hopcard-name { font-size: 32px; font-weight: 600; margin: 0; color: var(--dark); }
+.hopcard-text { font-size: 28px; line-height: 1.4; margin: 0; color: var(--muted); }
+.hoparrow { width: 48px; height: 28px; align-self: center; flex: none; background: var(--blue); }
+.notes { display: flex; gap: 40px; }
+.note { flex: 1; font-size: 26px; line-height: 1.4; margin: 0; color: var(--muted); padding: 20px 28px; border-radius: 12px; background: var(--card); }
+section > .note { flex: none; }
+.note-atk { border-left: 8px solid var(--orange); }
+.note-ok { border-left: 8px solid var(--blue); }
+.storebox { position: relative; width: 500px; height: 500px; flex: none; }
+
+/* takeaways */
+.points { display: flex; flex-direction: column; gap: 48px; }
+.point { display: flex; gap: 40px; align-items: flex-start; }
+.point-num { font-size: 64px; font-weight: 700; color: var(--blue-soft); width: 80px; margin: 0; line-height: 1; }
+.point-body { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.point-text { font-size: 44px; font-weight: 600; line-height: 1.25; margin: 0; color: var(--light); }
+.point-sub { font-size: 28px; line-height: 1.4; margin: 0; color: var(--on-dark); }
+
+/* standalone viewer: what the Slides app adds on its own */
+table { border-collapse: collapse; }
+th, td { text-align: left; vertical-align: top; padding: 0.35em 0.6em; border-bottom: 1px solid #D5D1C6; }
+x-shape { display: block; }
+x-shape[kind="arrow-right"] { clip-path: polygon(0 30%, 60% 30%, 60% 0, 100% 50%, 60% 100%, 60% 70%, 0 70%); }
+/* standalone viewer */
+html, body { margin: 0; background: #2B2F36; }
+* { animation: none !important; }
+.deck { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px 0 48px; }
+.frame { width: 1920px; height: 1080px; transform-origin: top left; overflow: hidden; }
+.frame > section { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+.speaker-notes { max-width: 960px; color: #C9D2E3; font: 18px/1.5 'IBM Plex Sans', Arial, sans-serif; margin: 0 16px; }
+@media print {
+  @page { size: 1920px 1080px; margin: 0; }
+  html, body { background: none; }
+  .deck { display: block; padding: 0; }
+  .frame { transform: none !important; margin: 0 !important; break-after: page; }
+  .speaker-notes { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="deck">
+<div class="frame"><section id="cover" class="dark cover" data-transition="fade">
+<svg class="cover-ring fadein" aria-label="A ring of nodes, one of them highlighted" width="640" height="640" viewBox="0 0 640 640">
+<circle cx="320" cy="320" r="270" fill="none" stroke="#2F4468" stroke-width="4"/>
+<path d="M455 554 A270 270 0 0 1 66 412" fill="none" stroke="#2F6FB3" stroke-width="14" stroke-linecap="round"/>
+<path d="M494 113 L66 412 L165 541 L273 586" fill="none" stroke="#9DBEE6" stroke-width="4" stroke-dasharray="10 10"/>
+<circle cx="367" cy="54" r="12" fill="#C9D2E3"/>
+<circle cx="494" cy="113" r="12" fill="#C9D2E3"/>
+<circle cx="581" cy="250" r="12" fill="#C9D2E3"/>
+<circle cx="574" cy="412" r="12" fill="#C9D2E3"/>
+<circle cx="455" cy="554" r="12" fill="#C9D2E3"/>
+<circle cx="273" cy="586" r="18" fill="#9DBEE6"/>
+<circle cx="165" cy="541" r="12" fill="#C9D2E3"/>
+<circle cx="66" cy="412" r="12" fill="#C9D2E3"/>
+<circle cx="66" cy="228" r="12" fill="#C9D2E3"/>
+<circle cx="185" cy="86" r="12" fill="#C9D2E3"/>
+<rect x="216" y="562" width="24" height="24" transform="rotate(45 228 574)" fill="#F29B5C"/>
+</svg>
+<div class="cover-text">
+<p class="eyebrow">FREEPASTRY · JAVA25-UPGRADE · NOVEMBER 2026</p>
+<h1>How FreePastry defends itself</h1>
+<p class="lead">How the Pastry overlay routes a message, what certified mode adds, which attacks the hardening stops, and which it does not stop yet.</p>
+</div>
+
+</section></div>
+<p class="speaker-notes">This deck explains the algorithm first (ring, prefix routing, the node stack), then the two modes and the threat model, then what the 2026 hardening stops for outsiders and for certified insiders, and finally the open gaps and the plan (waves B to D). Status as of 27 November 2026 on the java25-upgrade branch.</p>
+<div class="frame"><section id="ring">
+<p class="eyebrow">HOW IT WORKS · THE RING</p>
+<h2>Every node and every key sits on one ring</h2>
+<div class="cols">
+<div class="col ringtext">
+<p class="body rise" style="--i:0">Node ids and keys are 128-bit numbers on a circle. A message for key <span class="atk">k</span> goes to the node whose id is numerically closest: the <span class="hl">root</span> of k.</p>
+<p class="body rise" style="--i:1">Each node knows its nearest neighbours on both sides (the <span class="hl">leaf set</span>) and, in a routing table, a few distant nodes for every id prefix.</p>
+<p class="body rise" style="--i:2">Every hop fixes at least one more hex digit of the key, so a message needs about log₁₆ N hops: five hops for a million nodes.</p>
+<div class="legend rise" style="--i:3">
+<div class="legend-row"><div class="swatch" style="background:#14213D"></div><p class="legend-text">Node</p></div>
+<div class="legend-row"><div class="swatch" style="background:#B4491A;border-radius:4px"></div><p class="legend-text">Key k</p></div>
+<div class="legend-row"><div class="swatch" style="background:#2F6FB3"></div><p class="legend-text">Route of the message, and the root’s leaf set</p></div>
+</div>
+</div>
+<div class="ringbox fadein" style="--i:1">
+<svg aria-label="A ring of ten nodes. A message hops from a source node across the ring in three steps to the root node next to key k; an arc marks the root's leaf set." width="640" height="640" viewBox="0 0 640 640" style="position:absolute;left:0;top:0;width:640px;height:640px">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker></defs>
+<circle cx="320" cy="320" r="270" fill="none" stroke="#D5D1C6" stroke-width="4"/>
+<path d="M455 554 A270 270 0 0 1 66 412" fill="none" stroke="#9DBEE6" stroke-width="18" stroke-linecap="round"/>
+<path d="M486 120 L80 402" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<path d="M74 424 L152 525" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<path d="M181 548 L254 578" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<circle cx="367" cy="54" r="13" fill="#14213D"/>
+<circle cx="494" cy="113" r="16" fill="#14213D"/>
+<circle cx="581" cy="250" r="13" fill="#14213D"/>
+<circle cx="574" cy="412" r="13" fill="#14213D"/>
+<circle cx="455" cy="554" r="13" fill="#14213D"/>
+<circle cx="273" cy="586" r="18" fill="#2F6FB3"/>
+<circle cx="165" cy="541" r="13" fill="#14213D"/>
+<circle cx="66" cy="412" r="13" fill="#14213D"/>
+<circle cx="66" cy="228" r="13" fill="#14213D"/>
+<circle cx="185" cy="86" r="13" fill="#14213D"/>
+<rect x="217" y="563" width="22" height="22" transform="rotate(45 228 574)" fill="#B4491A"/>
+</svg>
+<p class="lbl" style="left:516px;top:84px;width:140px">source</p>
+<p class="lbl lbl-key" style="left:140px;top:600px;width:110px">key k</p>
+<p class="lbl lbl-root" style="left:290px;top:604px;width:150px">root of k</p>
+<p class="lbl lbl-root" style="left:478px;top:560px;width:150px">leaf set</p>
+</div>
+</div>
+
+</section></div>
+<p class="speaker-notes">Pastry places nodes and keys in the same 128-bit id space, drawn as a ring. The root of a key is the live node whose id is numerically closest. The source sends towards the key; each hop forwards to a node that shares a longer id prefix with the key, and the last hop lands in the root’s leaf set. Applications such as Past and Scribe build on this: Past stores an object at the root and its leaf-set neighbours, Scribe roots a multicast tree at the topic’s root.</p>
+<div class="frame"><section id="routing">
+<p class="eyebrow">HOW IT WORKS · PREFIX ROUTING</p>
+<h2>Each hop matches one more digit of the key</h2>
+<p class="keyline">Key k = <span class="mono atk">3A7F 02C1 …</span></p>
+<div class="hops">
+<div class="hop rise" style="--i:0"><p class="hop-label">Source</p><p class="hop-id">9C21 4E0B …</p><p class="hop-note">Starts anywhere on the ring</p></div>
+<div class="hop rise" style="--i:1"><p class="hop-label">Hop 1</p><p class="hop-id"><span class="hl">3</span>B05 91AA …</p><p class="hop-note">Routing table row 0: shares “3”</p></div>
+<div class="hop rise" style="--i:2"><p class="hop-label">Hop 2</p><p class="hop-id"><span class="hl">3A</span>12 7F30 …</p><p class="hop-note">Row 1: shares “3A”</p></div>
+<div class="hop rise" style="--i:3"><p class="hop-label">Hop 3</p><p class="hop-id"><span class="hl">3A7</span>C 0D19 …</p><p class="hop-note">Row 2: shares “3A7”, and k lies in its leaf set</p></div>
+<div class="hop rise" style="--i:4"><p class="hop-label">Root</p><p class="hop-id"><span class="hl">3A7</span>E F5C2 …</p><p class="hop-note">Numerically closest to k: delivers the message</p></div>
+</div>
+<p class="body">Row r of a routing table holds nodes that share r digits with this node, one for each possible next digit. If a hop is down, a node picks another entry with the same prefix or a leaf-set neighbour.</p>
+
+</section></div>
+<p class="speaker-notes">The routing table has one row per prefix length and 16 columns, one per next hex digit. A node forwards to the entry that extends the shared prefix with the key by one digit; when the key falls within its leaf set, it delivers to the numerically closest neighbour. This is why routing is fast, and also why it is sensitive to who fills those table slots: that comes back on the limits slide.</p>
+<div class="frame"><section id="stack">
+<p class="eyebrow">HOW IT WORKS · THE NODE STACK</p>
+<h2>Each layer checks what passes through it</h2>
+<div class="stack">
+<div class="layer rise" style="--i:0"><p class="layer-name">Applications<br>Past, Scribe, Glacier, PeerReview</p><p class="layer-def">Content hashes, owner-signed Glacier manifests, Scribe sources must match the previous hop, certificates checked against the CA</p></div>
+<div class="layer rise" style="--i:1"><p class="layer-name">Pastry overlay<br>routing table, leaf set, join</p><p class="layer-def">Only verified handles are admitted; join answers come from authenticated senders; ready state changes on the selector thread only</p></div>
+<div class="layer rise" style="--i:2"><p class="layer-name">Liveness and priority</p><p class="layer-def">Pings carry a random nonce; trackers and big-message buffers are bounded; TLS reads are fair per selector turn</p></div>
+<div class="layer layer-cert rise" style="--i:3"><p class="layer-name">Identity binding (certified)<br>(id, address, epoch)</p><p class="layer-def">A certificate proves the id; only a connection this node dialled proves the address</p></div>
+<div class="layer layer-cert rise" style="--i:4"><p class="layer-name">TLS 1.3 (certified mode)</p><p class="layer-def">Trust store holds only the CA; node certificates carry proper extensions and random serials</p></div>
+<div class="layer rise" style="--i:5"><p class="layer-name">Wire: TCP and UDP</p><p class="layer-def">10 s handshake deadline, 32 handshakes per IP, bounded readers that drop bad input instead of crashing</p></div>
+</div>
+
+</section></div>
+<p class="speaker-notes">FreePastry is a stack of transport layers under the Pastry node, with applications on top. Everything runs on one selector thread, which is why a single uncaught Error used to stop every node in the JVM. Each layer now bounds what it keeps and drops what it cannot verify. The identity and TLS layers are what certified mode adds.</p>
+<div class="frame"><section id="join">
+<p class="eyebrow">USE CASE · ENTERING THE NETWORK</p>
+<h2>A new node joins the ring</h2>
+<div class="uc">
+<div class="seq fadein">
+<svg aria-label="Sequence diagram: new node N talks to bootstrap B, the join request is routed over hops to the root R, R answers N with its leaf set, and N probes every returned handle." width="1060" height="600" viewBox="0 0 1060 600" style="position:absolute;left:0;top:0;width:1060px;height:600px">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker><marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#B4491A"/></marker></defs>
+<rect x="10" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="300" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="590" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="850" y="0" width="200" height="60" rx="10" fill="#2F6FB3"/>
+<line x1="110" y1="60" x2="110" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="400" y1="60" x2="400" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="690" y1="60" x2="690" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="950" y1="60" x2="950" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="110" y1="140" x2="394" y2="140" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="110" y1="220" x2="394" y2="220" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="400" y1="300" x2="684" y2="300" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="690" y1="380" x2="944" y2="380" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="950" y1="460" x2="116" y2="460" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="110" y1="540" x2="944" y2="540" stroke="#B4491A" stroke-width="4" stroke-dasharray="12 8" marker-end="url(#ahp)"/>
+</svg>
+<p class="seq-head" style="left:10px">New node N</p>
+<p class="seq-head" style="left:300px">Bootstrap B</p>
+<p class="seq-head" style="left:590px">Hops on route</p>
+<p class="seq-head" style="left:850px">Root R</p>
+<p class="seq-lbl" style="left:126px;top:100px;width:260px">1 · TLS, N dials</p>
+<p class="seq-lbl" style="left:126px;top:180px;width:260px">2 · JoinRequest</p>
+<p class="seq-lbl" style="left:416px;top:260px;width:260px">3 · route to N’s id</p>
+<p class="seq-lbl" style="left:706px;top:340px;width:240px">4 · reaches root</p>
+<p class="seq-lbl" style="left:400px;top:420px;width:520px">5 · accepted: leaf set and table rows</p>
+<p class="seq-lbl seq-lbl-probe" style="left:400px;top:500px;width:520px">6 · probe each handle at its own address</p>
+</div>
+<ol class="steps rise" style="--i:1">
+<li>N holds a CA certificate with a random id and dials a known bootstrap B over TLS.</li>
+<li>N sends a JoinRequest for its own id.</li>
+<li>Pastry routes it towards N’s id; every hop adds a row of its routing table.</li>
+<li>The root R, the existing node closest to N’s id, accepts the request.</li>
+<li>N adopts the answer only from an authenticated sender.</li>
+<li>N probes every returned handle, announces itself to its leaf set and turns ready.</li>
+</ol>
+</div>
+
+</section></div>
+<p class="speaker-notes">Joining reuses routing: the JoinRequest is a message addressed to the new node’s own id, so it ends at the node that will become its neighbour. Steps 5 and 6 are certified-mode checks added in 2026; plain mode takes the answer as it comes. Still open: a malicious bootstrap or root can answer with colluders (wave C4 adds several bootstraps and a density test).</p>
+<div class="frame"><section id="send">
+<p class="eyebrow">USE CASE · SENDING A MESSAGE</p>
+<h2>A message travels hop by hop to the root of its key</h2>
+<div class="hopsrow">
+<div class="hopcard rise" style="--i:0"><p class="hopcard-name">Sender S</p><p class="hopcard-text">The app calls route(key, msg). S picks the table entry that shares the longest prefix with the key and queues the message by priority.</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:1"><p class="hopcard-name">Hop</p><p class="hopcard-text">Receives over TLS: the previous hop is the id in its certificate. Apps on the hop may see the message on the way (forward).</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:2"><p class="hopcard-name">Hop</p><p class="hopcard-text">If the next node is down, it picks another entry with the same prefix. Liveness comes from pings with a random nonce.</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:3"><p class="hopcard-name">Root R</p><p class="hopcard-text">The key falls in its leaf set, so it delivers the message to the app, which can ask which node it came from.</p></div>
+</div>
+<div class="notes rise" style="--i:4">
+<p class="note note-ok">Each hop drops what it cannot read, bounds what it keeps, and in certified mode binds the sender to its certificate.</p>
+<p class="note note-atk">Not yet: a malicious hop can drop or misroute the message. Redundant routing and a routing failure test come in wave D.</p>
+</div>
+
+</section></div>
+<p class="speaker-notes">Messages are routed, not sent end to end: each hop decides the next one from its own routing table. That keeps state small and routes short, but it means every hop on the path must be honest for the message to arrive. The hop-by-hop acknowledgements only show that the next hop got the message, not that the root did.</p>
+<div class="frame"><section id="store">
+<p class="eyebrow">USE CASE · STORING AND FINDING AN OBJECT</p>
+<h2>Past keeps copies next to the object’s id</h2>
+<div class="uc">
+<ol class="steps rise" style="--i:0;font-size:28px">
+<li>The object’s id is the SHA-256 hash of its content (in Glacier: of the owner’s key and the object’s name).</li>
+<li>The insert is routed to the root of that id.</li>
+<li>The root and its nearest leaf-set neighbours store replicas and acknowledge; the insert succeeds once enough of them have.</li>
+<li>A lookup is routed towards the id and answered by the first replica it meets.</li>
+<li>The reader checks the hash and rejects a wrong answer.</li>
+</ol>
+<div class="storebox fadein" style="--i:1">
+<svg aria-label="A ring: a writer node sends an insert to the root; the root and three neighbours hold replicas; a reader's lookup reaches the nearest replica." width="500" height="500" viewBox="0 0 640 640" style="position:absolute;left:0;top:0;width:500px;height:500px">
+<defs><marker id="sa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker><marker id="sb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#B4491A"/></marker></defs>
+<circle cx="320" cy="320" r="270" fill="none" stroke="#D5D1C6" stroke-width="4"/>
+<path d="M455 554 A270 270 0 0 1 66 412" fill="none" stroke="#9DBEE6" stroke-width="18" stroke-linecap="round"/>
+<path d="M486 128 Q320 320 280 566" fill="none" stroke="#2F6FB3" stroke-width="5" stroke-dasharray="12 8" marker-end="url(#sa)"/>
+<path d="M66 246 L66 392" fill="none" stroke="#B4491A" stroke-width="5" marker-end="url(#sb)"/>
+<circle cx="367" cy="54" r="13" fill="#14213D"/>
+<circle cx="494" cy="113" r="16" fill="#14213D"/>
+<circle cx="581" cy="250" r="13" fill="#14213D"/>
+<circle cx="574" cy="412" r="13" fill="#14213D"/>
+<circle cx="455" cy="554" r="16" fill="#2F6FB3"/>
+<circle cx="273" cy="586" r="20" fill="#2F6FB3"/>
+<circle cx="165" cy="541" r="16" fill="#2F6FB3"/>
+<circle cx="66" cy="412" r="16" fill="#2F6FB3"/>
+<circle cx="66" cy="228" r="16" fill="#14213D"/>
+<circle cx="185" cy="86" r="13" fill="#14213D"/>
+</svg>
+<p class="lbl" style="left:404px;top:58px;width:110px">writer</p>
+<p class="lbl lbl-key" style="left:75px;top:156px;width:120px">reader</p>
+<p class="lbl lbl-root" style="left:175px;top:462px;width:260px">root and replicas</p>
+</div>
+</div>
+<p class="note note-atk">Not yet: one malicious replica can answer a lookup of mutable content (waves B2 and C6).</p>
+
+</section></div>
+<p class="speaker-notes">Past is the storage layer on top of Pastry; ExpiringPast adds leases capped at a year, and Glacier adds erasure-coded, owner-signed archives. Because replicas sit on the leaf set of the root, the set heals itself when nodes come and go: replication moves copies to the new neighbours.</p>
+<div class="frame"><section id="modes" class="paper">
+<p class="eyebrow">DEFENCE · TWO MODES</p>
+<h2>Plain mode trusts the network, certified mode proves who is talking</h2>
+<table class="tbl rise">
+<tr class="tbl-head"><th style="width:22%"></th><th style="width:36%">Plain mode</th><th style="width:42%">Certified mode</th></tr>
+<tr><td>Who can join</td><td>Anyone who can reach a node</td><td>Nodes holding a certificate from the deployment’s CA</td></tr>
+<tr><td>Who sent a message</td><td>Whatever the message says</td><td>The TLS certificate of the previous hop</td></tr>
+<tr><td>Where a node lives</td><td>Taken from its handle</td><td>Proven only by a connection this node dialled itself</td></tr>
+<tr><td>Join answers</td><td>Trusted as they arrive</td><td>Only from an authenticated sender; every handle is probed first</td></tr>
+<tr><td>Meant for</td><td>Trusted networks and the simulator</td><td>Untrusted networks</td></tr>
+</table>
+<p class="body">The rest of this deck assumes certified mode. In plain mode, anyone is an insider.</p>
+
+</section></div>
+<p class="speaker-notes">Plain mode is the historic FreePastry behaviour: a node believes the ids and addresses written in messages. Certified mode (CertifiedSocketPastryNodeFactory) runs every connection over TLS 1.3 with CA-issued node certificates and admits a handle only for the exact id, address and epoch that presented the certificate. Plain mode is now documented as trusted-network-only; the hardening against crashes and memory exhaustion applies to both modes.</p>
+<div class="frame"><section id="threats">
+<p class="eyebrow">DEFENCE · THREAT MODEL</p>
+<h2>Two kinds of attacker</h2>
+<div class="cards">
+<div class="card card-attack rise" style="--i:0">
+<p class="card-title">Outsider</p>
+<p class="body">Any host on the internet, without a certificate.</p>
+<ul class="list">
+<li>Sends malformed or truncated bytes</li>
+<li>Spoofs UDP datagrams and node handles</li>
+<li>Opens many slow or half-open connections</li>
+<li>Floods from many addresses</li>
+</ul>
+</div>
+<div class="card card-insider rise" style="--i:1">
+<p class="card-title">Certified insider</p>
+<p class="body">A minority of nodes with valid certificates, possibly colluding.</p>
+<ul class="list">
+<li>Lies about ids, addresses and senders</li>
+<li>Answers requests it was not asked</li>
+<li>Forges protocol messages and certificates</li>
+<li>Steers joins, routing and replicas</li>
+</ul>
+</div>
+</div>
+<p class="body">Out of scope: a compromised CA, a majority of malicious nodes, an attacker who controls the whole network path.</p>
+
+</section></div>
+<p class="speaker-notes">The 2026 analysis assumed certified mode on an untrusted network. Outsiders can reach any node but hold no certificate. Insiders hold a real certificate, so TLS alone does not stop them; what matters is that they cannot claim to be someone else or live somewhere else, and that protocols do not believe what an insider writes into a message.</p>
+<div class="frame"><section id="outsiders">
+<p class="eyebrow">DEFENCE · STOPPED: OUTSIDERS</p>
+<h2>Outsiders can no longer crash a node</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:48%">Attack</th><th style="width:52%">Defence now</th></tr>
+<tr><td>Malformed or truncated messages crash the node</td><td>Bounded readers and fuzz tests; a bad datagram is dropped, a bad socket closed</td></tr>
+<tr><td>A Glacier response sent as a request stops every node in the JVM</td><td>Dropped and logged; a test forbids <span class="mono">new Error(</span> in main code</td></tr>
+<tr><td>Spoofed handles fill memory until it runs out</td><td>Weak handle cache; identity and liveness tables are size-bounded</td></tr>
+<tr><td>Slow handshakes hold sockets open (slowloris)</td><td>10 s handshake deadline, at most 32 handshakes per IP</td></tr>
+<tr><td>A burst of tiny TLS frames overflows the stack</td><td>A bounded read loop, at most 64 reads per socket per selector turn</td></tr>
+<tr><td>A forged PONG marks a dead route alive</td><td>Each ping carries a random 64-bit nonce</td></tr>
+<tr><td>A node relays traffic to any address</td><td>Address policy on every hop: no wildcard, multicast or self</td></tr>
+</table>
+
+</section></div>
+<p class="speaker-notes">Every row was reproduced first: a test that failed on the old code for the right reason, then the fix. The two most dangerous were kill switches: any Error on the selector thread destroyed the whole Environment, which stops every node in that JVM. One forged Glacier message, or a burst of about 1,600 one-byte TLS messages, was enough.</p>
+<div class="frame"><section id="insiders">
+<p class="eyebrow">DEFENCE · STOPPED: CERTIFIED INSIDERS</p>
+<h2>Insiders can no longer pose as someone else</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:48%">Attack</th><th style="width:52%">Defence now</th></tr>
+<tr><td>Advertise a trusted node’s id at the insider’s own address</td><td>A handle counts only for the exact (id, address, epoch) that showed the certificate; others are probed first</td></tr>
+<tr><td>Claim an honest neighbour’s address before TLS (eclipse)</td><td>Only a connection this node dialled proves an address; a claim never marks a node dead</td></tr>
+<tr><td>Answer a joining node with a forged leaf set</td><td>Answers only from authenticated senders; every handle probed before it enters the leaf set</td></tr>
+<tr><td>Forge Glacier manifests or squat fragments</td><td>Owner-signed manifests; storage ids derive from the owner’s key</td></tr>
+<tr><td>Store fake Past content under a content-hash id</td><td>The hash is checked on insert, cache and lookup</td></tr>
+<tr><td>Forge Scribe acks or unsubscribes, or publish as someone else</td><td>The source must be the authenticated previous hop; acks only for open subscribes</td></tr>
+<tr><td>Frame a node with a forged PeerReview certificate</td><td>Certificates must come from the CA for the asked id; a valid one is never replaced</td></tr>
+</table>
+
+</section></div>
+<p class="speaker-notes">An insider has a real certificate, so these defences are about binding what it says to what it proved. Also fixed: the CA tool now draws ids from SecureRandom and refuses a requester-chosen id unless the operator allows it, logs every issuance, and issues a v3 CA certificate. Leaf-set broadcast and join senders are being bound to the authenticated hop right now (wave B, in progress).</p>
+<div class="frame"><section id="eclipse" class="paper">
+<p class="eyebrow">DEFENCE · ONE ATTACK IN DETAIL</p>
+<h2>The address takeover that could cut a node off</h2>
+<div class="panels">
+<div class="panel rise" style="--i:0">
+<p class="chip chip-atk">Before: the attack works</p>
+<div class="stage">
+<svg aria-label="Before the fix: insider M connects to victim V claiming B's address; V's link to B is crossed out." width="800" height="440" viewBox="0 0 800 440" style="position:absolute;left:0;top:0;width:800px;height:440px">
+<line x1="400" y1="220" x2="120" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="120" y2="370" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="70" stroke="#9AA3B2" stroke-width="4" stroke-dasharray="12 10"/>
+<line x1="522" y1="127" x2="558" y2="163" stroke="#B4491A" stroke-width="6"/>
+<line x1="558" y1="127" x2="522" y2="163" stroke="#B4491A" stroke-width="6"/>
+<line x1="400" y1="220" x2="680" y2="370" stroke="#B4491A" stroke-width="8"/>
+<circle cx="400" cy="220" r="34" fill="#14213D"/>
+<circle cx="120" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="70" r="34" fill="#C9CED8"/>
+<circle cx="120" cy="370" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="370" r="34" fill="#B4491A"/>
+</svg>
+<p class="node-l" style="left:366px;top:200px">V</p>
+<p class="node-l" style="left:86px;top:50px">A</p>
+<p class="node-l" style="left:646px;top:50px;color:#14213D">B</p>
+<p class="node-l" style="left:86px;top:350px">C</p>
+<p class="node-l" style="left:646px;top:350px">M</p>
+<p class="tag tag-dim" style="left:350px;top:262px;width:100px;text-align:center">victim</p>
+<p class="tag tag-atk" style="left:620px;top:410px;width:120px;text-align:center">insider</p>
+<p class="tag tag-atk" style="left:560px;top:236px;width:240px">claims B’s address</p>
+<p class="tag tag-atk" style="left:380px;top:92px;width:180px">marked dead</p>
+</div>
+<p class="caption">M opens TLS with its own certificate but names B’s address in the header before TLS. V rebinds that address to M and marks B dead for good. Repeated for each neighbour, V talks only to M.</p>
+</div>
+<div class="panel rise" style="--i:1">
+<p class="chip chip-ok">After: the fix</p>
+<div class="stage">
+<svg aria-label="After the fix: V keeps its links to A, B and C; M's connection only proves M's id and is probed first." width="800" height="440" viewBox="0 0 800 440" style="position:absolute;left:0;top:0;width:800px;height:440px">
+<line x1="400" y1="220" x2="120" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="120" y2="370" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="70" stroke="#2F6FB3" stroke-width="5"/>
+<line x1="400" y1="220" x2="680" y2="370" stroke="#B4491A" stroke-width="5" stroke-dasharray="12 10"/>
+<circle cx="400" cy="220" r="34" fill="#14213D"/>
+<circle cx="120" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="70" r="34" fill="#2F6FB3"/>
+<circle cx="120" cy="370" r="34" fill="#2F6FB3"/>
+<circle cx="680" cy="370" r="34" fill="#B4491A"/>
+</svg>
+<p class="node-l" style="left:366px;top:200px">V</p>
+<p class="node-l" style="left:86px;top:50px">A</p>
+<p class="node-l" style="left:646px;top:50px">B</p>
+<p class="node-l" style="left:86px;top:350px">C</p>
+<p class="node-l" style="left:646px;top:350px">M</p>
+<p class="tag tag-dim" style="left:350px;top:262px;width:100px;text-align:center">victim</p>
+<p class="tag tag-atk" style="left:620px;top:410px;width:120px;text-align:center">insider</p>
+<p class="tag tag-atk" style="left:560px;top:236px;width:240px">probed first</p>
+<p class="tag tag-ok" style="left:380px;top:92px;width:180px">stays bound</p>
+</div>
+<p class="caption">An incoming connection proves only M’s id. Only a connection V dialled proves an address, so B stays bound and M is probed at its own address before it is admitted.</p>
+</div>
+</div>
+
+</section></div>
+<p class="speaker-notes">This was finding O1 of the overlay analysis, fixed in wave A. The test builds a certified ring with real TLS and a test CA: on the old code node A marked the real B dead; now B stays in A’s leaf set and M’s handle at B’s address is neither authenticated nor admitted.</p>
+<div class="frame"><section id="notyet">
+<p class="eyebrow atk">LIMITS · NOT STOPPED YET</p>
+<h2>Insiders can still steer routing and answers</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:38%">Attack</th><th style="width:30%">Why it still works</th><th style="width:32%">Planned fix</th></tr>
+<tr><td>Colluders fill a victim’s routing table</td><td>Slots go to the lowest round-trip time</td><td>D1: constrained table, redundant routing</td></tr>
+<tr><td>A malicious bootstrap answers a join with colluders</td><td>One answer is enough</td><td>C4: several bootstraps, density test</td></tr>
+<tr><td>A wrong node answers a Past or Glacier request</td><td>Responses match by counter only</td><td>B2: random ids, expected responder</td></tr>
+<tr><td>One malicious replica answers a lookup</td><td>Mutable content trusts one answer</td><td>C6: quorum or signed content</td></tr>
+<tr><td>A node on the path fakes liveness</td><td>The nonce stops only off-path senders</td><td>C5: HMAC per peer, windowed RTT</td></tr>
+<tr><td>A caught insider stays trusted</td><td>No revocation; certificates last a year</td><td>C7: short-lived certificates, deny list</td></tr>
+<tr><td>Many addresses flood one node</td><td>No per-peer budgets or fair queuing</td><td>C1–C3: budgets and token buckets</td></tr>
+</table>
+
+</section></div>
+<p class="speaker-notes">Other known limits: a hop still relays to any routable non-Pastry host that passes the address policy; anyone may refresh a Past object up to the lease cap; NAT nodes can only run plain mode; any node can subscribe to a multiring gateway topic. Plain mode trusts its network by design. The letters refer to the roadmap on the next slide.</p>
+<div class="frame"><section id="risks" class="paper">
+<p class="eyebrow atk">LIMITS · ACCEPTED RISKS AND GAPS</p>
+<h2>Whom a node still has to trust</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:20%">Trust anchor</th><th style="width:38%">What a compromise allows</th><th style="width:42%">Status</th></tr>
+<tr><td>Bootstrap node</td><td>Answer a joiner with colluders, keep it apart from the honest ring, see who joins</td><td>Gap. It must hold a CA certificate, its answer must be authenticated and every returned handle is probed. Planned (C4): join via three or more bootstraps, density test</td></tr>
+<tr><td>Bootstrap in plain mode</td><td>Anyone on the network path can pose as it</td><td>Accepted: plain mode only on trusted networks</td></tr>
+<tr><td>The CA and its key</td><td>Mint any number of valid identities</td><td>Accepted: keep the key offline; issuances are logged. Revocation planned (C7)</td></tr>
+<tr><td>A majority of nodes</td><td>Outvote quorums and own most routes</td><td>Accepted: out of scope by design</td></tr>
+</table>
+<p class="note note-atk">How bootstraps are managed today: there is no dedicated bootstrap server. Any running node can be one, and the operator hands its address to new nodes out of band (on the command line in the tutorials). FreePastry ships no bootstrap list, rotation or health check, so operators should run several bootstrap nodes on hardened hosts.</p>
+
+</section></div>
+<p class="speaker-notes">Does a joining node trust its bootstrap? In certified mode it trusts it to be a certified node, not to tell the truth: the bootstrap only forwards the JoinRequest, but if the bootstrap or the root it reaches is malicious, the joiner cannot tell a forged leaf set from the real one, because it has only one answer. Probing proves that each returned node exists at its address, not that it is the right neighbour. Leaf-set maintenance later pulls in honest neighbours if any of them reach the new node. Wave C4 fixes this properly: ask several independent bootstraps, keep the numerically closest answers, and check that the ids in the leaf set are not suspiciously dense.</p>
+<div class="frame"><section id="roadmap" class="paper">
+<p class="eyebrow">LIMITS · THE PLAN</p>
+<h2>Four waves, from kill switches to secure routing</h2>
+<div class="waves">
+<div class="wave rise" style="--i:0">
+<p class="wave-letter">A</p>
+<p class="wave-title">Kill switches and eclipse</p>
+<div class="bar"><div class="bar-fill" style="width:100%"></div></div>
+<p class="status">Done: 5 of 5</p>
+<ul class="wave-list">
+<li>Remote Error crashes</li>
+<li>Handle-cache memory exhaustion</li>
+<li>Address takeover</li>
+<li>TLS stack overflow</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:1">
+<p class="wave-letter">B</p>
+<p class="wave-title">Who sent what</p>
+<div class="bar"><div class="bar-fill" style="width:45%"></div></div>
+<p class="status">In progress</p>
+<ul class="wave-list">
+<li>Done: Scribe, PeerReview, CA tool</li>
+<li>Running: overlay senders, runtime</li>
+<li>Next: Past and Glacier responses</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:2">
+<p class="wave-letter">C</p>
+<p class="wave-title">Budgets and protocol upgrades</p>
+<div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+<p class="status status-plan">Planned</p>
+<ul class="wave-list">
+<li>Secure join</li>
+<li>Authenticated liveness</li>
+<li>Revocation</li>
+<li>Per-peer budgets</li>
+</ul>
+</div>
+<div class="wave rise" style="--i:3">
+<p class="wave-letter">D</p>
+<p class="wave-title">Secure routing</p>
+<div class="bar"><div class="bar-fill" style="width:0%"></div></div>
+<p class="status status-plan">Planned: design first</p>
+<ul class="wave-list">
+<li>Design together with rate limiting (C1–C3)</li>
+<li>Constrained routing table</li>
+<li>Signed Scribe topics</li>
+<li>PeerReview in deployments</li>
+<li>Certified NAT nodes</li>
+</ul>
+</div>
+</div>
+
+</section></div>
+<p class="speaker-notes">Status on 27 November 2026. Wave B’s Past and Glacier parts wait until those modules have moved from callbacks to CompletableFuture, so their request handling is rewritten only once. Wave D follows Castro et al., “Secure routing for structured peer-to-peer overlay networks”.</p>
+<div class="frame"><section id="takeaways" class="dark">
+<p class="eyebrow">TAKEAWAYS</p>
+<h2>Where FreePastry stands</h2>
+<div class="points">
+<div class="point rise" style="--i:0"><p class="point-num">1</p><div class="point-body"><p class="point-text">Outsiders can no longer crash a node or exhaust its memory.</p><p class="point-sub">Bounded readers, tables and loops; no remote input reaches an Error.</p></div></div>
+<div class="point rise" style="--i:1"><p class="point-num">2</p><div class="point-body"><p class="point-text">Certified insiders can no longer pose as another node.</p><p class="point-sub">Ids, addresses and senders are bound to what TLS proved.</p></div></div>
+<div class="point rise" style="--i:2"><p class="point-num">3</p><div class="point-body"><p class="point-text">They can still steer routing, joins and answers.</p><p class="point-sub">Waves B to D close that, with secure routing as the largest step.</p></div></div>
+</div>
+
+</section></div>
+<p class="speaker-notes">Use certified mode on any network you do not fully trust. Until waves C and D land, treat lookups of mutable content and routing to a single root as best effort against a colluding minority.</p>
+</div>
+<script>
+function fit() {
+  if (window.matchMedia('print').matches) return;
+  const scale = Math.min(1, (window.innerWidth - 32) / 1920);
+  document.querySelectorAll('.frame').forEach(f => {
+    f.style.transform = 'scale(' + scale + ')';
+    f.style.marginBottom = (1080 * scale - 1080) + 'px';
+    f.style.marginRight = (1920 * scale - 1920) + 'px';
+  });
+}
+window.addEventListener('resize', fit);
+fit();
+</script>
+</body>
+</html>

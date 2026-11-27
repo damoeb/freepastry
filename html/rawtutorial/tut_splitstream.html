@@ -25,8 +25,8 @@ API and software toolkit.</div>
 <a name="SplitStream"><h1>SplitStream</h1></a>
 <h2>Introducing SplitStream.</h2>
 <h3>Download the tutorial files: 
-<a href="./src/splitstream/MySplitStreamClient.java">MySplitStreamClient.java</a>,
-<a href="./src/splitstream/SplitStreamTutorial.java">SplitStreamTutorial.java</a> into a directory called rice/tutorial/splitstream/.</h3>
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/splitstream/MySplitStreamClient.java">MySplitStreamClient.java</a>,
+<a href="../../modules/tutorials/src/main/java/rice/tutorial/splitstream/SplitStreamTutorial.java">SplitStreamTutorial.java</a> into a directory called rice/tutorial/splitstream/.</h3>
 
 <p/>SplitStream is an application that utilizes multiple independent scribe trees to provide high-bandwidth content distribution.  For each Channel, SplitStream creates B (FreePastry's routing base, 16 by default) Stripes.   Each Stripe is an independent Scribe tree.  To load-balance upstream bandwidth among the nodes in the Channel, SplitStream attempts to make each node an interior node of only 1 Stripe, and a leaf of all the rest of the Stripes.  Each Stripe delivers data on a best-effort basis.  Due to membership changes and unreliable links and nodes, you should not expect to receive all data that is sent to all stripes.  A typical use case would be to use redundant encoding (such as <a href="http://en.wikipedia.org/wiki/Erasure_codes">Erasure Codes</a>) for the data dissemination.  The coding mechanisms and recommendations on the number of Stripes to use is out of the scope of this tutorial.   
 
@@ -63,31 +63,33 @@ public interface SplitStreamClient {
    * @param s The stripe the data as received on
    */
   public void deliver(Stripe s, byte[] data);
+
+}
 </pre>
 
 Now we take a look at the member variables in MySplitStreamClient.
 <pre>
   /**
-   * The lenght of a message in bytes.
+   * The length of a message in bytes.
    */
   public static final int DATA_LENGTH = 10;
   /**
    * The number of messages to publish.
    */
   public static final int NUM_PUBLISHES = 10;
-  
+
   /**
    * The message sequence number.  Will be incremented after each send.
-   * 
+   *
    * Out of laziness we are encoding this as a byte in the stream, so the range is limited
    */
   byte seqNum = 0;
-  
-  /** 
+
+  /**
    * My handle to a SplitStream impl.
    */
   SplitStream mySplitStream;
-  
+
   /**
    * The Id of the only Channel we are subscribing to.
    */
@@ -97,16 +99,16 @@ Now we take a look at the member variables in MySplitStreamClient.
    * The channel.
    */
   Channel myChannel;
-  
+
   /**
    * The stripes... acquired from myChannel.
    */
   Stripe[] myStripes;
-  
+
   /**
    * Data source...
    */
-  protected RandomSource random;  
+  private final RandomSource random;
 </pre>
 
 <p/>The <code>ChannelId</code> is similar to the <code>Topic</code> in SplitStream.  It is usually a hash of a "human readable" content name.
@@ -122,7 +124,7 @@ Now we take a look at the member variables in MySplitStreamClient.
 
     // use this to generate data
     this.random = endpoint.getEnvironment().getRandomSource();
-    
+
     // construct Scribe
     mySplitStream = new SplitStreamImpl(node,"splitStreamTutorial");
 
@@ -131,10 +133,10 @@ Now we take a look at the member variables in MySplitStreamClient.
 
     // construct the ChannelId
     myChannelId = new ChannelId(temp);
-    
+
     // now we can receive messages
     endpoint.register();
-  }  
+  }
 </pre>
 
 <p/>The <code>environment</code> already contains our <code>RandomSource</code>.  
@@ -157,8 +159,8 @@ This is trivial once you have the ChannelId.  We do this in the <code>MySplitStr
 <pre>
     // subscribing notifies your application when data comes through the tree
     myStripes = myChannel.getStripes();
-    for (int curStripe = 0; curStripe &lt; myStripes.length; curStripe++) {
-      myStripes[curStripe].subscribe(this); 
+    for (Stripe myStripe : myStripes) {
+      myStripe.subscribe(this);
     }
 </pre>
 
@@ -174,24 +176,24 @@ Unlike Scribe which sends a ScribeContent, SplitStream disseminates byte arrays.
       // second byte: stripe
       // rest: random
       byte[] data = new byte[DATA_LENGTH];
-      
+
       // yes, we waste some random bytes here
       random.nextBytes(data);
       data[0] = seqNum;
       data[1] = curStripe;
-      
+
       // print what we are sending
       System.out.println("Node "+endpoint.getLocalNodeHandle()+" publishing "+seqNum+" "+printData(data));
 
       // publish the data
-      myStripes[curStripe].publish(data); 
+      myStripes[curStripe].publish(data);
     }
-    
+
     // increment the sequence number
     seqNum++;
-    
+
     // cancel after sending all the messages
-    if (seqNum >= NUM_PUBLISHES) publishTask.cancel();
+    if (seqNum &gt;= NUM_PUBLISHES) publishTask.cancel();
   }
 </pre>
 
@@ -199,7 +201,7 @@ The above code construct the <code>byte[] data</code> for each stripe and then c
 
 <pre>
   private String printData(byte[] data) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i &lt; data.length-1; i++) {
       sb.append((int)data[i]);
       sb.append(',');
@@ -223,94 +225,38 @@ All we are doing here is printing output to stdout.
 
 
 <a name="Run"></a><h3>Run the code.</h3>
-Now, let's run the code using the <code>-direct</code> flag. and 10 nodes.
+Build the project once with <code>./mvnw -B package -DskipTests</code>, which writes <code>modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar</code>.  FreePastry logs through SLF4J and bundles no logging backend; add one such as slf4j-simple to the classpath if you want to see the log output.  Now, let's run the code on real sockets with 10 nodes on this machine: the local bind port, the bootstrap host and port (<code>127.0.0.1</code> maps to the first node's own bind address), and the number of nodes.
 
-Your output will resemble:
+Run it with:
 
 <pre>
-<span class="input">java -cp .:FreePastry-@freepastry_version@.jar rice.tutorial.splitstream.SplitStreamTutorial -direct 10</span>
-<span class="output">:rice.pastry.direct.DirectPastryNodeFactory:0:No bootstrap node provided, starting a new ring...
-Finished creating new node Pastry node &lt;0x30C9E7..&gt;
-Finished creating new node Pastry node &lt;0x5C775C..&gt;
-Finished creating new node Pastry node &lt;0x0B86E5..&gt;
-Finished creating new node Pastry node &lt;0xD09F58..&gt;
-Finished creating new node Pastry node &lt;0x003E86..&gt;
-Finished creating new node Pastry node &lt;0x8DA8E3..&gt;
-Finished creating new node Pastry node &lt;0x17B578..&gt;
-Finished creating new node Pastry node &lt;0x841BF0..&gt;
-Finished creating new node Pastry node &lt;0x770070..&gt;
-Finished creating new node Pastry node &lt;0x84C88C..&gt;
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,0,-124,35,-76,-49,-2,17,32,-64
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,1,124,51,60,-82,75,6,126,105
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,2,104,44,50,113,26,65,104,-114
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x26F8A8..&gt;]):seq:0 stripe:2 0,2,104,44,50,113,26,65,104,-114)
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,3,-124,-85,-80,-20,19,118,-85,5
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x36F8A8..&gt;]):seq:0 stripe:3 0,3,-124,-85,-80,-20,19,118,-85,5)
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,4,50,68,88,24,4,-50,106,-93
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,5,-26,123,-94,-8,2,-116,4,-109
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,6,93,118,-108,-66,108,105,-13,110
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,7,-33,-45,-79,70,22,94,1,95
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,8,-107,41,-117,-64,-14,46,-97,73
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,9,41,13,25,86,-83,-37,-71,56
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,10,112,115,6,47,-70,-13,-122,84
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,11,-104,13,-9,62,-58,74,-92,-40
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,12,99,-11,122,67,-64,-11,122,42
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,13,45,53,97,-75,27,-78,28,101
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,14,-118,68,52,-125,91,117,98,94
-Node [DNH &lt;0x30C9E7..&gt;] publishing 0 0,15,-63,36,-79,-94,-127,-47,-2,85
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x66F8A8..&gt;]):seq:0 stripe:6 0,6,93,118,-108,-66,108,105,-13,110)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x26F8A8..&gt;]):seq:0 stripe:2 0,2,104,44,50,113,26,65,104,-114)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x56F8A8..&gt;]):seq:0 stripe:5 0,5,-26,123,-94,-8,2,-116,4,-109)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x36F8A8..&gt;]):seq:0 stripe:3 0,3,-124,-85,-80,-20,19,118,-85,5)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x46F8A8..&gt;]):seq:0 stripe:4 0,4,50,68,88,24,4,-50,106,-93)
-&lt;0x8DA8E3..&gt; deliver(Stripe [StripeId &lt;0xA6F8A8..&gt;]):seq:0 stripe:10 0,10,112,115,6,47,-70,-13,-122,84)
-&lt;0x8DA8E3..&gt; deliver(Stripe [StripeId &lt;0x96F8A8..&gt;]):seq:0 stripe:9 0,9,41,13,25,86,-83,-37,-71,56)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x66F8A8..&gt;]):seq:0 stripe:6 0,6,93,118,-108,-66,108,105,-13,110)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x56F8A8..&gt;]):seq:0 stripe:5 0,5,-26,123,-94,-8,2,-116,4,-109)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x46F8A8..&gt;]):seq:0 stripe:4 0,4,50,68,88,24,4,-50,106,-93)
-&lt;0x8DA8E3..&gt; deliver(Stripe [StripeId &lt;0x76F8A8..&gt;]):seq:0 stripe:7 0,7,-33,-45,-79,70,22,94,1,95)
-&lt;0x003E86..&gt; deliver(Stripe [StripeId &lt;0xF6F8A8..&gt;]):seq:0 stripe:15 0,15,-63,36,-79,-94,-127,-47,-2,85)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x86F8A8..&gt;]):seq:0 stripe:8 0,8,-107,41,-117,-64,-14,46,-97,73)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x86F8A8..&gt;]):seq:0 stripe:8 0,8,-107,41,-117,-64,-14,46,-97,73)
-&lt;0x003E86..&gt; deliver(Stripe [StripeId &lt;0x76F8A8..&gt;]):seq:0 stripe:7 0,7,-33,-45,-79,70,22,94,1,95)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x26F8A8..&gt;]):seq:0 stripe:2 0,2,104,44,50,113,26,65,104,-114)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x06F8A8..&gt;]):seq:0 stripe:0 0,0,-124,35,-76,-49,-2,17,32,-64)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x36F8A8..&gt;]):seq:0 stripe:3 0,3,-124,-85,-80,-20,19,118,-85,5)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x76F8A8..&gt;]):seq:0 stripe:7 0,7,-33,-45,-79,70,22,94,1,95)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0x96F8A8..&gt;]):seq:0 stripe:9 0,9,41,13,25,86,-83,-37,-71,56)
-&lt;0x30C9E7..&gt; deliver(Stripe [StripeId &lt;0xA6F8A8..&gt;]):seq:0 stripe:10 0,10,112,115,6,47,-70,-13,-122,84)
-&lt;0x17B578..&gt; deliver(Stripe [StripeId &lt;0x16F8A8..&gt;]):seq:0 stripe:1 0,1,124,51,60,-82,75,6,126,105)
-&lt;0x17B578..&gt; deliver(Stripe [StripeId &lt;0x06F8A8..&gt;]):seq:0 stripe:0 0,0,-124,35,-76,-49,-2,17,32,-64)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x86F8A8..&gt;]):seq:0 stripe:8 0,8,-107,41,-117,-64,-14,46,-97,73)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x16F8A8..&gt;]):seq:0 stripe:1 0,1,124,51,60,-82,75,6,126,105)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0xA6F8A8..&gt;]):seq:0 stripe:10 0,10,112,115,6,47,-70,-13,-122,84)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x96F8A8..&gt;]):seq:0 stripe:9 0,9,41,13,25,86,-83,-37,-71,56)
-&lt;0x8DA8E3..&gt; deliver(Stripe [StripeId &lt;0xF6F8A8..&gt;]):seq:0 stripe:15 0,15,-63,36,-79,-94,-127,-47,-2,85)
-&lt;0x5C775C..&gt; deliver(Stripe [StripeId &lt;0x76F8A8..&gt;]):seq:0 stripe:7 0,7,-33,-45,-79,70,22,94,1,95)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0xC6F8A8..&gt;]):seq:0 stripe:12 0,12,99,-11,122,67,-64,-11,122,42)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0xE6F8A8..&gt;]):seq:0 stripe:14 0,14,-118,68,52,-125,91,117,98,94)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0xB6F8A8..&gt;]):seq:0 stripe:11 0,11,-104,13,-9,62,-58,74,-92,-40)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0x36F8A8..&gt;]):seq:0 stripe:3 0,3,-124,-85,-80,-20,19,118,-85,5)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0xD6F8A8..&gt;]):seq:0 stripe:13 0,13,45,53,97,-75,27,-78,28,101)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0x26F8A8..&gt;]):seq:0 stripe:2 0,2,104,44,50,113,26,65,104,-114)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0x16F8A8..&gt;]):seq:0 stripe:1 0,1,124,51,60,-82,75,6,126,105)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x66F8A8..&gt;]):seq:0 stripe:6 0,6,93,118,-108,-66,108,105,-13,110)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x56F8A8..&gt;]):seq:0 stripe:5 0,5,-26,123,-94,-8,2,-116,4,-109)
-&lt;0x0B86E5..&gt; deliver(Stripe [StripeId &lt;0x46F8A8..&gt;]):seq:0 stripe:4 0,4,50,68,88,24,4,-50,106,-93)
-&lt;0xD09F58..&gt; deliver(Stripe [StripeId &lt;0x06F8A8..&gt;]):seq:0 stripe:0 0,0,-124,35,-76,-49,-2,17,32,-64)
+<span class="input">java -cp modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar rice.tutorial.splitstream.SplitStreamTutorial 9001 127.0.0.1 9001 10</span>
+</pre>
 
+<p>The program prints one <code>Finished creating new node</code> line per node, one <code>publishing</code> line for every stripe the publishing node sends, and one line per stripe a node receives, of the form <code>&lt;nodeId&gt; deliver(Stripe [StripeId &lt;id&gt;]):seq:N stripe:K &lt;data&gt;)</code>. The data bytes start with the sequence number and the stripe number. If a node cannot join a stripe it prints <code>joinFailed(...)</code>. The program keeps publishing until you stop it with Ctrl-C. The node and stripe ids and the data bytes differ from run to run; the output starts like this (trimmed):</p>
+
+<pre>
+<span class="output">Finished creating new node PastryNode[SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001]
+Finished creating new node PastryNode[SNH: &lt;0xE7A2AA..&gt;/myhost/192.168.88.204:9002]
 ...
-
+Finished creating new node PastryNode[SNH: &lt;0x8826E7..&gt;/myhost/192.168.88.204:9010]
+Node [SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001] publishing 0 0,0,56,74,-122,27,43,39,30,-95
+Node [SNH: &lt;0x4368FA..&gt;/myhost/192.168.88.204:9001] publishing 0 0,1,-60,67,-107,-7,-66,91,44,-83
+...
+&lt;0x4368FA..&gt; deliver(Stripe [StripeId &lt;0x42AFC2..&gt;]):seq:0 stripe:4 0,4,69,17,-35,-7,20,0,42,-107)
+&lt;0xD8A16A..&gt; deliver(Stripe [StripeId &lt;0x42AFC2..&gt;]):seq:0 stripe:4 0,4,69,17,-35,-7,20,0,42,-107)
+...
 </span></pre>
 
-Note that the order of delivery of the individual stripes is not preserved.  We see that <code><b>Stripe 6</b></code> on node <code><b>0x5C775C</b></code> was delivered first, but that the data is identical to what was published.
+
+Note that the order of delivery of the individual stripes is not preserved. Compare the data of a delivered stripe with what the publishing node printed (<code>publishing ...</code>) to see that it is identical to what was published.
 
 <h3>Congratulations!  You have built and run your first SplitStream application!</h3><br>
 
 <hr/><div class="nav">
   <span class="nav-left"><a href="tut_app_sockets.html#appsocket">Previous (Application Sockets)</a></span> 
   <span class="nav-center"><a href="index.html">Contents</a></span> 
-  <span class="nav-right"><a href="tut_raw_serialization.html#raw">Next (Raw Serialization 1)</a></span>
+  <span class="nav-right"><a href="tut_raw_serialization.html#raw">Next (Raw Serialization)</a></span>
 </div><br/>
 
 <div class="footer">

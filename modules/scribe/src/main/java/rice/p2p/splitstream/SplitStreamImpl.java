@@ -1,0 +1,192 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice.p2p.splitstream;
+
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+
+import rice.environment.Environment;
+import rice.p2p.commonapi.Node;
+import rice.p2p.scribe.Scribe;
+import rice.p2p.scribe.ScribeImpl;
+
+/**
+ * This is the implementing class of the SplitStream interface. It provides the functionality of
+ * creating and attaching to channels. This class is responsible for handling all channels that a
+ * local node is part of.
+ * @version $Id: SplitStreamImpl.java 4654 2009-01-08 16:33:07Z jeffh $
+ * @author Ansley Post
+ * @author Alan Mislove
+ */
+public class SplitStreamImpl implements SplitStream {
+
+  /**
+   * The scribe instance for this SplitStream Object
+   */
+  private final Scribe scribe;
+
+  /**
+   * The node that this application is running on
+   */
+  private final Node node;
+
+  /**
+   * Map of all the channels currently created on this node implicitly or explicitly.
+   */
+  private final ConcurrentHashMap<ChannelId, Channel> channels;
+
+  private final int stripeBaseBitLength;
+  private final int maxFailedSubscriptions;
+  private final int defaultMaxChildren;
+
+  private final String instance;
+
+  /**
+   * Convenience constructor which uses the default SplitStreamScribePolicy.
+   */
+  public SplitStreamImpl(Node node, String instance) {
+    this(node, instance, (scribe, splitstream) -> new SplitStreamScribePolicy(scribe, splitstream));
+  }
+
+  /**
+   * The constructor for building the splitStream object which internally
+   * creates it's own Scribe.
+   *
+   * @param node the pastry node that we will use
+   * @param instance The instance name for this splitstream
+   */
+  public SplitStreamImpl(Node node, String instance, SplitStreamScribePolicyFactory factory) {
+    this.instance = instance;
+    Environment environment = node.getEnvironment();
+    SplitStreamConfig config = SplitStreamConfig.fromParameters(environment.getParameters());
+    defaultMaxChildren = config.defaultMaximumChildren();
+    maxFailedSubscriptions = config.maxFailedSubscription();
+    stripeBaseBitLength = config.stripeBaseBitLength();
+    this.scribe = new ScribeImpl(node, instance);
+    scribe.setContentDeserializer((buf, endpoint, contentType) -> {
+      return switch (SplitStreamContentType.find(contentType)) {
+        case CONTENT -> new SplitStreamContent(buf);
+        case SUBSCRIBE_CONTENT -> new SplitStreamSubscribeContent(buf);
+        case null -> throw new IOException("Invalid type:"+contentType);
+      };
+    });
+
+    this.node = node;
+    this.channels = new ConcurrentHashMap<ChannelId, Channel>();
+    scribe.setPolicy(factory.getSplitStreamScribePolicy(scribe, this));
+  }
+
+  /**
+   * This method is used by a peer who wishes to distribute the content using SplitStream. It
+   * creates a Channel Object consisting of numStripes number of Stripes, one for each stripe's
+   * content. A Channel object is responsible for implementing SplitStream functionality, like
+   * maintaining multiple multicast trees, bandwidth management and discovering parents having spare
+   * capacity. One Channel object should be created for each content distribution which wishes to
+   * use SplitStream.
+   *
+   * @param id The id of the channel to create
+   * @return an instance of a Channel class.
+   */
+  @Override
+  public Channel createChannel(ChannelId id) {
+    return attachChannel(id);
+  }
+
+  /**
+   * This method is used by peers who wish to listen to content distributed by some other peer using
+   * SplitStream. It attaches the local node to the Channel which is being used by the source peer
+   * to distribute the content. Essentially, this method finds out the different parameters of
+   * Channel object which is created by the source, (the peer distributing the content) , and then
+   * creates a local Channel object with these parameters and returns it. This is a non-blocking
+   * call so the returned Channel object may not be initialized with all the parameters, so
+   * applications should wait for channelIsReady() notification made by channels when they are
+   * ready.
+   *
+   * @param id The id of the channel to create
+   * @return An instance of Channel object.
+   */
+  @Override
+  public Channel attachChannel(ChannelId id) {
+    Channel channel = (Channel) channels.get(id);
+
+    if (channel == null) {
+      channel = new Channel(id, scribe, instance, node.getIdFactory(),this.node.getId(),
+          stripeBaseBitLength, maxFailedSubscriptions);
+      channels.put(id, channel);
+    }
+
+    ((SplitStreamScribePolicy)scribe.getPolicy()).setMaxChildren(id,
+        defaultMaxChildren);
+    return channel;
+  }
+
+
+  /**
+   * Returns all of the channels on this local splitstream
+   *
+   * @return All of the channels currently being received by this splitstream
+   */
+  @Override
+  public Channel[] getChannels() {
+    return (Channel[]) channels.values().toArray(new Channel[0]);
+  }
+
+  /**
+   * Returns the policy used to control Scribe
+   *
+   * @return The Scribe policy
+   */
+  public SplitStreamScribePolicy getPolicy(){
+    return (SplitStreamScribePolicy) scribe.getPolicy();
+  }
+
+  @Override
+  public int getStripeBaseBitLength() {
+    return stripeBaseBitLength;
+  }
+
+  @Override
+  public Environment getEnvironment() {
+    return scribe.getEnvironment();
+  }
+
+  @Override
+  public void destroy() {
+    scribe.destroy();
+  }
+}

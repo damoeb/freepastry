@@ -1,0 +1,301 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package org.mpisws.p2p.transport.wire;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
+import org.mpisws.p2p.transport.ErrorHandler;
+import org.mpisws.p2p.transport.MessageCallback;
+import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.P2PSocket;
+import org.mpisws.p2p.transport.SocketCallback;
+import org.mpisws.p2p.transport.SocketCountListener;
+import org.mpisws.p2p.transport.SocketRequestHandle;
+import org.mpisws.p2p.transport.TransportLayerCallback;
+import org.mpisws.p2p.transport.TransportLayerListener;
+import org.mpisws.p2p.transport.util.DefaultCallback;
+import org.mpisws.p2p.transport.util.DefaultErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
+import rice.environment.Environment;
+import org.mpisws.p2p.transport.TransportLayer;
+
+/**
+ * Sends/receives ByteBuffer from InetSocketAddress
+ *
+ * This layer does a lot of the difficult part:
+ *
+ * - Non-blocking I/O (using selector etc)
+ * - Enforcement of number of Sockets to prevent FileDescriptor Starvation
+ *
+ *
+ * @author Jeff Hoye
+ *
+ */
+public class WireTransportLayer
+    implements SocketOpeningTransportLayer<InetSocketAddress>, TransportLayer<InetSocketAddress, ByteBuffer> {
+  public static final String OPTION_TRANSPORT_TYPE = "transport_type";
+  /**
+   * Set by this layer in the options of every TCP socket: the {@code InetSocketAddress} at the other end of the
+   * connection, the remote address of an accepted socket or the one this node dialled. The layers above pass the
+   * options up with the socket, so a layer that sees only identifiers claimed in headers can tell where the bytes
+   * really come from.
+   */
+  public static final String OPTION_REMOTE_ADDRESS = "wire_remote_address";
+  public static final int TRANSPORT_TYPE_DATAGRAM = 0;
+  /**
+   * Note this does not provide end-to-end guarantee.  Only per-hop guarantee.
+   */
+  public static final int TRANSPORT_TYPE_GUARANTEED = 1;
+
+  // state
+  private final InetSocketAddress bindAddress;
+
+  // helpers
+  private final UDPLayer udp;
+  private final TCPLayer tcp;
+
+
+  // abstract helpers
+  private final Logger logger;
+  private final Environment environment;
+
+  private TransportLayerCallback<InetSocketAddress, ByteBuffer> callback;
+  private ErrorHandler<InetSocketAddress> errorHandler;
+
+  /**
+   * true for modelnet, who needs to set the bind address even on outgoing sockets
+   */
+  private final boolean forceBindAddress;
+
+  private final WireConfig config;
+
+
+  /**
+   *
+   * @param bindAddress the address to bind to, if it fails, it will throw an exception
+   * @param env will acquire the SelectorLoop from the env
+   */
+  public WireTransportLayer(
+      InetSocketAddress bindAddress,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler) throws IOException {
+    this(bindAddress, env, errorHandler, true);
+  }
+
+  public WireTransportLayer(
+      InetSocketAddress bindAddress,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler, boolean enableServer) throws IOException {
+    this(bindAddress,env,errorHandler,enableServer,enableServer);
+  }
+
+  public WireTransportLayer(
+      InetSocketAddress bindAddress,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler, boolean enableTCPServer, boolean enableUDPServer) throws IOException {
+    this(bindAddress, env, errorHandler, enableTCPServer, enableUDPServer, WireConfig.fromParameters(env.getParameters()));
+  }
+
+  public WireTransportLayer(
+      InetSocketAddress bindAddress,
+      Environment env,
+      ErrorHandler<InetSocketAddress> errorHandler, boolean enableTCPServer, boolean enableUDPServer,
+      WireConfig config) throws IOException {
+    this.logger = env.getLogManager().getLogger(WireTransportLayer.class, null);
+    this.bindAddress = bindAddress;
+    this.environment = env;
+
+    this.config = config;
+    this.forceBindAddress = config.forceBindAddress();
+
+    this.callback = new DefaultCallback<InetSocketAddress, ByteBuffer>(logger);
+    this.errorHandler = errorHandler;
+
+    if (this.errorHandler == null) {
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger, Level.INFO, environment.getLogRateLimiter());
+    }
+
+    if (enableUDPServer) {
+      udp = new UDPLayerImpl(this);
+    } else {
+      udp = new DisabledUdpLayer();
+    }
+    try {
+      tcp = new TCPLayer(this, enableTCPServer);
+    } catch (IOException ioe) {
+      udp.destroy();
+      throw ioe;
+    }
+  }
+
+  WireConfig getConfig() {
+    return config;
+  }
+
+  @Override
+  public void setCallback(TransportLayerCallback<InetSocketAddress, ByteBuffer> callback) {
+    this.callback = callback;
+  }
+
+  @Override
+  public @Nullable SocketRequestHandle<InetSocketAddress> openSocket(InetSocketAddress destination, SocketCallback<InetSocketAddress> deliverSocketToMe, @Nullable Map<String, Object> options) {
+    return tcp.openSocket(destination, deliverSocketToMe, options);
+  }
+
+  @Override
+  public MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
+      InetSocketAddress destination,
+      ByteBuffer msg,
+      @Nullable MessageCallback<InetSocketAddress, ByteBuffer> deliverAckToMe,
+      @Nullable Map<String, Object> options) {
+    logger.debug("sendMessage({},{})", destination, msg);
+    return udp.sendMessage(destination, msg, deliverAckToMe, options);
+  }
+
+  @Override
+  public InetSocketAddress getLocalIdentifier() {
+    return bindAddress;
+  }
+
+  boolean destroyed = false;
+  @Override
+  public void destroy() {
+    logger.info("destroy()");
+    destroyed = true;
+    udp.destroy();
+    tcp.destroy();
+  }
+
+  public boolean isDestroyed() {
+    return destroyed;
+  }
+
+  @Override
+  public void setErrorHandler(ErrorHandler<InetSocketAddress> handler) {
+    if (handler == null) {
+      this.errorHandler = new DefaultErrorHandler<InetSocketAddress>(logger, Level.INFO, environment.getLogRateLimiter());
+      return;
+    }
+    this.errorHandler = handler;
+  }
+
+  @Override
+  public void acceptMessages(boolean enabled) {
+    udp.acceptMessages(enabled);
+  }
+
+  /**
+   * Exempts datagrams from these sources (the node's neighbours) from the per-prefix datagram budget, which is keyed on
+   * a spoofable source address; see {@link UDPLayer#setPinPolicy}.
+   */
+  public void setDatagramPinPolicy(SocketPinPolicy<InetSocketAddress> pinPolicy) {
+    udp.setPinPolicy(pinPolicy);
+  }
+
+  @Override
+  public void acceptSockets(boolean enabled) {
+    tcp.acceptSockets(enabled);
+  }
+
+  protected void messageReceived(InetSocketAddress address, ByteBuffer buffer, @Nullable Map<String, Object> options) throws IOException {
+    callback.messageReceived(address, buffer, options);
+  }
+
+  protected void incomingSocket(P2PSocket<InetSocketAddress> socket) throws IOException {
+    broadcastChannelOpened(socket.getIdentifier(), socket.getOptions(), false);
+    callback.incomingSocket(socket);
+  }
+
+  final Collection<TransportLayerListener<InetSocketAddress>> listeners =
+    new CopyOnWriteArrayList<TransportLayerListener<InetSocketAddress>>();
+  public void addTransportLayerListener(
+      TransportLayerListener<InetSocketAddress> listener) {
+    listeners.add(listener);
+  }
+
+  public void removeTransportLayerListener(
+      TransportLayerListener<InetSocketAddress> listener) {
+    listeners.remove(listener);
+  }
+
+
+  final Collection<SocketCountListener<InetSocketAddress>> slisteners =
+    new CopyOnWriteArrayList<SocketCountListener<InetSocketAddress>>();
+
+  @Override
+  public void addSocketCountListener(
+      SocketCountListener<InetSocketAddress> listener) {
+    slisteners.add(listener);
+  }
+
+  @Override
+  public void removeSocketCountListener(
+      SocketCountListener<InetSocketAddress> listener) {
+    slisteners.remove(listener);
+  }
+
+
+  public void broadcastChannelOpened(InetSocketAddress address, @Nullable Map<String, Object> options, boolean outgoing) {
+    for (SocketCountListener<InetSocketAddress> listener : slisteners)
+      listener.socketOpened(address, options, outgoing);
+  }
+
+  public void broadcastChannelClosed(InetSocketAddress address, @Nullable Map<String, Object> options) {
+    for (SocketCountListener<InetSocketAddress> listener : slisteners)
+      listener.socketClosed(address, options);
+  }
+
+  public Environment getEnvironment() {
+    return environment;
+  }
+
+  public ErrorHandler<InetSocketAddress> getErrorHandler() {
+    return errorHandler;
+  }
+
+  public boolean isForceBindAddress() {
+    return forceBindAddress;
+  }
+}

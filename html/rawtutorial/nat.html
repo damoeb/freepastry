@@ -49,31 +49,18 @@ nat_search_policy = never
 
 <a name="upnp"/><h3>UPnP: Let FreePastry configure my NAT for me.</h3>
 Many firewalls can configure port forwarding programatically.  See <a href="http://en.wikipedia.org/wiki/Internet_Gateway_Device">UPnP Internet Gateway Device</a> for more information.
-FreePastry uses <a href="http://www.sbbi.net/site/index.html">SBBI</a>'s <a href="http://www.sbbi.net/site/upnp/">UPnPLib</a> to configure the NAT.
+
+
+<p>FreePastry no longer ships a UPnP implementation: the SBBI UPnPLib-based handler and its jars were removed because the library is unmaintained.  By default, FreePastry uses a stub NAT handler that does not change your router's settings.  To have FreePastry configure port forwarding, write a <code>rice.pastry.socket.nat.FirewallPortOpener</code> implementation with a constructor that takes an <code>Environment</code> and an <code>InetAddress</code>, put it on the classpath, and name it in the <code>nat_handler_class</code> parameter:</p>
+
+<pre>
+nat_handler_class = com.example.MyUpnpNATHandler
+</pre>
 
 <p>Enable UPnP on your router if you haven't already done so.  If you have trouble with this check your router's documentation online at your manufacturer's site.</p>
-<p>Include these libraries in your classpath when you run the FreePastry based application.  They can be found in the source distribution.</p>
-
-<pre>
-commons-jxpath-1.1.jar:commons-logging.jar:sbbi-upnplib-xxx.jar
-</pre>
-
-So, to run the lesson3 tutorial:
-
-<pre>
-java -cp .:FreePastry-2.0b2.jar:commons-jxpath-1.1.jar:commons-logging.jar:sbbi-upnplib-1.0.3.jar rice.tutorial.lesson3.DistTutorial 9001 10.9.8.7 9001
-</pre>
 
 <a name="forward"/><h3>I want to manually configure my port forwarding settings in my NAT.</h3>
 Configure forwarding of both UDP and TCP on the same port that you are using.  Check out <a href="http://www.portforward.com/">www.portforward.com</a> for help.
-
-<h4>If you have a <i>dynamic address</i> (your ISP may re-assign your IP address):</h4>
-
-<pre>
-probe_for_external_address = true
-</pre>
-
-<p><b>Note:</b>The external port and local port must be the <i>same</i> for this to work.  In other words you can't forward port 9300 -> 9001, you must use the same port.</p>
 
 <h4>If you have a <i>static address</i> (your ISP doesn't change your IP address everytime you reboot your router):</h4>
 Set this parameter to the address you set up forwarding.  Note that it is ok to have <i>different</i> external port from local port.

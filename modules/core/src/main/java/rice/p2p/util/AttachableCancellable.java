@@ -1,0 +1,98 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.p2p.util;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.jspecify.annotations.Nullable;
+import rice.p2p.commonapi.Cancellable;
+
+/**
+ * Allows you to cancel a group of things.
+ *
+ * If you attach to a cancelled item, it gets cancelled now.
+ *
+ * @author Jeff Hoye
+ */
+public class AttachableCancellable implements Cancellable {
+
+  /**
+   * If subCancellable = null, it's been cancelled.
+   */
+  @Nullable Collection<Cancellable> subCancellable = new ArrayList<Cancellable>();
+
+  // a private lock, so that code holding a reference to this object can't contend for it
+  private final Object lock = new Object();
+
+  public boolean isCancelled() {
+    return subCancellable == null;
+  }
+
+  /**
+   * Returns false if any are false;
+   */
+  @Override
+  public boolean cancel() {
+    Collection<Cancellable> delme;
+    synchronized(lock) {
+      if (subCancellable == null) return true;
+      delme = subCancellable;
+      subCancellable = null;
+    }
+    boolean ret = true;
+    for (Cancellable cancellable : delme) {
+      if (!cancellable.cancel()) ret = false;
+    }
+    return ret;
+  }
+
+  public void attach(@Nullable Cancellable cancellable) {
+    if (cancellable == null) return;
+    boolean cancel = false;
+    synchronized(lock) {
+      if (subCancellable == null) {
+        cancel = true;
+      } else {
+        subCancellable.add(cancellable);
+      }
+    }
+    if (cancel) {
+      cancellable.cancel();
+    }
+  }
+}

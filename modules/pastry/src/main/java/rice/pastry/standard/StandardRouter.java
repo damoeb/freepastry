@@ -1,0 +1,484 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+package rice.pastry.standard;
+
+import java.net.NoRouteToHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
+import rice.p2p.commonapi.exception.AppNotRegisteredException;
+import rice.pastry.Id;
+import rice.pastry.NodeHandle;
+import rice.pastry.PastryNode;
+import rice.pastry.client.PastryAppl;
+import rice.pastry.leafset.LeafSet;
+import rice.pastry.messaging.Message;
+import rice.pastry.messaging.MessageDispatch;
+import rice.pastry.routing.BroadcastRouteRow;
+import rice.pastry.routing.NoLegalRouteToMakeProgressException;
+import rice.pastry.routing.RouteMessage;
+import rice.pastry.routing.RouteSet;
+import rice.pastry.routing.Router;
+import rice.pastry.routing.RouterAddress;
+import rice.pastry.routing.RouterStrategy;
+import rice.pastry.transport.PastryMessageReceipt;
+import rice.pastry.transport.PastryMessageSendListener;
+
+/**
+ * An implementation of the standard Pastry routing algorithm.
+ *
+ * @version $Id: StandardRouter.java 4640 2008-12-18 12:22:43Z jeffh $
+ *
+ * @author Andrew Ladd
+ * @author Rongmei Zhang/Y.Charlie Hu
+ */
+
+public class StandardRouter extends PastryAppl implements Router {
+
+  MessageDispatch dispatch;
+  private RouterStrategy routerStrategy;
+
+  /**
+   * Try to return someone who isn't suspected.  If they're all suspected,
+   * choose the first candidate, but set the rerouteIfSuspected option to false.
+   *
+   * @author Jeff Hoye
+   *
+   */
+  static class AliveRouterStrategy implements RouterStrategy {
+    @Override
+    public NodeHandle pickNextHop(RouteMessage msg, Iterator<NodeHandle> i) {
+      NodeHandle first = i.next();
+      if (first.getLiveness() < NodeHandle.LIVENESS_SUSPECTED) {
+        return first;
+      }
+      while(i.hasNext()) {
+        NodeHandle nodeHandle = i.next();
+        if (nodeHandle.getLiveness() < NodeHandle.LIVENESS_SUSPECTED) {
+          return nodeHandle;
+        }
+        // do this in case first is dead, and we find a suspected node to pass it to
+        if (first.getLiveness() > nodeHandle.getLiveness()) first = nodeHandle;
+      }
+      if (first.getLiveness() >= NodeHandle.LIVENESS_DEAD) {
+        // drop the message, this would happen if we gave a lease to this node
+        // but found him faulty.
+        return null;
+      }
+      msg.getOptions().setRerouteIfSuspected(false);
+      return first; // always want to return someone...
+    }
+  }
+
+  public StandardRouter(final PastryNode thePastryNode, MessageDispatch dispatch, RouterStrategy strategy) {
+    super(thePastryNode, null, RouterAddress.getCode(), (buf, type, priority, sender) -> {
+      RouteMessage routeMessage;
+      routeMessage = RouteMessage.build(buf, (byte)priority, thePastryNode, (NodeHandle)sender,
+          thePastryNode.getConfig().routeMsgVersion());
+      return routeMessage;
+    });
+    this.dispatch = dispatch;
+    this.routeTablePatchThrottle = new RouteTablePatchThrottle<>(ROUTE_TABLE_PATCH_THROTTLE,
+        thePastryNode.getEnvironment().getParameters().getInt("pastry_budget_max_peers"));
+    this.routerStrategy = strategy;
+    if (routerStrategy == null) {
+      routerStrategy = new AliveRouterStrategy();
+    }
+  }
+
+  public void setRouterStrategy(RouterStrategy strategy) {
+    this.routerStrategy = strategy;
+  }
+
+  /**
+   * Receive a message from a remote node.
+   *
+   * @param msg the message.
+   */
+
+  @Override
+  public void receiveMessage(Message msg) {
+    assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "messages are received on the selector thread";
+    logger.trace("receiveMessage({})", msg);
+    if (msg instanceof RouteMessage routeMessage) {
+      // should only happen for messages coming off the wire
+      route(routeMessage);
+    } else {
+      // the deserializer of the router address only reads route messages, so only a local caller gets here
+      throw new IllegalStateException("message " + msg + " bounced at StandardRouter");
+    }
+  }
+
+  @Override
+  public void route(final RouteMessage routeMessage) {
+    if (!thePastryNode.getEnvironment().getSelectorManager().isSelectorThread()) {
+      thePastryNode.getEnvironment().getSelectorManager().invoke(() -> route(routeMessage));
+      return;
+    }
+    logger.debug("route({})", routeMessage);
+    if (routeMessage(routeMessage) == false)
+      receiveRouteMessage(routeMessage);
+  }
+
+  /**
+   * Routes the messages if the next hop has been set up.
+   *
+   * Note, this once lived in the RouteMessage
+   *
+   * @param routeMessage the route message.
+   *
+   * @return true if the message got routed, false otherwise.
+   */
+  public boolean routeMessage(RouteMessage routeMessage) {
+    logger.trace("routeMessage({})", routeMessage);
+    if (routeMessage.getNextHop() == null)
+      return false;
+    routeMessage.setSender(thePastryNode.getLocalHandle());
+
+    NodeHandle handle = routeMessage.getNextHop();
+    routeMessage.setNextHop(null);
+    routeMessage.setPrevNode(thePastryNode.getLocalHandle());
+
+    if (thePastryNode.getLocalHandle().equals(handle)) {
+      // the local node is the closest node to the id
+      if (routeMessage.getDestinationHandle() != null && !routeMessage.getDestinationHandle().equals(thePastryNode.getLocalHandle())) {
+        // no idea how to contact the destination, drop
+        logger.debug("Message {} has destination {} but I'm the root of the id.  Dropping.  This could happen if the destination has died while the route message was in transit, or if the local node does not yet have logging state because it is bootstrapping.", routeMessage, routeMessage.getDestinationHandle());
+
+        routeMessage.sendFailed(new NoRouteToHostException(routeMessage.getDestinationHandle().toString()));
+        return true;
+      }
+      thePastryNode.receiveMessage(routeMessage.getInternalMessage());
+      routeMessage.sendSuccess(thePastryNode.getLocalHandle());
+    } else {
+      sendTheMessage(routeMessage, handle);
+    }
+    return true;
+  }
+
+  protected void sendTheMessage(final RouteMessage routeMessage, final NodeHandle handle) {
+    logger.trace("sendTheMessage({},{})", routeMessage, handle);
+    routeMessage.setTransportLayerCancellable(thePastryNode.send(handle, routeMessage, new PastryMessageSendListener(){
+      @Override
+      public void sent(PastryMessageReceipt msg) {
+        routeMessage.sendSuccess(handle);
+      }
+      @Override
+      public void sendFailed(PastryMessageReceipt msg, Exception reason) {
+        if (routeMessage.sendFailed(reason)) {
+          logger.info("sendFailed({})=>{}", routeMessage, handle, reason);
+        } else {
+          if (logger.isDebugEnabled()) {
+            logger.debug("sendFailed("+routeMessage+")=>"+handle, reason);
+          } else {
+            if (reason instanceof NodeIsFaultyException) {
+              logger.atInfo().log(() -> "sendFailed("+routeMessage+")=>"+handle+" "+reason);
+            } else {
+              logger.warn("sendFailed({})=>{}", routeMessage, handle, reason);
+            }
+          }
+        }
+      }
+    }, routeMessage.getTransportLayerOptions()));
+  }
+
+
+  /**
+   * Receive and process a route message.  Sets a nextHop.
+   *
+   * @param msg the message.
+   */
+  private void receiveRouteMessage(RouteMessage msg) {
+    logger.trace("receiveRouteMessage({})", msg);
+    Id target = msg.getTarget();
+
+    if (target == null)
+      target = thePastryNode.getNodeId();
+
+
+    int lsPos = thePastryNode.getLeafSet().mostSimilar(target);
+
+    if (lsPos == 0) {
+      // message is for the local node so deliver it
+      msg.setNextHop(thePastryNode.getLocalHandle());
+
+      // don't return, we want to check for routing table hole
+    } else {
+      msg.getOptions().setRerouteIfSuspected(true);
+      Iterator<NodeHandle> i = getBestRoutingCandidates(target);
+
+      // the next hop
+      NodeHandle nextHop = routerStrategy.pickNextHop(msg, i);
+      if (nextHop == null) {
+        msg.sendFailed(new NoLegalRouteToMakeProgressException(target));
+        return;
+      }
+      msg.setNextHop(nextHop);
+    }
+
+    // this wasn't being called often enough in its previous location, moved here Aug 11, 2006
+    checkForRouteTableHole(msg, msg.getNextHop());
+    msg.setPrevNode(thePastryNode.getLocalHandle());
+
+    // here, we need to deliver the msg to the proper app
+    deliverToApplication(msg);
+  }
+
+  @Override
+  public Iterator<NodeHandle> getBestRoutingCandidates(final Id target) {
+    int cwSize = thePastryNode.getLeafSet().clockwiseSize();
+    int ccwSize = thePastryNode.getLeafSet().counterClockwiseSize();
+
+    int lsPos = thePastryNode.getLeafSet().mostSimilar(target);
+
+    if (lsPos == 0) {
+      // message is for the local node so deliver it
+      return Collections.singleton(thePastryNode.getLocalHandle()).iterator();
+    }
+
+    boolean leafSetOnly = false;
+    if ((lsPos > 0 &&  (lsPos < cwSize || !thePastryNode.getLeafSet().get(lsPos).getNodeId().clockwise(target)))
+     || (lsPos < 0 && (-lsPos < ccwSize || thePastryNode.getLeafSet().get(lsPos).getNodeId().clockwise(target)))) {
+      leafSetOnly = true;
+    }
+    return getBestRoutingCandidates(target, lsPos, leafSetOnly);
+  }
+
+  protected Iterator<NodeHandle> getBestRoutingCandidates(final Id target, final int lsPos, boolean leafSetOnly) {
+    // these are the leafset entries between me and the closest known node
+    if (leafSetOnly) {
+      return getLeafSetCandidates(lsPos).iterator();
+    }
+
+    // try the routing table first
+    return new Iterator<NodeHandle>() {
+      Iterator<NodeHandle> rtIterator = null;
+      Iterator<NodeHandle> iterator = null;
+      List<NodeHandle> lsCollection = null;
+      NodeHandle next;
+      RouteSet best;
+      int k = 0; // used to iterate over best
+
+      // set the first candidates, if there is no best, then go with the rest
+      {
+        best = thePastryNode.getRoutingTable().getBestEntry(target);
+        if (best == null || best.isEmpty()) {
+          rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
+          lsCollection = getLeafSetCandidates(lsPos);
+          iterator = rtIterator;
+        }
+        next = getNext();
+      }
+
+
+      @Override
+      public boolean hasNext() {
+        if (next == null) next = getNext();
+        return (next != null);
+      }
+
+      @SuppressWarnings("ReferenceEquality") // the same instance is meant
+      NodeHandle getNext() {
+        // return best candidate first
+        if (iterator == null && best != null) {
+          NodeHandle result = best.get(k);
+          k++;
+          if (k >= best.size()) {
+            // done with best, now use the rtIterator
+            rtIterator = thePastryNode.getRoutingTable().alternateRoutesIterator(target);
+            lsCollection = getLeafSetCandidates(lsPos);
+            iterator = rtIterator;
+          }
+          return result;
+        }
+
+        // try the routing table
+        if (iterator.hasNext()) {
+          NodeHandle next = iterator.next();
+
+          // don't return nodes from best
+          if (best != null && best.getIndex(next) != -1) {
+            return getNext();
+          }
+
+          // if this goes into the leafset, then stop using the rtIterator
+          if (iterator == rtIterator && lsCollection.contains(next)) {
+            iterator = lsCollection.iterator();
+            return iterator.next(); // this will always succeed, since it contains the old version of next, even though it's unguarded by hasNext()
+          } else {
+            return next;
+          }
+        } else {
+          // switch to the leafset iterator if possible
+          if (iterator == rtIterator) {
+            iterator = lsCollection.iterator();
+            return getNext();
+          }
+        }
+        return null;
+      }
+
+      @Override
+      public NodeHandle next() {
+        if (hasNext()) {
+          NodeHandle result = next;
+          next = null;
+          return result;
+        }
+        throw new NoSuchElementException();
+      }
+
+      @Override
+      public void remove() {
+        throw new RuntimeException("Operation not allowed.");
+      }
+    };
+  }
+
+  protected List<NodeHandle> getLeafSetCandidates(int lsPos) {
+    ArrayList<NodeHandle> lsCollection = new ArrayList<NodeHandle>();
+    if (lsPos > 0) {
+      // search for someone between us who is alive
+      for (int i = lsPos; i > 0; i--) {
+        NodeHandle temp = thePastryNode.getLeafSet().get(i);
+        lsCollection.add(temp);
+      }
+    } else { // lsPos < 0
+      for (int i = lsPos; i < 0; i++) {
+        NodeHandle temp = thePastryNode.getLeafSet().get(i);
+        lsCollection.add(temp);
+      }
+    }
+    return lsCollection;
+  }
+
+  public void deliverToApplication(RouteMessage msg) {
+    PastryAppl appl = dispatch.getDestinationByAddress(msg.getAuxAddress());
+    if (appl == null) {
+      if (msg.sendFailed(new AppNotRegisteredException(msg.getAuxAddress()))) {
+        logger.info("Dropping message {} because the application address {} is unknown.", msg, msg.getAuxAddress());
+      } else {
+        logger.warn("Dropping message {} because the application address {} is unknown.", msg, msg.getAuxAddress());
+      }
+      return;
+    }
+    appl.receiveMessage(msg);
+  }
+
+  /**
+   * checks to see if the previous node along the path was missing a RT entry if
+   * so, we send the previous node the corresponding RT row to patch the hole
+   *
+   * @param msg the RouteMessage being routed
+   * @param handle the next hop handle
+   */
+
+  private void checkForRouteTableHole(RouteMessage msg, NodeHandle handle) {
+    logger.trace("checkForRouteTableHole({},{})", msg, handle);
+
+    NodeHandle prevNode = msg.getPrevNode();
+    if (prevNode == null) {
+      logger.trace("No prevNode defined in {}", msg);
+      return;
+    }
+
+    if (prevNode.equals(getNodeHandle())) {
+      logger.trace("prevNode is me in {}", msg);
+      return;
+    }
+
+    // we don't want to send the repair if they just routed in the leafset
+    LeafSet leafSet = thePastryNode.getLeafSet();
+    if (leafSet.overlaps()) return; // small network, don't bother
+    if (leafSet.member(prevNode)) {
+      // ok, it's in my leafset, so I'm in his, but make sure that it's not on the edge
+      int index = leafSet.getIndex(prevNode);
+      if ((index == leafSet.clockwiseSize()) || (index == -leafSet.counterClockwiseSize())) {
+        // it is the edge... continue with repair
+      } else {
+        return;
+      }
+    }
+
+    Id prevId = prevNode.getNodeId();
+    Id key = msg.getTarget();
+
+    int diffDigit = prevId.indexOfMostSignificantDifferingDigit(key, thePastryNode.getRoutingTable().baseBitLength());
+
+    // if we both have the same prefix (in other words the previous node didn't make a prefix of progress)
+    if (diffDigit >= 0 &&
+        diffDigit == thePastryNode.getNodeId().indexOfMostSignificantDifferingDigit(key, thePastryNode.getRoutingTable().baseBitLength())) {
+      if (!routeTablePatchThrottle.mayPatch(prevNode, thePastryNode.getEnvironment().getTimeSource().currentTimeMillis())) {
+        logger.info("not sending route table patch to {} because throttled", prevNode);
+        return;
+      }
+
+      // the previous node is missing a RT entry, send the row
+      // for now, we send the entire row for simplicity
+
+      RouteSet[] row = thePastryNode.getRoutingTable().getRow(diffDigit);
+      BroadcastRouteRow broadcastRouteRow = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
+
+      if (prevNode.getLiveness() < NodeHandle.LIVENESS_DEAD) {
+        logger.atDebug().log(() -> "Found hole in "+prevNode+"'s routing table. Sending "+broadcastRouteRow.toStringFull());
+        thePastryNode.send(prevNode,broadcastRouteRow,null,options);
+      }
+    }
+  }
+
+  private static final int ROUTE_TABLE_PATCH_THROTTLE = 5000;
+  /**
+   * We can end up causing a nasty feedback if we blast too many BRRs, so we're
+   * going to throttle.
+   */
+  final RouteTablePatchThrottle<NodeHandle> routeTablePatchThrottle;
+
+
+  @Override
+  public boolean deliverWhenNotReady() {
+    return true;
+  }
+
+  @Override
+  public void messageForApplication(Message msg) {
+    throw new RuntimeException("Should not be called.");
+  }
+}

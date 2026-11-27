@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.mpisws.p2p</groupId>
+    <artifactId>freepastry</artifactId>
+    <version>2.1.0</version>
+    <packaging>pom</packaging>
+
+    <name>FreePastry</name>
+    <description>A modular, open-source implementation of the Pastry peer-to-peer structured overlay network</description>
+    <url>http://freepastry.org/</url>
+
+    <licenses>
+        <license>
+            <name>FreePastry License</name>
+            <url>file://${project.basedir}/license/License.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- In dependency order. freepastry-all builds the jar-with-dependencies. -->
+    <modules>
+        <module>modules/core</module>
+        <module>modules/transport</module>
+        <module>modules/filetransfer</module>
+        <module>modules/pastry</module>
+        <module>modules/pki</module>
+        <module>modules/peerreview</module>
+        <module>modules/persistence</module>
+        <module>modules/past</module>
+        <module>modules/scribe</module>
+        <module>modules/multiring</module>
+        <module>modules/glacier</module>
+        <module>modules/tutorials</module>
+        <module>modules/all</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>25</maven.compiler.release>
+        <junit.version>6.1.3</junit.version>
+        <jazzer.version>0.30.0</jazzer.version>
+        <archunit.version>1.5.1</archunit.version>
+        <jqwik.version>1.10.2</jqwik.version>
+        <cyclonedx-maven-plugin.version>2.9.3</cyclonedx-maven-plugin.version>
+        <dependency-check-maven.version>13.0.0</dependency-check-maven.version>
+        <!-- JUnit tag expressions for surefire: the default build runs everything except the "integration" tests -->
+        <surefire.groups></surefire.groups>
+        <surefire.excludedGroups>integration</surefire.excludedGroups>
+        <surefire.forkTimeout>300</surefire.forkTimeout>
+        <!-- default timeout of each JUnit test and lifecycle method; the slowest default-build test class (SSLTest) takes ~35 s in all -->
+        <junit.timeout>120 s</junit.timeout>
+        <!-- ./mvnw test -Dtest=SomeTest runs across all modules; the modules without SomeTest must not fail -->
+        <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
+        <bouncycastle.version>1.86</bouncycastle.version>
+        <slf4j.version>2.0.20</slf4j.version>
+        <errorprone.version>2.50.0</errorprone.version>
+        <nullaway.version>0.14.2</nullaway.version>
+        <jspecify.version>1.0.1</jspecify.version>
+        <!--
+          Error Prone runs on main and test code of every module; with -Werror its warnings fail the build too.
+          NullAway checks only @NullMarked code (OnlyNullMarked) with full JSpecify semantics, and is switched off for test code (see default-testCompile below).
+          Checks disabled for the whole build, each because it is noise for this codebase:
+          - NotJavadoc: the license banner that opens every file starts with /*****, which javac parses as a doc comment
+          - MissingSummary: most legacy Javadoc consists of @param/@return tags only, and Error Prone's fix mangles the comment layout
+          - StatementSwitchToExpressionSwitch: a style suggestion, not a defect; its fix loses the indentation of every case
+          Suppress anything else locally: @SuppressWarnings("CheckName") on the narrowest declaration, with a comment saying why.
+        -->
+        <errorprone.flags>
+            -Xep:NullAway:ERROR
+            -XepOpt:NullAway:OnlyNullMarked=true
+            -XepOpt:NullAway:JSpecifyMode=true
+            -Xep:NotJavadoc:OFF
+            -Xep:MissingSummary:OFF
+            -Xep:StatementSwitchToExpressionSwitch:OFF
+        </errorprone.flags>
+        <!--
+          Per-module Error Prone flags, empty by default. Every module builds with all Error Prone checks
+          (warnings included) under -Werror; a module may add flags here only with a reason.
+        -->
+        <errorprone.module.flags></errorprone.module.flags>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Bouncy Castle for cryptography -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <!-- Bouncy Castle certificate builders, used by the PKI tooling (CertificateAuthorityTool) -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <!-- Logging API; applications choose the backend (slf4j-simple, logback, log4j2, ...) -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <!-- Nullness annotations (@NullMarked, @Nullable), checked by NullAway -->
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <!-- jazzer-junit pulls JUnit 5.9 params and launcher jars, which must follow the JUnit 6 platform -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <!-- Coverage-guided fuzzing of the wire deserializers, see "Fuzzing" in the README -->
+            <dependency>
+                <groupId>com.code-intelligence</groupId>
+                <artifactId>jazzer-junit</artifactId>
+                <version>${jazzer.version}</version>
+            </dependency>
+
+            <!-- Property-based tests, see "Property-based tests" in the README -->
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>${jqwik.version}</version>
+            </dependency>
+
+            <!-- Architecture rules over the compiled main code (the threading rules of rice.Futures), checked by the tutorials module's tests -->
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit</artifactId>
+                <version>${archunit.version}</version>
+            </dependency>
+
+            <!-- The FreePastry modules -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-transport</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-filetransfer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pastry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pki</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-peerreview</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-past</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-scribe</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-multiring</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-glacier</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-tutorials</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Shared test helpers, published by the jar plugin's test-jar goal -->
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-transport</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>freepastry-pastry</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Every module uses the JSpecify nullness annotations, tests with JUnit and logs through slf4j-simple, configured by its src/test/resources/simplelogger.properties -->
+    <dependencies>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.code-intelligence</groupId>
+            <artifactId>jazzer-junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Maven Compiler Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.16.0</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <showDeprecation>true</showDeprecation>
+                        <debuglevel>lines,vars,source</debuglevel>
+                        <debug>true</debug>
+                        <!-- Error Prone and NullAway run as javac plugins; the jdk.compiler exports they need are in .mvn/jvm.config -->
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>com.google.errorprone</groupId>
+                                <artifactId>error_prone_core</artifactId>
+                                <version>${errorprone.version}</version>
+                            </path>
+                            <path>
+                                <groupId>com.uber.nullaway</groupId>
+                                <artifactId>nullaway</artifactId>
+                                <version>${nullaway.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                    <!-- No raw (untyped) generics, no deprecated API usage and no Error Prone finding: any of them fails the build -->
+                    <executions>
+                        <execution>
+                            <id>default-compile</id>
+                            <configuration>
+                                <compilerArgs>
+                                    <arg>-XDcompilePolicy=simple</arg>
+                                    <arg>--should-stop=ifError=FLOW</arg>
+                                    <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
+                                    <arg>-Werror</arg>
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.module.flags}</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>default-testCompile</id>
+                            <configuration>
+                                <compilerArgs>
+                                    <arg>-XDcompilePolicy=simple</arg>
+                                    <arg>--should-stop=ifError=FLOW</arg>
+                                    <arg>-Xlint:rawtypes,deprecation,removal,dep-ann</arg>
+                                    <arg>-Werror</arg>
+                                    <!-- Tests share packages with the @NullMarked main code; they pass nulls on purpose, so NullAway stays out of them -->
+                                    <arg>-Xplugin:ErrorProne ${errorprone.flags} ${errorprone.module.flags} -Xep:NullAway:OFF</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Maven JAR Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.5.1</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Title>${project.name}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Javadoc Plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <configuration>
+                        <doctitle>Rice Pastry API</doctitle>
+                        <windowtitle>Rice Pastry - API Specifications</windowtitle>
+                        <bottom><![CDATA[<i>Copyright &#169; 2001-2025 - Rice Pastry.</i>]]></bottom>
+                        <sourceFileIncludes>
+                            <include>org/mpisws/p2p/**/*.java</include>
+                            <include>rice/*.java</include>
+                            <include>rice/environment/**/*.java</include>
+                            <include>rice/p2p/commonapi/**/*.java</include>
+                            <include>rice/p2p/glacier/*.java</include>
+                            <include>rice/p2p/glacier/v2/**/*.java</include>
+                            <include>rice/p2p/aggregation/**/*.java</include>
+                            <include>rice/p2p/multiring/**/*.java</include>
+                            <include>rice/p2p/past/**/*.java</include>
+                            <include>rice/p2p/replication/**/*.java</include>
+                            <include>rice/p2p/scribe/**/*.java</include>
+                            <include>rice/p2p/splitstream/**/*.java</include>
+                            <include>rice/p2p/util/**/*.java</include>
+                            <include>rice/pastry/**/*.java</include>
+                            <include>rice/persistence/**/*.java</include>
+                            <include>rice/selector/**/*.java</include>
+                            <include>rice/tutorial/**/*.java</include>
+                        </sourceFileIncludes>
+                        <sourceFileExcludes>
+                            <exclude>rice/p2p/saar/**/*.java</exclude>
+                        </sourceFileExcludes>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Surefire Plugin for running tests -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.6.1</version>
+                    <configuration>
+                        <includes>
+                            <include>**/*Test.java</include>
+                        </includes>
+                        <!-- Run tests sequentially to avoid port conflicts -->
+                        <forkCount>1</forkCount>
+                        <reuseForks>false</reuseForks>
+                        <!-- Give tests more time and memory -->
+                        <forkedProcessTimeoutInSeconds>${surefire.forkTimeout}</forkedProcessTimeoutInSeconds>
+                        <argLine>-Xmx1024m</argLine>
+                        <!-- Long simulations and real-network tests are tagged "integration" and run with -Pintegration -->
+                        <groups>${surefire.groups}</groups>
+                        <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+                        <!--
+                          A test or lifecycle method that runs longer than junit.timeout fails with a thread dump of
+                          the fork, instead of blocking the fork until forkedProcessTimeoutInSeconds kills it silently.
+                        -->
+                        <properties>
+                            <configurationParameters>
+                                junit.jupiter.execution.timeout.default = ${junit.timeout}
+                                junit.jupiter.execution.timeout.threaddump.enabled = true
+                            </configurationParameters>
+                        </properties>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Assembly Plugin, used by freepastry-all for the jar-with-dependencies -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.8.0</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Title>${project.name}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- Enforce the toolchain this build is verified with -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>enforce-toolchain</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>[3.9.0,)</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[${maven.compiler.release},)</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Every module publishes its test classes as a test-jar, so other modules can reuse shared test helpers (TLTest, FreePorts, CommonAPITest, ...) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <skipIfEmpty>true</skipIfEmpty>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- CycloneDX SBOM of every module (target/bom.json, target/bom.xml), generated offline from the resolved dependencies -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>make-sbom</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Light formatting only: no reflow. ./mvnw spotless:apply fixes violations. -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>3.10.4</version>
+                <configuration>
+                    <java>
+                        <includes>
+                            <include>src/main/java/**/*.java</include>
+                            <include>src/test/java/**/*.java</include>
+                        </includes>
+                        <removeUnusedImports/>
+                        <forbidWildcardImports/>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                        <indent>
+                            <spaces>true</spaces>
+                            <spacesPerTab>2</spacesPerTab>
+                        </indent>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- ./mvnw verify -Psecurity-scan: OWASP dependency-check over every module; needs network (NVD feed), an NVD API key (NVD_API_KEY) makes it much faster -->
+        <profile>
+            <id>security-scan</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>${dependency-check-maven.version}</version>
+                        <configuration>
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JSON</format>
+                            </formats>
+                            <failBuildOnCVSS>11</failBuildOnCVSS>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>scan-dependencies</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- ./mvnw verify -Pintegration: runs only the tests tagged "integration" (long simulations, real network) -->
+        <profile>
+            <id>integration</id>
+            <properties>
+                <surefire.groups>integration</surefire.groups>
+                <!-- "none()" matches untagged tests, which this profile leaves to the default build -->
+                <surefire.excludedGroups>none()</surefire.excludedGroups>
+                <surefire.forkTimeout>1800</surefire.forkTimeout>
+                <junit.timeout>1200 s</junit.timeout>
+            </properties>
+        </profile>
+    </profiles>
+</project>

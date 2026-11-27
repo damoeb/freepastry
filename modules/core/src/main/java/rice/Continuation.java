@@ -1,0 +1,352 @@
+/*******************************************************************************
+
+"FreePastry" Peer-to-Peer Application Development Substrate
+
+Copyright 2002-2007, Rice University. Copyright 2006-2007, Max Planck Institute
+for Software Systems.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Rice  University (RICE), Max Planck Institute for Software
+Systems (MPI-SWS) nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+This software is provided by RICE, MPI-SWS and the contributors on an "as is"
+basis, without any representations or warranties of any kind, express or implied
+including, but not limited to, representations or warranties of
+non-infringement, merchantability or fitness for a particular purpose. In no
+event shall RICE, MPI-SWS or contributors be liable for any direct, indirect,
+incidental, special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use, data, or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including negligence
+or otherwise) arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+*******************************************************************************/
+
+package rice;
+
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rice.environment.Environment;
+
+/**
+ * Asynchronously receives the result to a given method call, using
+ * the command pattern.
+ *
+ * Implementations of this class contain the remainder of a computation
+ * which included an asynchronous method call.  When the result to the
+ * call becomes available, the receiveResult method on this command
+ * is called.
+ *
+ * @version $Id: Continuation.java 4654 2009-01-08 16:33:07Z jeffh $
+ *
+ * @author Alan Mislove
+ * @author Andreas Haeberlen
+ */
+public interface Continuation<R, E extends Exception> {
+
+  /**
+   * Called when a previously requested result is now available.
+   *
+   * @param result The result of the command.
+   */
+  public void receiveResult(R result);
+
+  /**
+   * Called when an exception occurred as a result of the
+   * previous command.
+   *
+   * @param exception The exception which was caused.
+   */
+  public void receiveException(E exception);
+
+  /**
+   * This class is a Continuation provided for simplicity which
+   * passes any errors up to the parent Continuation which it
+   * is constructed with.  Subclasses should implement the
+   * receiveResult() method with the appropriate behavior.
+   *
+   * @param <R> The type of result this continuation receives
+   * @param <P> The type of result the parent continuation receives
+   * @param <E> The type of exception passed through to the parent
+   */
+  public static abstract class StandardContinuation<R, P, E extends Exception> implements Continuation<R, E> {
+
+    /**
+     * The parent continuation
+     */
+    protected Continuation<? super P, E> parent;
+
+    /**
+     * Constructor which takes in the parent continuation
+     * for this continuation.
+     *
+     * @param continuation The parent of this continuation
+     */
+    public StandardContinuation(Continuation<? super P, E> continuation) {
+      parent = continuation;
+    }
+
+    /**
+     * Called when an exception occurred as a result of the
+     * previous command.  Simply calls the parent continuation's
+     * receiveResult() method.
+     *
+     * @param result The exception which was caused.
+     */
+    @Override
+    public void receiveException(E result) {
+      parent.receiveException(result);
+    }
+  }
+
+  /**
+   * This class is a Continuation provided for simplicity which
+   * listens for any errors and ignores any success values.  This
+   * Continuation is provided for testing convenience only and should *NOT* be
+   * used in production environment.
+   */
+  public static class ListenerContinuation<R, E extends Exception> implements Continuation<R, E> {
+
+    /**
+     * The name of this continuation
+     */
+    private final String name;
+
+    protected Logger logger;
+
+    /**
+     * Constructor which takes in a name
+     *
+     * @param name A name which uniquely identifies this continuation for
+     *   debugging purposes
+     */
+    public ListenerContinuation(String name, Environment env) {
+      this.name = name;
+      this.logger = env.getLogManager().getLogger(getClass(), null);
+    }
+
+    /**
+     * Called when a previously requested result is now available. Does
+     * absolutely nothing.
+     *
+     * @param result The result
+     */
+    @Override
+    public void receiveResult(R result) {
+    }
+
+    /**
+     * Called when an exception occurred as a result of the
+     * previous command.  Simply prints an error message to the screen.
+     *
+     * @param result The exception which was caused.
+     */
+    @Override
+    public void receiveException(E result) {
+      logger.warn("ERROR - Received exception {} during task {}", result, name, result);
+    }
+  }
+
+  /**
+   * This class is a Continuation provided for simplicity: subclasses only need to implement
+   * receiveResult(). An exception is NOT treated as a result; by default it is logged and dropped.
+   * Subclasses that must react to failures should override receiveException().
+   */
+  public abstract static class SimpleContinuation implements Continuation<Object, Exception> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleContinuation.class);
+
+    /**
+     * Called when an exception occurred as a result of the
+     * previous command.  Logs the exception; the result handler is not invoked.
+     *
+     * @param result The exception which was caused.
+     */
+    @Override
+    public void receiveException(Exception result) {
+      LOG.warn("Received exception in SimpleContinuation {}", getClass().getName(), result);
+    }
+  }
+
+  /**
+   * This class represents a Continuation which is used when multiple
+   * results are expected, which can come back at different times.  The
+   * prototypical example of its use is in an application like Past, where
+   * Insert messages are sent to a number of replicas and the responses
+   * come back at different times.
+   *
+   * Optionally, the creator can override the isDone() method, which
+   * is called each time an intermediate result comes in.  This allows
+   * applications like Past to declare an insert successful after a
+   * certain number of results have come back successful.
+   *
+   * @param <R> The type of result delivered to the parent continuation.  This
+   *   is Object[] unless getResult() is overridden.
+   */
+  public static class MultiContinuation<R> {
+
+    protected Object result[];
+    protected boolean haveResult[];
+    private final Continuation<? super R, Exception> parent;
+    private boolean done;
+
+    /**
+     * Constructor which takes a parent continuation as well
+     * as the number of results which to expect.
+     *
+     * @param parent The parent continuation
+     * @param num The number of results expected to come in
+     */
+    public MultiContinuation(Continuation<? super R, Exception> parent, int num) {
+      this.parent = parent;
+      this.result = new Object[num];
+      this.haveResult = new boolean[num];
+      this.done = false;
+    }
+
+    /**
+     * Returns the continuation which should be used as the
+     * result continuation for the index-th result.  This should
+     * be called exactly once for each int between 0 and num.
+     *
+     * @param index The index of this continuation
+     * @return the continuation that delivers the index-th result
+     */
+    public Continuation<Object, Exception> getSubContinuation(final int index) {
+      return new Continuation<Object, Exception>() {
+        @Override
+        public void receiveResult(Object o) { receive(index, o); }
+        @Override
+        public void receiveException(Exception e) { receive(index, e); }
+      };
+    }
+
+    /**
+     * Internal method which receives the results and determines
+     * if we are done with this task.  This method ignores multiple
+     * calls by the same client continuation.
+     *
+     * @param index The index the result is for
+     * @param o The result for that continuation
+     */
+    protected void receive(int index, Object o) {
+      if (! done && ! haveResult[index]) {
+        haveResult[index] = true;
+        result[index] = o;
+
+        try {
+          if (isDone()) {
+            done = true;
+            parent.receiveResult(getResult());
+          }
+        } catch (Exception e) {
+          done = true;
+          parent.receiveException(e);
+        }
+      }
+    }
+
+    /**
+     * Method which returns whether or not we are done.  This is designed
+     * to be overridden by subclasses in order to allow for more advanced
+     * behavior.
+     *
+     * If we are done and the subclass wishes to return an exception to the
+     * calling application, it may throw an Exception, which will be caught
+     * and returned to the parent via the receiveException() method.  This
+     * will cause this continuation to be permanently marked as done.
+     */
+    public boolean isDone() throws Exception {
+      for (int i=0; i<haveResult.length; i++)
+        if (! haveResult[i])
+          return false;
+
+      return true;
+    }
+
+    /**
+     * Method which can also be overridden to change what result should be
+     * returned to the parent continuation.  This defaults to the Object[]
+     * containing results or exceptions; subclasses which use a different
+     * result type R must override this method.
+     *
+     * @return The result which should be returned to the application
+     */
+    @SuppressWarnings("unchecked")
+    public R getResult() {
+      return (R) result;
+    }
+  }
+
+  /**
+   * Continuation class which takes a provided string as it's name, and
+   * returns that String when toString() is called.
+   */
+  public static class NamedContinuation<R, E extends Exception> implements Continuation<R, E> {
+
+    // the internal continuation
+    protected Continuation<? super R, E> parent;
+
+    // the name of this continuation
+    private final String name;
+
+    /**
+     * Builds a new NamedContinuation given the name and the wrapped
+     * continuation
+     *
+     * @param name The name
+     * @param command The parent continuation
+     */
+    public NamedContinuation(String name, Continuation<? super R, E> command) {
+      this.name = name;
+      this.parent = command;
+    }
+
+    /**
+     * Called when an the result is available.  Simply passes the result
+     * to the parent;
+     *
+     * @param result The result
+     */
+    @Override
+    public void receiveResult(R result) {
+      parent.receiveResult(result);
+    }
+
+    /**
+     * Called when an exception occurred as a result of the
+     * previous command.  Simply calls the parent continuation's
+     * receiveException() method.
+     *
+     * @param result The exception which was caused.
+     */
+    @Override
+    public void receiveException(E result) {
+      parent.receiveException(result);
+    }
+
+    /**
+     * Returns the name of this continuation
+     *
+     * @return The name
+     */
+    @Override
+    public String toString() {
+      return name;
+    }
+  }
+}
