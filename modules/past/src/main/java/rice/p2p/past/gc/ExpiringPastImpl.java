@@ -39,7 +39,6 @@ package rice.p2p.past.gc;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,9 +48,6 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.ListenerContinuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
 import rice.Outcome;
 import rice.p2p.commonapi.Id;
@@ -349,6 +345,41 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
     }
   }
 
+  /**
+   * Extends the expirations of the objects stored here, one key after the other, for a GCRefreshMessage.
+   *
+   * @param keys the keys, each with the expiration it asks for
+   * @return one Boolean per key, in order: whether this node has it with at least that expiration now
+   */
+  private CompletableFuture<Boolean[]> refreshStored(ExpiringId[] keys) {
+    // filled by one step of the (sequential) chain after the other
+    final List<Boolean> result = new ArrayList<Boolean>(keys.length);
+    CompletableFuture<?> refreshed = CompletableFuture.completedFuture(null);
+    for (final ExpiringId id : keys) {
+      refreshed = refreshed.thenCompose(_ -> refreshStored(id)).thenAccept(answer -> result.add(Boolean.TRUE.equals(answer)));
+    }
+    return refreshed.thenApply(_ -> result.toArray(new Boolean[0]));
+  }
+
+  private CompletableFuture<Boolean> refreshStored(ExpiringId id) {
+    /* nobody can lease an object for longer than the maximum lease from now */
+    final long expiration = cappedExpiration(id.expiration());
+
+    /* a refresh carries no proof of ownership, so it must not bring back what the collection removed */
+    if (!storage.exists(id.id())) {
+      return CompletableFuture.completedFuture(Boolean.FALSE);
+    }
+    ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(id.id());
+    if (metadata == null) {
+      return setMissingMetadata(id.id(), expiration);
+    }
+    /* only allow the lifetime to be extended; already refreshed to a later expiration counts as success */
+    if (metadata.expiration() < expiration) {
+      return storage.setMetadata(id.id(), metadata.setExpiration(expiration));
+    }
+    return CompletableFuture.completedFuture(Boolean.TRUE);
+  }
+
   /** The expiration as far as the maximum lease allows, counted from now: whoever asks for a lease, it ends no later. */
   private long cappedExpiration(long requestedExpiration) {
     return Math.min(requestedExpiration, getEnvironment().getTimeSource().currentTimeMillis() + maxLease);
@@ -362,7 +393,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       logger.error("Error: null Id from {} from {} in {}", insertMessage.getContent(), insertMessage, this);
     }
     long expiration = cappedExpiration(((GCInsertMessage) insertMessage).getExpiration());
-    checkAndStore(insertMessage, content -> ((ExpiringPastContent) content).getMetadata(expiration), getResponseContinuation(insertMessage));
+    respond(insertMessage, checkAndStore(insertMessage, content -> ((ExpiringPastContent) content).getMetadata(expiration)));
   }
 
   /**
@@ -385,52 +416,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
           deliverInsert(imsg);
         }
         case GCRefreshMessage rmsg -> {
-          final Iterator<ExpiringId> expiringIdIterator = Arrays.asList(rmsg.getKeys()).iterator();
-          // filled by one step of the (sequential) continuation chain after the other
-          final List<Object> result = new ArrayList<Object>();
           other += rmsg.getKeys().length;
-
-          StandardContinuation<Object, Object, Exception> process = new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-            private boolean started;
-
-            @Override
-            public void receiveResult(Object answer) {
-              // one answer per key, in order, so the caller can match them up: the first call only starts the chain
-              if (started)
-                result.add(Boolean.TRUE.equals(answer));
-              started = true;
-
-              if (expiringIdIterator.hasNext()) {
-                final ExpiringId id = expiringIdIterator.next();
-                /* nobody can lease an object for longer than the maximum lease from now */
-                final long expiration = cappedExpiration(id.expiration());
-
-                /* skip the object if we don't have it yet */
-                if (storage.exists(id.id())) {
-                  ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(id.id());
-
-                  if (metadata != null) {
-                    /* only allow the lifetime to be extended, otherwise skip */
-                    if (metadata.expiration() < expiration) {
-                      Futures.forward(storage.setMetadata(id.id(), metadata.setExpiration(expiration)), this);
-                    } else {
-                      /* already refreshed to a later expiration, which counts as success */
-                      receiveResult(true);
-                    }
-                  } else {
-                    Futures.forward(setMissingMetadata(id.id(), expiration), this);
-                  }
-                } else {
-                  /* a refresh carries no proof of ownership, so it must not bring back what the collection removed */
-                  receiveResult(false);
-                }
-              } else {
-                parent.receiveResult(result.toArray(new Boolean[0]));
-              }
-            }
-          };
-
-          process.receiveResult(null);
+          respond(msg, refreshStored(rmsg.getKeys()));
         }
         case GCLookupHandlesMessage lmsg -> {
           NodeHandleSet nodeHandleSet = getEndpoint().neighborSet(lmsg.getMax());
@@ -443,29 +430,29 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
         case GCCollectMessage cmsg -> {
           // get all ids which expiration before now
           // ids stored without metadata have DEFAULT_EXPIRATION, which is never reached, so only the expired ones are collected
-          collect(storage.scanMetadataValuesHead(new ExpiringPastMetadata(getEnvironment().getTimeSource().currentTimeMillis())), new ListenerContinuation<Object, Exception>("Removal of expired ids", getEnvironment()));
+          Futures.reportUnhandled(collect(storage.scanMetadataValuesHead(new ExpiringPastMetadata(getEnvironment().getTimeSource().currentTimeMillis()))).handle((_, failure) -> {
+            if (failure != null) {
+              logger.warn("ERROR - Received exception {} during task Removal of expired ids", Futures.unwrap(failure), Futures.unwrap(failure));
+            }
+            return null;
+          }), getEnvironment());
         }
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
 
-          Futures.forward(storage.getObject(fmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-            @Override
-            public void receiveResult(Object result) {
-              ExpiringPastContent content = (ExpiringPastContent) result;
+          respond(msg, storage.getObject(fmsg.getId()).thenApply(result -> {
+            ExpiringPastContent content = (ExpiringPastContent) result;
 
-              if (content != null) {
-                logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
-                ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(fmsg.getId());
-
-                if (metadata != null)
-                  parent.receiveResult(content.getHandle(ExpiringPastImpl.this, metadata.expiration()));
-                else
-                  parent.receiveResult(content.getHandle(ExpiringPastImpl.this, DEFAULT_EXPIRATION));
-              } else {
-                parent.receiveResult(null);
-              }
+            if (content == null) {
+              return null;
             }
-          });
+            logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
+            ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(fmsg.getId());
+
+            if (metadata != null)
+              return content.getHandle(ExpiringPastImpl.this, metadata.expiration());
+            return content.getHandle(ExpiringPastImpl.this, DEFAULT_EXPIRATION);
+          }));
         }
         default -> super.deliver(id, message);
       }
@@ -473,47 +460,31 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   }
 
   /**
-   * Internal method which collects all of the objects in the given set
+   * Internal method which collects all of the objects in the given set, one after the other: each goes to the
+   * trash first, if there is one.
    *
    * @param map The ids to collect (only the keys are used)
-   * @param command The command to call once done
+   * @return completed with true once all are removed
    */
-  protected void collect(SortedMap<Id, ?> map, Continuation<? super Boolean, Exception> command) {
-    final Iterator<Id> idIterator = map.keySet().iterator();
+  protected CompletableFuture<Boolean> collect(SortedMap<Id, ?> map) {
+    CompletableFuture<?> removed = CompletableFuture.completedFuture(null);
+    for (final Id gid : map.keySet()) {
+      removed = removed.thenCompose(_ -> collect(gid));
+    }
+    return removed.thenApply(_ -> Boolean.TRUE);
+  }
 
-    Continuation<Object, Exception> remove = new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object previousResult) {
-        if (idIterator.hasNext()) {
-          final Id gid = idIterator.next();
-
-          if (trash != null) {
-            Futures.forward(storage.getObject(gid), new StandardContinuation<Object, Object, Exception>(this) {
-              @Override
-              public void receiveResult(Object storedObject) {
-                if (storedObject != null) {
-                  Futures.forward(trash.store(gid, storage.getMetadata(gid), storedObject), new StandardContinuation<Boolean, Object, Exception>(parent) {
-                    @Override
-                    public void receiveResult(Boolean result) {
-                      Futures.forward(storage.unstore(gid), parent);
-                    }
-                  });
-                } else {
-                  // continue with the remove loop (parent), not this getObject continuation
-                  Futures.forward(storage.unstore(gid), parent);
-                }
-              }
-            });
-          } else {
-            Futures.forward(storage.unstore(gid), this);
-          }
-        } else {
-          parent.receiveResult(Boolean.TRUE);
-        }
+  /** Moves one object to the trash, if there is one, and unstores it. */
+  private CompletableFuture<Boolean> collect(final Id gid) {
+    if (trash == null) {
+      return storage.unstore(gid);
+    }
+    return storage.getObject(gid).thenCompose(storedObject -> {
+      if (storedObject == null) {
+        return storage.unstore(gid);
       }
-    };
-
-    remove.receiveResult(null);
+      return trash.store(gid, storage.getMetadata(gid), storedObject).thenCompose(_ -> storage.unstore(gid));
+    });
   }
 
   // ---- REPLICATION MANAGER METHODS -----

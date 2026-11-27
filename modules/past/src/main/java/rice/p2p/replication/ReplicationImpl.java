@@ -39,13 +39,15 @@ package rice.p2p.replication;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
 import rice.Destructible;
 import rice.Executable;
-import rice.Continuation.ListenerContinuation;
-import rice.Continuation.MultiContinuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -222,41 +224,49 @@ public class ReplicationImpl implements Replication, Application, Destructible {
     final NodeHandleSet handles = endpoint.neighborSet(Integer.MAX_VALUE);
     final IdRange ourRange = endpoint.range(handle, 0, handle.getId());
 
-    Futures.forward(endpoint.process(new BloomFilterExecutable(ourRange)), new ListenerContinuation<IdBloomFilter, Exception>("Creation of our bloom filter", environment) {
-      int total = 0;
-
-      @Override
-      public void receiveResult(IdBloomFilter bloomFilter) {
-        if (destroyed) return;
-        final IdBloomFilter ourFilter = (IdBloomFilter) bloomFilter;
-
-        for (int i=0; i<handles.size(); i++) {
-          final NodeHandle handle = handles.getHandle(i);
-          try {
-            final IdRange handleRange = endpoint.range(handle, 0, handle.getId());
-            final IdRange range = handleRange.intersectRange(getTotalRange());
-
-            if ((range != null) && ! range.intersectRange(getTotalRange()).isEmpty()) {
-              Futures.forward(endpoint.process(new BloomFilterExecutable(range)), new StandardContinuation<IdBloomFilter, IdBloomFilter, Exception>(this) {
-                @Override
-                public void receiveResult(IdBloomFilter rangeBloomFilter) {
-                  IdBloomFilter filter = (IdBloomFilter) rangeBloomFilter;
-
-                  ReplicationImpl.this.logger.debug("COUNT: Sending request to {} for range {}, {} in instance {}", handle, range, ourRange, instance);
-
-                  RequestMessage request = new RequestMessage(ReplicationImpl.this.handle, new IdRange[] {range, ourRange}, new IdBloomFilter[] {filter, ourFilter});
-                  endpoint.route(null, request, handle);
-                }
-              }, endpoint.getEnvironment());
-            }
-          } catch (RangeCannotBeDeterminedException ignored) {
-            // not an error 99.99% of the time, since we're probably just at one end of the range
-          }
-        }
-
-        logger.debug("COUNT: Done sending replications requests with {} in instance {}", total, instance);
+    Futures.reportUnhandled(endpoint.process(new BloomFilterExecutable(ourRange)).handle((ourFilter, failure) -> {
+      if (failure != null) {
+        logTaskFailure("Creation of our bloom filter", failure);
+      } else if (!destroyed) {
+        sendRequests(handles, ourRange, ourFilter);
       }
-    }, endpoint.getEnvironment());
+      return null;
+    }), environment);
+  }
+
+  /** Asks each neighbor for the keys of the part of its range that is ours, with the bloom filter of what we have. */
+  private void sendRequests(NodeHandleSet handles, IdRange ourRange, IdBloomFilter ourFilter) {
+    for (int i=0; i<handles.size(); i++) {
+      final NodeHandle handle = handles.getHandle(i);
+      try {
+        final IdRange handleRange = endpoint.range(handle, 0, handle.getId());
+        final IdRange range = handleRange.intersectRange(getTotalRange());
+
+        if ((range != null) && ! range.intersectRange(getTotalRange()).isEmpty()) {
+          Futures.reportUnhandled(endpoint.process(new BloomFilterExecutable(range)).handle((filter, failure) -> {
+            if (failure != null) {
+              logTaskFailure("Creation of our bloom filter", failure);
+              return null;
+            }
+            logger.debug("COUNT: Sending request to {} for range {}, {} in instance {}", handle, range, ourRange, instance);
+
+            RequestMessage request = new RequestMessage(ReplicationImpl.this.handle, new IdRange[] {range, ourRange}, new IdBloomFilter[] {filter, ourFilter});
+            endpoint.route(null, request, handle);
+            return null;
+          }), environment);
+        }
+      } catch (RangeCannotBeDeterminedException ignored) {
+        // not an error 99.99% of the time, since we're probably just at one end of the range
+      }
+    }
+
+    logger.debug("COUNT: Done sending replications requests in instance {}", instance);
+  }
+
+  /** A failed background task is logged, as a ListenerContinuation did. */
+  private void logTaskFailure(String task, Throwable failure) {
+    Throwable cause = Futures.unwrap(failure);
+    logger.warn("ERROR - Received exception {} during task {}", cause, task, cause);
   }
 
 
@@ -297,42 +307,28 @@ public class ReplicationImpl implements Replication, Application, Destructible {
     switch (replicationMessage) {
       case RequestMessage rm -> {
 
-        MultiContinuation<Object[]> continuation = new MultiContinuation<Object[]>(new ListenerContinuation<Object[], Exception>("Processing of RequestMessage", environment) {
-          @Override
-          public void receiveResult(Object[] responses) {
-            Object[] array = (Object[]) responses;
-            IdSet[] result = new IdSet[array.length];
-            if ((array.length > 0) && (array[0] instanceof Throwable)) {
-              logger.error("Errors in Multicontinuation:", (Throwable)array[0]);
-            } else {
-              try {
-                System.arraycopy(array, 0, result, 0, array.length);
-              } catch (ArrayStoreException e) {
-                if (array.length > 0) {
-                  logger.error("Error copying {}:{}", array[0].getClass().getName(), array.length, e);
-                  throw e;
-                }
-              }
-            }
-            logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
-            endpoint.route(null, new ReplicationResponseMessage(handle, rm.getRanges(), result), rm.getSource());
-          }
-        }, rm.getRanges().length);
+        // a request without ranges gets no answer, as with the MultiContinuation of zero results this replaces
+        if (rm.getRanges().length == 0) return;
 
+        List<CompletableFuture<IdSet>> scans = new ArrayList<CompletableFuture<IdSet>>(rm.getRanges().length);
         for (int i=0; i<rm.getRanges().length; i++) {
           final int j = i;
-          Futures.forward(endpoint.process(new Executable<Object, Exception>() {
+          scans.add(endpoint.process(new Executable<IdSet, Exception>() {
             @Override
             public String toString() { return "process " + j + " of " + rm.getRanges().length + " namespace " + instance; }
             @Override
-            public Object execute() {
+            public IdSet execute() {
               IdSet idSet = factory.buildIdSet();
               rm.getFilters()[j].check(client.scan(rm.getRanges()[j]), idSet, MAX_KEYS_IN_MESSAGE);
 
               return idSet;
             }
-          }), continuation.getSubContinuation(i), endpoint.getEnvironment());
+          }));
         }
+        Futures.reportUnhandled(Futures.collect(scans).thenAccept(outcomes -> {
+          logger.debug("COUNT: Telling node {} to fetch", rm.getSource());
+          endpoint.route(null, new ReplicationResponseMessage(handle, rm.getRanges(), idSetsOf(outcomes)), rm.getSource());
+        }), environment);
       }
       case ReplicationResponseMessage rm -> {
 
@@ -356,6 +352,28 @@ public class ReplicationImpl implements Replication, Application, Destructible {
         updateClient();
       }
     }
+  }
+
+  /**
+   * The key sets of the scans, for the response to a request. If the first scan failed, the response carries no
+   * key sets (all null); if a later one failed, there is no response, as before the futures.
+   */
+  private IdSet[] idSetsOf(List<Outcome<IdSet>> outcomes) {
+    IdSet[] result = new IdSet[outcomes.size()];
+    if (outcomes.get(0) instanceof Outcome.Failure<IdSet> failure) {
+      logger.error("Errors in Multicontinuation:", failure.cause());
+      return result;
+    }
+    for (int i = 0; i < result.length; i++) {
+      switch (outcomes.get(i)) {
+        case Outcome.Success<IdSet> success -> result[i] = success.value();
+        case Outcome.Failure<IdSet> failure -> {
+          logger.error("Error copying {}:{}", failure.cause().getClass().getName(), result.length, failure.cause());
+          throw new IllegalStateException("scan " + i + " of a replication request failed", failure.cause());
+        }
+      }
+    }
+    return result;
   }
 
   /**

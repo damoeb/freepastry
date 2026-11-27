@@ -41,11 +41,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
 import rice.Outcome;
 import rice.environment.Environment;
@@ -346,6 +346,17 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         endpoint.route(null, continuationMessage, msg.getSource());
       }
     };
+  }
+
+  /**
+   * Answers the given request with the outcome of a future, once it completes: its value as the response, or its
+   * failure (unwrapped) as the exception. The response is the request message itself, a {@link ContinuationMessage}.
+   *
+   * @param msg the request
+   * @param response its outcome
+   */
+  protected void respond(PastMessage msg, CompletionStage<?> response) {
+    Futures.forward(response, getResponseContinuation(msg), getEnvironment());
   }
 
   /**
@@ -729,43 +740,31 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
         case InsertMessage imsg -> deliverInsert(imsg);
         case LookupMessage lmsg -> {
           // if the data is here, we send the reply; the requester caches it (see lookup())
-          Futures.forward(storage.getObject(lmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(lmsg)) {
-            @Override
-            public void receiveResult(Object result) {
-              logger.debug("Received object {} for id {}", result, lmsg.getId());
-
-              // send result back
-              parent.receiveResult(result);
-            }
-          });
+          respond(lmsg, storage.getObject(lmsg.getId()).thenApply(result -> {
+            logger.debug("Received object {} for id {}", result, lmsg.getId());
+            return result;
+          }));
         }
         case LookupHandlesMessage lmsg -> {
           NodeHandleSet nodeHandleSet = endpoint.replicaSet(lmsg.getId(), lmsg.getMax());
           logger.trace("Returning replica set {} for lookup handles of id {} max {} at {}", nodeHandleSet, lmsg.getId(), lmsg.getMax(), endpoint.getId());
           getResponseContinuation(msg).receiveResult(nodeHandleSet);
         }
-        case FetchMessage fmsg -> {
-          Continuation<Object, Exception> continuation;
-          continuation = getFetchResponseContinuation(msg); // has to be special to determine how to send the message
-
-          Futures.forward(storage.getObject(fmsg.getHandle().getId()), continuation);
-        }
+        case FetchMessage fmsg ->
+          // has to be special to determine how to send the message
+          Futures.forward(storage.getObject(fmsg.getHandle().getId()), getFetchResponseContinuation(msg), getEnvironment());
         case FetchHandleMessage fmsg -> {
           fetchHandles++;
 
-          Futures.forward(storage.getObject(fmsg.getId()), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(msg)) {
-            @Override
-            public void receiveResult(Object result) {
-              PastContent content = (PastContent) result;
+          respond(msg, storage.getObject(fmsg.getId()).thenApply(result -> {
+            PastContent content = (PastContent) result;
 
-              if (content != null) {
-                logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
-                parent.receiveResult(content.getHandle(PastImpl.this));
-              } else {
-                parent.receiveResult(null);
-              }
+            if (content == null) {
+              return null;
             }
-          });
+            logger.debug("Retrieved data for fetch handles of id {}", fmsg.getId());
+            return content.getHandle(PastImpl.this);
+          }));
         }
         case MessageLostMessage _, GCRefreshMessage _, GCCollectMessage _ ->
           logger.error("ERROR - Received message {}of unknown type.", msg);
@@ -792,43 +791,28 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     inserts++;
     final Id msgid = insertMessage.getContent().getId();
 
-    Futures.forward(lockManager.lock(msgid), new StandardContinuation<Object, Object, Exception>(getResponseContinuation(insertMessage)) {
-      @Override
-      public void receiveResult(Object result) {
-        checkAndStore(insertMessage, content -> null, new StandardContinuation<Boolean, Object, Exception>(parent) {
-          @Override
-          public void receiveResult(Boolean result) {
-            getResponseContinuation(insertMessage).receiveResult(result);
-            lockManager.unlock(msgid);
-          }
-
-          @Override
-          public void receiveException(Exception e) {
-            parent.receiveException(e);
-            lockManager.unlock(msgid);
-          }
-        });
-      }
-    });
+    // the lock is released however checkAndStore ends; a failed lock was never taken
+    respond(insertMessage, lockManager.lock(msgid).thenCompose(_ ->
+        checkAndStore(insertMessage, content -> null).whenComplete((_, _) -> lockManager.unlock(msgid))));
   }
 
   /**
    * Lets the inserted object check the insert against what is stored, and then stores what it returns, with the
-   * metadata that the function derives from it; a refusal by the object goes to the continuation as an exception.
+   * metadata that the function derives from it.
+   *
+   * @return whether it was stored, or failed with the PastException of a refusal by the object
    */
-  protected void checkAndStore(final InsertMessage insertMessage, final Function<PastContent, Object> metadata, Continuation<? super Boolean, Exception> command) {
+  protected CompletableFuture<Boolean> checkAndStore(final InsertMessage insertMessage, final Function<PastContent, Object> metadata) {
     final Id id = insertMessage.getContent().getId();
 
-    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        try {
-          PastContent content = insertMessage.getContent().checkInsert(id, (PastContent) result);
-          Futures.forward(storage.store(id, metadata.apply(content), content), parent);
-        } catch (PastException e) {
-          parent.receiveException(e);
-        }
+    return storage.getObject(id).thenCompose(result -> {
+      PastContent content;
+      try {
+        content = insertMessage.getContent().checkInsert(id, (PastContent) result);
+      } catch (PastException e) {
+        return CompletableFuture.failedFuture(e);
       }
+      return storage.store(id, metadata.apply(content), content);
     });
   }
 
