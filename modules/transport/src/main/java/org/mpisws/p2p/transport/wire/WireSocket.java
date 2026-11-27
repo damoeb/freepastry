@@ -395,7 +395,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
     try {
       receiver.receiveException(this, new IOException("Socket closed because its receiver threw " + e, e));
     } catch (RuntimeException again) {
-      logger.warn("Receiver {} of {} threw again when told that the socket closed", receiver, this, again);
+      tcp.wire.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "wire.receiver-threw-again")
+          .setCause(again).log("Receiver {} of {} threw again when told that the socket closed", receiver, this);
     }
   }
 

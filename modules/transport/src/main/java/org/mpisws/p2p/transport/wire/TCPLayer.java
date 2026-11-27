@@ -111,7 +111,8 @@ public class TCPLayer extends SelectionKeyHandler {
         return wireSocket;
       }
     } catch (IOException e) {
-      logger.warn("GOT ERROR {} OPENING PATH - MARKING PATH {} AS DEAD!", e, destination, e);
+      wire.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "wire.open-socket-failed")
+          .setCause(e).log("GOT ERROR {} OPENING PATH - MARKING PATH {} AS DEAD!", e, destination);
       SocketRequestHandle<InetSocketAddress> can = new SocketRequestHandleImpl<InetSocketAddress>(destination, options, logger);
       deliverSocketToMe.receiveException(can, e);
       return can;
