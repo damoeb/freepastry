@@ -141,6 +141,17 @@ public class CertifiedIdBindStrategy implements BindStrategy<TransportLayerNodeH
     return certifies(u, options) && isOutgoing(options);
   }
 
+  /**
+   * A route is shown alive only by a connection this node opened to it whose certificate is the handle's: a datagram
+   * carries no certificate and names any address it likes, and a peer that connects in names its address in a header
+   * it writes before TLS. Either would otherwise mark a route alive that the liveness layer found dead, without
+   * answering its pings.
+   */
+  @Override
+  public boolean provesLiveness(TransportLayerNodeHandle<MultiInetSocketAddress> u, @Nullable Map<String, Object> options) {
+    return certifies(u, options) && isOutgoing(options);
+  }
+
   /** @return true if the options carry a certificate subject that is this handle's id */
   private static boolean certifies(TransportLayerNodeHandle<MultiInetSocketAddress> handle, @Nullable Map<String, Object> options) {
     Object subject = options == null ? null : options.get(SSLTransportLayer.OPTION_CERT_SUBJECT);

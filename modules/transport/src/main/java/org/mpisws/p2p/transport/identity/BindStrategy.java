@@ -97,6 +97,20 @@ public interface BindStrategy<UpperIdentifier, LowerIdentifier> {
   }
 
   /**
+   * Whether a binding offered or confirmed with these options shows that the lower identifier (the route the
+   * connection or datagram came on) reaches a live node, so that the identity layer may mark that route alive. The
+   * address in a datagram's header, or in the header a peer writes before a connection it opens, is the sender's
+   * claim; return false for those where claims matter.
+   *
+   * @param upperIdentifier the upper identifier bound or confirmed now
+   * @param options the options of the connection or message it came with, or null
+   * @return true by default
+   */
+  default boolean provesLiveness(UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
+    return true;
+  }
+
+  /**
    * Decides whether {@code u} may replace {@code old} as the upper identifier of the same lower identifier. It is
    * asked after {@link #accept} has accepted {@code u} with the same options.
    *

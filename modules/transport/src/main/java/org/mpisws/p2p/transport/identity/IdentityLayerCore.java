@@ -250,21 +250,13 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
         bindings.put(middleIdentifier, upperIdentifier);
         keepIfStrategyKeeps(middleIdentifier, upperIdentifier, options);
         forgetBindingsOverCap();
-        if (lowerIdentifier != null) {
-          overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
-        } else {
-          upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
-        }
+        markAlive(upperIdentifier, lowerIdentifier, options);
         return true;
       } else {
         if (old.equals(upperIdentifier)) {
           logger.trace("addBinding({},{}) old is equal", upperIdentifier, lowerIdentifier);
           keepIfStrategyKeeps(middleIdentifier, upperIdentifier, options);
-          if (lowerIdentifier != null) {
-            overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
-          } else {
-            upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
-          }
+          markAlive(upperIdentifier, lowerIdentifier, options);
           return true;
         }
 
@@ -294,10 +286,8 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
           logger.debug("addBinding({},{}) old {} is dead", upperIdentifier, lowerIdentifier, old);
           if (lowerIdentifier == null) {
             logger.info("addBinding({},{}): l == null", upperIdentifier, lowerIdentifier);
-            upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
-          } else {
-            overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
           }
+          markAlive(upperIdentifier, lowerIdentifier, options);
           return true;
         } else {
           // mark the new one as faulty
@@ -305,6 +295,20 @@ public class IdentityLayerCore<UpperIdentifier, MiddleIdentifier, UpperMsgType, 
           return false;
         }
       }
+  }
+
+  /**
+   * Marks the upper identifier alive after its binding was made or confirmed. With a lower identifier (it came over a
+   * connection or in a datagram) the lower identifier, the route, is marked alive in the liveness layer, which skips
+   * that layer's own check (a pong must answer a ping this node sent): so only if the bind strategy finds that the
+   * channel proves the route ({@link BindStrategy#provesLiveness}).
+   */
+  private void markAlive(UpperIdentifier upperIdentifier, @Nullable LowerIdentifier lowerIdentifier, @Nullable Map<String, Object> options) {
+    if (lowerIdentifier == null) {
+      upper().setLiveness(upperIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
+    } else if (bindStrategy == null || bindStrategy.provesLiveness(upperIdentifier, options)) {
+      overrideLiveness.setLiveness(lowerIdentifier, LIVENESS_ALIVE, OptionsFactory.addOption(options, NODE_HANDLE_FROM_INDEX, upperIdentifier));
+    }
   }
 
   private void keepIfStrategyKeeps(MiddleIdentifier middleIdentifier, UpperIdentifier upperIdentifier, @Nullable Map<String, Object> options) {
