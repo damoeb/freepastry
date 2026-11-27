@@ -44,7 +44,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -60,10 +59,9 @@ public class TCPLayer extends SelectionKeyHandler {
   public final int SOCKET_BUFFER_SIZE;
   private final boolean TCP_NO_DELAY;
   private final int handshakeTimeoutMillis;
-  private final int maxHandshakingSocketsPerAddress;
 
-  /** How many accepted sockets from each remote IP address are still in the handshake. */
-  private final Map<InetAddress, Integer> handshakingSocketCountByAddress = new HashMap<>();
+  /** Which accepted sockets may stay: handshake caps and accept buckets per network prefix and in all. */
+  private final AcceptBudget acceptBudget;
 
   WireTransportLayer wire;
 
@@ -80,7 +78,7 @@ public class TCPLayer extends SelectionKeyHandler {
     SOCKET_BUFFER_SIZE = config.socketBufferSize();
     TCP_NO_DELAY = config.tcpNoDelay();
     handshakeTimeoutMillis = config.handshakeTimeoutMillis();
-    maxHandshakingSocketsPerAddress = config.maxHandshakingSocketsPerAddress();
+    acceptBudget = new AcceptBudget(config, wire.getEnvironment().getTimeSource().currentTimeMillis());
     // bind to port
     if (enableServer) {
       final ServerSocketChannel channel = ServerSocketChannel.open();
@@ -190,9 +188,11 @@ public class TCPLayer extends SelectionKeyHandler {
         channel.close();
         return;
       }
-      if (!startHandshake(remoteAddress)) {
+      String refusal = acceptBudget.startHandshake(remoteAddress, wire.getEnvironment().getTimeSource().currentTimeMillis());
+      if (refusal != null) {
+        // closed before reading a byte: refusing costs the node no more than the accept
         wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.handshake-cap")
-            .log("Closing a socket from {}: it already has {} sockets in the handshake", remoteAddress, maxHandshakingSocketsPerAddress);
+            .log("Closing a socket from {}: {}", remoteAddress, refusal);
         channel.close();
         return;
       }
@@ -214,28 +214,9 @@ public class TCPLayer extends SelectionKeyHandler {
     }
   }
 
-  /**
-   * Counts a new incoming socket from this address into the handshake, unless the address has the most sockets in
-   * the handshake that it may have.
-   *
-   * @return false if the socket must be closed
-   */
-  private synchronized boolean startHandshake(InetAddress remoteAddress) {
-    int handshakingSockets = handshakingSocketCountByAddress.getOrDefault(remoteAddress, 0);
-    if (handshakingSockets >= maxHandshakingSocketsPerAddress) return false;
-    handshakingSocketCountByAddress.put(remoteAddress, handshakingSockets + 1);
-    return true;
-  }
-
   /** An incoming socket from this address finished its handshake or closed. */
-  synchronized void handshakeEnded(InetAddress remoteAddress) {
-    Integer handshakingSockets = handshakingSocketCountByAddress.get(remoteAddress);
-    if (handshakingSockets == null) return;
-    if (handshakingSockets > 1) {
-      handshakingSocketCountByAddress.put(remoteAddress, handshakingSockets - 1);
-    } else {
-      handshakingSocketCountByAddress.remove(remoteAddress);
-    }
+  void handshakeEnded(InetAddress remoteAddress) {
+    acceptBudget.handshakeEnded(remoteAddress);
   }
 
   int getHandshakeTimeoutMillis() {

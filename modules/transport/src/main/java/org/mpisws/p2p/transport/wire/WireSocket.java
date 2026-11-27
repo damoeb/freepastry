@@ -83,7 +83,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
 
   /**
    * True while this incoming socket is in the handshake: from accept until a layer calls {@link #handshakeCompleted()},
-   * or the socket closes. Counts against {@code transport_wire_max_handshaking_sockets_per_address}.
+   * or the socket closes. Counts against {@code transport_wire_max_handshaking_sockets_per_prefix} and
+   * {@code transport_wire_max_handshaking_sockets}.
    */
   private boolean isInHandshake = false;
 

@@ -45,6 +45,7 @@ class WireHandshakeLimitsTest {
   private static final int HALF_OPEN_SOCKETS = 10;
   private static final int MAX_DATAGRAMS_PER_READ = 8;
   private static final int FLOOD_DATAGRAMS = 50;
+  private static final int DATAGRAM_BURST = 5;
 
   private final Environment env = new Environment();
   private final InetAddress localhost = InetAddress.getLoopbackAddress();
@@ -80,7 +81,7 @@ class WireHandshakeLimitsTest {
   @DisplayName("one address gets at most the configured number of sockets in the handshake")
   void halfOpenSocketsPerAddressAreCapped() throws Exception {
     env.getParameters().setInt("transport_wire_handshake_timeout_millis", LONG_TIMEOUT_MILLIS);
-    env.getParameters().setInt("transport_wire_max_handshaking_sockets_per_address", MAX_HANDSHAKING_SOCKETS);
+    env.getParameters().setInt("transport_wire_max_handshaking_sockets_per_prefix", MAX_HANDSHAKING_SOCKETS);
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
     WireTransportLayer wire = new WireTransportLayer(address, env, null);
     AtomicInteger delivered = new AtomicInteger();
@@ -111,7 +112,7 @@ class WireHandshakeLimitsTest {
   @DisplayName("a socket whose handshake completed outlives the deadline and frees its place for the next socket")
   void completedHandshakeKeepsSocketAndFreesPlace() throws Exception {
     env.getParameters().setInt("transport_wire_handshake_timeout_millis", SHORT_HANDSHAKE_TIMEOUT_MILLIS);
-    env.getParameters().setInt("transport_wire_max_handshaking_sockets_per_address", 1);
+    env.getParameters().setInt("transport_wire_max_handshaking_sockets_per_prefix", 1);
     InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
     WireTransportLayer wire = new WireTransportLayer(address, env, null);
     AtomicInteger delivered = new AtomicInteger();
@@ -172,6 +173,36 @@ class WireHandshakeLimitsTest {
     int receivedBeforeOtherWork = receivedWhenSelectorTaskRan.get(10, TimeUnit.SECONDS);
     assertTrue(receivedBeforeOtherWork <= MAX_DATAGRAMS_PER_READ,
         "the selector ran other work only after " + receivedBeforeOtherWork + " datagrams");
+  }
+
+  @Test
+  @DisplayName("datagrams beyond the budget of their network prefix are dropped unread")
+  void datagramsBeyondPrefixBudgetAreDropped() throws Exception {
+    env.getParameters().setDouble("transport_wire_datagram_rate_per_prefix_per_second", 0.001);
+    env.getParameters().setInt("transport_wire_datagram_burst_per_prefix", DATAGRAM_BURST);
+    InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
+    AtomicInteger received = new AtomicInteger();
+    wire.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) {
+        received.incrementAndGet();
+      }
+
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
+      }
+    });
+
+    try (DatagramSocket flooder = new DatagramSocket(0, localhost)) {
+      for (int i = 0; i < FLOOD_DATAGRAMS; i++) {
+        flooder.send(new DatagramPacket(new byte[] {(byte) i}, 1, address));
+      }
+    }
+    Thread.sleep(500);
+    awaitSelectorLoop();
+
+    assertEquals(DATAGRAM_BURST, received.get(), "datagrams passed up");
   }
 
   /** Stands for the identity and other header layers: reads until it has the whole header, which never comes. */

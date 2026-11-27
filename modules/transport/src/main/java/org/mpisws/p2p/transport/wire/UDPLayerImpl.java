@@ -53,6 +53,8 @@ import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
+import org.mpisws.p2p.transport.util.PrefixKey;
+import org.mpisws.p2p.transport.util.TokenBucketMap;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 import rice.selector.SelectionKeyHandler;
@@ -88,6 +90,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   /** One selection reads at most this many datagrams, so that a flood cannot keep the selector thread in read(). */
   private final int maxDatagramsPerRead;
 
+  /** Datagrams each network prefix may send; a datagram that finds its bucket empty is dropped unread. */
+  private final TokenBucketMap<PrefixKey> datagramBucketsByPrefix;
+  private final PrefixKey.Lengths prefixLengths;
+
   WireTransportLayer wire;
 
   @SuppressWarnings("NullAway.Init") // set by openServerSocket(), called from the constructor
@@ -100,7 +106,10 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     this.logger = wire.getEnvironment().getLogManager().getLogger(UDPLayer.class, null);
 
     this.pendingMsgs = new LinkedList<Envelope>();
-    this.maxDatagramsPerRead = wire.getConfig().maxDatagramsPerRead();
+    WireConfig config = wire.getConfig();
+    this.maxDatagramsPerRead = config.maxDatagramsPerRead();
+    this.prefixLengths = config.prefixLengths();
+    this.datagramBucketsByPrefix = new TokenBucketMap<>(config.datagramRatePerPrefixPerSecond(), config.datagramBurstPerPrefix(), config.maxBudgetPrefixes());
     openServerSocket();
   }
 
@@ -198,7 +207,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
 
   /**
    * Reads the pending datagrams from the channel, up to {@code transport_wire_max_datagrams_per_read}, and passes them
-   * up. The key stays readable, so the selector comes back for the rest after its other work.
+   * up. The key stays readable, so the selector comes back for the rest after its other work. A datagram whose network
+   * prefix used up its bucket ({@code transport_wire_datagram_rate_per_prefix_per_second}) is dropped unread.
    *
    * @param key the selection key of the channel
    */
@@ -209,10 +219,17 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     try {
       InetSocketAddress address = null;
       int datagramsRead = 0;
+      long nowMillis = wire.getEnvironment().getTimeSource().currentTimeMillis();
 
       while (datagramsRead < maxDatagramsPerRead && (address = (InetSocketAddress) channel.receive(readBuffer)) != null) {
         datagramsRead++;
         readBuffer.flip();
+        if (!datagramBucketsByPrefix.tryTake(prefixLengths.of(address.getAddress()), nowMillis)) {
+          wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.datagram-budget")
+              .log("Dropping a datagram from {}: its network sent more than its datagram budget", address);
+          readBuffer.clear();
+          continue;
+        }
 
         if (readBuffer.remaining() > 0) {
           try {
