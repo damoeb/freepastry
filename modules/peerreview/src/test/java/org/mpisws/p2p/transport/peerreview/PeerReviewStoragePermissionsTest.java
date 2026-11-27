@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.reflect.Proxy;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -53,9 +52,9 @@ class PeerReviewStoragePermissionsTest {
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
   void aNewAuthenticatorFileIsOwnerOnly() throws Exception {
-    PeerReview<?, InetSocketAddress> peerReview = (PeerReview<?, InetSocketAddress>) Proxy.newProxyInstance(
+    PeerReview peerReview = (PeerReview) Proxy.newProxyInstance(
         getClass().getClassLoader(), new Class<?>[] {PeerReview.class}, (proxy, method, args) -> null);
-    AuthenticatorStore<InetSocketAddress> store = new AuthenticatorStore(peerReview);
+    AuthenticatorStore store = new AuthenticatorStore(peerReview);
     Path file = directory.resolve("authenticators");
 
     store.setFilename(file);

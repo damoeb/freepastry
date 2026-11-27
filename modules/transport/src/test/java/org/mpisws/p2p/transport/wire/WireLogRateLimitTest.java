@@ -90,7 +90,8 @@ class WireLogRateLimitTest {
     WireTransportLayer wire = new WireTransportLayer(
         new InetSocketAddress(localhost, FreePorts.freePort(localhost)), env, null);
     TCPLayer tcp = (TCPLayer) WireBadInputTest.field(WireTransportLayer.class, "tcp").get(wire);
-    InetSocketAddress unresolved = InetSocketAddress.createUnresolved("unresolvable.invalid", 9);
+    // connecting to port 0 fails at once with an IOException (BindException on macOS)
+    InetSocketAddress unresolved = new InetSocketAddress(localhost, 0);
 
     long lines = countLines("OPENING PATH", () -> {
       for (int i = 0; i < TRIGGERS; i++) tcp.openSocket(unresolved, ignoringCallback(), null);
