@@ -144,6 +144,11 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
 
       case LeafSetResponse response -> {
         LeafSet leafSet = response.getLeafSet();
+        // the request is answered by the node the leaf set is of: in certified mode, only that node may send it
+        if (!thePastryNode.acceptsNamedSender(leafSet.get(0), response.getSender())) {
+          logger.info("Dropping a leaf set of {} that came from {}", leafSet.get(0), response.getSender());
+          return;
+        }
         waitingForLeafSet.complete(leafSet.get(0), leafSet);
       }
 
@@ -705,7 +710,7 @@ public class ProximityNeighborSelectionApplication extends PastryAppl implements
     public rice.p2p.commonapi.Message deserialize(InputBuffer buf, short type, int priority, rice.p2p.commonapi.NodeHandle sender) throws IOException {
       return switch (PNSMessageType.find(type)) {
         case LEAF_SET_REQUEST -> ProximityLeafSetRequest.build(buf, (NodeHandle)sender, getAddress());
-        case LEAF_SET_RESPONSE -> LeafSetResponse.build(buf, thePastryNode, getAddress());
+        case LEAF_SET_RESPONSE -> LeafSetResponse.build(buf, thePastryNode, (NodeHandle)sender, getAddress());
         case ROUTE_ROW_REQUEST -> RouteRowRequest.build(buf, (NodeHandle)sender, getAddress());
         case ROUTE_ROW_RESPONSE -> new RouteRowResponse(buf, thePastryNode, (NodeHandle)sender, getAddress());
         case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());

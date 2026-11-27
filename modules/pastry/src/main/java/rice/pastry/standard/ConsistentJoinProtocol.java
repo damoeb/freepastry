@@ -461,6 +461,8 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
       // now update the local leaf set
       BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(joinHandle, joinRequest.getLeafSet(),
           BroadcastLeafSet.JoinInitial, 0);
+      // the leaf set came with the accepted join request: its sender is the one the leaf set protocol checks
+      broadcastLeafSet.setSender(joinRequest.getSender());
       thePastryNode.receiveMessage(broadcastLeafSet);
 
       // update local RT, then broadcast rows to our peers
@@ -614,6 +616,11 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   private void handleConsistentJoinMsg(ConsistentJoinMessage joinMessage) {
     // identify node j, the sender of the message
     NodeHandle j = joinMessage.ls.get(0);
+    // j counts as heard from below: in certified mode, only j may send the message
+    if (!thePastryNode.acceptsNamedSender(j, joinMessage.getSender())) {
+      logger.info("Dropping a consistent join message that names {} as its sender, it came from {}", j, joinMessage.getSender());
+      return;
+    }
 
     if (j.getLiveness() > LivenessTypes.LIVENESS_SUSPECTED) {
       logger.info("got message from dead node:{}", joinMessage);

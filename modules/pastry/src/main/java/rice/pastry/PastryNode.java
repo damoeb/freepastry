@@ -496,6 +496,20 @@ public class PastryNode implements
   }
 
   /**
+   * Whether a protocol may act on {@code named} as the sender of a message that names its sender in its body (a
+   * leaf set broadcast, a consistent join message, a leaf set response). In certified mode the connection the
+   * message came over presented the certificate of the transport sender, so only a node with that id may be named.
+   * Without an identity policy (plain mode) nothing proves who sent a message, and the name is taken as it is.
+   *
+   * @param named the node the message body names as its sender
+   * @param transportSender the sender the transport layer read off the connection, or null if unknown
+   */
+  public boolean acceptsNamedSender(@Nullable NodeHandle named, @Nullable NodeHandle transportSender) {
+    return identityPolicy == null
+        || (named != null && transportSender != null && named.getNodeId().equals(transportSender.getNodeId()));
+  }
+
+  /**
    * Opens a connection to the node and closes it as soon as it is established. With a TLS layer and a bind
    * strategy that checks the peer's certificate, this is what authenticates the node's id.
    *

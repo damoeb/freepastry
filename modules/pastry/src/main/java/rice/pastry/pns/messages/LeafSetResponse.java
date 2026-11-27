@@ -40,6 +40,7 @@ import java.io.IOException;
 
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.pastry.NodeHandle;
 import rice.pastry.NodeHandleFactory;
 import rice.pastry.leafset.LeafSet;
 import rice.pastry.messaging.PastryRawMessage;
@@ -64,11 +65,17 @@ public final class LeafSetResponse extends PastryRawMessage implements Proximity
     leafset.serialize(buf);
   }
 
-  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, int dest) throws IOException {
+  /**
+   * @param sender the sender the transport layer read off the connection; the leaf set's base names the node that
+   *     answers, and the receiver compares the two
+   */
+  public static rice.p2p.commonapi.Message build(InputBuffer buf, NodeHandleFactory<?> nodeHandleFactory, NodeHandle sender, int dest) throws IOException {
     byte version = buf.readByte();
     switch(version) {
     case 0:
-      return new LeafSetResponse(LeafSet.build(buf, nodeHandleFactory), dest);
+      LeafSetResponse response = new LeafSetResponse(LeafSet.build(buf, nodeHandleFactory), dest);
+      response.setSender(sender);
+      return response;
     }
     throw new IOException("Unknown version: "+version);
   }

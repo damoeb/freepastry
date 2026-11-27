@@ -120,7 +120,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       return switch (LeafSetMessageType.find(type)) {
         case REQUEST_LEAF_SET -> new RequestLeafSet(sender, buf);
-        case BROADCAST_LEAF_SET -> new BroadcastLeafSet(buf, pn);
+        case BROADCAST_LEAF_SET -> {
+          BroadcastLeafSet broadcastLeafSet = new BroadcastLeafSet(buf, pn);
+          // the body names a sender too; receiveMessage compares the two
+          broadcastLeafSet.setSender(sender);
+          yield broadcastLeafSet;
+        }
         case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
@@ -201,6 +206,12 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
     assert thePastryNode.getEnvironment().getSelectorManager().isSelectorThread() : "the leaf set is modified on the selector thread only";
     if (msg instanceof BroadcastLeafSet broadcastLeafSet) {
       // receive a leafset from another node
+
+      // the lease below is from the node the body names: in certified mode, only that node may send it
+      if (!thePastryNode.acceptsNamedSender(broadcastLeafSet.from(), broadcastLeafSet.getSender())) {
+        logger.info("Dropping a leaf set broadcast that names {} as its sender, it came from {}", broadcastLeafSet.from(), broadcastLeafSet.getSender());
+        return;
+      }
 
       // if we have now successfully joined the ring, set the local node ready
       if (broadcastLeafSet.type() == BroadcastLeafSet.JoinInitial) {
