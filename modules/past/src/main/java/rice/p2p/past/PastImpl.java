@@ -797,17 +797,33 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /**
-   * Handles an insert at the destination node: the payload must be authentic and the policy must allow the insert,
-   * before {@link #storeInsert(InsertMessage)} stores it.
+   * Handles an insert at the destination node: the payload must be authentic, this node must be a replica of the id
+   * and the policy must allow the insert, before {@link #storeInsert(InsertMessage)} stores it.
    */
   protected void deliverInsert(InsertMessage insertMessage) {
     if (!isAuthentic(null, insertMessage.getContent())) {
       getResponseContinuation(insertMessage).receiveException(new PastException("Insert refused: the payload does not hash to the id"));
+    } else if (!isReplicaOf(insertMessage.getContent().getId())) {
+      logger.info("Refusing insert of {} from {}: this node is not one of its replicas", insertMessage.getContent().getId(), insertMessage.getSource());
+      getResponseContinuation(insertMessage).receiveResult(false);
     } else if (policy.isInsertAllowed(insertMessage.getContent())) {
       storeInsert(insertMessage);
     } else {
       getResponseContinuation(insertMessage).receiveResult(Boolean.valueOf(false));
     }
+  }
+
+  /**
+   * Whether this node is one of the replicas of the id as its own leaf set sees them: the replication factor plus one
+   * nodes closest to the id, the ones an insert is sent to. A node on the route of the replica-set request could
+   * otherwise answer it with colluders, and the insert would land on nodes that are no replicas.
+   */
+  private boolean isReplicaOf(Id id) {
+    if (id == null) {
+      return false;
+    }
+    NodeHandleSet replicas = endpoint.replicaSet(id, replicationFactor + 1);
+    return replicas != null && replicas.containsHandleFor(endpoint.getId());
   }
 
   /** Stores an authentic, allowed insert under the lock of its id. Subclasses override this for another store step. */
