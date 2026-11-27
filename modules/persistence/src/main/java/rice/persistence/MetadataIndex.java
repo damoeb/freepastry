@@ -57,6 +57,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.PrivateFiles;
 import rice.p2p.util.ReverseTreeMap;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
@@ -300,7 +301,7 @@ final class MetadataIndex {
       }
     }
 
-    try (OutputStream output = Files.newOutputStream(file.resolve(METADATA_FILENAME))) {
+    try (OutputStream output = PrivateFiles.newOutputStream(file.resolve(METADATA_FILENAME))) {
       output.write(buf.getBytes(), 0, buf.getWritten());
     }
   }

@@ -44,7 +44,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -53,6 +52,7 @@ import org.slf4j.Logger;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
+import rice.p2p.util.PrivateFiles;
 import rice.p2p.util.rawserialization.SimpleInputBuffer;
 import rice.p2p.util.rawserialization.SimpleOutputBuffer;
 
@@ -165,7 +165,7 @@ final class ObjectFileFormat {
       serializer.writeObject(obj, buf);
     }
 
-    try (OutputStream output = Files.newOutputStream(file)) {
+    try (OutputStream output = PrivateFiles.newOutputStream(file)) {
       output.write(gzip(buf));
     }
 
@@ -208,7 +208,7 @@ final class ObjectFileFormat {
     trailer.writeLong(PersistentStorage.PERSISTENCE_REVISION_3_0);
     trailer.writeLong(section.length);
 
-    try (OutputStream output = Files.newOutputStream(file, CREATE, APPEND)) {
+    try (OutputStream output = PrivateFiles.newOutputStream(file, CREATE, APPEND)) {
       output.write(section);
       output.write(trailer.getBytes(), 0, trailer.getWritten());
     }

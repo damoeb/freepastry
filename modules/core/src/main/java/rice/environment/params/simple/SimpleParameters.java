@@ -60,6 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rice.environment.params.ParameterChangeListener;
 import rice.environment.params.Parameters;
+import rice.p2p.util.PrivateFiles;
 
 /**
  * A layered key/value parameter store: read-only defaults loaded from
@@ -387,7 +388,7 @@ public class SimpleParameters implements Parameters {
       Path next = Path.of(configFileName + ".new");
       Path old = Path.of(configFileName + ".old");
 
-      try (OutputStream out = Files.newOutputStream(next)) {
+      try (OutputStream out = PrivateFiles.newOutputStream(next)) {
         properties.store(out, null);
       }
 

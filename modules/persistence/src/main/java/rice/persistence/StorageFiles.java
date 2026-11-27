@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import rice.p2p.util.PrivateFiles;
 
 /**
  * File system primitives of {@link PersistentStorage} that report failures as IOExceptions.
@@ -56,7 +57,7 @@ final class StorageFiles {
   }
 
   /**
-   * Create a directory given its name
+   * Create a directory given its name, and its missing parents, readable by the owner only ({@link PrivateFiles})
    *
    * @param directory The directory to be created
    * @throws IOException if the directory cannot be created
@@ -67,7 +68,7 @@ final class StorageFiles {
 
     if (! Files.exists(directory)) {
       try {
-        Files.createDirectories(directory);
+        PrivateFiles.createDirectories(directory);
       } catch (IOException e) {
         throw new IOException("Creation of directory " + directory + " failed!", e);
       }
