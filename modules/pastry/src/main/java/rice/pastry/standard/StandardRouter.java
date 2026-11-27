@@ -116,6 +116,8 @@ public class StandardRouter extends PastryAppl implements Router {
       return routeMessage;
     });
     this.dispatch = dispatch;
+    this.routeTablePatchThrottle = new RouteTablePatchThrottle<>(ROUTE_TABLE_PATCH_THROTTLE,
+        thePastryNode.getEnvironment().getParameters().getInt("pastry_budget_max_peers"));
     this.routerStrategy = strategy;
     if (routerStrategy == null) {
       routerStrategy = new AliveRouterStrategy();
@@ -467,7 +469,7 @@ public class StandardRouter extends PastryAppl implements Router {
    * We can end up causing a nasty feedback if we blast too many BRRs, so we're
    * going to throttle.
    */
-  final RouteTablePatchThrottle<NodeHandle> routeTablePatchThrottle = new RouteTablePatchThrottle<>(ROUTE_TABLE_PATCH_THROTTLE);
+  final RouteTablePatchThrottle<NodeHandle> routeTablePatchThrottle;
 
 
   @Override
