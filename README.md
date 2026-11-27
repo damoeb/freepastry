@@ -170,7 +170,7 @@ The old `freepastry.params` logging parameters (`loglevel`, `<logger>_loglevel`,
 ## Documentation
 
 - Architecture overview for new developers (threading, transport stack, apps): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Slide deck "How FreePastry defends itself": how Pastry routes, use cases (joining, sending a message, storing an object), which attacks are stopped and which are not yet: [PDF](docs/presentation/freepastry-defence.pdf), [HTML with speaker notes](docs/presentation/freepastry-defence.html), [sources](docs/presentation/README.md)
+- Slide deck "How FreePastry defends itself": how Pastry routes, use cases (joining, sending a message, storing an object), which attacks are stopped, which are not yet, and the accepted risks: [PDF](docs/presentation/freepastry-defence.pdf), [HTML with speaker notes](docs/presentation/freepastry-defence.html), [sources](docs/presentation/README.md)
 - Javadoc API documentation: run `./mvnw javadoc:aggregate`; the output is in `target/reports/apidocs/` (open `index.html`). `./mvnw compile javadoc:javadoc` writes one per module to `modules/<name>/target/reports/apidocs/`. It is generated, not committed.
 - Tutorial: `html/rawtutorial/index.html`, with the example sources in `modules/tutorials/src/main/java/rice/tutorial/`
 - Configuration: the defaults and a comment for every parameter are in `modules/core/src/main/resources/freepastry.params`. Components read them into typed config records (`*Config.fromParameters(Parameters)`) when they are constructed.

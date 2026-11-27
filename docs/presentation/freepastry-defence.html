@@ -133,6 +133,7 @@ section.paper .tbl-head { background: var(--card); }
 .hoparrow { width: 48px; height: 28px; align-self: center; flex: none; background: var(--blue); }
 .notes { display: flex; gap: 40px; }
 .note { flex: 1; font-size: 26px; line-height: 1.4; margin: 0; color: var(--muted); padding: 20px 28px; border-radius: 12px; background: var(--card); }
+section > .note { flex: none; }
 .note-atk { border-left: 8px solid var(--orange); }
 .note-ok { border-left: 8px solid var(--blue); }
 .storebox { position: relative; width: 500px; height: 500px; flex: none; }
@@ -521,6 +522,20 @@ html, body { margin: 0; background: #2B2F36; }
 
 </section></div>
 <p class="speaker-notes">Other known limits: a hop still relays to any routable non-Pastry host that passes the address policy; anyone may refresh a Past object up to the lease cap; NAT nodes can only run plain mode; any node can subscribe to a multiring gateway topic. Plain mode trusts its network by design. The letters refer to the roadmap on the next slide.</p>
+<div class="frame"><section id="risks" class="paper">
+<p class="eyebrow atk">LIMITS · ACCEPTED RISKS AND GAPS</p>
+<h2>Whom a node still has to trust</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:20%">Trust anchor</th><th style="width:38%">What a compromise allows</th><th style="width:42%">Status</th></tr>
+<tr><td>Bootstrap node</td><td>Answer a joiner with colluders, keep it apart from the honest ring, see who joins</td><td>Gap. It must hold a CA certificate, its answer must be authenticated and every returned handle is probed. Planned (C4): join via three or more bootstraps, density test</td></tr>
+<tr><td>Bootstrap in plain mode</td><td>Anyone on the network path can pose as it</td><td>Accepted: plain mode only on trusted networks</td></tr>
+<tr><td>The CA and its key</td><td>Mint any number of valid identities</td><td>Accepted: keep the key offline; issuances are logged. Revocation planned (C7)</td></tr>
+<tr><td>A majority of nodes</td><td>Outvote quorums and own most routes</td><td>Accepted: out of scope by design</td></tr>
+</table>
+<p class="note note-atk">How bootstraps are managed today: there is no dedicated bootstrap server. Any running node can be one, and the operator hands its address to new nodes out of band (on the command line in the tutorials). FreePastry ships no bootstrap list, rotation or health check, so operators should run several bootstrap nodes on hardened hosts.</p>
+
+</section></div>
+<p class="speaker-notes">Does a joining node trust its bootstrap? In certified mode it trusts it to be a certified node, not to tell the truth: the bootstrap only forwards the JoinRequest, but if the bootstrap or the root it reaches is malicious, the joiner cannot tell a forged leaf set from the real one, because it has only one answer. Probing proves that each returned node exists at its address, not that it is the right neighbour. Leaf-set maintenance later pulls in honest neighbours if any of them reach the new node. Wave C4 fixes this properly: ask several independent bootstraps, keep the numerically closest answers, and check that the ids in the leaf set are not suspiciously dense.</p>
 <div class="frame"><section id="roadmap" class="paper">
 <p class="eyebrow">LIMITS · THE PLAN</p>
 <h2>Four waves, from kill switches to secure routing</h2>
@@ -564,8 +579,9 @@ html, body { margin: 0; background: #2B2F36; }
 <p class="wave-letter">D</p>
 <p class="wave-title">Secure routing</p>
 <div class="bar"><div class="bar-fill" style="width:0%"></div></div>
-<p class="status status-plan">Planned</p>
+<p class="status status-plan">Planned: design first</p>
 <ul class="wave-list">
+<li>Design together with rate limiting (C1–C3)</li>
 <li>Constrained routing table</li>
 <li>Signed Scribe topics</li>
 <li>PeerReview in deployments</li>
