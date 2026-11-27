@@ -63,7 +63,7 @@ public final class GCCollectMessage extends PastMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public GCCollectMessage(int id, NodeHandle source, Id dest) {
+  public GCCollectMessage(long id, NodeHandle source, Id dest) {
     super(id, source, dest);
   }
 

@@ -77,7 +77,7 @@ public final class MessageLostMessage extends PastMessage {
    * @param message The lost message (only its string form is kept)
    * @param hint The hint the lost message was sent to
    */
-  public MessageLostMessage(int uid, NodeHandle local, Id id, Message message, NodeHandle hint) {
+  public MessageLostMessage(long uid, NodeHandle local, Id id, Message message, NodeHandle hint) {
     super(uid, local, local.getId());
 
     setResponse();

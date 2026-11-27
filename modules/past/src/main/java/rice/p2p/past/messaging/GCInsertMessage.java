@@ -69,7 +69,7 @@ public final class GCInsertMessage extends InsertMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public GCInsertMessage(int uid, PastContent content, long expiration, NodeHandle source, Id dest) {
+  public GCInsertMessage(long uid, PastContent content, long expiration, NodeHandle source, Id dest) {
     super(uid, content, source, dest);
 
     this.expiration = expiration;
@@ -102,7 +102,7 @@ public final class GCInsertMessage extends InsertMessage {
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     super.serializeHelper(buf);
     buf.writeLong(expiration);
   }
@@ -110,7 +110,7 @@ public final class GCInsertMessage extends InsertMessage {
   public static GCInsertMessage readFrom(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new GCInsertMessage(buf, endpoint, contentDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);

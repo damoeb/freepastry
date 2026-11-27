@@ -61,7 +61,7 @@ public sealed abstract class PastMessage implements RawMessage
     permits ContinuationMessage, MessageLostMessage, GCCollectMessage {
 
   // the unique id for this message
-  private final int id;
+  private final long id;
 
   // the source Id of this message
   private final NodeHandle source;
@@ -79,7 +79,7 @@ public sealed abstract class PastMessage implements RawMessage
    * @param source The source address
    * @param dest The destination address
    */
-  protected PastMessage(int id, NodeHandle source, Id dest) {
+  protected PastMessage(long id, NodeHandle source, Id dest) {
     this.id = id;
     this.source = source;
     this.dest = dest;
@@ -108,7 +108,7 @@ public sealed abstract class PastMessage implements RawMessage
    *
    * @return The id of this message
    */
-  public int getUID() {
+  public long getUID() {
     return id;
   }
 
@@ -157,7 +157,7 @@ public sealed abstract class PastMessage implements RawMessage
   public abstract void returnResponse(CompletableFuture<Object> request, Environment env, String instance);
 
   public PastMessage(InputBuffer buf, Endpoint endpoint) throws IOException {
-    id = buf.readInt();
+    id = buf.readLong();
     dest = endpoint.readId(buf, buf.readShort());
     source = endpoint.readNodeHandle(buf);
     isResponse = buf.readBoolean();
@@ -165,7 +165,7 @@ public sealed abstract class PastMessage implements RawMessage
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeInt(id);
+    buf.writeLong(id);
     buf.writeShort(dest.getType());
     dest.serialize(buf);
     source.serialize(buf);

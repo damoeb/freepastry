@@ -106,7 +106,7 @@ final class PastSocketTransport {
             short type = inputBuffer.readShort();
 
             PastMessage result = (PastMessage)endpoint.getDeserializer().deserialize(inputBuffer,type,(byte)0,null);
-            past.deliver(null,result);
+            past.deliver(null, result, socket.getRemoteNodeHandle());
           }
 
           // there will be more data on the socket if we haven't received everything yet
@@ -145,7 +145,7 @@ final class PastSocketTransport {
   void send(final NodeHandle handle, final PastMessage msg, final CompletableFuture<Object> response) {
     if (response != null) {
       CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(msg.getUID(), past.getLocalNodeHandle(), null, msg, handle), past.MESSAGE_TIMEOUT);
-      pending.insert(msg.getUID(), timer, response);
+      pending.insert(msg, handle.getId(), timer, response);
     }
 
     // create a bb[] to be written

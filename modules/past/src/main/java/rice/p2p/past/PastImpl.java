@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Futures;
@@ -316,11 +317,12 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /**
-   * Returns a new uid for a message
+   * Returns a new id for a request: a random 64-bit number, so that a node that did not see the request cannot
+   * guess it and answer it.
    *
    * @return A new id
    */
-  protected int nextRequestId() {
+  protected long nextRequestId() {
     return pending.nextRequestId();
   }
 
@@ -430,7 +432,8 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     logger.atTrace().log(() -> "Sending request message " + message + " {"+message.getUID()+"} to id " + id + " via " + hint);
     CompletableFuture<Object> response = newRequest();
     CancellableTask timer = endpoint.scheduleMessage(new MessageLostMessage(message.getUID(), getLocalNodeHandle(), id, message, hint), MESSAGE_TIMEOUT);
-    pending.insert(message.getUID(), timer, response);
+    // a request sent to a node may be answered by that node only; a routed one by any node on its route
+    pending.insert(message, id == null ? hint.getId() : null, timer, response);
     endpoint.route(id, message, hint);
     return castResponse(response);
   }
@@ -447,13 +450,17 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /**
-   * Handles the response message from a request.
+   * Handles the response message from a request: it completes the request only if it may answer it, see
+   * {@link PastPendingRequests}. The local report that a request was lost may answer any request.
    *
    * @param message The message that arrived
+   * @param sender the node it arrived from, or null if it was created here or the endpoint cannot tell
    */
-  private void handleResponse(PastMessage message) {
-    logger.debug("handling reponse message {} from the request", message);
-    CompletableFuture<Object> request = pending.remove(message.getUID());
+  private void handleResponse(PastMessage message, @Nullable NodeHandle sender) {
+    logger.debug("handling reponse message {} from {}", message, sender);
+    CompletableFuture<Object> request = message instanceof MessageLostMessage && sender == null
+        ? pending.remove(message.getUID())
+        : pending.removeAnswered(message, sender);
 
     if (request != null) {
       message.returnResponse(request, environment, instance);
@@ -721,8 +728,25 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   /**
+   * Delivers a message and tells which node it arrived from: a response then completes only the request it may
+   * answer, see {@link PastPendingRequests}. A request is handled by {@link #deliver(Id, Message)}.
+   *
+   * @param id The destination id of the message
+   * @param message The message being sent
+   * @param previousHop the node it arrived from, null if it was created here or the endpoint cannot tell
+   */
+  @Override
+  public void deliver(Id id, Message message, @Nullable NodeHandle previousHop) {
+    if (message instanceof PastMessage msg && msg.isResponse()) {
+      handleResponse(msg, previousHop);
+    } else {
+      deliver(id, message);
+    }
+  }
+
+  /**
    * This method is called on the application at the destination node
-   * for the given id.
+   * for the given id. A response that arrives here has no known sender and is checked by its id and type only.
    *
    * @param id The destination id of the message
    * @param message The message being sent
@@ -732,7 +756,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     final PastMessage msg = (PastMessage) message;
 
     if (msg.isResponse()) {
-      handleResponse((PastMessage) message);
+      handleResponse(msg, null);
     } else {
       logger.info("Received message {} with destination {}", message, id);
 

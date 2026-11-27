@@ -71,7 +71,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
    * @param source The source address
    * @param dest The destination address
    */
-  public InsertMessage(int uid, PastContent content, NodeHandle source, Id dest) {
+  public InsertMessage(long uid, PastContent content, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.content = content;
@@ -129,7 +129,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     serializeHelper(buf);
   }
 
@@ -154,7 +154,7 @@ public sealed class InsertMessage extends ContinuationMessage permits GCInsertMe
   public static InsertMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new InsertMessage(buf, endpoint, contentDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);

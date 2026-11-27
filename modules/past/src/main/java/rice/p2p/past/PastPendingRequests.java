@@ -38,71 +38,134 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.p2p.commonapi.CancellableTask;
+import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.past.messaging.PastMessage;
 
 /**
- * The requests of a {@link PastImpl} that wait for their response: the future each response completes, the timer that reports
- * the request lost, and the counter that numbers the requests. Requests may be sent from application threads while
- * the selector thread delivers responses and timeouts.
+ * The requests of a {@link PastImpl} that wait for their response: per request the future its response completes,
+ * the timer that reports it lost, its type, and the node that may answer it. Requests may be sent from application
+ * threads while the selector thread delivers responses and timeouts.
+ *
+ * <p>A response counts only for the request it answers:
+ * <ul>
+ * <li>Request ids are random 64-bit numbers, so only a node that saw the request knows its id: the node it was sent
+ *     to, the nodes on the route of a routed request, and in plain mode whoever reads the wire.</li>
+ * <li>The response must be of the type of the request (a Past response is the request message itself).</li>
+ * <li>A request sent to a node (lookupHandle, fetch, insert, refresh) may be answered only by that node. A routed
+ *     request (lookup, lookupHandles, the replica-set request of an insert or refresh) may be answered by any node
+ *     on its route: a node on the way answers a lookup from its cache and the lookupHandles request when it knows
+ *     the whole replica set, so neither the root nor a replica can be required. For routed requests the random id
+ *     is the only binding; what such a response says is checked elsewhere (content-hash objects) or is trusted
+ *     (mutable content, replica sets: C6, D1).</li>
+ * </ul>
+ * The responder is the node the endpoint says the response arrived from. In certified mode the transport
+ * authenticated it; in plain mode it is what the peer claims, so there the check stops only an honest mix-up and
+ * the random id is what stops an off-route node. A response whose sender the endpoint cannot tell (it was created on
+ * this node, or a wrapper such as multiring delivered it without its previous hop) is checked by id and type only.
  */
 final class PastPendingRequests {
   private final Logger logger;
 
-  // the unique ids used by the messages sent across the wire
-  private int id = Integer.MIN_VALUE;
+  // the source of the request ids, which must not be guessable
+  private final SecureRandom random = new SecureRandom();
 
-  // the hashtable of outstanding messages
+  // the requests that wait for a response, by request id
   // concurrent, and like the Hashtables they replace they reject null keys and values
-  private final Map<Integer, CompletableFuture<Object>> outstanding = new ConcurrentHashMap<Integer, CompletableFuture<Object>>();
+  private final Map<Long, PendingRequest> outstanding = new ConcurrentHashMap<Long, PendingRequest>();
 
-  // the hashtable of outstanding timer tasks
-  private final Map<Integer, CancellableTask> timers = new ConcurrentHashMap<Integer, CancellableTask>();
+  /**
+   * A request that waits for its response.
+   *
+   * @param response completed by the response
+   * @param timer reports the request lost
+   * @param type the message type of the request, which the response must have
+   * @param responder the id of the node the request was sent to, which alone may answer it, or null for a routed
+   *     request
+   */
+  private record PendingRequest(CompletableFuture<Object> response, CancellableTask timer, short type, @Nullable Id responder) {
+  }
 
   PastPendingRequests(Logger logger) {
     this.logger = logger;
   }
 
   /**
-   * Returns a new uid for a message
+   * Returns a new id for a request: random, so that a node that did not see the request cannot guess it.
    *
    * @return A new id
    */
-  synchronized int nextRequestId() {
-    return id++;
+  long nextRequestId() {
+    return random.nextLong();
   }
 
   /**
    * Loads the future of a request into the pending table
    *
-   * @param uid The id of the message
+   * @param request the request, under whose id and type the response is expected
+   * @param responder the id of the node the request was sent to, or null for a routed request
    * @param timer reports the request lost
    * @param response completed by the response
    */
-  void insert(int uid, CancellableTask timer, CompletableFuture<Object> response) {
-    logger.trace("Loading request {} into pending table", uid);
-    timers.put(Integer.valueOf(uid), timer);
-    outstanding.put(Integer.valueOf(uid), response);
+  void insert(PastMessage request, @Nullable Id responder, CancellableTask timer, CompletableFuture<Object> response) {
+    logger.trace("Loading request {} into pending table", request.getUID());
+    outstanding.put(Long.valueOf(request.getUID()), new PendingRequest(response, timer, request.getType(), responder));
   }
 
   /**
-   * Removes and returns the future of a request from the pending table
+   * Removes and returns the future of the request that a response answers, if the response may answer it.
    *
-   * @param uid The id of the message
+   * @param response the response
+   * @param sender the node the response arrived from, or null if the endpoint cannot tell
+   * @return The future to complete, or null if no request waits under this id, or the response is of another type
+   *     or from a node that may not answer it (the request then keeps waiting)
+   */
+  @Nullable CompletableFuture<Object> removeAnswered(PastMessage response, @Nullable NodeHandle sender) {
+    Long uid = Long.valueOf(response.getUID());
+    PendingRequest request = outstanding.get(uid);
+    if (request == null) {
+      logger.debug("Dropping response {}: no request waits for it", response);
+      return null;
+    }
+    if (request.type() != response.getType()) {
+      logger.info("Dropping response {} from {}: the request has type {}", response, sender, request.type());
+      return null;
+    }
+    if (request.responder() != null && sender != null && !request.responder().equals(sender.getId())) {
+      logger.info("Dropping response {} from {}: the request was sent to {}", response, sender, request.responder());
+      return null;
+    }
+    return remove(uid, request);
+  }
+
+  /**
+   * Removes and returns the future of a request from the pending table, whatever answers it: for the local report
+   * that the request was lost.
+   *
+   * @param uid The id of the request
    * @return The future to complete, or null if no request waits under this id
    */
-  CompletableFuture<Object> remove(int uid) {
+  @Nullable CompletableFuture<Object> remove(long uid) {
+    Long key = Long.valueOf(uid);
+    PendingRequest request = outstanding.get(key);
+    return request == null ? null : remove(key, request);
+  }
+
+  private @Nullable CompletableFuture<Object> remove(Long uid, PendingRequest request) {
     logger.trace("Removing and returning request {} from pending table", uid);
-    CancellableTask timer = timers.remove(Integer.valueOf(uid));
-
-    if (timer != null)
-      timer.cancel();
-
+    if (!outstanding.remove(uid, request)) {
+      return null;
+    }
+    request.timer().cancel();
     // the response arrives untyped from the wire; the requester's dependent stages expect the type of its request
-    return outstanding.remove(Integer.valueOf(uid));
+    return request.response();
   }
 }

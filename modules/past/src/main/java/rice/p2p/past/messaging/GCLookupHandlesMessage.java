@@ -62,7 +62,7 @@ public final class GCLookupHandlesMessage extends LookupHandlesMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public GCLookupHandlesMessage(int uid, Id id, NodeHandle source, Id dest) {
+  public GCLookupHandlesMessage(long uid, Id id, NodeHandle source, Id dest) {
     super(uid, id, Integer.MAX_VALUE, source, dest);
   }
 
@@ -84,14 +84,14 @@ public final class GCLookupHandlesMessage extends LookupHandlesMessage {
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     serializeHelper(buf);
   }
 
   public static GCLookupHandlesMessage buildGC(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new GCLookupHandlesMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);

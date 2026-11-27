@@ -76,7 +76,7 @@ public final class FetchMessage extends ContinuationMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public FetchMessage(int uid, PastContentHandle handle, NodeHandle source, Id dest) {
+  public FetchMessage(long uid, PastContentHandle handle, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.handle = handle;
@@ -110,7 +110,7 @@ public final class FetchMessage extends ContinuationMessage {
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     if (response != null && response instanceof PastContent) {
       super.serialize(buf, true);
       PastContent content = (PastContent)response;
@@ -129,7 +129,7 @@ public final class FetchMessage extends ContinuationMessage {
   public static FetchMessage build(InputBuffer buf, Endpoint endpoint, PastContentDeserializer contentDeserializer, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new FetchMessage(buf, endpoint, contentDeserializer, contentHandleDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);

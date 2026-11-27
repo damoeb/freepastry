@@ -71,7 +71,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public GCRefreshMessage(int uid, GCIdSet keys, NodeHandle source, Id dest) {
+  public GCRefreshMessage(long uid, GCIdSet keys, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.keys = new ExpiringId[keys.numElements()];
@@ -105,7 +105,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     if (response != null && response instanceof Boolean[]) {
       super.serialize(buf, true);
       Boolean[] array = (Boolean[])response;
@@ -127,7 +127,7 @@ public final class GCRefreshMessage extends ContinuationMessage {
   public static GCRefreshMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new GCRefreshMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);

@@ -72,7 +72,7 @@ public final class FetchHandleMessage extends ContinuationMessage {
    * @param source The source address
    * @param dest The destination address
    */
-  public FetchHandleMessage(int uid, Id id, NodeHandle source, Id dest) {
+  public FetchHandleMessage(long uid, Id id, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.id = id;
@@ -105,7 +105,7 @@ public final class FetchHandleMessage extends ContinuationMessage {
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     if (response != null && response instanceof PastContentHandle) {
       super.serialize(buf, true);
       PastContentHandle contentHandle = (PastContentHandle)response;
@@ -121,7 +121,7 @@ public final class FetchHandleMessage extends ContinuationMessage {
   public static FetchHandleMessage build(InputBuffer buf, Endpoint endpoint, PastContentHandleDeserializer contentHandleDeserializer) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new FetchHandleMessage(buf, endpoint, contentHandleDeserializer);
       default:
         throw new IOException("Unknown Version: "+version);

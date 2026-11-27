@@ -73,7 +73,7 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
    * @param source The source address
    * @param dest The destination address
    */
-  public LookupHandlesMessage(int uid, Id id, int max, NodeHandle source, Id dest) {
+  public LookupHandlesMessage(long uid, Id id, int max, NodeHandle source, Id dest) {
     super(uid, source, dest);
 
     this.id = id;
@@ -116,7 +116,7 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
 
   @Override
   public void serialize(OutputBuffer buf) throws IOException {
-    buf.writeByte((byte)0); // version
+    buf.writeByte((byte)1); // version 1: the request id is a long
     serializeHelper(buf);
   }
 
@@ -140,7 +140,7 @@ public sealed class LookupHandlesMessage extends ContinuationMessage permits GCL
   public static LookupHandlesMessage build(InputBuffer buf, Endpoint endpoint) throws IOException {
     byte version = buf.readByte();
     switch(version) {
-      case 0:
+      case 1:
         return new LookupHandlesMessage(buf, endpoint);
       default:
         throw new IOException("Unknown Version: "+version);
