@@ -273,5 +273,5 @@ The step-by-step explanations for these programs are in `html/rawtutorial/index.
 
 ## License
 
-See `license/License.txt` for licensing information.
+See `LICENSE` for licensing information.
 
