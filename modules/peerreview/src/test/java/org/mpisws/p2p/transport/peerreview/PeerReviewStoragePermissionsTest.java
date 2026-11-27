@@ -3,6 +3,7 @@ package org.mpisws.p2p.transport.peerreview;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.EOFException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +16,7 @@ import org.mpisws.p2p.transport.peerreview.commitment.AuthenticatorStore;
 import org.mpisws.p2p.transport.peerreview.history.SecureHistoryFactory;
 import org.mpisws.p2p.transport.peerreview.history.hasher.SHA256HashProvider;
 import org.mpisws.p2p.transport.peerreview.infostore.PeerInfoStoreImpl;
+import org.mpisws.p2p.transport.util.Serializer;
 import rice.environment.Environment;
 import rice.p2p.util.PrivateFiles;
 
@@ -52,8 +54,14 @@ class PeerReviewStoragePermissionsTest {
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
   void aNewAuthenticatorFileIsOwnerOnly() throws Exception {
+    // the store reads the file until a deserializer throws: the end of the empty file
+    Serializer endOfFile = (Serializer) Proxy.newProxyInstance(
+        getClass().getClassLoader(), new Class<?>[] {Serializer.class}, (proxy, method, args) -> {
+          throw new EOFException();
+        });
     PeerReview peerReview = (PeerReview) Proxy.newProxyInstance(
-        getClass().getClassLoader(), new Class<?>[] {PeerReview.class}, (proxy, method, args) -> null);
+        getClass().getClassLoader(), new Class<?>[] {PeerReview.class},
+        (proxy, method, args) -> method.getName().equals("getIdSerializer") ? endOfFile : null);
     AuthenticatorStore store = new AuthenticatorStore(peerReview);
     Path file = directory.resolve("authenticators");
 
