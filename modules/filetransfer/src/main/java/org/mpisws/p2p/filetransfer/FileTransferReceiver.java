@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Futures;
 import rice.environment.Environment;
+import rice.p2p.util.PrivateFiles;
 import rice.environment.processing.Processor;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.util.MathUtils;
@@ -537,6 +538,7 @@ class FileTransferReceiver {
       this.ptr = offset;
       this.offset = offset;
       this.length = length;
+      PrivateFiles.createIfAbsent(path);
       file = new RandomAccessFile(path.toFile(), "rw");
       this.metadata = metadata;
       file.seek(offset);

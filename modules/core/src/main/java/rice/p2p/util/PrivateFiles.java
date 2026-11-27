@@ -39,6 +39,7 @@ package rice.p2p.util;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.Channels;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -83,6 +84,21 @@ public final class PrivateFiles {
         : List.of(options));
     openOptions.add(StandardOpenOption.WRITE);
     return Channels.newOutputStream(Files.newByteChannel(file, openOptions, ownerOnly(OWNER_ONLY_FILE)));
+  }
+
+  /**
+   * Creates the file, readable by its owner only, unless it exists already; an existing file keeps its permissions.
+   *
+   * @param file the file
+   * @throws IOException if it cannot be created
+   */
+  public static void createIfAbsent(Path file) throws IOException {
+    try {
+      Files.newByteChannel(file, Set.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE),
+          ownerOnly(OWNER_ONLY_FILE)).close();
+    } catch (FileAlreadyExistsException exists) {
+      // keeps its permissions
+    }
   }
 
   /**

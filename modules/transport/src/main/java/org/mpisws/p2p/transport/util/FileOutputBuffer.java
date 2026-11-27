@@ -39,15 +39,15 @@ package org.mpisws.p2p.transport.util;
 import java.io.DataOutputStream;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import rice.p2p.commonapi.rawserialization.OutputBuffer;
+import rice.p2p.util.PrivateFiles;
 
 public class FileOutputBuffer extends DataOutputStream implements OutputBuffer {
 
   public FileOutputBuffer(Path path) throws IOException {
-    super(Files.newOutputStream(path));
+    super(PrivateFiles.newOutputStream(path));
   }
 
   @Override

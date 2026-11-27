@@ -48,11 +48,25 @@ public class RandomAccessFileIOBuffer extends RandomAccessFile implements
     InputBuffer, OutputBuffer {
 
   public RandomAccessFileIOBuffer(Path file, String mode) throws FileNotFoundException {
-    super(file.toFile(), mode);
+    super(createdPrivately(file, mode).toFile(), mode);
   }
 
   public RandomAccessFileIOBuffer(String name, String mode) throws FileNotFoundException {
-    super(name, mode);
+    super(createdPrivately(Path.of(name), mode).toFile(), mode);
+  }
+
+  /** A file that a writer opens and that does not exist yet is created readable by its owner only. */
+  private static Path createdPrivately(Path file, String mode) throws FileNotFoundException {
+    if (mode.contains("w")) {
+      try {
+        PrivateFiles.createIfAbsent(file);
+      } catch (IOException e) {
+        FileNotFoundException failure = new FileNotFoundException(file + ": " + e.getMessage());
+        failure.initCause(e);
+        throw failure;
+      }
+    }
+    return file;
   }
 
   @Override

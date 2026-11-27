@@ -99,6 +99,7 @@ import org.mpisws.p2p.transport.util.Serializer;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.p2p.util.PrivateFiles;
 import rice.environment.random.RandomSource;
 import rice.p2p.commonapi.Cancellable;
 import rice.p2p.commonapi.rawserialization.RawSerializable;
@@ -542,7 +543,7 @@ public class PeerReviewImpl<Handle extends RawSerializable, Identifier extends R
     Path dir = Path.of(dirname);
     if (!Files.exists(dir)) {
       try {
-        Files.createDirectories(dir);
+        PrivateFiles.createDirectories(dir);
       } catch (IOException e) {
         throw new IllegalStateException("Cannot open PeerReview directory: "+dir.toAbsolutePath(), e);
       }

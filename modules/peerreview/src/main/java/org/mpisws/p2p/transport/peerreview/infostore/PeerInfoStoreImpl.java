@@ -53,6 +53,7 @@ import org.mpisws.p2p.transport.util.FileInputBuffer;
 import org.mpisws.p2p.transport.util.FileOutputBuffer;
 import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.p2p.util.PrivateFiles;
 
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_AUDIT;
 import static org.mpisws.p2p.transport.peerreview.PeerReviewConstants.CHAL_SEND;
@@ -211,7 +212,7 @@ public class PeerInfoStoreImpl<Handle, Identifier> implements
     /* Create the directory if it doesn't exist yet */
     if (! Files.exists(directory)) {
       try {
-        Files.createDirectories(directory);
+        PrivateFiles.createDirectories(directory);
       } catch (IOException e) {
         // as with mkdirs, a failure is ignored: the directory then reads as empty
       }
