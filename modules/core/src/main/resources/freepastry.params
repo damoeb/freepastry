@@ -28,6 +28,11 @@ transport_wire_handshake_timeout_millis = 10000
 transport_wire_max_handshaking_sockets_per_address = 32
 # datagrams read in one selection before the selector thread turns to other work
 transport_wire_max_datagrams_per_read = 64
+# budgets that many addresses of one network share are kept per prefix of this length: an IPv4 /24, an IPv6 /64
+transport_prefix_bits_v4 = 24
+transport_prefix_bits_v6 = 64
+# the most prefixes or peers a budget keeps a token bucket for; the least recently used one is forgotten beyond
+pastry_socket_budget_max_peers = 10000
 # read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
 # waits for the next turn, so that a burst on one socket neither nests calls nor starves others
 transport_ssl_max_read_callbacks_per_select = 64
