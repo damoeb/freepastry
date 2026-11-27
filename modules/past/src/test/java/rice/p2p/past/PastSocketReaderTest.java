@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -120,5 +121,69 @@ class PastSocketReaderTest {
     PastSocketReader target = new PastSocketReader(MAX_BYTES);
 
     assertThrows(EOFException.class, () -> target.read(new ChunkedSocket()));
+  }
+
+  /** A socket that hands out the bytes it was given, then has nothing more to read (it stays open). */
+  private static final class IdleSocket implements AppSocket {
+    private final ByteBuffer incoming;
+
+    IdleSocket(byte[] incoming) {
+      this.incoming = ByteBuffer.wrap(incoming);
+    }
+
+    @Override
+    public long read(ByteBuffer dst) {
+      int count = Math.min(dst.remaining(), incoming.remaining());
+      for (int i = 0; i < count; i++) {
+        dst.put(incoming.get());
+      }
+      return count;
+    }
+
+    @Override
+    public long write(ByteBuffer src) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void register(boolean wantToRead, boolean wantToWrite, int timeout, AppSocketReceiver receiver) {}
+
+    @Override
+    public void shutdownOutput() {}
+
+    @Override
+    public void close() {}
+  }
+
+  @Test
+  @DisplayName("C3: sockets that announce the largest message and send nothing do not make the reader allocate it")
+  void announcingTheLargestMessageDoesNotAllocateIt() throws IOException {
+    int max = 16 * 1024 * 1024;
+    PastSocketReader target = new PastSocketReader(max);
+    int sockets = 100;
+    java.util.List<AppSocket> open = new java.util.ArrayList<>(); // the reader keeps sockets weakly
+    for (int n = 0; n < sockets; n++) {
+      AppSocket socket = new IdleSocket(ByteBuffer.allocate(Integer.BYTES).putInt(max).array());
+      open.add(socket);
+      assertNull(target.read(socket));
+    }
+
+    assertTrue(target.heldBytes() <= sockets * 8L * 1024, "held " + target.heldBytes() + " bytes for " + open.size() + " idle sockets");
+  }
+
+  @Test
+  @DisplayName("a message bigger than the first chunk arrives whole, in pieces")
+  void aMessageBiggerThanTheFirstChunkArrivesWhole() throws IOException {
+    int size = 100_000;
+    byte[] payload = new byte[size];
+    for (int n = 0; n < size; n++) {
+      payload[n] = (byte) n;
+    }
+    byte[] header = ByteBuffer.allocate(Integer.BYTES).putInt(size).array();
+    ChunkedSocket socket = new ChunkedSocket(header, Arrays.copyOfRange(payload, 0, 30_000), Arrays.copyOfRange(payload, 30_000, size));
+    PastSocketReader target = new PastSocketReader(size);
+
+    assertNull(target.read(socket));
+    assertArrayEquals(payload, target.read(socket));
   }
 }

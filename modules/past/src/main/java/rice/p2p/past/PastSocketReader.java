@@ -68,6 +68,16 @@ final class PastSocketReader {
     return null;
   }
 
+  /** The bytes the buffers of the messages in progress hold, over all sockets. */
+  long heldBytes() {
+    long held = 0;
+    for (Pending pending : pendingSocketTransactions.values()) {
+      ByteBuffer body = pending.body;
+      if (body != null) held += body.capacity();
+    }
+    return held;
+  }
+
   /** Drops what has arrived of the message in progress on the socket. */
   void forget(AppSocket socket) {
     pendingSocketTransactions.remove(socket);
