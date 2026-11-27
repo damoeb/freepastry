@@ -37,7 +37,10 @@ advised of the possibility of such damage.
 
 package rice.p2p.replication.manager;
 
+import java.util.concurrent.CompletableFuture;
+
 import rice.Continuation;
+import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
 import rice.p2p.commonapi.IdSet;
@@ -68,6 +71,17 @@ public interface ReplicationManagerClient {
   public void fetch(Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command);
 
   /**
+   * Tells the client to fetch the given id, as {@link #fetch(Id, NodeHandle, Continuation)}.
+   *
+   * @param id The id to fetch
+   * @param hint A hint where to find the key from
+   * @return completed on the selector thread with whether the fetch succeeded; it must complete eventually
+   */
+  public default CompletableFuture<Boolean> fetch(Id id, NodeHandle hint) {
+    return Futures.call(continuation -> fetch(id, hint, continuation));
+  }
+
+  /**
    * This upcall is to notify the client that the given id can be safely removed
    * from the storage.  The client may choose to perform advanced behavior, such
    * as caching the object, or may simply delete it.
@@ -75,6 +89,16 @@ public interface ReplicationManagerClient {
    * @param id The id to remove
    */
   public void remove(Id id, Continuation<? super Boolean, Exception> command);
+
+  /**
+   * Tells the client that the given id can be removed, as {@link #remove(Id, Continuation)}.
+   *
+   * @param id The id to remove
+   * @return completed on the selector thread once the client is done with the id
+   */
+  public default CompletableFuture<Boolean> remove(Id id) {
+    return Futures.call(continuation -> remove(id, continuation));
+  }
 
   /**
    * This upcall should return the set of keys that the application
@@ -104,10 +128,30 @@ public interface ReplicationManagerClient {
   public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command);
 
   /**
+   * Whether the given id is stored somewhere in the overlay, as {@link #existsInOverlay(Id, Continuation)}.
+   *
+   * @param id The id in question
+   * @return completed on the selector thread with whether the id exists somewhere in the overlay
+   */
+  public default CompletableFuture<Boolean> existsInOverlay(Id id) {
+    return Futures.call(continuation -> existsInOverlay(id, continuation));
+  }
+
+  /**
    * Asks a client to reinsert an object it already holds into the overlay
    *
    * @param id The id in question
    * @param command Receives whether the reinsert succeeded
    */
   public void reInsert(Id id, Continuation<? super Boolean, Exception> command);
+
+  /**
+   * Reinserts an object the client holds, as {@link #reInsert(Id, Continuation)}.
+   *
+   * @param id The id in question
+   * @return completed on the selector thread with whether the reinsert succeeded
+   */
+  public default CompletableFuture<Boolean> reInsert(Id id) {
+    return Futures.call(continuation -> reInsert(id, continuation));
+  }
 }
