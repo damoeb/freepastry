@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -146,10 +145,9 @@ class CertifiedAdmissionTest {
     return store;
   }
 
+  /** a port that is free for TCP and UDP on every address: the node binds both, and a TCP-only check made it flaky */
   static int freePort() throws IOException {
-    try (ServerSocket serverSocket = new ServerSocket(0)) {
-      return serverSocket.getLocalPort();
-    }
+    return FreePorts.freePort(new InetSocketAddress(0).getAddress());
   }
 
   static void awaitReady(PastryNode node) throws InterruptedException {
