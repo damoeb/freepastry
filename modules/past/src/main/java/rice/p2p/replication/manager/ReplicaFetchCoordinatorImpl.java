@@ -43,6 +43,7 @@ import java.util.Iterator;
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
+import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
@@ -180,7 +181,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
 
     final CancellableTask timer = endpoint.scheduleMessage(new TimeoutMessage(id), TIMEOUT_DELAY);
 
-    client.fetch(id, hint, new Continuation<Object, Exception>() {
+    Futures.forward(client.fetch(id, hint), new Continuation<Object, Exception>() {
       @Override
       public void receiveResult(Object result) {
         if (! Boolean.TRUE.equals(result)) {
@@ -531,22 +532,22 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
 
         logger.trace("Deciding whether to remove {}", id);
 
-        client.existsInOverlay(id, new StandardContinuation<Boolean, Boolean, Exception>(this) {
+        Futures.forward(client.existsInOverlay(id), new StandardContinuation<Boolean, Boolean, Exception>(this) {
           @Override
           public void receiveResult(Boolean result) {
             if (Boolean.TRUE.equals(result)) {
               logger.trace("Telling client to delete id {}", id);
               logger.trace("RMImpl.go {}: removing id {}", instance, id);
-              client.remove(id, parent);
+              Futures.forward(client.remove(id), parent);
             } else {
               logger.trace("Object to remove {} not found.  Reinserting.", id);
-              client.reInsert(id, new StandardContinuation<Boolean, Boolean, Exception>(parent) {
+              Futures.forward(client.reInsert(id), new StandardContinuation<Boolean, Boolean, Exception>(parent) {
                 @Override
                 public void receiveResult(Boolean result) {
                   if (Boolean.TRUE.equals(result)) {
                     logger.trace("Telling client to delete id {}", id);
                     logger.trace("RMImpl.go {}: removing id {}", instance, id);
-                    client.remove(id, parent);
+                    Futures.forward(client.remove(id), parent);
                   } else {
                     logger.trace("Object to remove {} Could not be reinserted.  Ignoring remove.", id);
                     // hand the failure to the deleter (our parent), which clears id and moves on

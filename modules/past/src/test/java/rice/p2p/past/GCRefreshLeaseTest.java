@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.Outcome;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.gc.ExpiringId;
@@ -129,8 +128,8 @@ class GCRefreshLeaseTest {
     ExpiringPastImpl fetcher = pasts.stream().filter(past -> !past.storage.exists(id)).findFirst().orElseThrow();
 
     // a replica that is not stored yet, and one that is stored and whose lease the peer wants to raise
-    assertEquals(true, FutureContinuation.<Boolean>call(c -> fetcher.fetch(new ExpiringId(id, Long.MAX_VALUE), holder.getLocalNodeHandle(), c)).get(SECONDS, TimeUnit.SECONDS));
-    assertEquals(true, FutureContinuation.<Boolean>call(c -> holder.fetch(new ExpiringId(id, Long.MAX_VALUE), fetcher.getLocalNodeHandle(), c)).get(SECONDS, TimeUnit.SECONDS));
+    assertEquals(true, fetcher.fetch(new ExpiringId(id, Long.MAX_VALUE), holder.getLocalNodeHandle()).get(SECONDS, TimeUnit.SECONDS));
+    assertEquals(true, holder.fetch(new ExpiringId(id, Long.MAX_VALUE), fetcher.getLocalNodeHandle()).get(SECONDS, TimeUnit.SECONDS));
 
     for (ExpiringPastImpl past : List.of(holder, fetcher)) {
       long expiration = ((ExpiringPastMetadata) past.storage.getMetadata(id)).expiration();

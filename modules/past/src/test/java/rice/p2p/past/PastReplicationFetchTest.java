@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import rice.Continuation;
-import rice.FutureContinuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.testing.DistPastTestContent;
@@ -93,7 +92,7 @@ class PastReplicationFetchTest {
     PastImpl past = bootReplying(evil);
     put(past, legit);
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(requested, null, continuation)));
+    Boolean fetched = await(past.fetch(requested, null));
 
     assertFalse(fetched, "a reply for another id counts as a successful fetch");
     assertEquals("legit", ((DistPastTestContent) stored(past, legit.getId())).getContent());
@@ -106,7 +105,7 @@ class PastReplicationFetchTest {
     PastImpl past = bootReplying("not content");
     Id requested = idFactory.buildId("requested");
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(requested, null, continuation)));
+    Boolean fetched = await(past.fetch(requested, null));
 
     assertFalse(fetched);
     assertFalse(past.storage.exists(requested));
@@ -118,7 +117,7 @@ class PastReplicationFetchTest {
     DistPastTestContent good = new DistPastTestContent(ring.env, idFactory, "good");
     PastImpl past = bootReplying(good);
 
-    Boolean fetched = await(FutureContinuation.<Boolean>call(continuation -> past.fetch(good.getId(), null, continuation)));
+    Boolean fetched = await(past.fetch(good.getId(), null));
 
     assertTrue(fetched);
     assertEquals("good", ((DistPastTestContent) stored(past, good.getId())).getContent());
