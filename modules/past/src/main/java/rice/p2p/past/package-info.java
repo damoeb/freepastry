@@ -40,7 +40,7 @@ advised of the possibility of such damage.
  * and looks it up again; {@link rice.p2p.past.PastImpl} keeps the replicas in place with the replication
  * manager ({@code rice.p2p.replication.manager}), stores them in a
  * {@code rice.persistence.CachedStorage} and caches lookups. {@link rice.p2p.past.PastPolicy} decides
- * how content is fetched and checked. All calls are asynchronous and report through a
- * {@link rice.Continuation} on the selector thread.
+ * how content is fetched and checked. All calls are asynchronous and return a
+ * {@link java.util.concurrent.CompletableFuture} completed on the selector thread (see {@link rice.Futures}).
  */
 package rice.p2p.past;
