@@ -211,7 +211,7 @@ public class PriorityTransportLayer<Identifier>
       int maxMsgSize,
       int maxQueueSize,
       int maxBigMsgSize,
-      PeerBudgets<Identifier> budgets,
+      PeerBudgets budgets,
       ErrorHandler<Identifier> handler) {
     this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
     entityManagers = new PeerMessageWriterRegistry<Identifier>(this::newEntityManager);
@@ -335,10 +335,11 @@ public class PriorityTransportLayer<Identifier>
   /**
    * Tells the budgets of design 3d and 3e which peers are pinned (leaf set, routing table: they get the pinned rate
    * factor, skip the prefix bucket and keep their minimum memory share) and which network prefix a peer belongs to
-   * (null: none, the peer has only its own bucket). Without a policy no peer is pinned and there are no prefix
-   * buckets. Call it before the layer reads.
+   * (null: none, the peer has only its own bucket). A peer is what a socket's messages are counted against: the
+   * identifier of the socket. Without a policy no peer is pinned and there are no prefix buckets. Call it before the
+   * layer reads.
    */
-  public void setPeerBudgetPolicy(SocketPinPolicy<Identifier> pinPolicy, Function<Identifier, @Nullable PrefixKey> prefixOf) {
+  public void setPeerBudgetPolicy(SocketPinPolicy<Object> pinPolicy, Function<Object, @Nullable PrefixKey> prefixOf) {
     entityManagerContext.budgets.setPolicy(pinPolicy, prefixOf);
   }
 

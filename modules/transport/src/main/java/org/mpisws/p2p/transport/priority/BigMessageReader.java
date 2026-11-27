@@ -85,7 +85,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
   private void closeAndRelease(P2PSocket<Identifier> socket) {
     isClosed = true;
     cancelDeadline();
-    ctx.budgets.memory.release(socket.getIdentifier(), reserved);
+    ctx.budgets.memory.release(PeerBudgets.peerKey(socket), reserved);
     reserved = 0;
     msgBuf = null;
     socket.close();
@@ -132,7 +132,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
       }
       // the size is known, the first chunk is not reserved yet
       int initial = Math.min(announced, INITIAL_CHUNK);
-      if (!ctx.budgets.memory.tryReserve(socket.getIdentifier(), initial)) {
+      if (!ctx.budgets.memory.tryReserve(PeerBudgets.peerKey(socket), initial)) {
         waitForBudget(socket);
         return;
       }
@@ -154,7 +154,7 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
       if (msgBuf.capacity() < announced) {
         // the buffer is full and more is coming: grow it, within the budget
         int grown = (int) Math.min((long) announced, 2L * msgBuf.capacity());
-        if (!ctx.budgets.memory.tryReserve(socket.getIdentifier(), grown - msgBuf.capacity())) {
+        if (!ctx.budgets.memory.tryReserve(PeerBudgets.peerKey(socket), grown - msgBuf.capacity())) {
           waitForBudget(socket);
           return;
         }
@@ -209,14 +209,14 @@ final class BigMessageReader<Identifier> implements P2PSocketReceiver<Identifier
   /** Hands the complete message to the callback once the peer's message budget admits it. */
   private void deliverWhenAdmitted(P2PSocket<Identifier> socket, ByteBuffer message) {
     if (isClosed || ctx.destroyed.getAsBoolean()) return;
-    long wait = ctx.budgets.messages.admit(socket.getIdentifier());
+    long wait = ctx.budgets.messages.admit(PeerBudgets.peerKey(socket));
     if (wait != PeerReadBudget.DELIVER_NOW) {
       ctx.budgets.messages.resumeLater(wait, () -> deliverWhenAdmitted(socket, message));
       return;
     }
     sizeBuf.clear();
     // the callback owns the message from here on
-    ctx.budgets.memory.release(socket.getIdentifier(), reserved);
+    ctx.budgets.memory.release(PeerBudgets.peerKey(socket), reserved);
     reserved = 0;
     this.msgBuf = null;
     try {

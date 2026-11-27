@@ -14,14 +14,14 @@ import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
  *
  * <p>Selector thread only.
  */
-final class ReceiveBudget<Identifier> {
+final class ReceiveBudget {
   private final long totalBytes;
   private final long minShareBytes;
   private final long messageFloorBytes;
   private final boolean hasShares;
-  private final Map<Identifier, Long> reservedByPeer = new HashMap<>();
+  private final Map<Object, Long> reservedByPeer = new HashMap<>();
   private long reservedBytes;
-  private SocketPinPolicy<Identifier> pinPolicy = () -> identifier -> false;
+  private SocketPinPolicy<Object> pinPolicy = () -> peer -> false;
 
   /**
    * @param totalBytes the memory all peers may hold together
@@ -40,18 +40,18 @@ final class ReceiveBudget<Identifier> {
   }
 
   /** A budget with one total for all peers together and no per-peer shares, as before design 3e. */
-  static <Identifier> ReceiveBudget<Identifier> withoutShares(long totalBytes) {
-    return new ReceiveBudget<>(totalBytes, 0, 0, false);
+  static ReceiveBudget withoutShares(long totalBytes) {
+    return new ReceiveBudget(totalBytes, 0, 0, false);
   }
 
-  void setPinPolicy(SocketPinPolicy<Identifier> pinPolicy) {
+  void setPinPolicy(SocketPinPolicy<Object> pinPolicy) {
     this.pinPolicy = pinPolicy;
   }
 
   /**
    * @return false, and reserves nothing, if {@code bytes} more would exceed the peer's share or the total
    */
-  boolean tryReserve(Identifier peer, long bytes) {
+  boolean tryReserve(Object peer, long bytes) {
     long held = reservedByPeer.getOrDefault(peer, 0L);
     int peersHoldingMemory = reservedByPeer.size() + (held == 0 ? 1 : 0);
     boolean fits = held + bytes <= shareBytes(peersHoldingMemory) && reservedBytes + bytes <= totalBytes;
@@ -63,7 +63,7 @@ final class ReceiveBudget<Identifier> {
   }
 
   /** Gives back what {@link #tryReserve} took for the peer. */
-  void release(Identifier peer, long bytes) {
+  void release(Object peer, long bytes) {
     if (bytes == 0) return;
     long held = reservedByPeer.getOrDefault(peer, 0L) - bytes;
     if (held <= 0) {
@@ -86,7 +86,7 @@ final class ReceiveBudget<Identifier> {
   }
 
   /** The bytes reserved by one peer. */
-  long reserved(Identifier peer) {
+  long reserved(Object peer) {
     return reservedByPeer.getOrDefault(peer, 0L);
   }
 }

@@ -453,26 +453,33 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   }
 
   /**
-   * The pin policy of the priority layer's message and memory budgets (design 3d, 3e): a peer is pinned when one of
-   * its addresses has the IP address of a leaf set or routing table member, as in {@link #getSocketPinPolicy}.
+   * The pin policy of the priority layer's message and memory budgets (design 3d, 3e): a peer is pinned when its IP
+   * address is that of a leaf set or routing table member, as in {@link #getSocketPinPolicy}. A peer is the IP address
+   * its socket connects from ({@code InetAddress}), or the address it claims ({@code MultiInetSocketAddress}).
    */
-  protected SocketPinPolicy<MultiInetSocketAddress> getPeerPinPolicy(PastryNode pn) {
+  protected SocketPinPolicy<Object> getPeerPinPolicy(PastryNode pn) {
     SocketPinPolicy<InetSocketAddress> byAddress = getSocketPinPolicy(pn);
     return () -> {
       Predicate<InetSocketAddress> pinned = byAddress.pinnedIdentifiers();
       return peer -> {
-        for (int i = 0; i < peer.getNumAddresses(); i++) {
-          if (pinned.test(peer.getAddress(i))) return true;
+        if (peer instanceof InetAddress address) return pinned.test(new InetSocketAddress(address, 0));
+        if (!(peer instanceof MultiInetSocketAddress claimed)) return false;
+        for (int i = 0; i < claimed.getNumAddresses(); i++) {
+          if (pinned.test(claimed.getAddress(i))) return true;
         }
         return false;
       };
     };
   }
 
-  /** The network prefix (transport_prefix_bits_v4/_v6) of a peer's outermost address, for the prefix message bucket. */
-  protected Function<MultiInetSocketAddress, @Nullable PrefixKey> getPeerPrefix(PastryNode pn) {
+  /** The network prefix (transport_prefix_bits_v4/_v6) of a peer (see {@link #getPeerPinPolicy}), for its prefix bucket. */
+  protected Function<Object, @Nullable PrefixKey> getPeerPrefix(PastryNode pn) {
     PrefixKey.Lengths lengths = PrefixKey.Lengths.fromParameters(pn.getEnvironment().getParameters());
-    return peer -> lengths.of(peer.getOutermostAddress().getAddress());
+    return peer -> {
+      if (peer instanceof InetAddress address) return lengths.of(address);
+      if (peer instanceof MultiInetSocketAddress claimed) return lengths.of(claimed.getOutermostAddress().getAddress());
+      return null;
+    };
   }
 
   public static final byte NETWORK_INFO_NODE_HANDLE_INDEX = 1;

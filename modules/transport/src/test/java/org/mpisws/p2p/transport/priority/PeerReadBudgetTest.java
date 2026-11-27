@@ -40,7 +40,7 @@ class PeerReadBudgetTest {
       @Override
       public void incomingSocket(P2PSocket<String> socket) {}
     };
-    PeerBudgets<String> budgets = PeerBudgets.of(config, 64L * 1024 * 1024, 4 * 1024 * 1024, scheduler);
+    PeerBudgets budgets = PeerBudgets.of(config, 64L * 1024 * 1024, 4 * 1024 * 1024, scheduler);
     budgets.setPolicy(() -> pinned::contains, peer -> {
       String address = addresses.get(peer);
       return address == null ? null : PREFIX_LENGTHS.of(inet(address));

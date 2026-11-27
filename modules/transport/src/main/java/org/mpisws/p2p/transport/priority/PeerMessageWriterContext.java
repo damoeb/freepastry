@@ -70,7 +70,7 @@ final class PeerMessageWriterContext<Identifier> {
    * the budgets of the node's readers: messages per peer and pass, and the memory BIG messages still arriving may
    * hold together
    */
-  final PeerBudgets<Identifier> budgets;
+  final PeerBudgets budgets;
   final List<PrimarySocketListener<Identifier>> primarySocketListeners;
   final TransportListeners<Identifier> listeners;
   final Supplier<ErrorHandler<Identifier>> errorHandler;
@@ -159,7 +159,7 @@ final class PeerMessageWriterContext<Identifier> {
       BooleanSupplier destroyed,
       Function<Identifier, PeerMessageWriter<Identifier>> entityManagers,
       LogRateLimiter logRateLimiter,
-      PeerBudgets<Identifier> budgets) {
+      PeerBudgets budgets) {
     this.tl = transportLayer;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;

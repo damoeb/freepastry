@@ -78,6 +78,33 @@ class WireHandshakeLimitsTest {
   }
 
   @Test
+  @DisplayName("an incoming socket carries the address it really connects from up the stack, past the magic number layer")
+  void incomingSocketCarriesItsRemoteAddress() throws Exception {
+    InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
+    MagicNumberTransportLayer<InetSocketAddress> magic =
+        new MagicNumberTransportLayer<>(wire, env, null, MAGIC_NUMBER, LONG_TIMEOUT_MILLIS);
+    CompletableFuture<@Nullable Map<String, Object>> options = new CompletableFuture<>();
+    magic.setCallback(new TransportLayerCallback<>() {
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> o) {
+      }
+
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
+        options.complete(socket.getOptions());
+      }
+    });
+
+    Socket client = connect(address);
+    client.getOutputStream().write(MAGIC_NUMBER);
+    client.getOutputStream().flush();
+
+    Map<String, Object> actual = options.get(CLIENT_READ_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    assertEquals(client.getLocalSocketAddress(), actual == null ? null : actual.get(WireTransportLayer.OPTION_REMOTE_ADDRESS));
+  }
+
+  @Test
   @DisplayName("one address gets at most the configured number of sockets in the handshake")
   void halfOpenSocketsPerAddressAreCapped() throws Exception {
     env.getParameters().setInt("transport_wire_handshake_timeout_millis", LONG_TIMEOUT_MILLIS);

@@ -40,7 +40,7 @@ class ReceiveBudgetTest {
     };
     PeerBudgetConfig config = new PeerBudgetConfig(1_000_000, 1_000_000, 1_000_000, 1_000_000, 1_000_000, 4, 10_000, minShareBytes,
         minRateBytesPerSecond, 10_000);
-    PeerBudgets<String> budgets = PeerBudgets.of(config, totalBytes, maxBigMessageBytes, scheduler);
+    PeerBudgets budgets = PeerBudgets.of(config, totalBytes, maxBigMessageBytes, scheduler);
     budgets.setPolicy(() -> pinned::contains, peer -> null);
     return new PeerMessageWriterContext<>(null, null, null, null, LoggerFactory.getLogger(ReceiveBudgetTest.class), 100, 10,
         maxBigMessageBytes, List.of(), new TransportListeners<>(), () -> null, () -> callback, () -> false, id -> null,
@@ -117,7 +117,7 @@ class ReceiveBudgetTest {
   @Test
   @DisplayName("a pinned peer gets its minimum share even when the budget is used up")
   void aPinnedPeerKeepsItsMinimumShare() {
-    ReceiveBudget<String> budget = new ReceiveBudget<>(64 * KB, 8 * KB, 24 * KB);
+    ReceiveBudget budget = new ReceiveBudget(64 * KB, 8 * KB, 24 * KB);
     budget.setPinPolicy(() -> "neighbour"::equals);
     assertTrue(budget.tryReserve("a", 24 * KB));
     assertTrue(budget.tryReserve("b", 24 * KB));

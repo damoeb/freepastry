@@ -76,6 +76,13 @@ import org.mpisws.p2p.transport.TransportLayer;
 public class WireTransportLayer
     implements SocketOpeningTransportLayer<InetSocketAddress>, TransportLayer<InetSocketAddress, ByteBuffer> {
   public static final String OPTION_TRANSPORT_TYPE = "transport_type";
+  /**
+   * Set by this layer in the options of every TCP socket: the {@code InetSocketAddress} at the other end of the
+   * connection, the remote address of an accepted socket or the one this node dialled. The layers above pass the
+   * options up with the socket, so a layer that sees only identifiers claimed in headers can tell where the bytes
+   * really come from.
+   */
+  public static final String OPTION_REMOTE_ADDRESS = "wire_remote_address";
   public static final int TRANSPORT_TYPE_DATAGRAM = 0;
   /**
    * Note this does not provide end-to-end guarantee.  Only per-hop guarantee.

@@ -117,7 +117,7 @@ class PrimarySocketBufferReader<Identifier> implements P2PSocketReceiver<Identif
    */
   public void done(P2PSocket<Identifier> socket) throws IOException {
     if (ctx.destroyed.getAsBoolean()) return;
-    long wait = ctx.budgets.messages.admit(socket.getIdentifier());
+    long wait = ctx.budgets.messages.admit(PeerBudgets.peerKey(socket));
     if (wait != PeerReadBudget.DELIVER_NOW) {
       ctx.logger.trace("{} pauses reading from {} for {}", owner, socket, wait);
       ctx.budgets.messages.resumeLater(wait, () -> resume(socket));

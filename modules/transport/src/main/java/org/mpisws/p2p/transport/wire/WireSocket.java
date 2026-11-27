@@ -36,6 +36,8 @@ advised of the possibility of such damage.
 *******************************************************************************/
 package org.mpisws.p2p.transport.wire;
 
+import org.mpisws.p2p.transport.util.OptionsFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -112,6 +114,7 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
 
     channel.configureBlocking(false);
     addr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
+    options = OptionsFactory.addOption(null, WireTransportLayer.OPTION_REMOTE_ADDRESS, addr);
 
     logger.debug("(SA) Accepted incoming connection from {}", addr);
 
@@ -175,7 +178,7 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
    */
   public WireSocket(final TCPLayer tcp, final InetSocketAddress address, final SocketCallback<InetSocketAddress> socketCallback, @Nullable Map<String, Object> options) throws IOException {
     this.tcp = tcp;
-    this.options = options;
+    this.options = OptionsFactory.addOption(options, WireTransportLayer.OPTION_REMOTE_ADDRESS, address);
     logger = tcp.logger;
     this.addr = address;
 

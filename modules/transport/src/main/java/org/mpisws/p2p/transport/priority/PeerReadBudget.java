@@ -9,7 +9,8 @@ import org.mpisws.p2p.transport.util.TokenBucket;
 import org.mpisws.p2p.transport.util.TokenBucketMap;
 
 /**
- * Decides whether a complete message of a peer is delivered now (design 3d). Each peer has a token bucket, each network
+ * Decides whether a complete message of a peer is delivered now (design 3d). A peer is the key
+ * {@link PeerBudgets#peerKey} gives its socket. Each peer has a token bucket, each network
  * prefix one more that all its peers share, and one selector pass delivers at most
  * {@link PeerBudgetConfig#maxMessagesPerPass()} messages. A reader whose message is not admitted holds it and stops
  * reading its socket until {@link #resumeLater} runs it again: TCP backpressure slows the sender, nothing is dropped and
@@ -19,7 +20,7 @@ import org.mpisws.p2p.transport.util.TokenBucketMap;
  *
  * <p>Selector thread only.
  */
-final class PeerReadBudget<Identifier> {
+final class PeerReadBudget {
   /** {@link #admit}: deliver the message now */
   static final long DELIVER_NOW = 0;
   /** {@link #admit}: the pass is full, ask again in the next selector pass */
@@ -27,16 +28,16 @@ final class PeerReadBudget<Identifier> {
 
   private final @Nullable PeerBudgetConfig config;
   private final ReadScheduler scheduler;
-  private final @Nullable TokenBucketMap<Identifier> peerBuckets;
+  private final @Nullable TokenBucketMap<Object> peerBuckets;
   private final @Nullable TokenBucketMap<PrefixKey> prefixBuckets;
-  private final @Nullable TokenBucketMap<Identifier> pinnedExtraBuckets;
-  private SocketPinPolicy<Identifier> pinPolicy = () -> identifier -> false;
-  private Function<Identifier, @Nullable PrefixKey> prefixOf = identifier -> null;
+  private final @Nullable TokenBucketMap<Object> pinnedExtraBuckets;
+  private SocketPinPolicy<Object> pinPolicy = () -> peer -> false;
+  private Function<Object, @Nullable PrefixKey> prefixOf = peer -> null;
 
   private int messagesThisPass;
   private boolean isPassResetScheduled;
   /** the pin policy's answer for this pass, asked for only when a peer's bucket is empty */
-  private @Nullable Predicate<Identifier> pinnedThisPass;
+  private @Nullable Predicate<Object> pinnedThisPass;
 
   private PeerReadBudget(@Nullable PeerBudgetConfig config, ReadScheduler scheduler) {
     this.config = config;
@@ -56,15 +57,15 @@ final class PeerReadBudget<Identifier> {
   }
 
   /** A budget that admits every message at once. */
-  static <Identifier> PeerReadBudget<Identifier> unlimited() {
-    return new PeerReadBudget<>(null, ReadScheduler.NONE);
+  static PeerReadBudget unlimited() {
+    return new PeerReadBudget(null, ReadScheduler.NONE);
   }
 
-  static <Identifier> PeerReadBudget<Identifier> of(PeerBudgetConfig config, ReadScheduler scheduler) {
-    return new PeerReadBudget<>(config, scheduler);
+  static PeerReadBudget of(PeerBudgetConfig config, ReadScheduler scheduler) {
+    return new PeerReadBudget(config, scheduler);
   }
 
-  void setPolicy(SocketPinPolicy<Identifier> pinPolicy, Function<Identifier, @Nullable PrefixKey> prefixOf) {
+  void setPolicy(SocketPinPolicy<Object> pinPolicy, Function<Object, @Nullable PrefixKey> prefixOf) {
     this.pinPolicy = pinPolicy;
     this.prefixOf = prefixOf;
   }
@@ -75,9 +76,9 @@ final class PeerReadBudget<Identifier> {
    * @return {@link #DELIVER_NOW} if the message may be delivered (its tokens are taken), {@link #NEXT_PASS} if this
    *         pass delivered enough, else the millis after which a token is there
    */
-  long admit(Identifier peer) {
+  long admit(Object peer) {
     PeerBudgetConfig config = this.config;
-    TokenBucketMap<Identifier> peerBuckets = this.peerBuckets;
+    TokenBucketMap<Object> peerBuckets = this.peerBuckets;
     TokenBucketMap<PrefixKey> prefixBuckets = this.prefixBuckets;
     if (config == null || peerBuckets == null || prefixBuckets == null) return DELIVER_NOW;
     if (messagesThisPass >= config.maxMessagesPerPass()) return NEXT_PASS;
@@ -97,7 +98,7 @@ final class PeerReadBudget<Identifier> {
         peerBucket.tryTake(now);
         return delivered();
       }
-      TokenBucketMap<Identifier> pinnedExtraBuckets = this.pinnedExtraBuckets;
+      TokenBucketMap<Object> pinnedExtraBuckets = this.pinnedExtraBuckets;
       if (pinnedExtraBuckets == null) return peerBucket.millisUntilToken(now);
       TokenBucket extraBucket = pinnedExtraBuckets.bucket(peer, now);
       if (extraBucket.tryTake(now)) return delivered();
@@ -133,8 +134,8 @@ final class PeerReadBudget<Identifier> {
     pinnedThisPass = null;
   }
 
-  private boolean isPinned(Identifier peer) {
-    Predicate<Identifier> pinned = pinnedThisPass;
+  private boolean isPinned(Object peer) {
+    Predicate<Object> pinned = pinnedThisPass;
     if (pinned == null) {
       pinned = pinPolicy.pinnedIdentifiers();
       pinnedThisPass = pinned;
