@@ -34,17 +34,16 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-
-
 package rice.p2p.past;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.MultiContinuation;
-import rice.Continuation.NamedContinuation;
-import rice.Continuation.SimpleContinuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
+import rice.Outcome;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
@@ -71,16 +70,14 @@ final class PastInserts {
     this.logger = logger;
   }
 
-  void getHandles(Id id, final int max, Continuation<? super NodeHandleSet, Exception> command) {
+  CompletableFuture<NodeHandleSet> getHandles(Id id, final int max) {
     NodeHandleSet nodeHandleSet = endpoint.replicaSet(id, max);
 
     if (nodeHandleSet.size() == max) {
-      command.receiveResult(nodeHandleSet);
-    } else {
-      Futures.forward(past.<NodeHandleSet>sendRequest(id, new LookupHandlesMessage(past.nextRequestId(), id, max, past.getLocalNodeHandle(), id)), new StandardContinuation<NodeHandleSet, NodeHandleSet, Exception>(command) {
-        @Override
-        public void receiveResult(NodeHandleSet replicas) {
-
+      return CompletableFuture.completedFuture(nodeHandleSet);
+    }
+    return past.<NodeHandleSet>sendRequest(id, new LookupHandlesMessage(past.nextRequestId(), id, max, past.getLocalNodeHandle(), id))
+        .thenCompose(replicas -> {
           // check to make sure we've fetched the correct number of replicas
           // the deal with this is for the small ring.  If you are requesting
           // 4 nodes, but the ring is only 3, you are only going to get 3
@@ -88,85 +85,77 @@ final class PastInserts {
           // argument is kind of weird, but I don't know how to get it right
           // -Jeff 1/24/07
           if (Math.min(max,endpoint.replicaSet(endpoint.getLocalNodeHandle().getId(), past.getReplicationFactor()+1).size()) > replicas.size())
-            parent.receiveException(new PastException("Only received " + replicas.size() + " replicas - cannot insert as we know about more nodes."));
-          else
-            parent.receiveResult(replicas);
-        }
-      });
-    }
+            return CompletableFuture.failedFuture(new PastException("Only received " + replicas.size() + " replicas - cannot insert as we know about more nodes."));
+          return CompletableFuture.completedFuture(replicas);
+        });
   }
 
-  void doInsert(final Id id, final MessageBuilder builder, Continuation<? super Boolean[], Exception> command, final boolean useSocket) {
+  CompletableFuture<Boolean[]> doInsert(final Id id, final MessageBuilder builder, final boolean useSocket) {
     // first, we get all of the replicas for this id
-    past.getHandles(id, past.getReplicationFactor()+1, new StandardContinuation<NodeHandleSet, Boolean[], Exception>(command) {
-      @Override
-      public void receiveResult(NodeHandleSet replicas) {
-        logger.trace("Received replicas {} for id {}", replicas, id);
+    return past.getHandles(id, past.getReplicationFactor()+1).thenCompose(replicas -> {
+      logger.trace("Received replicas {} for id {}", replicas, id);
 
-        // then we send inserts to each replica and wait for at least
-        // threshold * num to return successfully
-        MultiContinuation<Boolean[]> multiContinuation = new MultiContinuation<Boolean[]>(parent, replicas.size()) {
-          @Override
-          public boolean isDone() throws Exception {
-            int numSuccess = 0;
-            for (int i=0; i<haveResult.length; i++)
-              if (haveResult[i] && Boolean.TRUE.equals(result[i]))
-                numSuccess++;
-
-            if (numSuccess >= (past.SUCCESSFUL_INSERT_THRESHOLD * haveResult.length))
-              return true;
-
-            if (super.isDone()) {
-              for (int i=0; i<result.length; i++)
-                if (result[i] instanceof Exception)
-                  logger.warn("result[{}]:", i, (Exception)result[i]);
-
-              throw new PastException("Had only " +  numSuccess + " successful inserts out of " + result.length + " - aborting.");
-            }
-            return false;
-          }
-
-          @Override
-          public Boolean[] getResult() {
-            Boolean[] successes = new Boolean[result.length];
-            for (int i=0; i<successes.length; i++)
-              successes[i] = Boolean.valueOf((result[i] == null) || Boolean.TRUE.equals(result[i]));
-
-            return successes;
-          }
-        };
-
-        for (int i=0; i<replicas.size(); i++) {
-          NodeHandle handle = replicas.getHandle(i);
-          PastMessage msg = builder.buildMessage();
-          Continuation<Object, Exception> continuation = new NamedContinuation<Object, Exception>("InsertMessage to " + replicas.getHandle(i) + " for " + id, multiContinuation.getSubContinuation(i));
-          Futures.forward(useSocket ? past.sendViaSocket(handle, msg) : past.sendRequest(handle, msg), continuation);
-        }
+      // then we send inserts to each replica and wait for at least
+      // threshold * num to return successfully
+      List<CompletableFuture<Object>> inserts = new ArrayList<CompletableFuture<Object>>(replicas.size());
+      for (int i=0; i<replicas.size(); i++) {
+        NodeHandle handle = replicas.getHandle(i);
+        PastMessage msg = builder.buildMessage();
+        inserts.add(useSocket ? past.sendViaSocket(handle, msg) : past.sendRequest(handle, msg));
       }
+      return Futures.<Object, Boolean[]>quorum(inserts, this::isInsertDone, PastInserts::replicaSuccesses);
     });
   }
 
-  void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
+  /**
+   * Done once enough replicas stored the object; once all answered without that, the insert fails.
+   */
+  private boolean isInsertDone(List<@Nullable Outcome<Object>> outcomes) throws PastException {
+    int numSuccess = 0;
+    boolean haveAllAnswered = true;
+    for (Outcome<Object> outcome : outcomes) {
+      if (outcome == null)
+        haveAllAnswered = false;
+      else if (outcome instanceof Outcome.Success<Object> success && Boolean.TRUE.equals(success.value()))
+        numSuccess++;
+    }
+
+    if (numSuccess >= (past.SUCCESSFUL_INSERT_THRESHOLD * outcomes.size()))
+      return true;
+
+    if (haveAllAnswered) {
+      for (int i=0; i<outcomes.size(); i++)
+        if (outcomes.get(i) instanceof Outcome.Failure<Object> failure)
+          logger.warn("result[{}]:", i, failure.cause());
+
+      throw new PastException("Had only " +  numSuccess + " successful inserts out of " + outcomes.size() + " - aborting.");
+    }
+    return false;
+  }
+
+  /** Per replica: true if it stored the object, answered nothing, or has not answered yet. */
+  private static Boolean[] replicaSuccesses(List<@Nullable Outcome<Object>> outcomes) {
+    Boolean[] successes = new Boolean[outcomes.size()];
+    for (int i=0; i<successes.length; i++) {
+      Outcome<Object> outcome = outcomes.get(i);
+      successes[i] = Boolean.valueOf(outcome == null
+          || (outcome instanceof Outcome.Success<Object> success && (success.value() == null || Boolean.TRUE.equals(success.value()))));
+    }
+    return successes;
+  }
+
+  CompletableFuture<Boolean[]> insert(final PastContent obj) {
     logger.trace("Inserting the object {} with the id {}", obj, obj.getId());
 
     logger.atTrace().log(() -> " Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    past.doInsert(obj.getId(), () -> new InsertMessage(past.nextRequestId(), obj, past.getLocalNodeHandle(), obj.getId()), new StandardContinuation<Boolean[], Boolean[], Exception>(command) {
-      @Override
-      public void receiveResult(final Boolean[] array) {
-        past.cache(obj, new SimpleContinuation()  {
-          @Override
-          public void receiveResult(Object result) {
-            parent.receiveResult(array);
+    return past.doInsert(obj.getId(), () -> new InsertMessage(past.nextRequestId(), obj, past.getLocalNodeHandle(), obj.getId()),
+        past.socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj))
+        .thenCompose(array -> past.cache(obj).handle((_, cacheFailure) -> {
+          if (cacheFailure != null) {
+            logger.warn("Caching after insert failed, continuing", Futures.unwrap(cacheFailure));
           }
-          @Override
-          public void receiveException(Exception e) {
-            logger.warn("Caching after insert failed, continuing", e);
-            parent.receiveResult(array);
-          }
-        });
-      }
-    },
-    past.socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
+          return array;
+        }));
   }
 }

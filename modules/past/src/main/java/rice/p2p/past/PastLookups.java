@@ -34,15 +34,11 @@ or otherwise) arising in any way out of the use of this software, even if
 advised of the possibility of such damage.
 
 *******************************************************************************/
-
-
 package rice.p2p.past;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.NamedContinuation;
-import rice.Continuation.SimpleContinuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.messaging.LookupMessage;
@@ -61,18 +57,14 @@ final class PastLookups {
     this.logger = logger;
   }
 
-  void lookup(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+  CompletableFuture<PastContent> lookup(final Id id, final boolean cache) {
     logger.atTrace().log(() -> " Performing lookup on " + id.toStringFull());
 
-    Futures.forward(past.storage.getObject(id), new StandardContinuation<Object, PastContent, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        if (result != null && past.isAuthentic(id, (PastContent) result)) {
-          command.receiveResult((PastContent) result);
-        } else {
-          lookupViaMessage(id, cache, command);
-        }
+    return past.storage.getObject(id).thenCompose(result -> {
+      if (result != null && past.isAuthentic(id, (PastContent) result)) {
+        return CompletableFuture.completedFuture((PastContent) result);
       }
+      return lookupViaMessage(id, cache);
     });
   }
 
@@ -80,69 +72,45 @@ final class PastLookups {
    * Second step of a lookup: asks the node the key routes to. If that node has no authentic object, or the message
    * failed, all replicas are tried, just in case; this may fail too, but at least we tried.
    */
-  private void lookupViaMessage(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    Futures.forward(past.<PastContent>sendRequest(id, new LookupMessage(past.nextRequestId(), id, past.getLocalNodeHandle(), id)), new NamedContinuation<PastContent, Exception>("LookupMessage for " + id, command) {
-      @Override
-      public void receiveResult(final PastContent content) {
-        if (content != null && past.isAuthentic(id, content)) {
-          cacheAndReply(content, cache, command);
-        } else {
-          lookupViaReplicas(id, cache, command);
-        }
-      }
-
-      @Override
-      public void receiveException(Exception e) {
-        receiveResult(null);
-      }
-    });
+  private CompletableFuture<PastContent> lookupViaMessage(final Id id, final boolean cache) {
+    return past.<PastContent>sendRequest(id, new LookupMessage(past.nextRequestId(), id, past.getLocalNodeHandle(), id))
+        .handle((content, failure) -> failure == null ? content : null)
+        .thenCompose(content -> {
+          if (content != null && past.isAuthentic(id, content)) {
+            return cacheAndReply(content, cache);
+          }
+          return lookupViaReplicas(id, cache);
+        });
   }
 
   /**
    * Last step of a lookup: the first replica that has a handle is fetched, and the lookup answers null if there is
    * none, which means the object doesn't exist anywhere.
    */
-  private void lookupViaReplicas(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    past.lookupHandles(id, past.getReplicationFactor() + 1, new StandardContinuation<PastContentHandle[], PastContent, Exception>(command) {
-      @Override
-      public void receiveResult(PastContentHandle[] handles) {
-        for (PastContentHandle handle : handles) {
-          if (handle != null) {
-            past.fetch(handle, new StandardContinuation<PastContent, PastContent, Exception>(command) {
-              @Override
-              public void receiveResult(final PastContent content) {
-                cacheAndReply(content, cache, command);
-              }
-            });
-
-            return;
-          }
+  private CompletableFuture<PastContent> lookupViaReplicas(final Id id, final boolean cache) {
+    return past.lookupHandles(id, past.getReplicationFactor() + 1).thenCompose(handles -> {
+      for (PastContentHandle handle : handles) {
+        if (handle != null) {
+          return past.fetch(handle).thenCompose(content -> cacheAndReply(content, cache));
         }
-
-        // there were no replicas of the object
-        command.receiveResult(null);
       }
+
+      // there were no replicas of the object
+      return CompletableFuture.completedFuture(null);
     });
   }
 
   /** Tries to cache a looked-up object locally for future use, and answers with it whether or not caching worked. */
-  private void cacheAndReply(final PastContent content, final boolean cache, final Continuation<? super PastContent, Exception> command) {
+  private CompletableFuture<PastContent> cacheAndReply(final PastContent content, final boolean cache) {
     if (!cache) {
-      command.receiveResult(content);
-      return;
+      return CompletableFuture.completedFuture(content);
     }
 
-    past.cache(content, new SimpleContinuation() {
-      @Override
-      public void receiveResult(Object object) {
-        command.receiveResult(content);
+    return past.cache(content).handle((_, failure) -> {
+      if (failure != null) {
+        logger.warn("Caching after lookup failed, continuing", Futures.unwrap(failure));
       }
-
-      @Override
-      public void receiveException(Exception e) {
-        logger.warn("Caching after lookup failed, continuing", e);
-        command.receiveResult(content);
-      }
+      return content;
     });
   }
 }

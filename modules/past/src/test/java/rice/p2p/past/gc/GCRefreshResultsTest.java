@@ -1,11 +1,13 @@
 package rice.p2p.past.gc;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.ObjectNotFoundException;
@@ -43,11 +45,11 @@ class GCRefreshResultsTest {
     outcome.put(found, true);
     outcome.put(missing, false);
 
-    Object[] actual = ExpiringPastImpl.collectRefreshResults(new Id[] {missing, found, silent}, outcome);
+    List<Outcome<Boolean>> actual = ExpiringPastImpl.collectRefreshResults(new Id[] {missing, found, silent}, outcome);
 
-    assertEquals(3, actual.length);
-    assertInstanceOf(ObjectNotFoundException.class, actual[0]);
-    assertEquals(true, actual[1]);
-    assertInstanceOf(RefreshFailedException.class, actual[2]);
+    assertEquals(3, actual.size());
+    assertInstanceOf(ObjectNotFoundException.class, assertInstanceOf(Outcome.Failure.class, actual.get(0)).cause());
+    assertEquals(new Outcome.Success<Boolean>(true), actual.get(1));
+    assertInstanceOf(RefreshFailedException.class, assertInstanceOf(Outcome.Failure.class, actual.get(2)).cause());
   }
 }

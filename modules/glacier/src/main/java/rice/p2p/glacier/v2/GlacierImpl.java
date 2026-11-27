@@ -37,10 +37,14 @@ advised of the possibility of such damage.
 package rice.p2p.glacier.v2;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
+import rice.Futures;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
@@ -57,6 +61,7 @@ import rice.p2p.glacier.VersioningPast;
 import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.gc.ExpiringPast;
+import rice.p2p.past.gc.RefreshOutcomes;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
@@ -142,17 +147,14 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     return debugCommands.handleDebugCommand(command);
   }
 
-  @Override
   public void insert(final PastContent content, final Continuation<? super Boolean[], Exception> command) {
     insert(content, ExpiringPast.INFINITY_EXPIRATION, command);
   }
 
-  @Override
   public void insert(final PastContent content, final long expiration, final Continuation<? super Boolean[], Exception> command) {
     inserter.insert(content, expiration, command);
   }
 
-  @Override
   public void refresh(Id[] ids, long[] expirations, Continuation<? super Object[], Exception> command) {
     long[] versions = new long[ids.length];
     Arrays.fill(versions, 0);
@@ -187,12 +189,10 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     dispatcher.deliver(id, message);
   }
 
-  @Override
   public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
     command.receiveException(new UnsupportedOperationException("LookupHandle() is not supported on Glacier"));
   }
 
-  @Override
   public void lookupHandles(Id id, int num, Continuation<? super PastContentHandle[], Exception> command) {
     lookupHandles(id, 0, num, command);
   }
@@ -237,17 +237,14 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
     retriever.retrieveObject(versionKey, null, true, GlacierTags.LOOKUP, command);
   }
 
-  @Override
   public void lookup(Id id, boolean cache, Continuation<? super PastContent, Exception> command) {
     lookup(id, 0, command);
   }
 
-  @Override
   public void lookup(Id id, Continuation<? super PastContent, Exception> command) {
     lookup(id, 0, command);
   }
 
-  @Override
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
     logger.info("fetch({})", handle.getId());
 
@@ -302,5 +299,47 @@ public class GlacierImpl implements Glacier, ExpiringPast, VersioningPast, Appli
 
   @Override
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
+  }
+
+  // ----- the future methods of Past and ExpiringPast, on top of the Continuation based ones above -----
+
+  @Override
+  public CompletableFuture<Boolean[]> insert(PastContent content) {
+    return Futures.<Boolean[]>call(continuation -> insert(content, continuation));
+  }
+
+  @Override
+  public CompletableFuture<Boolean[]> insert(PastContent content, long expiration) {
+    return Futures.<Boolean[]>call(continuation -> insert(content, expiration, continuation));
+  }
+
+  @Override
+  public CompletableFuture<List<Outcome<Boolean>>> refresh(Id[] ids, long[] expirations) {
+    return Futures.<Object[]>call(continuation -> refresh(ids, expirations, continuation)).thenApply(RefreshOutcomes::fromArray);
+  }
+
+  @Override
+  public CompletableFuture<PastContent> lookup(Id id) {
+    return Futures.<PastContent>call(continuation -> lookup(id, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContent> lookup(Id id, boolean cache) {
+    return Futures.<PastContent>call(continuation -> lookup(id, cache, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContentHandle[]> lookupHandles(Id id, int max) {
+    return Futures.<PastContentHandle[]>call(continuation -> lookupHandles(id, max, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContentHandle> lookupHandle(Id id, NodeHandle handle) {
+    return Futures.<PastContentHandle>call(continuation -> lookupHandle(id, handle, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContent> fetch(PastContentHandle handle) {
+    return Futures.<PastContent>call(continuation -> fetch(handle, continuation));
   }
 }

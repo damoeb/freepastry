@@ -38,14 +38,16 @@ advised of the possibility of such damage.
 package rice.p2p.past;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
 import rice.Continuation;
-import rice.Continuation.MultiContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.Futures;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.CancellableTask;
@@ -454,10 +456,10 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @param id The id to fetch the handles for
    * @param max The maximum number of handles to return
-   * @param command The command to call with the result (NodeHandle[])
+   * @return completed with the replica set
    */
-  protected void getHandles(Id id, final int max, Continuation<? super NodeHandleSet, Exception> command) {
-    insertOperations.getHandles(id, max, command);
+  protected CompletableFuture<NodeHandleSet> getHandles(Id id, final int max) {
+    return insertOperations.getHandles(id, max);
   }
 
   /**
@@ -487,15 +489,14 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * Method which inserts the given object into the cache
    *
    * @param content The content to cache
-   * @param command The command to run once done
+   * @return completed once done, with true if nothing was to be cached
    */
-  public void cache(final PastContent content, final Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> cache(final PastContent content) {
     logger.trace("Inserting PastContent object {} into cache", content);
 
     if ((content != null) && ! content.isMutable() && isAuthentic(null, content))
-      Futures.forward(storage.cache(content.getId(), null, content), command);
-    else
-      command.receiveResult(Boolean.valueOf(true));
+      return storage.cache(content.getId(), null, content);
+    return CompletableFuture.completedFuture(Boolean.valueOf(true));
   }
 
   /**
@@ -505,42 +506,29 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    *
    * @param id The id of the object to insert
    * @param builder The object which builds the messages
-   * @param command The command to call once done
    * @param useSocket Whether to send the insert messages over a socket
+   * @return completed once enough replicas stored the object, see {@link #insert(PastContent)}
    */
-  protected void doInsert(final Id id, final MessageBuilder builder, Continuation<? super Boolean[], Exception> command, final boolean useSocket) {
-    insertOperations.doInsert(id, builder, command, useSocket);
+  protected CompletableFuture<Boolean[]> doInsert(final Id id, final MessageBuilder builder, final boolean useSocket) {
+    return insertOperations.doInsert(id, builder, useSocket);
   }
-
 
   // ----- PAST METHODS -----
 
   /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
+   * Inserts an object with the given ID into this instance of Past: the insert is sent to the replicas of the id,
+   * and is done once at least SUCCESSFUL_INSERT_THRESHOLD of them stored it.
    *
    * @param obj the object to be inserted
-   * @param command Command to be performed when the result is received
+   * @return one Boolean per replica, or failed with a PastException if too few replicas stored the object
    */
   @Override
-  public void insert(final PastContent obj, final Continuation<? super Boolean[], Exception> command) {
-    insertOperations.insert(obj, command);
+  public CompletableFuture<Boolean[]> insert(final PastContent obj) {
+    return insertOperations.insert(obj);
   }
 
   /**
-   * Retrieves the object stored in this instance of Past with the
-   * given ID.  Asynchronously returns a PastContent object as the
-   * result to the provided Continuation, or a PastException. This
-   * method is provided for convenience; its effect is identical to a
-   * lookupHandles() and a subsequent fetch() to the handle that is
-   * nearest in the network.
-   *
-   * The client must authenticate the object. In case of failure, an
-   * alternate replica of the object can be obtained via
-   * lookupHandles() and fetch().
+   * Retrieves the object stored in this instance of Past with the given ID, and caches it locally.
    *
    * This method is not safe if the object is immutable and storage
    * nodes are not trusted. In this case, clients should used the
@@ -549,121 +537,104 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * application-specific manner.
    *
    * @param id the key to be queried
-   * @param command Command to be performed when the result is received
+   * @return the object, or null if no node has it
    */
   @Override
-  public void lookup(final Id id, final Continuation<? super PastContent, Exception> command) {
-    lookup(id, true, command);
+  public CompletableFuture<PastContent> lookup(final Id id) {
+    return lookup(id, true);
   }
 
   /**
    * Method which performs the same as lookup(), but allows the
    * callee to specify if the data should be cached.
    *
-   *
    * @param id the key to be queried
    * @param cache Whether or not the data should be cached
-   * @param command Command to be performed when the result is received
+   * @return the object, or null if no node has it
    */
   @Override
-  public void lookup(final Id id, final boolean cache, final Continuation<? super PastContent, Exception> command) {
-    lookups.lookup(id, cache, command);
+  public CompletableFuture<PastContent> lookup(final Id id, final boolean cache) {
+    return lookups.lookup(id, cache);
   }
 
   /**
    * Retrieves the handles of up to max replicas of the object stored
-   * in this instance of Past with the given ID.  Asynchronously
-   * returns an array of PastContentHandles as the result to the
-   * provided Continuation, or a PastException.
+   * in this instance of Past with the given ID.
    *
    * Each replica handle is obtained from a different primary storage
    * root for the the given key. If max exceeds the replication factor
    * r of this Past instance, only r replicas are returned.
    *
-   * This method will return a PastContentHandle[] array containing all
-   * of the handles.
-   *
    * @param id the key to be queried
    * @param max the maximal number of replicas requested
-   * @param command Command to be performed when the result is received
+   * @return one entry per replica asked, null where it has no handle or its request failed
    */
   @Override
-  public void lookupHandles(final Id id, int max, final Continuation<? super PastContentHandle[], Exception> command) {
+  public CompletableFuture<PastContentHandle[]> lookupHandles(final Id id, int max) {
     logger.debug("Retrieving handles of up to {} replicas of the object stored in Past with id {}", max, id);
 
     logger.atTrace().log(() -> "Fetching up to " + max + " handles of " + id.toStringFull());
 
-    getHandles(id, max, new StandardContinuation<NodeHandleSet, PastContentHandle[], Exception>(command) {
-      @Override
-      public void receiveResult(NodeHandleSet replicas) {
-        logger.trace("Receiving replicas {} for lookup Id {}", replicas, id);
+    return getHandles(id, max).thenCompose(replicas -> {
+      logger.trace("Receiving replicas {} for lookup Id {}", replicas, id);
 
-        MultiContinuation<PastContentHandle[]> multiContinuation = new MultiContinuation<PastContentHandle[]>(parent, replicas.size()) {
-          @Override
-          public PastContentHandle[] getResult() {
-            PastContentHandle[] handles = new PastContentHandle[result.length];
+      List<CompletableFuture<PastContentHandle>> handles = new ArrayList<CompletableFuture<PastContentHandle>>(replicas.size());
+      for (int i=0; i<replicas.size(); i++)
+        handles.add(lookupHandle(id, replicas.getHandle(i)));
+      return Futures.collect(handles);
+    }).thenApply(PastImpl::handlesOf);
+  }
 
-            for (int i=0; i<result.length; i++)
-              if (result[i] instanceof PastContentHandle)
-                handles[i] = (PastContentHandle) result[i];
+  /** The handles the replicas answered with, null for a replica without one or whose request failed. */
+  private static PastContentHandle[] handlesOf(List<Outcome<PastContentHandle>> outcomes) {
+    PastContentHandle[] handles = new PastContentHandle[outcomes.size()];
 
-            return handles;
-          }
-        };
+    for (int i=0; i<handles.length; i++)
+      if (outcomes.get(i) instanceof Outcome.Success<PastContentHandle> success)
+        handles[i] = success.value();
 
-        for (int i=0; i<replicas.size(); i++)
-          lookupHandle(id, replicas.getHandle(i), multiContinuation.getSubContinuation(i));
-      }
-    });
+    return handles;
   }
 
   /**
-   * Retrieves the handle for the given object stored on the requested
-   * node.  Asynchronously returns a PostContentHandle (or null) to
-   * the provided continuation.
+   * Retrieves the handle for the given object stored on the requested node.
    *
    * @param id the key to be queried
    * @param handle The node on which the handle is requested
-   * @param command Command to be performed when the result is received
+   * @return the handle, or null if the node has no such object
    */
   @Override
-  public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command) {
+  public CompletableFuture<PastContentHandle> lookupHandle(Id id, NodeHandle handle) {
     logger.debug("Retrieving handle for id {} from node {}", id, handle);
 
-    Futures.forward(this.<PastContentHandle>sendRequest(handle, new FetchHandleMessage(nextRequestId(), id, getLocalNodeHandle(), handle.getId())), command);
+    return sendRequest(handle, new FetchHandleMessage(nextRequestId(), id, getLocalNodeHandle(), handle.getId()));
   }
 
   /**
    * Retrieves the object associated with a given content handle.
-   * Asynchronously returns a PastContent object as the result to the
-   * provided Continuation, or a PastException.
    *
    * The client must authenticate the object. In case of failure, an
    * alternate replica can be obtained using a different handle obtained via
    * lookupHandles().
    *
    * @param handle the handle of the object to fetch
-   * @param command Command to be performed when the result is received
+   * @return the object, or failed with a PastException if it is a content-hash object that is not the one requested
    */
   @Override
-  public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
+  public CompletableFuture<PastContent> fetch(PastContentHandle handle) {
     logger.debug("Retrieving object associated with content handle {}", handle);
 
     logger.atTrace().log(() -> "Fetching object under id " + handle.getId().toStringFull() +  " on " + handle.getNodeHandle());
 
     NodeHandle nodeHandle = handle.getNodeHandle();
-    // the node that holds the object may be forging it
-    Continuation<PastContent, Exception> checked = new StandardContinuation<PastContent, PastContent, Exception>(command) {
-      @Override
-      public void receiveResult(PastContent content) {
-        if (isAuthentic(handle.getId(), content)) {
-          parent.receiveResult(content);
-        } else {
-          parent.receiveException(new PastException("Fetched object is not the one requested: " + handle.getId()));
-        }
-      }
-    };
-    Futures.forward(this.<PastContent>sendRequest(nodeHandle, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), nodeHandle.getId())), checked);
+    return this.<PastContent>sendRequest(nodeHandle, new FetchMessage(nextRequestId(), handle, getLocalNodeHandle(), nodeHandle.getId()))
+        .thenCompose(content -> {
+          // the node that holds the object may be forging it
+          if (isAuthentic(handle.getId(), content)) {
+            return CompletableFuture.completedFuture(content);
+          }
+          return CompletableFuture.failedFuture(new PastException("Fetched object is not the one requested: " + handle.getId()));
+        });
   }
 
   /**
@@ -941,19 +912,7 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
 
   @Override
   public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
-    lookupHandles(id, replicationFactor+1, new StandardContinuation<Object[], Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object[] result) {
-        Object results[] = result;
-        for (int i = 0; i< results.length; i++) {
-          if (results[i] instanceof PastContentHandle) {
-            parent.receiveResult(Boolean.TRUE);
-            return;
-          }
-        }
-        parent.receiveResult(Boolean.FALSE);
-      }
-    });
+    Futures.forward(lookupHandles(id, replicationFactor+1).thenApply(PastImpl::isAnyHandle), command);
   }
 
   @Override
@@ -961,21 +920,34 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
     Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(final Object storedObject) {
-        insert((PastContent)storedObject, new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
-          @Override
-          public void receiveResult(Boolean[] result) {
-            Boolean results[] = result;
-            for (int i = 0; i < results.length; i++) {
-              if (results[i].booleanValue()) {
-                parent.receiveResult(Boolean.TRUE);
-                return;
-              }
-            }
-            parent.receiveResult(Boolean.FALSE);
-          }
-        });
+        Futures.forward(insert((PastContent)storedObject).thenApply(PastImpl::isAnyStored), parent);
       }
     });
+  }
+
+  /** Whether a replica answered with a handle. */
+  private static Boolean isAnyHandle(PastContentHandle[] handles) {
+    for (PastContentHandle handle : handles) {
+      if (handle != null) {
+        return Boolean.TRUE;
+      }
+    }
+    return Boolean.FALSE;
+  }
+
+  /**
+   * Whether a replica stored a reinserted object.
+   *
+   * @param replicaSuccesses the result of an insert
+   * @return true if any replica stored it
+   */
+  protected static Boolean isAnyStored(Boolean[] replicaSuccesses) {
+    for (Boolean isStored : replicaSuccesses) {
+      if (isStored.booleanValue()) {
+        return Boolean.TRUE;
+      }
+    }
+    return Boolean.FALSE;
   }
 
   // ----- UTILITY METHODS -----

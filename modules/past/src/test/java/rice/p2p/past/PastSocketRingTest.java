@@ -11,7 +11,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.testing.SocketRing;
@@ -78,8 +77,7 @@ class PastSocketRingTest {
       }
 
       Past remotePast = pasts.get((i + 3) % NODES);
-      PastContentHandle[] handles = await(FutureContinuation.<PastContentHandle[]>call(
-          continuation -> remotePast.lookupHandles(content.getId(), REPLICAS + 1, continuation)));
+      PastContentHandle[] handles = await(remotePast.lookupHandles(content.getId(), REPLICAS + 1));
       assertEquals(REPLICAS + 1, Arrays.stream(handles).filter(handle -> handle != null).count(),
           "handles of content " + i + ": " + Arrays.toString(handles));
       PastContent fetched = await(remotePast.fetch(handles[0]));

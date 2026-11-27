@@ -39,12 +39,15 @@ package rice.p2p.aggregation;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Futures;
+import rice.Outcome;
 import rice.environment.Environment;
 import rice.p2p.aggregation.messaging.AggregationMessage;
 import rice.p2p.aggregation.messaging.AggregationTimeoutMessage;
@@ -66,6 +69,7 @@ import rice.p2p.past.PastContent;
 import rice.p2p.past.PastContentHandle;
 import rice.p2p.past.gc.ExpiringPast;
 import rice.p2p.past.gc.ExpiringPastContent;
+import rice.p2p.past.gc.RefreshOutcomes;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
 import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
 import rice.p2p.util.DebugCommandHandler;
@@ -298,7 +302,6 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     refresh(ids, expirations, command);
   }
 
-  @Override
   public void refresh(final Id[] ids, final long[] expirations, final Continuation<? super Object[], Exception> command) {
     refresher.refresh(ids, expirations, command);
   }
@@ -312,12 +315,10 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     tree.setHandle(handle, command);
   }
 
-  @Override
   public void insert(final PastContent content, final Continuation<? super Boolean[], Exception> command) {
     insert(content, INFINITY_EXPIRATION, command);
   }
 
-  @Override
   public void insert(final PastContent content, final long lifetime, final Continuation<? super Boolean[], Exception> command) {
 
     long theVersion;
@@ -365,7 +366,6 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     }
   }
 
-  @Override
   public void lookup(final Id id, boolean cache, final Continuation<? super PastContent, Exception> command) {
     retriever.lookup(id, cache, command);
   }
@@ -375,7 +375,6 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     retriever.lookup(id, version, command);
   }
 
-  @Override
   public void lookup(Id id, Continuation<? super PastContent, Exception> command) {
     lookup(id, true, command);
   }
@@ -385,17 +384,14 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
     ((VersioningPast)aggregateStore).lookupHandles(id, version, max, command);
   }
 
-  @Override
   public void lookupHandle(final Id id, final NodeHandle handle, final Continuation<? super PastContentHandle, Exception> command) {
     command.receiveException(new UnsupportedOperationException("LookupHandle() is not supported on Aggregation"));
   }
 
-  @Override
   public void lookupHandles(final Id id, final int max, final Continuation<? super PastContentHandle[], Exception> command) {
     retriever.lookupHandles(id, max, command);
   }
 
-  @Override
   public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command) {
 
     /* Note that we never give out any handles from the aggregate store, so this must
@@ -483,5 +479,47 @@ public class AggregationImpl implements ExpiringPast, VersioningPast, Aggregatio
   @Override
   public void setContentHandleDeserializer(PastContentHandleDeserializer deserializer) {
     objectStore.setContentHandleDeserializer(deserializer);
+  }
+
+  // ----- the future methods of Past and ExpiringPast, on top of the Continuation based ones above -----
+
+  @Override
+  public CompletableFuture<Boolean[]> insert(PastContent content) {
+    return Futures.<Boolean[]>call(continuation -> insert(content, continuation));
+  }
+
+  @Override
+  public CompletableFuture<Boolean[]> insert(PastContent content, long expiration) {
+    return Futures.<Boolean[]>call(continuation -> insert(content, expiration, continuation));
+  }
+
+  @Override
+  public CompletableFuture<List<Outcome<Boolean>>> refresh(Id[] ids, long[] expirations) {
+    return Futures.<Object[]>call(continuation -> refresh(ids, expirations, continuation)).thenApply(RefreshOutcomes::fromArray);
+  }
+
+  @Override
+  public CompletableFuture<PastContent> lookup(Id id) {
+    return Futures.<PastContent>call(continuation -> lookup(id, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContent> lookup(Id id, boolean cache) {
+    return Futures.<PastContent>call(continuation -> lookup(id, cache, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContentHandle[]> lookupHandles(Id id, int max) {
+    return Futures.<PastContentHandle[]>call(continuation -> lookupHandles(id, max, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContentHandle> lookupHandle(Id id, NodeHandle handle) {
+    return Futures.<PastContentHandle>call(continuation -> lookupHandle(id, handle, continuation));
+  }
+
+  @Override
+  public CompletableFuture<PastContent> fetch(PastContentHandle handle) {
+    return Futures.<PastContent>call(continuation -> fetch(handle, continuation));
   }
 }

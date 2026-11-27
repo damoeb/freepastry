@@ -39,8 +39,6 @@ package rice.p2p.past;
 
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
-import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.rawserialization.PastContentDeserializer;
@@ -52,28 +50,16 @@ import rice.p2p.past.rawserialization.PastContentHandleDeserializer;
  * instance stores tuples consisting of a key and an object of a
  * particular type, which must implement the interface PastContent.
  *
- * Past is event-driven, so all methods are asynchronous
- * and receive their results using the command pattern.
+ * Past is event-driven, so all methods are asynchronous: they return a future, completed on the selector
+ * thread. A failed future may wrap its exception in a CompletionException; unwrap it with Futures.unwrap.
  *
  * @version $Id: Past.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove
  * @author Ansley Post
  * @author Peter Druschel
  */
-@SuppressWarnings("unchecked")
 public interface Past {
 
-  /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
-   *
-   * @param obj the object to be inserted
-   * @param command Command to be performed when the result is received
-   */
-  public void insert(PastContent obj, Continuation<? super Boolean[], Exception> command);
 
   /**
    * Inserts an object with the given ID into this instance of Past.
@@ -83,36 +69,8 @@ public interface Past {
    *     replica stored the object or has not answered yet when enough others did), or failed with a
    *     PastException if too few replicas stored it
    */
-  public default CompletableFuture<Boolean[]> insert(PastContent obj) {
-    return Futures.call(continuation -> insert(obj, continuation));
-  }
+  public CompletableFuture<Boolean[]> insert(PastContent obj);
 
-  /**
-   * Retrieves the object stored in this instance of Past with the
-   * given ID.  Asynchronously returns a PastContent object as the
-   * result to the provided Continuation, or a PastException. This
-   * method is provided for convenience; its effect is identical to a
-   * lookupHandles() and a subsequent fetch() to the handle that is
-   * nearest in the network.
-   *
-   * The client must authenticate the object. In case of failure, an
-   * alternate replica of the object can be obtained via
-   * lookupHandles() and fetch().
-   *
-   * This method is not safe if the object is immutable and storage
-   * nodes are not trusted. In this case, clients should used the
-   * lookUpHandles method to obtains the handles of all primary
-   * replicas and determine which replica is fresh in an
-   * application-specific manner.
-   *
-   * By default, this method attempts to cache the result locally for
-   * future use.  Applications which do not desire this behavior should
-   * use the lookup(id, boolean, command) method.
-   *
-   * @param id the key to be queried
-   * @param command Command to be performed when the result is received
-   */
-  public void lookup(Id id, Continuation<? super PastContent, Exception> command);
 
   /**
    * Retrieves the object stored under the given ID, and caches it locally; see
@@ -121,36 +79,8 @@ public interface Past {
    * @param id the key to be queried
    * @return completed on the selector thread with the object, or null if no node has it
    */
-  public default CompletableFuture<PastContent> lookup(Id id) {
-    return Futures.call(continuation -> lookup(id, continuation));
-  }
+  public CompletableFuture<PastContent> lookup(Id id);
 
-  /**
-   * Retrieves the object stored in this instance of Past with the
-   * given ID.  Asynchronously returns a PastContent object as the
-   * result to the provided Continuation, or a PastException. This
-   * method is provided for convenience; its effect is identical to a
-   * lookupHandles() and a subsequent fetch() to the handle that is
-   * nearest in the network.
-   *
-   * The client must authenticate the object. In case of failure, an
-   * alternate replica of the object can be obtained via
-   * lookupHandles() and fetch().
-   *
-   * This method is not safe if the object is immutable and storage
-   * nodes are not trusted. In this case, clients should used the
-   * lookUpHandles method to obtains the handles of all primary
-   * replicas and determine which replica is fresh in an
-   * application-specific manner.
-   *
-   * This method also allows applications to specify if the result should
-   * be cached locally.
-   *
-   * @param id the key to be queried
-   * @param cache Whether or not the result should be cached
-   * @param command Command to be performed when the result is received
-   */
-  public void lookup(Id id, boolean cache, Continuation<? super PastContent, Exception> command);
 
   /**
    * Retrieves the object stored in this instance of Past with the given ID; the effect is that of a
@@ -160,28 +90,8 @@ public interface Past {
    * @param cache Whether or not the result should be cached
    * @return completed on the selector thread with the object, or null if no node has it
    */
-  public default CompletableFuture<PastContent> lookup(Id id, boolean cache) {
-    return Futures.call(continuation -> lookup(id, cache, continuation));
-  }
+  public CompletableFuture<PastContent> lookup(Id id, boolean cache);
 
-  /**
-   * Retrieves the handles of up to max replicas of the object stored
-   * in this instance of Past with the given ID.  Asynchronously
-   * returns an array of PastContentHandles as the result to the
-   * provided Continuation, or a PastException.
-   *
-   * Each replica handle is obtained from a different primary storage
-   * root for the the given key. If max exceeds the replication factor
-   * r of this Past instance, only r replicas are returned.
-   *
-   * This method will return a PastContentHandle[] array containing all
-   * of the handles.
-   *
-   * @param id the key to be queried
-   * @param max the maximal number of replicas requested
-   * @param command Command to be performed when the result is received
-   */
-  public void lookupHandles(Id id, int max, Continuation<? super PastContentHandle[], Exception> command);
 
   /**
    * Retrieves the handles of up to max replicas of the object stored under the given ID, each from a different
@@ -192,20 +102,8 @@ public interface Past {
    * @return completed on the selector thread with one entry per replica asked, null where it has no handle or
    *     did not answer
    */
-  public default CompletableFuture<PastContentHandle[]> lookupHandles(Id id, int max) {
-    return Futures.call(continuation -> lookupHandles(id, max, continuation));
-  }
+  public CompletableFuture<PastContentHandle[]> lookupHandles(Id id, int max);
 
-  /**
-   * Retrieves the handle for the given object stored on the requested
-   * node.  Asynchronously returns a PostContentHandle (or null) to
-   * the provided continuation.
-   *
-   * @param id the key to be queried
-   * @param handle The node on which the handle is requested
-   * @param command Command to be performed when the result is received
-   */
-  public void lookupHandle(Id id, NodeHandle handle, Continuation<? super PastContentHandle, Exception> command);
 
   /**
    * Retrieves the handle for the given object stored on the requested node.
@@ -214,23 +112,8 @@ public interface Past {
    * @param handle The node on which the handle is requested
    * @return completed on the selector thread with the handle, or null if the node has no such object
    */
-  public default CompletableFuture<PastContentHandle> lookupHandle(Id id, NodeHandle handle) {
-    return Futures.call(continuation -> lookupHandle(id, handle, continuation));
-  }
+  public CompletableFuture<PastContentHandle> lookupHandle(Id id, NodeHandle handle);
 
-  /**
-   * Retrieves the object associated with a given content handle.
-   * Asynchronously returns a PastContent object as the result to the
-   * provided Continuation, or a PastException.
-   *
-   * The client must authenticate the object. In case of failure, an
-   * alternate replica can be obtained using a different handle obtained via
-   * lookupHandles().
-   *
-   * @param handle the key to be queried
-   * @param command Command to be performed when the result is received
-   */
-  public void fetch(PastContentHandle handle, Continuation<? super PastContent, Exception> command);
 
   /**
    * Retrieves the object associated with a given content handle. The client must authenticate the object.
@@ -238,9 +121,7 @@ public interface Past {
    * @param handle the key to be queried
    * @return completed on the selector thread with the object, or failed with a PastException
    */
-  public default CompletableFuture<PastContent> fetch(PastContentHandle handle) {
-    return Futures.call(continuation -> fetch(handle, continuation));
-  }
+  public CompletableFuture<PastContent> fetch(PastContentHandle handle);
 
   /**
    * get the nodeHandle of the local Past node

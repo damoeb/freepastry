@@ -40,8 +40,6 @@ package rice.p2p.past.gc;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
-import rice.Futures;
 import rice.Outcome;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.Past;
@@ -62,7 +60,6 @@ import rice.p2p.past.PastContent;
  * @author Alan Mislove
  * @author Andreas Haeberlen
  */
-@SuppressWarnings("unchecked")
 public interface ExpiringPast extends Past {
 
   /**
@@ -73,44 +70,7 @@ public interface ExpiringPast extends Past {
    */
   public static final long INFINITY_EXPIRATION = Long.MAX_VALUE;
 
-  /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
-   *
-   * This method is equivalent to
-   *
-   * insert(obj, INFINITY_EXPIRATION, command)
-   *
-   * as it inserts the object with a timeout value of infinity.  This
-   * is done for simplicity, as well as backwards-compatibility for
-   * applications.
-   *
-   * @param obj the object to be inserted
-   * @param command Command to be performed when the result is received
-   */
-  @Override
-  public void insert(PastContent obj, Continuation<? super Boolean[], Exception> command);
 
-  /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
-   *
-   * The contract for this method is that the provided object will be
-   * stored until the provided expiration time.  Thus, if the application
-   * determines that it is still interested in this object, it must refresh
-   * the object via the refresh() method.
-   *
-   * @param obj the object to be inserted
-   * @param expiration the time until which the object must be stored
-   * @param command Command to be performed when the result is received
-   */
-  public void insert(PastContent obj, long expiration, Continuation<? super Boolean[], Exception> command);
 
   /**
    * Inserts an object that must be stored until the given expiration; the application refreshes it with
@@ -120,30 +80,17 @@ public interface ExpiringPast extends Past {
    * @param expiration the time until which the object must be stored
    * @return as {@link #insert(PastContent)}
    */
-  public default CompletableFuture<Boolean[]> insert(PastContent obj, long expiration) {
-    return Futures.call(continuation -> insert(obj, expiration, continuation));
-  }
+  public CompletableFuture<Boolean[]> insert(PastContent obj, long expiration);
 
   /**
-   * Updates the objects stored under the provided keys id to expire no
-   * earlier than the provided expiration time.  Asyncroniously returns
-   * the result to the caller via the provided continuation.
+   * Inserts an object that never expires: {@code insert(obj, INFINITY_EXPIRATION)}.
    *
-   * The result of this operation is an Object[], which is the same length
-   * as the input array of Ids.  Each element in the array is either
-   * Boolean(true), representing that the refresh succeeded for the
-   * cooresponding Id, or an Exception describing why the refresh failed.
-   * Specifically, the possible exceptions which can be returned are:
-   *
-   * ObjectNotFoundException - if no object was found under the given key
-   * RefreshFailedException - if the refresh operation failed for any other
-   *   reason (the getMessage() will describe the failure)
-   *
-   * @param ids The keys which to refresh
-   * @param expiration The times to extend the lifetimes to, one per key
-   * @param command Command to be performed when the result is received
+   * @param obj the object to be inserted
+   * @return as {@link #insert(PastContent, long)}
    */
-  public void refresh(Id[] ids, long[] expiration, Continuation<? super Object[], Exception> command);
+  @Override
+  public CompletableFuture<Boolean[]> insert(PastContent obj);
+
 
   /**
    * Updates the objects stored under the provided keys to expire no earlier than the provided expiration times.
@@ -154,8 +101,6 @@ public interface ExpiringPast extends Past {
    *     (true) if the refresh went through, a Failure with an ObjectNotFoundException if no replica had the
    *     object, or with a RefreshFailedException (or the implementation's exception) if it failed otherwise
    */
-  public default CompletableFuture<List<Outcome<Boolean>>> refresh(Id[] ids, long[] expirations) {
-    return Futures.<Object[]>call(continuation -> refresh(ids, expirations, continuation)).thenApply(RefreshOutcomes::fromArray);
-  }
+  public CompletableFuture<List<Outcome<Boolean>>> refresh(Id[] ids, long[] expirations);
 
 }

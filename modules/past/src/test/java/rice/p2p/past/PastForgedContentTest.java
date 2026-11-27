@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.FutureContinuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.PastryNode;
@@ -119,7 +118,7 @@ class PastForgedContentTest {
     List<PastImpl> pasts = boot(1);
     DistPastTestContent evil = forged("victim", "evil");
 
-    await(FutureContinuation.<Boolean>call(continuation -> pasts.get(0).cache(evil, continuation)));
+    await(pasts.get(0).cache(evil));
 
     assertNull(stored(pasts.get(0), evil.getId()), "forged content was cached");
   }

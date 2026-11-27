@@ -421,7 +421,7 @@ final class ObjectRefresher {
             RefreshRun.this.receiveResult(Boolean.valueOf(true));
             return;
           }
-          pastImpl.cache(content, new Continuation<Boolean, Exception>() {
+          Futures.forward(pastImpl.cache(content), new Continuation<Boolean, Exception>() {
             @Override
             public void receiveResult(Boolean result) {
               logger.atDebug().log(() -> "Refresh: Missing object "+id.toStringFull()+" added ok");

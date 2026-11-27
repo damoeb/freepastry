@@ -1,6 +1,7 @@
 package rice.p2p.past;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,13 +10,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.Continuation;
+import rice.Futures;
 import rice.environment.Environment;
+import rice.environment.EnvironmentDestroyedException;
 import rice.p2p.commonapi.rawserialization.RawMessage;
 import rice.p2p.past.testing.DistPastTestContent;
 import rice.pastry.PastryNode;
@@ -30,8 +32,9 @@ import rice.persistence.MemoryStorage;
 import rice.persistence.NoOpCache;
 
 /**
- * Where and how PastImpl delivers its results: on the selector thread, with the exception the operation failed
- * with, and under the simulator as well as over sockets.
+ * Where and how PastImpl completes its futures: on the selector thread, with the exception the operation failed
+ * with (wrapped in a CompletionException where a dependent stage failed), under the simulator as well as over
+ * sockets, and with an EnvironmentDestroyedException when the environment goes away first.
  */
 class PastDeliveryTest {
   private static final long SECONDS = 10;
@@ -49,19 +52,13 @@ class PastDeliveryTest {
   record Delivery(Object outcome, boolean isOnSelector) {
   }
 
-  private static Delivery deliver(Environment env, Consumer<Continuation<Object, Exception>> operation) throws Exception {
+  /** Starts the operation on the selector thread and returns its value, or its failure unwrapped. */
+  private static Delivery deliver(Environment env, Supplier<CompletableFuture<?>> operation) throws Exception {
     CompletableFuture<Delivery> delivery = new CompletableFuture<Delivery>();
-    env.getSelectorManager().invoke(() -> operation.accept(new Continuation<Object, Exception>() {
-      @Override
-      public void receiveResult(Object result) {
-        delivery.complete(new Delivery(result, env.getSelectorManager().isSelectorThread()));
-      }
-
-      @Override
-      public void receiveException(Exception exception) {
-        delivery.complete(new Delivery(exception, env.getSelectorManager().isSelectorThread()));
-      }
-    }));
+    env.getSelectorManager().invoke(() -> {
+      var _ = operation.get().whenComplete((result, failure) ->
+          delivery.complete(new Delivery(failure == null ? result : Futures.unwrap(failure), env.getSelectorManager().isSelectorThread())));
+    });
     return delivery.get(SECONDS, TimeUnit.SECONDS);
   }
 
@@ -87,9 +84,9 @@ class PastDeliveryTest {
     PastImpl local = pasts.get(0);
     DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "delivered");
 
-    Delivery inserted = deliver(ring.env, continuation -> local.insert(content, continuation));
-    Delivery found = deliver(ring.env, continuation -> pasts.get(1).lookup(content.getId(), false, continuation));
-    Delivery handles = deliver(ring.env, continuation -> local.lookupHandles(content.getId(), 2, continuation));
+    Delivery inserted = deliver(ring.env, () -> local.insert(content));
+    Delivery found = deliver(ring.env, () -> pasts.get(1).lookup(content.getId(), false));
+    Delivery handles = deliver(ring.env, () -> local.lookupHandles(content.getId(), 2));
 
     assertEquals(new Delivery(true, true), new Delivery(((Boolean[]) inserted.outcome())[0], inserted.isOnSelector()));
     assertEquals(new Delivery("delivered", true), new Delivery(((DistPastTestContent) found.outcome()).getContent(), found.isOnSelector()));
@@ -98,7 +95,7 @@ class PastDeliveryTest {
     assertEquals(2, handleArray.length);
     PastContentHandle handle = handleArray[0] != null ? handleArray[0] : handleArray[1];
     assertNotNull(handle, "no replica answered with a handle");
-    Delivery fetched = deliver(ring.env, continuation -> local.fetch(handle, continuation));
+    Delivery fetched = deliver(ring.env, () -> local.fetch(handle));
     assertEquals(new Delivery("delivered", true), new Delivery(((DistPastTestContent) fetched.outcome()).getContent(), fetched.isOnSelector()));
     ring.assertNoExceptions();
   }
@@ -110,7 +107,7 @@ class PastDeliveryTest {
     PastryIdFactory idFactory = new PastryIdFactory(ring.env);
     List<PastImpl> pasts = ring.boot(3, node -> newRefusingPast(node, idFactory));
 
-    Delivery refused = deliver(ring.env, continuation -> pasts.get(0).insert(new GCPastInsertTest.Content(idFactory.buildId("refused"), true), continuation));
+    Delivery refused = deliver(ring.env, () -> pasts.get(0).insert(new GCPastInsertTest.Content(idFactory.buildId("refused"), true)));
 
     assertTrue(refused.isOnSelector());
     assertSame(PastException.class, refused.outcome().getClass(), String.valueOf(refused.outcome()));
@@ -126,10 +123,28 @@ class PastDeliveryTest {
     rice.p2p.commonapi.NodeHandle gone = pasts.get(2).getLocalNodeHandle();
     ring.nodes.get(2).destroy();
 
-    Delivery lost = deliver(ring.env, continuation -> pasts.get(0).lookupHandle(idFactory.buildId("lost"), gone, continuation));
+    Delivery lost = deliver(ring.env, () -> pasts.get(0).lookupHandle(idFactory.buildId("lost"), gone));
 
     assertTrue(lost.isOnSelector());
     assertSame(PastException.class, lost.outcome().getClass(), String.valueOf(lost.outcome()));
+  }
+
+  @Test
+  @DisplayName("destroying the environment fails a request still waiting for its response with EnvironmentDestroyedException")
+  void destroyFailsAWaitingRequest() throws Exception {
+    ring = new SocketRing();
+    PastryIdFactory idFactory = new PastryIdFactory(ring.env);
+    List<PastImpl> pasts = ring.boot(3, node -> newPast(node, idFactory));
+    rice.p2p.commonapi.NodeHandle gone = pasts.get(2).getLocalNodeHandle();
+    ring.nodes.get(2).destroy();
+    CompletableFuture<CompletableFuture<PastContentHandle>> started = new CompletableFuture<CompletableFuture<PastContentHandle>>();
+    ring.env.getSelectorManager().invoke(() -> started.complete(pasts.get(0).lookupHandle(idFactory.buildId("waiting"), gone)));
+    CompletableFuture<PastContentHandle> request = started.get(SECONDS, TimeUnit.SECONDS);
+
+    ring.env.destroy();
+
+    Throwable failure = request.handle((_, thrown) -> thrown).get(SECONDS, TimeUnit.SECONDS);
+    assertInstanceOf(EnvironmentDestroyedException.class, Futures.unwrap(failure));
   }
 
   @Test
@@ -144,8 +159,8 @@ class PastDeliveryTest {
     awaitReady(node);
     DistPastTestContent content = new DistPastTestContent(directEnvironment, idFactory, "simulated");
 
-    Delivery inserted = deliver(directEnvironment, continuation -> past.insert(content, continuation));
-    Delivery found = deliver(directEnvironment, continuation -> past.lookup(content.getId(), false, continuation));
+    Delivery inserted = deliver(directEnvironment, () -> past.insert(content));
+    Delivery found = deliver(directEnvironment, () -> past.lookup(content.getId(), false));
 
     assertEquals(new Delivery(true, true), new Delivery(((Boolean[]) inserted.outcome())[0], inserted.isOnSelector()));
     assertEquals(new Delivery("simulated", true), new Delivery(((DistPastTestContent) found.outcome()).getContent(), found.isOnSelector()));

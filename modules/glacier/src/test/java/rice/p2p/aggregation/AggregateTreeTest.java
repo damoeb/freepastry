@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,21 +41,17 @@ class AggregateTreeTest {
     env.destroy();
   }
 
-  /** An aggregate store whose lookups complete on the calling thread. */
+  /** An aggregate store whose futures are complete when they are returned. */
   private Past synchronousStore(Map<Id, Aggregate> aggregates) {
     return (Past) Proxy.newProxyInstance(Past.class.getClassLoader(), new Class<?>[] {Past.class}, (proxy, method, args) -> {
       switch (method.getName()) {
         case "lookupHandles" -> {
           Id id = (Id) args[0];
           PastContentHandle handle = (PastContentHandle) Proxy.newProxyInstance(Past.class.getClassLoader(), new Class<?>[] {PastContentHandle.class}, (p, m, a) -> m.getName().equals("getId") ? id : null);
-          @SuppressWarnings("unchecked")
-          Continuation<PastContentHandle[], Exception> continuation = (Continuation<PastContentHandle[], Exception>) args[2];
-          continuation.receiveResult(new PastContentHandle[] {handle});
+          return CompletableFuture.completedFuture(new PastContentHandle[] {handle});
         }
         case "fetch" -> {
-          @SuppressWarnings("unchecked")
-          Continuation<Object, Exception> continuation = (Continuation<Object, Exception>) args[1];
-          continuation.receiveResult(aggregates.get(((PastContentHandle) args[0]).getId()));
+          return CompletableFuture.completedFuture(aggregates.get(((PastContentHandle) args[0]).getId()));
         }
         default -> { }
       }

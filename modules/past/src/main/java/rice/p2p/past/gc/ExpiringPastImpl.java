@@ -40,18 +40,20 @@ package rice.p2p.past.gc;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import rice.Continuation;
 import rice.Continuation.ListenerContinuation;
-import rice.Continuation.NamedContinuation;
 import rice.Continuation.StandardContinuation;
 import rice.Futures;
+import rice.Outcome;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdFactory;
 import rice.p2p.commonapi.IdRange;
@@ -154,73 +156,45 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   }
 
   /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
-   *
-   * This method is equivalent to
-   *
-   * insert(obj, INFINITY_EXPIRATION, command)
-   *
-   * as it inserts the object with a timeout value of infinity.  This
-   * is done for simplicity, as well as backwards-compatibility for
-   * applications.
+   * Inserts an object that never expires: {@code insert(obj, INFINITY_EXPIRATION)}, for simplicity and for the
+   * applications of plain Past.
    *
    * @param obj the object to be inserted
-   * @param command Command to be performed when the result is received
+   * @return one Boolean per replica, or failed with a PastException if too few replicas stored the object
    */
   @Override
-  public void insert(PastContent obj, Continuation<? super Boolean[], Exception> command) {
-    insert(obj, INFINITY_EXPIRATION, command);
+  public CompletableFuture<Boolean[]> insert(PastContent obj) {
+    return insert(obj, INFINITY_EXPIRATION);
   }
 
   /**
-   * Inserts an object with the given ID into this instance of Past.
-   * Asynchronously returns a PastException to command, if the
-   * operation was unsuccessful.  If the operation was successful, a
-   * Boolean[] is returned representing the responses from each of
-   * the replicas which inserted the object.
-   *
-   * The contract for this method is that the provided object will be
-   * stored until the provided expiration time.  Thus, if the application
-   * determines that it is still interested in this object, it must refresh
-   * the object via the refresh() method.
+   * Inserts an object with the given ID into this instance of Past, to be stored until the given expiration; the
+   * application refreshes it with {@link #refresh(Id[], long[])} while it is interested in it.
    *
    * @param obj the object to be inserted
    * @param expiration the time until which the object must be stored
-   * @param command Command to be performed when the result is received
+   * @return one Boolean per replica, or failed with a PastException if too few replicas stored the object
    */
   @Override
-  public void insert(final PastContent obj, final long expiration, Continuation<? super Boolean[], Exception> command) {
+  public CompletableFuture<Boolean[]> insert(final PastContent obj, final long expiration) {
     logger.atDebug().log(() -> "Inserting data of class " + obj.getClass().getName() + " under " + obj.getId().toStringFull());
 
-    doInsert(obj.getId(), () -> new GCInsertMessage(nextRequestId(), obj, expiration, getLocalNodeHandle(), obj.getId()), command,
-    socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
+    return doInsert(obj.getId(), () -> new GCInsertMessage(nextRequestId(), obj, expiration, getLocalNodeHandle(), obj.getId()),
+        socketStrategy.sendAlongSocket(SocketStrategy.TYPE_INSERT, obj));
   }
 
   /**
-    * Updates the objects stored under the provided keys id to expire no
-   * earlier than the provided expiration time.  Asyncroniously returns
-   * the result to the caller via the provided continuation.
-   *
-   * The result of this operation is an Object[], which is the same length
-   * as the input array of Ids.  Each element in the array is either
-   * Boolean(true), representing that the refresh succeeded for the
-   * cooresponding Id, or an Exception describing why the refresh failed.
-   * Specifically, the possible exceptions which can be returned are:
-   *
-   * ObjectNotFoundException - if no object was found under the given key
-   * RefreshFailedException - if the refresh operation failed for any other
-   *   reason (the getMessage() will describe the failure)
+   * Updates the objects stored under the provided keys to expire no earlier than the provided expiration times
+   * (each capped at the maximum lease from now).
    *
    * @param array The keys which to refresh
    * @param expirations The times to extend the lifetimes to, one per key
-   * @param command Command to be performed when the result is received
+   * @return per key, in order: Success(true) if at least one replica refreshed it (or already had a later
+   *     expiration), a Failure with an ObjectNotFoundException if replicas answered but none had it, or with a
+   *     RefreshFailedException if no replica answered
    */
   @Override
-  public void refresh(final Id[] array, long[] expirations, Continuation<? super Object[], Exception> command) {
+  public CompletableFuture<List<Outcome<Boolean>>> refresh(final Id[] array, long[] expirations) {
     logger.debug("Refreshing {} data elements", array.length);
 
     GCIdSet gcIdSet = new GCIdSet(realFactory);
@@ -228,35 +202,30 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       gcIdSet.addId(new ExpiringId(array[i], expirations[i]));
 
     final Map<Id, Boolean> outcome = new HashMap<>();
-    refresh(gcIdSet, outcome, new StandardContinuation<Object, Object[], Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        parent.receiveResult(collectRefreshResults(array, outcome));
-      }
-    });
+    return refresh(gcIdSet, outcome).thenApply(_ -> collectRefreshResults(array, outcome));
   }
 
   /**
-   * Turns the replicas' answers into the per-id result of {@link #refresh(Id[], long[], Continuation)}.
+   * Turns the replicas' answers into the per-id result of {@link #refresh(Id[], long[])}.
    *
    * @param ids The ids that were to be refreshed
    * @param outcome Per id: TRUE if at least one replica refreshed it (or already had a later expiration), FALSE if
    *   replicas answered but none had the object, absent if no replica answered at all
-   * @return Per id Boolean.TRUE, an ObjectNotFoundException or a RefreshFailedException
+   * @return Per id Success(true), or a Failure with an ObjectNotFoundException or a RefreshFailedException
    */
-  static Object[] collectRefreshResults(Id[] ids, Map<Id, Boolean> outcome) {
-    Object[] result = new Object[ids.length];
-    for (int i = 0; i < ids.length; i++) {
-      Boolean refreshed = outcome.get(ids[i]);
+  static List<Outcome<Boolean>> collectRefreshResults(Id[] ids, Map<Id, Boolean> outcome) {
+    List<Outcome<Boolean>> result = new ArrayList<Outcome<Boolean>>(ids.length);
+    for (Id id : ids) {
+      Boolean refreshed = outcome.get(id);
       if (refreshed == null) {
-        result[i] = new RefreshFailedException("No replica answered the refresh of " + ids[i]);
+        result.add(new Outcome.Failure<Boolean>(new RefreshFailedException("No replica answered the refresh of " + id)));
       } else if (refreshed.booleanValue()) {
-        result[i] = true;
+        result.add(new Outcome.Success<Boolean>(Boolean.TRUE));
       } else {
-        result[i] = new ObjectNotFoundException("No object found under " + ids[i]);
+        result.add(new Outcome.Failure<Boolean>(new ObjectNotFoundException("No object found under " + id)));
       }
     }
-    return result;
+    return Collections.unmodifiableList(result);
   }
 
   /**
@@ -264,109 +233,96 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
    * by external applications.
    *
    * @param ids The ids to refresh, each with the time to extend its lifetime until
-   * @param command The command to return the result to
+   * @return completed once every id was sent to its replicas
    */
-  protected void refresh(final GCIdSet ids, Continuation<? super Object, Exception> command) {
-    refresh(ids, new HashMap<>(), command);
+  protected CompletableFuture<Void> refresh(final GCIdSet ids) {
+    return refresh(ids, new HashMap<>());
   }
 
   /**
-   * Does the refreshing, recording in outcome the replicas' answers per id.
+   * Does the refreshing, recording in outcome the replicas' answers per id: asks the neighbors of the first id for
+   * their handles, groups the ids whose replicas are all among them by replica, sends each replica one refresh
+   * after the other (a failed one is skipped), and starts over with the ids that are left.
    *
    * @param ids The ids to refresh, each with the time to extend its lifetime until
    * @param outcome Collects per id whether a replica refreshed it, see {@link #collectRefreshResults(Id[], Map)}
-   * @param command The command to return the result to
+   * @return completed once every id was sent to its replicas, or failed if the neighbors could not be asked
    */
-  private void refresh(final GCIdSet ids, final Map<Id, Boolean> outcome, Continuation<? super Object, Exception> command) {
+  private CompletableFuture<Void> refresh(final GCIdSet ids, final Map<Id, Boolean> outcome) {
     final Logger logger = getEnvironment().getLogManager().getLogger(ExpiringPastImpl.class, getInstance());
     logger.atDebug().log(() -> "REFRESH: CALLED WITH "+ ids.numElements() + " ELEMENTS");
 
     if (ids.numElements() == 0) {
-      command.receiveResult(new Object[0]);
-      return;
+      return CompletableFuture.completedFuture(null);
     }
 
     final Id[] array = ids.asArray();
     ExpiringId start = (ExpiringId) array[0];
     logger.debug("REFRESH: GETTINGS ALL HANDLES OF {}", start);
 
+    return this.<NodeHandleSet>sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id()))
+        .thenCompose(nodeHandleSet -> {
+          final ReplicaMap map = new ReplicaMap();
 
-    Futures.forward(sendRequest(start.id(), new GCLookupHandlesMessage(nextRequestId(), start.id(), getLocalNodeHandle(), start.id())), new NamedContinuation<Object, Exception>("GCLookupHandles for " + start.id(), command) {
-      @Override
-      public void receiveResult(Object response) {
-        final NodeHandleSet nodeHandleSet = (NodeHandleSet) response;
-        final ReplicaMap map = new ReplicaMap();
+          logger.debug("REFRESH: GOT {} SET OF HANDLES!", nodeHandleSet);
 
-        logger.debug("REFRESH: GOT {} SET OF HANDLES!", nodeHandleSet);
+          return getEndpoint().process(() -> {
+            logger.debug("REFRESH: ON PROCESSING THREAD!");
 
-        Futures.forward(getEndpoint().process(() -> {
-          logger.debug("REFRESH: ON PROCESSING THREAD!");
+            for (int i=0; i<array.length; i++) {
+              ExpiringId id = (ExpiringId) array[i];
 
-          for (int i=0; i<array.length; i++) {
-            ExpiringId id = (ExpiringId) array[i];
+              NodeHandleSet replicas = getEndpoint().replicaSet(id.id(), getReplicationFactor()+1, nodeHandleSet.getHandle(nodeHandleSet.size()-1), nodeHandleSet);
 
-            NodeHandleSet replicas = getEndpoint().replicaSet(id.id(), getReplicationFactor()+1, nodeHandleSet.getHandle(nodeHandleSet.size()-1), nodeHandleSet);
+              // if we have all of the replicas, go ahead and refresh this item
+              if ((replicas != null) && ((replicas.size() == nodeHandleSet.size()) || (replicas.size() == getReplicationFactor()+1))) {
+                for (int j=0; j<replicas.size(); j++)
+                  map.addReplica(replicas.getHandle(j), id);
 
-            // if we have all of the replicas, go ahead and refresh this item
-            if ((replicas != null) && ((replicas.size() == nodeHandleSet.size()) || (replicas.size() == getReplicationFactor()+1))) {
-              for (int j=0; j<replicas.size(); j++)
-                map.addReplica(replicas.getHandle(j), id);
-
-              refreshed++;
-              ids.removeId(id);
+                refreshed++;
+                ids.removeId(id);
+              }
             }
+
+            logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
+
+            return map;
+          });
+        })
+        .thenCompose(map -> {
+          logger.debug("REFRESH: BACK ON NORMAL THREAD!");
+
+          CompletableFuture<Void> sent = CompletableFuture.completedFuture(null);
+          Iterator<NodeHandle> iterator = map.getReplicas();
+          while (iterator.hasNext()) {
+            NodeHandle next = iterator.next();
+            sent = sent.thenCompose(_ -> sendRefresh(next, map.getIds(next), outcome, logger));
           }
+          return sent;
+        })
+        .thenCompose(_ -> {
+          logger.debug("REFRESH: DONE SENDING REQUESTS, RECURSING");
 
-          logger.debug("REFRESH: DONE WITH PROCESSING THREAD - MOVING TO NORMAL THREAD!");
+          return refresh(ids, outcome);
+        });
+  }
 
+  /** Sends one replica the refresh of its ids and records its answers; a failed refresh is logged and skipped. */
+  private CompletableFuture<Void> sendRefresh(NodeHandle replica, GCIdSet sent, Map<Id, Boolean> outcome, Logger logger) {
+    // the replica answers one Boolean per key, in the order of the message's keys
+    final Id[] sentIds = sent.asArray();
+    logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", replica, sent);
+
+    return this.<Object>sendRequest(replica, new GCRefreshMessage(nextRequestId(), sent, getLocalNodeHandle(), replica.getId()))
+        .handle((answers, failure) -> {
+          if (failure != null) {
+            logger.atDebug().log(() -> "GOT EXCEPTION " + Futures.unwrap(failure) + " REFRESHING ITEMS - CONTINUING");
+          } else if (answers instanceof Boolean[] booleans && booleans.length == sentIds.length) {
+            for (int k = 0; k < sentIds.length; k++)
+              outcome.merge(((ExpiringId) sentIds[k]).id(), booleans[k], Boolean::logicalOr);
+          }
           return null;
-        }), new StandardContinuation<Object, Object, Exception>(parent) {
-          @Override
-          public void receiveResult(Object previousResult) {
-            logger.debug("REFRESH: BACK ON NORMAL THREAD!");
-
-            final Iterator<NodeHandle> iterator = map.getReplicas();
-
-            Continuation<Object, Exception> send = new StandardContinuation<Object, Object, Exception>(parent) {
-              @Override
-              public void receiveResult(Object result) {
-                if (iterator.hasNext()) {
-                  NodeHandle next = iterator.next();
-                  GCIdSet sent = map.getIds(next);
-                  // the replica answers one Boolean per key, in the order of the message's keys
-                  final Id[] sentIds = sent.asArray();
-                  logger.debug("REFRESH: SENDING REQUEST TO {} FOR IDSET {}", next, sent);
-
-
-                  Futures.forward(sendRequest(next, new GCRefreshMessage(nextRequestId(), sent, getLocalNodeHandle(), next.getId())), new NamedContinuation<Object, Exception>("GCRefresh to " + next, new StandardContinuation<Object, Object, Exception>(this) {
-                    @Override
-                    public void receiveResult(Object answers) {
-                      if (answers instanceof Boolean[] booleans && booleans.length == sentIds.length) {
-                        for (int k = 0; k < sentIds.length; k++)
-                          outcome.merge(((ExpiringId) sentIds[k]).id(), booleans[k], Boolean::logicalOr);
-                      }
-                      parent.receiveResult(null);
-                    }
-                  }));
-                } else {
-                  logger.debug("REFRESH: DONE SENDING REQUESTS, RECURSING");
-
-                  refresh(ids, outcome, parent);
-                }
-              }
-
-              @Override
-              public void receiveException(Exception e) {
-                logger.atDebug().log(() -> "GOT EXCEPTION " + e + " REFRESHING ITEMS - CONTINUING");
-                receiveResult(null);
-              }
-            };
-
-            send.receiveResult(null);
-          }
-        }, getEndpoint().getEnvironment());
-      }
-    });
+        });
   }
 
   /**
@@ -678,19 +634,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       Futures.forward(storage.getObject(gcId.id()), new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
         public void receiveResult(final Object storedObject) {
-          insert((PastContent)storedObject, gcId.expiration(), new StandardContinuation<Boolean[], Boolean, Exception>(parent) {
-            @Override
-            public void receiveResult(Boolean[] result) {
-              Boolean results[] = result;
-              for (int i = 0; i < results.length; i++) {
-                if (results[i].booleanValue()) {
-                  parent.receiveResult(Boolean.TRUE);
-                  return;
-                }
-              }
-              parent.receiveResult(Boolean.FALSE);
-            }
-          });
+          Futures.forward(insert((PastContent)storedObject, gcId.expiration()).thenApply(PastImpl::isAnyStored), parent);
         }
       });
     } else {
