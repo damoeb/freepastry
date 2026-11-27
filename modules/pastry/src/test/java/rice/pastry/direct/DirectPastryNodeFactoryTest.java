@@ -12,9 +12,11 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.PastryNodeListener;
+import rice.pastry.standard.RapidRerouter;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,5 +70,12 @@ class DirectPastryNodeFactoryTest {
     node.boot((Object)null);
 
     assertTrue(readyOnSelector.get(READY_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+  }
+
+  @Test
+  void theRouterOfANewNodeIsARapidRerouter() throws Exception {
+    PastryNode node = factory.newNode();
+
+    assertInstanceOf(RapidRerouter.class, node.getRouter());
   }
 }
