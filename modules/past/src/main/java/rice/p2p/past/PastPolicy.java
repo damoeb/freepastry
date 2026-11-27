@@ -37,6 +37,7 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
+import java.util.concurrent.CompletableFuture;
 
 import rice.Continuation;
 import rice.Continuation.StandardContinuation;
@@ -70,6 +71,19 @@ public interface PastPolicy {
    * @param command The command to call with the replica to store
    */
   public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Object, Exception> command);
+
+  /**
+   * Fetches the replica of a key, as {@link #fetch(Id, NodeHandle, Cache, Past, Continuation)}.
+   *
+   * @param id The id to fetch
+   * @param hint A hint as to where the key might be
+   * @param backup The backup cache, where the object *might* be located
+   * @param past The local past instance
+   * @return completed on the selector thread with the replica to store, or null if none was found
+   */
+  public default CompletableFuture<Object> fetch(Id id, NodeHandle hint, Cache backup, Past past) {
+    return Futures.call(continuation -> fetch(id, hint, backup, past, continuation));
+  }
 
   /**
    * This method is call before an insert() is processed on the local node.  This allows applications
