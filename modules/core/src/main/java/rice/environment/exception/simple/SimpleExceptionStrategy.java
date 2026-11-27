@@ -39,7 +39,9 @@ advised of the possibility of such damage.
  */
 package rice.environment.exception.simple;
 
+import java.io.IOException;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 import rice.environment.exception.ExceptionStrategy;
 import rice.environment.logging.LogManager;
 import rice.selector.SelectorLoop;
@@ -50,12 +52,26 @@ public class SimpleExceptionStrategy implements ExceptionStrategy {
     logger = manager.getLogger(SimpleExceptionStrategy.class, null);
   }
 
+  /**
+   * Destroys the environment of a selector thread for a {@linkplain SelectorLoop#isFatal fatal} error (out of memory,
+   * a stack overflow, a class that fails to link): the node is in an unknown state; also for an IOException, which
+   * only the selector itself throws (a select that fails), and which would fail again on every turn of the loop.
+   * Anything else costs only the task that threw, which the selector has dropped: it is logged, at most a few lines
+   * per minute ({@link rice.environment.logging.LogRateLimiter}), because a peer may be able to trigger it at will.
+   */
   @Override
   public void handleException(Object source, Throwable throwable) {
-    logger.warn("handleException({})", source, throwable);
     if (source instanceof SelectorLoop selectorLoop) {
-      selectorLoop.getEnvironment().destroy();
+      if (SelectorLoop.isFatal(throwable) || throwable instanceof IOException) {
+        logger.error("handleException({}), destroying the environment", source, throwable);
+        selectorLoop.getEnvironment().destroy();
+      } else {
+        selectorLoop.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "selector.task-threw")
+            .setCause(throwable).log("A task on the selector thread {} threw, dropped it", source);
+      }
+      return;
     }
+    logger.warn("handleException({})", source, throwable);
   }
 
 }

@@ -109,7 +109,8 @@ public abstract class DeterministicSelectorManager extends SelectorLoop {
 
       runInvocations();
       logger.debug("executing task {}", next);
-      if (next.execute(simTime)) {
+      // as in SelectorLoop.executeDueTasks(): a task that throws is dropped, in the record and in the replay alike
+      if (executeTaskContained(next)) {
         synchronized (this) {
           timerQueue.add(next); // reschedule a periodic task
         }

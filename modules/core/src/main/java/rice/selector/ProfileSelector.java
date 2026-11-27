@@ -263,8 +263,9 @@ public class ProfileSelector extends SelectorLoop {
         lastTaskHash = System.identityHashCode(run);
         run.run();
         lastTaskType = "Invocation Complete";
-      } catch (Exception e) {
-        logger.error("Invoking runnable caused exception {} - continuing", e, e);
+      } catch (Throwable throwable) {
+        if (isFatal(throwable)) throw (Error) throwable;
+        taskFailed(run, throwable);
       }
     }
 

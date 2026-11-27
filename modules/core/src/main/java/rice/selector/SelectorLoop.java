@@ -529,16 +529,19 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
       Runnable run = (Runnable) iterator.next();
       try {
         run.run();
-      } catch (RuntimeException e) {
-        // place the rest of the items back into invocations
-        synchronized(this) {
-          int ctr = 0;
-          while(iterator.hasNext()) {
-            pendingInvocations().add(ctr,iterator.next());
-            ctr++;
+      } catch (Throwable throwable) {
+        if (isFatal(throwable)) {
+          // place the rest of the items back into invocations
+          synchronized(this) {
+            int ctr = 0;
+            while(iterator.hasNext()) {
+              pendingInvocations().add(ctr,iterator.next());
+              ctr++;
+            }
           }
+          throw (Error) throwable;
         }
-        throw e;
+        taskFailed(run, throwable);
       }
     }
 
@@ -772,10 +775,10 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
       try {
         logger.trace("executing task {}", next);
 
-        if (executeTask(next)) {
+        if (executeTaskContained(next)) {
           addBack.add(next);
         }
-      } catch (RuntimeException e) {
+      } catch (Error fatal) {
         // add back the un-executed tasks before continuing
         while(iterator.hasNext()) {
           addBack.add(iterator.next());
@@ -788,7 +791,7 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
           }
         }
 
-        throw e;
+        throw fatal;
       }
     }
 
@@ -804,6 +807,49 @@ public class SelectorLoop extends Thread implements Timer, Destructible {
 
   protected boolean executeTask(TimerTask next) {
     return next.execute(timeSource);
+  }
+
+  /**
+   * Runs a due timer task; a task that throws is dropped (also a periodic one, as in a
+   * {@code ScheduledExecutorService}), see {@link #taskFailed}.
+   *
+   * @param next the task
+   * @return whether to schedule it again
+   * @throws Error if the task threw an error that {@link #isFatal} says must stop the node
+   */
+  protected boolean executeTaskContained(TimerTask next) {
+    try {
+      return executeTask(next);
+    } catch (Throwable throwable) {
+      if (isFatal(throwable)) throw (Error) throwable;
+      taskFailed(next, throwable);
+      return false;
+    }
+  }
+
+  /**
+   * Whether a throwable from a task on the selector thread must still stop the node: an error of the virtual machine
+   * (out of memory, a stack overflow, an internal error) or a class that fails to link. Anything else (a bug in a
+   * protocol, an input that a layer did not reject cleanly) costs only the task that threw.
+   *
+   * @param throwable what a task threw
+   * @return true if it must reach the selector loop, and the ExceptionStrategy, as before
+   */
+  public static boolean isFatal(Throwable throwable) {
+    return throwable instanceof VirtualMachineError || throwable instanceof LinkageError;
+  }
+
+  /**
+   * An invocation or a timer task threw something that is not {@link #isFatal fatal}: the task is dropped, the loop
+   * goes on with the next one, and the throwable goes to the environment's ExceptionStrategy (the default one logs it,
+   * rate limited, and keeps the environment).
+   *
+   * @param task the task that threw
+   * @param throwable what it threw
+   */
+  protected void taskFailed(Object task, Throwable throwable) {
+    logger.debug("Task {} threw, dropped it", task, throwable);
+    getEnvironment().getExceptionStrategy().handleException(this, throwable);
   }
 
   /**

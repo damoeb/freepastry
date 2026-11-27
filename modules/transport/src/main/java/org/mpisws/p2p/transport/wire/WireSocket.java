@@ -379,8 +379,8 @@ public class WireSocket extends SelectionKeyHandler implements P2PSocket<InetSoc
   /**
    * A receiver threw an unchecked exception while handling this socket. Every layer above parses what the peer sent
    * in its receiver, so a malformed stream that one of them does not reject cleanly must cost this socket, not the
-   * selector thread: an exception that escapes to the selector reaches the ExceptionStrategy, which by default
-   * destroys the environment and every node in it. The exception may also be a local bug, so it is logged with its
+   * selector thread: an exception that escapes to the selector reaches the ExceptionStrategy (which by default
+   * destroyed the environment and every node in it, and still does for an Error of the virtual machine). The exception may also be a local bug, so it is logged with its
    * stack trace and reported to the error handler. Errors (OutOfMemoryError and the like) still propagate.
    */
   private void receiverFailed(P2PSocketReceiver<InetSocketAddress> receiver, RuntimeException e) {
