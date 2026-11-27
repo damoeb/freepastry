@@ -124,6 +124,7 @@ Output: one JSON line per run under `target/adversary/` plus a Markdown table fo
 
 - Test scope, `modules/pastry/src/test/java/rice/pastry/adversary/` (`AdversarialRing`, `Behaviour` and implementations, `Oracle`, `Metrics`, `ChurnDriver`, `FailureDomains`, `AdversarialDirectPastryNodeFactory extends DirectPastryNodeFactory`), shipped in the pastry test-jar so Past and Scribe scenarios can reuse it from their own modules (`past` already has pastry in test scope, ARCHITECTURE.md "Modules").
 - Main-code seams only: the protected `leafSetForJoiner` hook in `ConsistentJoinProtocol`, and a `getRouter(...)` factory method instead of `new RapidRerouter(...)` at `TransportPastryNodeFactory.java:103` (needed later for the secure router, harmless now).
+- As built in P0 (deviations from the plan above): `FastPing` lives in a `NetworkSimulator` subclass (`AdversarialNetwork.proximity`) instead of a `getNodeHandleAdapter` override, because the factory's position table is package-private; the effect is the same (only measured proximity changes, not the delay). Domains are a `ProximityGenerator` (`FailureDomains`, Euclidean discs) rather than a sphere topology. `Selective` is a modifier that exempts join requests from `Drop`/`Misroute`. In the simulator a crash and a graceful leave differ only in whether the node's `destroy()` may still send: the simulator, as liveness provider, tells every node at once. Resource amplification counts messages per sender class through a `GenericSimulatorListener`; the byte estimate (opt-in) serialises each message and counts 0 for messages that cannot be serialised outside the socket stack. Delivery ratio and lookup success use the same request (the root answers directly), so they differ only when an answer misses the deadline or names a wrong root. The `getRouter` seam has no harness user yet.
 
 ### Determinism
 
@@ -133,9 +134,105 @@ The simulator is single-threaded (ARCHITECTURE.md "The simulator"); `NetworkSimu
 
 Matrix: `N ∈ {200, 1000}`, `f ∈ {0, 0.1, 0.2, 0.3}`, behaviours `{none, Drop, Drop+FastPing, Misroute+FastPing, LieInJoin, PoisonRows+FastPing}`, placement `UNIFORM`, churn `{none, median session 1 h}`, 5 seeds. Default build runs a smoke subset (`N = 200`, 2 cells, 1 seed, budget < 60 s); the full matrix runs under `-Pintegration` and writes the baseline table into the PR. **Unsure:** simulator speed for N = 1000 with ConsistentJoin; if a cell takes more than a few minutes, the matrix drops to N = 500.
 
+#### Recorded baseline (P0, 2026-11-27, `q4-p0-harness` on `70289b09`)
+
+Machine-readable copy: `modules/pastry/src/test/resources/rice/pastry/adversary/baseline-matrix.jsonl` (one line per cell, mean and 5th percentile over seeds of every summarised metric); the two smoke runs of the default build are in `baseline-smoke.jsonl` next to it. `AdversarialBaselineMatrixTest` (`-Pintegration`) regenerates both as `modules/pastry/target/adversary/baseline-matrix.{jsonl,md}` plus every run in `matrix-runs.jsonl`. Speed was no problem: a N = 1000 run takes about 2 s, the whole matrix (380 runs, 4 in parallel) 275 s; the smoke subset about 1.5 s.
+
+Timeline of a matrix run (simulated): N joins at 500 ms, 120 s stabilisation, 120 s pre-attack window, attack start (behaviours, churn and late joins start), 600 s attack window with 2 lookups/s from random honest nodes to random keys and `max(5, N/20)` late honest joiners, 30 s lookup deadline. Malicious nodes are part of the ring from the start and act honestly until the attack start; `FastPing` (factor 0.1 on the proximity every honest node measures to every colluder) holds from the start, as it models placement. 16 failure domains, each a disc of radius 5 % of the plane. Columns: delivery ratio and lookup success are means over seeds (p5 in brackets); malicious share and diversity are means over the honest nodes at the end of the attack window; "Recovery s" is n/a when the delivery ratio is still below 99 % of its pre-attack value in the last 30 s bucket (always so under a lasting attack, and under churn even with `f = 0`, where delivery is ~0.992); messages per lookup count all honest traffic, maintenance included.
+
+| Cell | Seeds | Delivery | Lookup success (p5) | Malicious share RT / LS | Diversity RT / LS | Joiners converged | Convergence s | Recovery s | Msgs per lookup | Amplification |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| N=200 f=0.0 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.0000 / 0.0000 | 0.7122 / 0.8736 | 1.0000 | 3.3 | 0.0 | 40.4 | -1.0 |
+| N=200 f=0.1 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.1072 / 0.0959 | 0.7125 / 0.8755 | 1.0000 | 3.3 | 0.0 | 36.6 | 9.8 |
+| N=200 f=0.1 Drop UNIFORM churn=none | 5 | 0.8285 | 0.8285 (0.7983) | 0.1089 / 0.0965 | 0.7132 / 0.8741 | 0.8800 | 2.9 | n/a | 36.3 | 10.2 |
+| N=200 f=0.1 Drop+FastPing UNIFORM churn=none | 5 | 0.5807 | 0.5807 (0.5208) | 0.3350 / 0.0987 | 0.7768 / 0.8743 | 0.4000 | 3.0 | n/a | 34.9 | 9.8 |
+| N=200 f=0.1 Misroute+FastPing UNIFORM churn=none | 5 | 0.6767 | 0.6767 (0.6292) | 0.3298 / 0.0959 | 0.7780 / 0.8755 | 1.0000 | 3.2 | n/a | 36.1 | 8.7 |
+| N=200 f=0.1 LieInJoin UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.1077 / 0.0959 | 0.7122 / 0.8755 | 1.0000 | 3.3 | 0.0 | 36.7 | 9.8 |
+| N=200 f=0.1 PoisonRows+FastPing UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.3836 / 0.0960 | 0.7876 / 0.8713 | 1.0000 | 3.3 | 0.0 | 36.3 | 8.3 |
+| N=200 f=0.2 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.2052 / 0.1920 | 0.7137 / 0.8718 | 1.0000 | 3.5 | 0.0 | 32.9 | 4.4 |
+| N=200 f=0.2 Drop UNIFORM churn=none | 5 | 0.6570 | 0.6570 (0.6242) | 0.2130 / 0.1969 | 0.7108 / 0.8732 | 0.4800 | 3.3 | n/a | 31.8 | 4.5 |
+| N=200 f=0.2 Drop+FastPing UNIFORM churn=none | 5 | 0.3807 | 0.3807 (0.3133) | 0.5025 / 0.2006 | 0.7853 / 0.8721 | 0.2000 | 3.6 | n/a | 30.7 | 4.3 |
+| N=200 f=0.2 Misroute+FastPing UNIFORM churn=none | 5 | 0.5858 | 0.5858 (0.5533) | 0.4911 / 0.1937 | 0.7860 / 0.8708 | 1.0000 | 3.3 | n/a | 32.1 | 4.0 |
+| N=200 f=0.2 LieInJoin UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.2063 / 0.1920 | 0.7132 / 0.8718 | 1.0000 | 3.6 | 0.0 | 33.0 | 4.4 |
+| N=200 f=0.2 PoisonRows+FastPing UNIFORM churn=none | 5 | 0.9997 | 0.9997 (0.9983) | 0.5865 / 0.1931 | 0.8043 / 0.8716 | 1.0000 | 3.4 | 24.0 | 32.4 | 3.8 |
+| N=200 f=0.3 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.2990 / 0.2876 | 0.7093 / 0.8699 | 1.0000 | 3.4 | 0.0 | 29.2 | 2.6 |
+| N=200 f=0.3 Drop UNIFORM churn=none | 5 | 0.5327 | 0.5327 (0.4883) | 0.3063 / 0.2947 | 0.7130 / 0.8733 | 0.4800 | 2.9 | n/a | 28.1 | 2.6 |
+| N=200 f=0.3 Drop+FastPing UNIFORM churn=none | 5 | 0.2870 | 0.2870 (0.2083) | 0.5895 / 0.3046 | 0.7772 / 0.8716 | 0.0400 | 3.5 | n/a | 26.7 | 2.5 |
+| N=200 f=0.3 Misroute+FastPing UNIFORM churn=none | 5 | 0.5767 | 0.5767 (0.5583) | 0.5817 / 0.2909 | 0.7756 / 0.8705 | 1.0000 | 3.4 | n/a | 28.4 | 2.4 |
+| N=200 f=0.3 LieInJoin UNIFORM churn=none | 5 | 0.9998 | 0.9998 (0.9992) | 0.3005 / 0.2876 | 0.7093 / 0.8699 | 1.0000 | 3.4 | 18.0 | 29.3 | 2.6 |
+| N=200 f=0.3 PoisonRows+FastPing UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.6831 / 0.2912 | 0.8065 / 0.8725 | 1.0000 | 3.3 | 0.0 | 28.7 | 2.3 |
+| N=200 f=0.0 none UNIFORM churn=median 60 min exponential | 5 | 0.9920 | 0.9920 (0.9908) | 0.0000 / 0.0000 | 0.7107 / 0.8708 | 1.0000 | 3.4 | n/a | 42.7 | -1.0 |
+| N=200 f=0.1 none UNIFORM churn=median 60 min exponential | 5 | 0.9932 | 0.9930 (0.9900) | 0.1047 / 0.0962 | 0.7093 / 0.8727 | 1.0000 | 3.6 | n/a | 38.3 | 9.6 |
+| N=200 f=0.1 Drop UNIFORM churn=median 60 min exponential | 5 | 0.8205 | 0.8205 (0.7850) | 0.1017 / 0.0909 | 0.7037 / 0.8700 | 0.8000 | 12.8 | n/a | 37.8 | 10.7 |
+| N=200 f=0.1 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.5685 | 0.5685 (0.5033) | 0.3313 / 0.1007 | 0.7752 / 0.8762 | 0.4600 | 50.0 | n/a | 34.8 | 9.4 |
+| N=200 f=0.1 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.6677 | 0.6675 (0.6208) | 0.3236 / 0.0963 | 0.7723 / 0.8727 | 1.0000 | 3.6 | n/a | 37.9 | 8.5 |
+| N=200 f=0.1 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9932 | 0.9930 (0.9900) | 0.1082 / 0.0962 | 0.7091 / 0.8727 | 1.0000 | 3.6 | n/a | 38.6 | 9.6 |
+| N=200 f=0.1 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9935 | 0.9935 (0.9917) | 0.3849 / 0.0928 | 0.7941 / 0.8722 | 1.0000 | 3.7 | n/a | 38.3 | 8.4 |
+| N=200 f=0.2 none UNIFORM churn=median 60 min exponential | 5 | 0.9930 | 0.9930 (0.9875) | 0.2033 / 0.1881 | 0.7064 / 0.8750 | 1.0000 | 3.4 | n/a | 34.5 | 4.5 |
+| N=200 f=0.2 Drop UNIFORM churn=median 60 min exponential | 5 | 0.6470 | 0.6470 (0.6183) | 0.2141 / 0.2052 | 0.7114 / 0.8716 | 0.7000 | 7.1 | n/a | 33.0 | 4.4 |
+| N=200 f=0.2 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.3672 | 0.3672 (0.2717) | 0.5069 / 0.2032 | 0.7896 / 0.8750 | 0.3000 | 82.6 | n/a | 30.6 | 4.3 |
+| N=200 f=0.2 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.5705 | 0.5705 (0.5225) | 0.4935 / 0.1927 | 0.7849 / 0.8754 | 1.0000 | 3.6 | n/a | 33.4 | 4.0 |
+| N=200 f=0.2 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9930 | 0.9930 (0.9875) | 0.2080 / 0.1881 | 0.7057 / 0.8750 | 1.0000 | 3.4 | n/a | 34.8 | 4.6 |
+| N=200 f=0.2 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9948 | 0.9948 (0.9933) | 0.5671 / 0.1921 | 0.8083 / 0.8709 | 1.0000 | 3.1 | n/a | 34.7 | 3.8 |
+| N=200 f=0.3 none UNIFORM churn=median 60 min exponential | 5 | 0.9923 | 0.9923 (0.9908) | 0.3020 / 0.2945 | 0.7158 / 0.8703 | 1.0000 | 3.2 | 468.0 | 31.1 | 2.6 |
+| N=200 f=0.3 Drop UNIFORM churn=median 60 min exponential | 5 | 0.5227 | 0.5227 (0.4700) | 0.3089 / 0.2979 | 0.7143 / 0.8702 | 0.5400 | 9.3 | n/a | 28.8 | 2.7 |
+| N=200 f=0.3 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.2958 | 0.2958 (0.2525) | 0.6021 / 0.3083 | 0.7790 / 0.8723 | 0.1800 | 18.4 | n/a | 26.6 | 2.5 |
+| N=200 f=0.3 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.5837 | 0.5837 (0.5617) | 0.5875 / 0.2979 | 0.7777 / 0.8725 | 1.0000 | 3.4 | n/a | 30.2 | 2.4 |
+| N=200 f=0.3 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9923 | 0.9923 (0.9908) | 0.3075 / 0.2945 | 0.7150 / 0.8703 | 1.0000 | 3.2 | 468.0 | 31.5 | 2.6 |
+| N=200 f=0.3 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9937 | 0.9937 (0.9850) | 0.6751 / 0.2848 | 0.8063 / 0.8728 | 1.0000 | 4.0 | n/a | 30.7 | 2.3 |
+| N=1000 f=0.0 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.0000 / 0.0000 | 0.6709 / 0.8662 | 1.0000 | 3.1 | 0.0 | 195.8 | -1.0 |
+| N=1000 f=0.1 none UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.1001 / 0.0949 | 0.6702 / 0.8672 | 1.0000 | 3.2 | 0.0 | 177.3 | 9.6 |
+| N=1000 f=0.1 Drop UNIFORM churn=none | 5 | 0.7817 | 0.7817 (0.7533) | 0.1001 / 0.0958 | 0.6702 / 0.8664 | 0.8280 | 10.0 | n/a | 175.5 | 9.6 |
+| N=1000 f=0.1 Drop+FastPing UNIFORM churn=none | 5 | 0.4633 | 0.4633 (0.4392) | 0.3892 / 0.0987 | 0.7713 / 0.8664 | 0.1760 | 3.2 | n/a | 168.1 | 9.1 |
+| N=1000 f=0.1 Misroute+FastPing UNIFORM churn=none | 5 | 0.5470 | 0.5470 (0.5225) | 0.3833 / 0.0949 | 0.7681 / 0.8677 | 1.0000 | 3.3 | n/a | 176.2 | 8.9 |
+| N=1000 f=0.1 LieInJoin UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.1013 / 0.0949 | 0.6701 / 0.8672 | 1.0000 | 3.2 | 0.0 | 177.6 | 9.6 |
+| N=1000 f=0.1 PoisonRows+FastPing UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.4960 / 0.0950 | 0.8192 / 0.8651 | 1.0000 | 3.2 | 0.0 | 176.2 | 8.3 |
+| N=1000 f=0.2 none UNIFORM churn=none | 5 | 0.9997 | 0.9997 (0.9992) | 0.1998 / 0.1892 | 0.6702 / 0.8667 | 1.0000 | 3.2 | 96.0 | 158.8 | 4.3 |
+| N=1000 f=0.2 Drop UNIFORM churn=none | 5 | 0.6025 | 0.6025 (0.5683) | 0.2016 / 0.1924 | 0.6720 / 0.8661 | 0.6480 | 8.6 | n/a | 155.2 | 4.3 |
+| N=1000 f=0.2 Drop+FastPing UNIFORM churn=none | 5 | 0.2680 | 0.2680 (0.2575) | 0.5485 / 0.1977 | 0.7689 / 0.8641 | 0.1280 | 8.1 | n/a | 149.0 | 4.1 |
+| N=1000 f=0.2 Misroute+FastPing UNIFORM churn=none | 5 | 0.4685 | 0.4685 (0.4442) | 0.5362 / 0.1894 | 0.7671 / 0.8653 | 1.0000 | 3.2 | n/a | 157.3 | 4.1 |
+| N=1000 f=0.2 LieInJoin UNIFORM churn=none | 5 | 0.9997 | 0.9997 (0.9992) | 0.2013 / 0.1892 | 0.6701 / 0.8667 | 1.0000 | 3.2 | 96.0 | 159.3 | 4.3 |
+| N=1000 f=0.2 PoisonRows+FastPing UNIFORM churn=none | 5 | 1.0000 | 1.0000 (1.0000) | 0.6401 / 0.1895 | 0.8217 / 0.8651 | 1.0000 | 3.2 | 0.0 | 157.6 | 3.8 |
+| N=1000 f=0.3 none UNIFORM churn=none | 5 | 0.9998 | 0.9998 (0.9992) | 0.2893 / 0.2852 | 0.6731 / 0.8680 | 1.0000 | 3.2 | 6.0 | 140.4 | 2.5 |
+| N=1000 f=0.3 Drop UNIFORM churn=none | 5 | 0.4313 | 0.4313 (0.3958) | 0.2942 / 0.2918 | 0.6721 / 0.8660 | 0.5040 | 11.5 | n/a | 135.4 | 2.5 |
+| N=1000 f=0.3 Drop+FastPing UNIFORM churn=none | 5 | 0.1737 | 0.1737 (0.1600) | 0.6468 / 0.2987 | 0.7640 / 0.8648 | 0.0560 | 2.8 | n/a | 129.9 | 2.4 |
+| N=1000 f=0.3 Misroute+FastPing UNIFORM churn=none | 5 | 0.4755 | 0.4755 (0.4475) | 0.6352 / 0.2852 | 0.7629 / 0.8659 | 1.0000 | 3.3 | n/a | 138.8 | 2.4 |
+| N=1000 f=0.3 LieInJoin UNIFORM churn=none | 5 | 0.9998 | 0.9998 (0.9992) | 0.2904 / 0.2852 | 0.6733 / 0.8680 | 1.0000 | 3.3 | 6.0 | 141.0 | 2.5 |
+| N=1000 f=0.3 PoisonRows+FastPing UNIFORM churn=none | 5 | 0.9998 | 0.9998 (0.9992) | 0.7303 / 0.2852 | 0.8218 / 0.8658 | 1.0000 | 3.3 | 18.0 | 139.2 | 2.3 |
+| N=1000 f=0.0 none UNIFORM churn=median 60 min exponential | 5 | 0.9922 | 0.9922 (0.9892) | 0.0000 / 0.0000 | 0.6736 / 0.8646 | 1.0000 | 3.4 | n/a | 205.7 | -1.0 |
+| N=1000 f=0.1 none UNIFORM churn=median 60 min exponential | 5 | 0.9910 | 0.9910 (0.9867) | 0.1015 / 0.0964 | 0.6793 / 0.8677 | 1.0000 | 3.3 | n/a | 186.0 | 9.4 |
+| N=1000 f=0.1 Drop UNIFORM churn=median 60 min exponential | 5 | 0.7698 | 0.7697 (0.7217) | 0.1014 / 0.0947 | 0.6783 / 0.8659 | 0.8320 | 16.2 | n/a | 181.4 | 9.8 |
+| N=1000 f=0.1 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.4510 | 0.4510 (0.4142) | 0.3786 / 0.1010 | 0.7727 / 0.8674 | 0.3040 | 19.4 | n/a | 167.3 | 9.0 |
+| N=1000 f=0.1 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.5312 | 0.5312 (0.4900) | 0.3695 / 0.0961 | 0.7673 / 0.8688 | 1.0000 | 3.3 | n/a | 186.9 | 8.9 |
+| N=1000 f=0.1 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9908 | 0.9908 (0.9867) | 0.1058 / 0.0964 | 0.6793 / 0.8677 | 1.0000 | 3.3 | n/a | 187.2 | 9.4 |
+| N=1000 f=0.1 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9928 | 0.9928 (0.9867) | 0.4803 / 0.0933 | 0.8171 / 0.8675 | 1.0000 | 3.2 | n/a | 184.3 | 8.4 |
+| N=1000 f=0.2 none UNIFORM churn=median 60 min exponential | 5 | 0.9935 | 0.9933 (0.9908) | 0.1996 / 0.1910 | 0.6787 / 0.8659 | 1.0000 | 3.4 | n/a | 167.5 | 4.3 |
+| N=1000 f=0.2 Drop UNIFORM churn=median 60 min exponential | 5 | 0.5958 | 0.5958 (0.5833) | 0.1979 / 0.1912 | 0.6823 / 0.8667 | 0.7120 | 24.6 | n/a | 160.8 | 4.3 |
+| N=1000 f=0.2 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.2695 | 0.2695 (0.2583) | 0.5333 / 0.1999 | 0.7739 / 0.8636 | 0.2120 | 70.0 | n/a | 146.9 | 4.0 |
+| N=1000 f=0.2 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.4672 | 0.4672 (0.4433) | 0.5219 / 0.1907 | 0.7689 / 0.8626 | 1.0000 | 3.5 | n/a | 166.5 | 4.0 |
+| N=1000 f=0.2 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9933 | 0.9932 (0.9900) | 0.2031 / 0.1910 | 0.6788 / 0.8660 | 1.0000 | 3.4 | n/a | 169.1 | 4.3 |
+| N=1000 f=0.2 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9927 | 0.9927 (0.9892) | 0.6318 / 0.1880 | 0.8197 / 0.8648 | 1.0000 | 3.5 | n/a | 166.2 | 3.8 |
+| N=1000 f=0.3 none UNIFORM churn=median 60 min exponential | 5 | 0.9907 | 0.9905 (0.9858) | 0.2921 / 0.2871 | 0.6792 / 0.8661 | 0.9960 | 3.4 | n/a | 147.1 | 2.5 |
+| N=1000 f=0.3 Drop UNIFORM churn=median 60 min exponential | 5 | 0.4347 | 0.4345 (0.3892) | 0.2930 / 0.2909 | 0.6820 / 0.8660 | 0.5760 | 10.1 | n/a | 136.6 | 2.5 |
+| N=1000 f=0.3 Drop+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.1778 | 0.1778 (0.1658) | 0.6390 / 0.3036 | 0.7676 / 0.8663 | 0.0800 | 69.1 | n/a | 125.7 | 2.3 |
+| N=1000 f=0.3 Misroute+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.4682 | 0.4680 (0.4317) | 0.6226 / 0.2882 | 0.7644 / 0.8668 | 1.0000 | 3.6 | n/a | 145.8 | 2.4 |
+| N=1000 f=0.3 LieInJoin UNIFORM churn=median 60 min exponential | 5 | 0.9907 | 0.9905 (0.9858) | 0.2961 / 0.2871 | 0.6792 / 0.8661 | 0.9960 | 3.4 | n/a | 148.9 | 2.5 |
+| N=1000 f=0.3 PoisonRows+FastPing UNIFORM churn=median 60 min exponential | 5 | 0.9933 | 0.9933 (0.9892) | 0.7312 / 0.2926 | 0.8263 / 0.8646 | 1.0000 | 3.3 | n/a | 144.0 | 2.2 |
+
+Reading of the baseline:
+
+- **The harness proves itself:** `f = 0` without churn gives delivery ratio and lookup success 1.0, every late joiner converges (about 3 s), recovery 0.
+- **Drop is as bad as the analysis says, and PNS makes it worse:** at `f = 0.2` lookup success is 0.66 (N = 200) and 0.60 (N = 1000); with `FastPing` the colluders take 50–55 % of the routing-table slots of honest nodes (from 20 %) and lookup success falls to 0.38 and 0.27. At `f = 0.3`, `Drop+FastPing` leaves 0.17 at N = 1000. Dropping colluders also stop joins: only 13–65 % of the late honest joiners converge.
+- **Misroute+FastPing** takes lookups to a colluder that claims to be the root: success 0.47–0.59, independent of `f` above 0.1 because one colluder close to the key suffices.
+- **PoisonRows+FastPing** raises the malicious routing-table share to 0.64–0.73 (`f = 0.2–0.3`) without hurting delivery, since these colluders forward honestly: it is the slot-capture step that a dropping or misrouting colluder exploits.
+- **LieInJoin** alone has no measurable effect with uniform ids: the joiner asks the (honest-acting) colluders of the lying leaf set for their own leaf sets and finds the honest neighbours within the usual ~3 s.
+- **Diversity:** routing tables reach a normalised domain entropy of 0.67–0.71 and leaf sets 0.87 with honest nodes only; PNS concentrates the routing table in near domains. `FastPing` colluders, spread over all domains, raise the routing-table entropy (0.77–0.83), so entropy alone does not reveal slot capture.
+
 ### Test strategy
 
 The harness proves itself: with `f = 0`, delivery ratio and lookup success are 1.0 and convergence completes; with `Drop` at `f = 0.2`, lookup success is below a threshold that the analysis predicts (sanity, not a target). The baseline cells become the red tests of later phases, kept as `@Tag("adversary")` tests with thresholds that fail today.
+
+As built in P0 (the build must stay green while the attacks still succeed): the smoke tests (`AdversarialRingSmokeTest`, default build) assert the honest cell exactly, assert that the `Drop` cell's attack succeeds today ("gap" assertion: lookup success < 0.9), and assert for both that no metric is worse than the recorded run by more than 0.05. The matrix test (`AdversarialBaselineMatrixTest`, `@Tag("integration")`) asserts lookup success ≥ 0.99 for the honest cells without churn and no regression of any cell's mean delivery ratio and lookup success against `baseline-matrix.jsonl` (slack 0.05). A phase that improves a cell re-records the baseline and turns the gap assertion into its target.
 
 ### Cost
 
