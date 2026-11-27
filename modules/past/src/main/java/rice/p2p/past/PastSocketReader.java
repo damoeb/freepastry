@@ -10,9 +10,13 @@ import rice.p2p.util.MathUtils;
 
 /**
  * Reassembles the size-prefixed messages that Past sends over an {@link AppSocket}: a 4-byte size, then that many bytes.
- * Remembers, per socket, how far the current message has arrived.
+ * Remembers, per socket, how far the current message has arrived. The buffer grows with the bytes that arrive (doubling
+ * from {@link #INITIAL_CHUNK_BYTES}), not with the announced size, so sockets that announce big messages and send
+ * nothing hold little memory (design 3e).
  */
 final class PastSocketReader {
+  /** the buffer of a message before any of it has arrived */
+  static final int INITIAL_CHUNK_BYTES = 8 * 1024;
 
   /** The largest message accepted, in bytes. */
   final int maxMessageBytes;
@@ -20,6 +24,9 @@ final class PastSocketReader {
   /** Per socket: the buffer for the size header, then the buffer for the message once the size is known. */
   private static final class Pending {
     final ByteBuffer header = ByteBuffer.allocate(Integer.BYTES);
+    /** the announced size of the message */
+    int size;
+    /** the array behind {@link #body} */
     byte @Nullable [] bytes;
     @Nullable ByteBuffer body;
   }
@@ -50,22 +57,33 @@ final class PastSocketReader {
       if (size < 0 || size > maxMessageBytes) {
         throw new IOException("Past message of " + size + " bytes announced, at most " + maxMessageBytes + " are accepted");
       }
-      pending.bytes = new byte[size];
+      pending.size = size;
+      pending.bytes = new byte[Math.min(size, INITIAL_CHUNK_BYTES)];
       pending.body = ByteBuffer.wrap(pending.bytes);
     }
 
     ByteBuffer body = pending.body;
-    byte[] bytes = pending.bytes;
-    if (socket.read(body) == -1) {
-      throw new EOFException();
+    while (true) {
+      if (socket.read(body) == -1) {
+        throw new EOFException();
+      }
+      if (body.hasRemaining()) {
+        return null; // more is to come
+      }
+      if (body.capacity() == pending.size) {
+        // make sure to clear things up so we can keep receiving
+        pendingSocketTransactions.remove(socket);
+        return pending.bytes;
+      }
+      // the buffer is full and more is announced: grow it
+      byte[] biggerBytes = new byte[(int) Math.min((long) pending.size, 2L * body.capacity())];
+      ByteBuffer bigger = ByteBuffer.wrap(biggerBytes);
+      body.flip();
+      bigger.put(body);
+      body = bigger;
+      pending.bytes = biggerBytes;
+      pending.body = bigger;
     }
-
-    if (body.remaining() == 0) {
-      // make sure to clear things up so we can keep receiving
-      pendingSocketTransactions.remove(socket);
-      return bytes;
-    }
-    return null;
   }
 
   /** The bytes the buffers of the messages in progress hold, over all sockets. */
