@@ -15,12 +15,14 @@ import org.mpisws.p2p.transport.commonapi.MessageOptionsDecorator;
 import org.mpisws.p2p.transport.identity.BindStrategy;
 import org.mpisws.p2p.transport.multiaddress.MultiInetSocketAddress;
 import org.mpisws.p2p.transport.sourceroute.SourceRoute;
+import org.mpisws.p2p.transport.sourceroute.SourceRouteForwardStrategy;
 import org.mpisws.p2p.transport.sourceroute.factory.MultiAddressSourceRouteFactory;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.ssl.SSLTransportLayer;
 import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import rice.environment.Environment;
+import rice.environment.params.Parameters;
 import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.standard.CertifiedNodeIdFactory;
@@ -116,6 +118,23 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  /** parameter: whether a certified node relays source routes for others; default false */
+  public static final String RELAY_SOURCE_ROUTES_PARAM = "pastry_socket_relay_source_routes_certified";
+
+  /**
+   * Relays no source route for others unless {@link #RELAY_SOURCE_ROUTES_PARAM} is true: a relay forwards bytes from
+   * anyone (the TLS handshake runs end to end, through the relay) to any address that passes the address policy, also
+   * to hosts that are no Pastry node at all. The node's own source routes through other relays are not affected.
+   */
+  @Override
+  protected SourceRouteForwardStrategy<MultiInetSocketAddress> getSourceRouteForwardStrategy(
+      PastryNode pn, MultiAddressSourceRouteFactory esrFactory) {
+    SourceRouteForwardStrategy<MultiInetSocketAddress> relaying = super.getSourceRouteForwardStrategy(pn, esrFactory);
+    Parameters parameters = pn.getEnvironment().getParameters();
+    boolean isRelaying = parameters.contains(RELAY_SOURCE_ROUTES_PARAM) && parameters.getBoolean(RELAY_SOURCE_ROUTES_PARAM);
+    return isRelaying ? relaying : (nextHop, sourceRoute, socket, options) -> false;
   }
 
   /** @return the test a peer certificate's common name must pass: it must be a node id */

@@ -122,6 +122,10 @@ pastry_socket_liveness_max_trackers = 10000
 # handles remembered as dead forever.
 pastry_socket_identity_max_bindings = 10000
 pastry_socket_increment_port_after_construction = true
+# whether a node of CertifiedSocketPastryNodeFactory relays source routes for others (a plain node always does, so that
+# nodes behind a NAT can be reached through it): a relay forwards bytes from anyone to any address that passes the
+# address policy, also to hosts that are no Pastry node at all
+pastry_socket_relay_source_routes_certified = false
 # if you want to allow connection to 127.0.0.1, set this to true
 pastry_socket_allow_loopback = false
 # these params will be used if the computer attempts to bind to the loopback address, they will open a socket to this address/port to identify which network adapter to bind to
