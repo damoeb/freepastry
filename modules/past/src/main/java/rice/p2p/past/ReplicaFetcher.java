@@ -61,7 +61,7 @@ final class ReplicaFetcher {
   void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
     logger.trace("Sending out replication fetch request for the id {}", id);
 
-    past.policy.fetch(id, hint, past.backup, past, new StandardContinuation<Object, Boolean, Exception>(command) {
+    Futures.forward(past.policy.fetch(id, hint, past.backup, past), new StandardContinuation<Object, Boolean, Exception>(command) {
       @Override
       public void receiveResult(Object result) {
         if (result == null) {

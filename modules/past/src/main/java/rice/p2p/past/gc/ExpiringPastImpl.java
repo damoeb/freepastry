@@ -546,7 +546,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
         command.receiveResult(Boolean.TRUE);
       }
     } else {
-      policy.fetch(expiringId.id(), hint, backup, this, new StandardContinuation<Object, Boolean, Exception>(command) {
+      Futures.forward(policy.fetch(expiringId.id(), hint, backup, this), new StandardContinuation<Object, Boolean, Exception>(command) {
         @Override
         public void receiveResult(Object result) {
           if (result == null) {
