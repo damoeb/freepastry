@@ -249,7 +249,7 @@ class WireBadInputTest {
     }
   }
 
-  private static Field field(Class<?> type, String name) throws ReflectiveOperationException {
+  static Field field(Class<?> type, String name) throws ReflectiveOperationException {
     Field field = type.getDeclaredField(name);
     field.setAccessible(true);
     return field;
