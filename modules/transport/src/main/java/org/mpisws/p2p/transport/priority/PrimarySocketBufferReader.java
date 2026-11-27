@@ -111,11 +111,30 @@ class PrimarySocketBufferReader<Identifier> implements P2PSocketReceiver<Identif
     owner.closeMe(socket);
   }
 
+  /**
+   * Delivers the complete message if the peer's budget admits it (design 3d). If not, the reader keeps the message,
+   * does not read the socket on (so TCP slows the sender) and tries again when the budget says.
+   */
   public void done(P2PSocket<Identifier> socket) throws IOException {
+    if (ctx.destroyed.getAsBoolean()) return;
+    long wait = ctx.budgets.messages.admit(socket.getIdentifier());
+    if (wait != PeerReadBudget.DELIVER_NOW) {
+      ctx.logger.trace("{} pauses reading from {} for {}", owner, socket, wait);
+      ctx.budgets.messages.resumeLater(wait, () -> resume(socket));
+      return;
+    }
     ctx.logger.debug("{} read message of size {} from {}", owner, buf.capacity(), socket);
     ctx.listeners.notifyRead(buf.capacity(), socket.getIdentifier(), socket.getOptions());
     ctx.callback.get().messageReceived(socket.getIdentifier(), buf, socket.getOptions());
     new SizeReader<Identifier>(owner, socket);
+  }
+
+  private void resume(P2PSocket<Identifier> socket) {
+    try {
+      done(socket);
+    } catch (IOException ioe) {
+      receiveException(socket, ioe);
+    }
   }
 
   @Override

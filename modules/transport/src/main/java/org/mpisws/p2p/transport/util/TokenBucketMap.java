@@ -37,12 +37,17 @@ public final class TokenBucketMap<K> {
    * @return true if the key had a token
    */
   public boolean tryTake(K key, long nowMillis) {
+    return bucket(key, nowMillis).tryTake(nowMillis);
+  }
+
+  /** The bucket of this key, created full if the key has none. */
+  public TokenBucket bucket(K key, long nowMillis) {
     TokenBucket bucket = buckets.get(key);
     if (bucket == null) {
       bucket = new TokenBucket(tokensPerSecond, burst, nowMillis);
       buckets.put(key, bucket);
     }
-    return bucket.tryTake(nowMillis);
+    return bucket;
   }
 
   /** The number of keys that have a bucket. */

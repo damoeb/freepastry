@@ -54,6 +54,15 @@ public final class TokenBucket {
     return tokens;
   }
 
+  /**
+   * How long until the bucket holds a whole token again: 0 if it holds one now, else at least 1.
+   */
+  public long millisUntilToken(long nowMillis) {
+    double missing = 1 - availableTokens(nowMillis);
+    if (missing <= 0) return 0;
+    return Math.max(1, (long) Math.ceil(missing / tokensPerMilli));
+  }
+
   /** Whether the bucket is full: it has refilled every token taken, so forgetting it loses nothing. */
   public boolean isFull(long nowMillis) {
     return availableTokens(nowMillis) >= burst;

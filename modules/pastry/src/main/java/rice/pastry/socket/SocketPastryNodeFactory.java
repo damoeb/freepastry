@@ -49,6 +49,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.jspecify.annotations.Nullable;
 
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.TransportLayer;
@@ -95,6 +98,7 @@ import org.mpisws.p2p.transport.sourceroute.manager.SourceRouteStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.NextHopStrategy;
 import org.mpisws.p2p.transport.sourceroute.manager.simple.SimpleSourceRouteStrategy;
 import org.mpisws.p2p.transport.util.OptionsFactory;
+import org.mpisws.p2p.transport.util.PrefixKey;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.mpisws.p2p.transport.wire.magicnumber.MagicNumberTransportLayer;
 import org.slf4j.Logger;
@@ -448,6 +452,29 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     }
   }
 
+  /**
+   * The pin policy of the priority layer's message and memory budgets (design 3d, 3e): a peer is pinned when one of
+   * its addresses has the IP address of a leaf set or routing table member, as in {@link #getSocketPinPolicy}.
+   */
+  protected SocketPinPolicy<MultiInetSocketAddress> getPeerPinPolicy(PastryNode pn) {
+    SocketPinPolicy<InetSocketAddress> byAddress = getSocketPinPolicy(pn);
+    return () -> {
+      Predicate<InetSocketAddress> pinned = byAddress.pinnedIdentifiers();
+      return peer -> {
+        for (int i = 0; i < peer.getNumAddresses(); i++) {
+          if (pinned.test(peer.getAddress(i))) return true;
+        }
+        return false;
+      };
+    };
+  }
+
+  /** The network prefix (transport_prefix_bits_v4/_v6) of a peer's outermost address, for the prefix message bucket. */
+  protected Function<MultiInetSocketAddress, @Nullable PrefixKey> getPeerPrefix(PastryNode pn) {
+    PrefixKey.Lengths lengths = PrefixKey.Lengths.fromParameters(pn.getEnvironment().getParameters());
+    return peer -> lengths.of(peer.getOutermostAddress().getAddress());
+  }
+
   public static final byte NETWORK_INFO_NODE_HANDLE_INDEX = 1;
   protected TransportLayer<InetSocketAddress, ByteBuffer> getIpServiceTransportLayer(
       TransportLayer<InetSocketAddress, ByteBuffer> wireTransportLayer, final PastryNode pn) throws IOException {
@@ -703,6 +730,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
           environment,
           PriorityConfig.fromParameters(environment.getParameters()),
           null);
+    priorityTL.setPeerBudgetPolicy(getPeerPinPolicy(pn), getPeerPrefix(pn));
     pn.getAttributes().put(PRIORITY_TL, priorityTL);
 
     return priorityTL;

@@ -48,8 +48,9 @@ import rice.environment.params.Parameters;
  *        limit
  * @param maxBigMsgSize {@code pastry_socket_writer_max_big_msg_size}: the largest message, in bytes, that
  *        is accepted or sent at all; a peer announcing a bigger one on a big message socket is disconnected
- * @param maxBigMsgInFlight {@code pastry_socket_writer_max_big_msg_in_flight}: the most bytes, in total, that
- *        the node buffers for big messages that are still arriving; a socket that would exceed it is closed
+ * @param maxBigMsgInFlight {@code pastry_socket_receive_budget}: the most bytes, in total, that the node buffers
+ *        for big messages that are still arriving; a reader that would exceed it, or its peer's share of it (see
+ *        {@link PeerBudgetConfig#receiveMinShareBytes()}), stops reading until there is room
  * @param maxQueueLength {@code pastry_socket_writer_max_queue_length}: the most messages queued per
  *        destination
  */
@@ -63,6 +64,6 @@ public record PriorityConfig(int maxMsgSize, int maxQueueLength, int maxBigMsgSi
       requirePositive("pastry_socket_writer_max_msg_size", parameters.getInt("pastry_socket_writer_max_msg_size")),
       requirePositive("pastry_socket_writer_max_queue_length", parameters.getInt("pastry_socket_writer_max_queue_length")),
       requirePositive("pastry_socket_writer_max_big_msg_size", parameters.getInt("pastry_socket_writer_max_big_msg_size")),
-      requirePositive("pastry_socket_writer_max_big_msg_in_flight", parameters.getLong("pastry_socket_writer_max_big_msg_in_flight")));
+      requirePositive("pastry_socket_receive_budget", parameters.getLong("pastry_socket_receive_budget")));
   }
 }

@@ -152,7 +152,7 @@ class BigMessageReaderTest {
 
     assertFalse(first.closed);
     assertTrue(second.closed);
-    assertEquals(BigMessageReader.INITIAL_CHUNK, ctx.bigMsgBudget.reserved());
+    assertEquals(BigMessageReader.INITIAL_CHUNK, ctx.budgets.memory.reserved());
   }
 
   @Test
@@ -164,7 +164,7 @@ class BigMessageReaderTest {
 
     new BigMessageReader<>(ctx).receiveSelectResult(new FakeSocket(wire.array()), true, false);
 
-    assertEquals(0, ctx.bigMsgBudget.reserved());
+    assertEquals(0, ctx.budgets.memory.reserved());
   }
 
   @Test

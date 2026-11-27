@@ -112,8 +112,45 @@ pastry_socket_writer_max_queue_length = 30
 pastry_socket_writer_max_msg_size = 20480
 # the largest message, in bytes, that is sent or accepted on a socket of its own; a peer announcing a bigger one is disconnected
 pastry_socket_writer_max_big_msg_size = 4194304
-# the most bytes, in total, that the node buffers for big messages that are still arriving (the buffer grows with the bytes received, not with the announced size); a socket that would exceed it is disconnected
-pastry_socket_writer_max_big_msg_in_flight = 67108864
+# the most bytes, in total, that the node buffers for big messages that are still arriving (the buffer grows with the bytes received, not with the announced size); a reader that would exceed it stops reading its socket until there is room (TCP slows the sender)
+pastry_socket_receive_budget = 67108864
+# a peer may hold at most max(this, receive_budget / (2 x peers holding memory)) of the receive budget; a pinned peer (leaf set, routing table) always gets this much, even when the budget is used up
+pastry_socket_receive_min_share = 1048576
+# a big message must arrive at least this fast: its socket is closed, and its memory released, after max(min_deadline, size / min_rate)
+pastry_socket_receive_min_rate_bytes_per_second = 16384
+pastry_socket_receive_min_deadline_millis = 10000
+# messages one peer (the priority layer's identifier) may have delivered: a token bucket; when it is empty the node stops reading the peer's socket until the bucket refills (TCP slows the sender, nothing is dropped)
+pastry_socket_msg_rate_per_peer_per_second = 200
+pastry_socket_msg_burst_per_peer = 400
+# the same for all peers of one network prefix (transport_prefix_bits_v4/_v6) together
+pastry_socket_msg_rate_per_prefix_per_second = 1000
+pastry_socket_msg_burst_per_prefix = 2000
+# pinned peers (leaf set, routing table) get this many times the rate and burst of a peer, and do not wait for their prefix's bucket
+pastry_socket_pinned_rate_factor = 4
+# messages delivered in one pass of the selector loop, over all peers; the rest wait for the next pass
+pastry_socket_max_messages_per_pass = 256
+# peers and prefixes that have a message bucket; beyond it the least recently used one is forgotten
+pastry_socket_budget_max_peers = 10000
+# maintenance work a remote peer can make a node do at will (token buckets per peer, the authenticated sender in
+# certified mode); a request beyond its bucket is ignored, the honest requester asks again on its own schedule
+# route row requests a peer gets answered
+pastry_budget_route_row_requests_per_second = 1
+pastry_budget_route_row_request_burst = 5
+# route rows a peer sends that the node takes in (answers to its requests and unsolicited ones)
+pastry_budget_route_row_broadcasts_per_second = 0.2
+pastry_budget_route_row_broadcast_burst = 3
+# leaf set requests (and the leases they ask for) a peer gets answered
+pastry_budget_leaf_set_requests_per_second = 1
+pastry_budget_leaf_set_request_burst = 5
+# join requests the node answers as the root: per joiner id (2 per minute), and for all joiners together
+pastry_budget_joins_per_joiner_per_second = 0.0333
+pastry_budget_join_burst_per_joiner = 2
+pastry_budget_joins_per_second = 20
+pastry_budget_join_burst = 40
+# leaf set and routing table members get this many times the rate and burst
+pastry_budget_pinned_factor = 4
+# peers that have a bucket of a kind; beyond it the least recently used one is forgotten
+pastry_budget_max_peers = 10000
 # the time before it will retry a route that was already found dead
 pastry_socket_srm_check_dead_throttle = 300000
 pastry_socket_srm_default_rto = 3000

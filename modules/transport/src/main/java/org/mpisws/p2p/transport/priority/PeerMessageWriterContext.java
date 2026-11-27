@@ -66,8 +66,11 @@ final class PeerMessageWriterContext<Identifier> {
   final int maxMsgSize;
   final int maxQueueSize;
   final int maxBigMsgSize;
-  /** the memory all BIG message readers of the node may hold together for messages still arriving */
-  final BigMessageBudget bigMsgBudget;
+  /**
+   * the budgets of the node's readers: messages per peer and pass, and the memory BIG messages still arriving may
+   * hold together
+   */
+  final PeerBudgets<Identifier> budgets;
   final List<PrimarySocketListener<Identifier>> primarySocketListeners;
   final TransportListeners<Identifier> listeners;
   final Supplier<ErrorHandler<Identifier>> errorHandler;
@@ -136,6 +139,27 @@ final class PeerMessageWriterContext<Identifier> {
       BooleanSupplier destroyed,
       Function<Identifier, PeerMessageWriter<Identifier>> entityManagers,
       LogRateLimiter logRateLimiter) {
+    this(transportLayer, livenessProvider, proximityProvider, selectorManager, logger, maxMsgSize, maxQueueSize,
+        maxBigMsgSize, primarySocketListeners, listeners, errorHandler, callback, destroyed, entityManagers,
+        logRateLimiter, PeerBudgets.unlimited(maxBigMsgInFlight));
+  }
+
+  PeerMessageWriterContext(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      SelectorLoop selectorManager,
+      Logger logger,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      List<PrimarySocketListener<Identifier>> primarySocketListeners,
+      TransportListeners<Identifier> listeners,
+      Supplier<ErrorHandler<Identifier>> errorHandler,
+      Supplier<TransportLayerCallback<Identifier, ByteBuffer>> callback,
+      BooleanSupplier destroyed,
+      Function<Identifier, PeerMessageWriter<Identifier>> entityManagers,
+      LogRateLimiter logRateLimiter,
+      PeerBudgets<Identifier> budgets) {
     this.tl = transportLayer;
     this.livenessProvider = livenessProvider;
     this.proximityProvider = proximityProvider;
@@ -144,7 +168,7 @@ final class PeerMessageWriterContext<Identifier> {
     this.maxMsgSize = maxMsgSize;
     this.maxQueueSize = maxQueueSize;
     this.maxBigMsgSize = maxBigMsgSize;
-    this.bigMsgBudget = new BigMessageBudget(maxBigMsgInFlight);
+    this.budgets = budgets;
     this.primarySocketListeners = primarySocketListeners;
     this.listeners = listeners;
     this.errorHandler = errorHandler;

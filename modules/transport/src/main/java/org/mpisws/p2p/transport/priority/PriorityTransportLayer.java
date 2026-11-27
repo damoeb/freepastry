@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -52,11 +53,13 @@ import org.mpisws.p2p.transport.SocketRequestHandle;
 import org.mpisws.p2p.transport.TransportLayer;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.TransportLayerListener;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
 import org.mpisws.p2p.transport.liveness.LivenessListener;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.LivenessTypes;
 import org.mpisws.p2p.transport.proximity.ProximityProvider;
 import org.mpisws.p2p.transport.util.DefaultErrorHandler;
+import org.mpisws.p2p.transport.util.PrefixKey;
 import org.mpisws.p2p.transport.util.SocketRequestHandleImpl;
 import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.slf4j.Logger;
@@ -148,7 +151,23 @@ public class PriorityTransportLayer<Identifier>
       Environment env,
       PriorityConfig config,
       ErrorHandler<Identifier> handler) {
-    this(transportLayer, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(), config.maxBigMsgSize(), config.maxBigMsgInFlight(), handler);
+    this(transportLayer, livenessProvider, proximityProvider, env, config, PeerBudgetConfig.fromParameters(env.getParameters()), handler);
+  }
+
+  /**
+   * Builds the layer with the sizes from {@code config} and the per-peer budgets from {@code budgetConfig} (design 3d,
+   * 3e); {@link #setPeerBudgetPolicy} tells it which peers are pinned and what their prefix is.
+   */
+  public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      PriorityConfig config,
+      PeerBudgetConfig budgetConfig,
+      ErrorHandler<Identifier> handler) {
+    this(transportLayer, livenessProvider, proximityProvider, env, config.maxMsgSize(), config.maxQueueLength(),
+        config.maxBigMsgSize(), PeerBudgets.of(budgetConfig, config.maxBigMsgInFlight(), config.maxBigMsgSize(),
+            ReadScheduler.of(env.getSelectorManager(), env.getTimeSource())), handler);
   }
 
   public PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
@@ -181,6 +200,19 @@ public class PriorityTransportLayer<Identifier>
       int maxBigMsgSize,
       long maxBigMsgInFlight,
       ErrorHandler<Identifier> handler) {
+    this(transportLayer, livenessProvider, proximityProvider, env, maxMsgSize, maxQueueSize, maxBigMsgSize,
+        PeerBudgets.unlimited(maxBigMsgInFlight), handler);
+  }
+
+  private PriorityTransportLayer(TransportLayer<Identifier, ByteBuffer> transportLayer,
+      LivenessProvider<Identifier> livenessProvider,
+      ProximityProvider<Identifier> proximityProvider,
+      Environment env,
+      int maxMsgSize,
+      int maxQueueSize,
+      int maxBigMsgSize,
+      PeerBudgets<Identifier> budgets,
+      ErrorHandler<Identifier> handler) {
     this.MAX_BIG_MSG_SIZE = maxBigMsgSize;
     entityManagers = new PeerMessageWriterRegistry<Identifier>(this::newEntityManager);
     this.logger = env.getLogManager().getLogger(PriorityTransportLayer.class, null);
@@ -191,8 +223,8 @@ public class PriorityTransportLayer<Identifier>
     this.tl = transportLayer;
     logger.info("MAX_QUEUE_SIZE:{} MAX_MSG_SIZE:{}", MAX_QUEUE_SIZE, MAX_MSG_SIZE);
     this.entityManagerContext = new PeerMessageWriterContext<Identifier>(transportLayer, livenessProvider, proximityProvider,
-        selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, maxBigMsgInFlight, primarySocketListeners, listeners,
-        () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager, env.getLogRateLimiter());
+        selectorManager, logger, MAX_MSG_SIZE, MAX_QUEUE_SIZE, MAX_BIG_MSG_SIZE, primarySocketListeners, listeners,
+        () -> errorHandler, () -> callback, () -> destroyed, this::getEntityManager, env.getLogRateLimiter(), budgets);
     transportLayer.setCallback(this);
     livenessProvider.addLivenessListener(this);
     this.errorHandler = handler;
@@ -298,6 +330,16 @@ public class PriorityTransportLayer<Identifier>
       logger.warn("No TransportLayerCallback set, closing incoming socket {}", socket);
       socket.close();
     }
+  }
+
+  /**
+   * Tells the budgets of design 3d and 3e which peers are pinned (leaf set, routing table: they get the pinned rate
+   * factor, skip the prefix bucket and keep their minimum memory share) and which network prefix a peer belongs to
+   * (null: none, the peer has only its own bucket). Without a policy no peer is pinned and there are no prefix
+   * buckets. Call it before the layer reads.
+   */
+  public void setPeerBudgetPolicy(SocketPinPolicy<Identifier> pinPolicy, Function<Identifier, @Nullable PrefixKey> prefixOf) {
+    entityManagerContext.budgets.setPolicy(pinPolicy, prefixOf);
   }
 
   @Override
