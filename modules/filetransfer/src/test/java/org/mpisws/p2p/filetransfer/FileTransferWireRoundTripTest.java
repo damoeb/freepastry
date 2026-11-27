@@ -50,6 +50,8 @@ class FileTransferWireRoundTripTest {
   /** One end of an in-memory socket; read and write interest are tracked separately, as a selector does. */
   private final class PipeAppSocket implements AppSocket {
     private PipeAppSocket peer;
+    /** the environment whose selector runs the callbacks: the one of the transfers on the socket */
+    private Environment env = FileTransferWireRoundTripTest.this.env;
     private ByteBuffer incoming = ByteBuffer.allocate(0);
     private volatile boolean closed;
     private AppSocketReceiver readReceiver;
@@ -195,8 +197,14 @@ class FileTransferWireRoundTripTest {
   }
 
   private Pair pair(int senderChunk, int receiverChunk) {
+    return pair(env, senderChunk, receiverChunk);
+  }
+
+  private Pair pair(Environment env, int senderChunk, int receiverChunk) {
     PipeAppSocket pipeAppSocket = new PipeAppSocket();
     PipeAppSocket b = new PipeAppSocket();
+    pipeAppSocket.env = env;
+    b.env = env;
     pipeAppSocket.peer = b;
     b.peer = pipeAppSocket;
     Inbox inbox = new Inbox();
@@ -494,6 +502,36 @@ class FileTransferWireRoundTripTest {
 
     assertRejected(pair, fileHeader(3, 0, 10, 1, 1));
     assertEquals(before, tempFiles());
+  }
+
+  @Test
+  @DisplayName("C3: more files in progress at once than allowed is a protocol error that closes the socket")
+  void tooManyIncomingFiles() throws Exception {
+    env.getParameters().setInt("p2p_filetransfer_max_incoming_files", 4);
+    Pair pair = pair(CHUNK, CHUNK);
+    for (int uid = 0; uid < 4; uid++) {
+      pair.senderSocket.write(fileHeader(uid, 0, 10, 1, 1));
+    }
+
+    assertRejected(pair, fileHeader(4, 0, 10, 1, 1));
+  }
+
+  @Test
+  @DisplayName("C3: a peer that announces a file and then sends nothing is closed after the read timeout")
+  void aStalledIncomingFileTimesOut() throws Exception {
+    // the clock of the direct environment stands still without a simulator: this test needs real time
+    Environment realTime = new Environment();
+    try {
+      realTime.getParameters().setLong("p2p_filetransfer_read_timeout_millis", 300);
+      Pair pair = pair(realTime, CHUNK, CHUNK);
+      pair.senderSocket.write(fileHeader(1, 0, 10, 1, 1));
+
+      Object event = pair.inbox.events.poll(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      assertTrue(event instanceof java.net.SocketTimeoutException, "expected a read timeout but got " + event);
+      assertTrue(pair.receiverSocket.closed, "the receiver closes the socket of a stalled peer");
+    } finally {
+      realTime.destroy();
+    }
   }
 
   private long tempFiles() throws IOException {
