@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.TransportLayerCallback;
 import org.mpisws.p2p.transport.util.PrefixKey;
+import org.mpisws.p2p.transport.wire.WireTransportLayer;
 import org.slf4j.LoggerFactory;
 import rice.environment.logging.LogRateLimiter;
 
@@ -29,12 +31,15 @@ class PeerReadBudgetTest {
 
   private final ManualReadScheduler scheduler = new ManualReadScheduler(START_MILLIS);
   private final Map<String, Integer> delivered = new HashMap<>();
+  /** messages delivered, by the tag byte their sender put in them */
+  private final Map<Byte, Integer> deliveredByTag = new HashMap<>();
 
   private PeerMessageWriterContext<String> context(PeerBudgetConfig config, Set<String> pinned, Map<String, String> addresses) {
     TransportLayerCallback<String, ByteBuffer> callback = new TransportLayerCallback<>() {
       @Override
       public void messageReceived(String identifier, ByteBuffer msg, Map<String, Object> options) {
         delivered.merge(identifier, 1, Integer::sum);
+        deliveredByTag.merge(msg.get(msg.position()), 1, Integer::sum);
       }
 
       @Override
@@ -72,6 +77,18 @@ class PeerReadBudgetTest {
     }
     FakeSocket socket = new FakeSocket(peer, wire.array());
     new SizeReader<>(new PeerMessageWriter<>(peer, ctx), socket);
+    return socket;
+  }
+
+  /** {@code count} one-byte messages holding {@code tag}, on a socket whose wire layer passed up its remote address. */
+  private static FakeSocket primarySocket(PeerMessageWriterContext<String> ctx, String claimedIdentifier, InetSocketAddress wireAddress,
+      byte tag, int count) {
+    ByteBuffer wire = ByteBuffer.allocate(count * (Integer.BYTES + 1));
+    for (int n = 0; n < count; n++) {
+      wire.putInt(1).put(tag);
+    }
+    FakeSocket socket = new FakeSocket(claimedIdentifier, Map.of(WireTransportLayer.OPTION_REMOTE_ADDRESS, wireAddress), wire.array());
+    new SizeReader<>(new PeerMessageWriter<>(claimedIdentifier, ctx), socket);
     return socket;
   }
 
@@ -124,6 +141,22 @@ class PeerReadBudgetTest {
 
     assertEquals(5, delivered("honest"));
     assertEquals(20, delivered("flooder"));
+  }
+
+  @Test
+  @DisplayName("an insider that claims a pinned neighbour's address in its header neither gets the pinned factor nor drains the neighbour's bucket")
+  void aClaimedAddressGetsNeitherThePinNorTheNeighboursBucket() throws Exception {
+    InetAddress neighbourAddress = inet("192.0.2.3");
+    PeerMessageWriterContext<String> ctx = context(config(10, 20, UNLIMITED, UNLIMITED, UNLIMITED, 4), Set.of(), Map.of());
+    // the policy pins peers by the address their socket really connects from, the one the wire layer passes up
+    ctx.budgets.setPolicy(() -> neighbourAddress::equals, peer -> null);
+    FakeSocket neighbour = primarySocket(ctx, "neighbour", new InetSocketAddress(neighbourAddress, 4000), (byte) 1, 1000);
+    FakeSocket insider = primarySocket(ctx, "neighbour", new InetSocketAddress(inet("203.0.113.9"), 5000), (byte) 2, 1000);
+
+    passes(500, insider, neighbour);
+
+    assertEquals(20, deliveredByTag.getOrDefault((byte) 2, 0), "the insider: the burst of an unpinned peer");
+    assertEquals(80, deliveredByTag.getOrDefault((byte) 1, 0), "the neighbour: its pinned burst, all of it");
   }
 
   @Test

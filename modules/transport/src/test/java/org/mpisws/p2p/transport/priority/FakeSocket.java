@@ -9,6 +9,7 @@ import org.mpisws.p2p.transport.P2PSocketReceiver;
 /** A socket that delivers the bytes it was given (and later {@link #feed fed}), then reports nothing more to read. */
 final class FakeSocket implements P2PSocket<String> {
   private final String identifier;
+  private final Map<String, Object> options;
   private ByteBuffer incoming;
   boolean closed;
   boolean registeredForRead;
@@ -22,7 +23,13 @@ final class FakeSocket implements P2PSocket<String> {
   }
 
   FakeSocket(String identifier, byte... incoming) {
+    this(identifier, Map.of(), incoming);
+  }
+
+  /** @param options what the layers below passed up, for example the wire layer's remote address */
+  FakeSocket(String identifier, Map<String, Object> options, byte... incoming) {
     this.identifier = identifier;
+    this.options = options;
     this.incoming = ByteBuffer.wrap(incoming);
   }
 
@@ -47,7 +54,7 @@ final class FakeSocket implements P2PSocket<String> {
 
   @Override
   public Map<String, Object> getOptions() {
-    return Map.of();
+    return options;
   }
 
   @Override
