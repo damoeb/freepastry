@@ -848,16 +848,15 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   // ----- REPLICATION MANAGER METHODS -----
 
   /**
-   * This upcall is invoked to tell the client to fetch the given id,
-   * and to call the given command with the boolean result once the fetch
-   * is completed.  The client *MUST* call the command at some point in the
-   * future, as the manager waits for the command to return before continuing.
+   * This upcall is invoked to tell the client to fetch the given id; the manager waits for the returned future
+   * before continuing.
    *
    * @param id The id to fetch
+   * @return whether the replica was fetched and stored
    */
   @Override
-  public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
-    replicaFetcher.fetch(id, hint, command);
+  public CompletableFuture<Boolean> fetch(final Id id, NodeHandle hint) {
+    return replicaFetcher.fetch(id, hint);
   }
 
   /**
@@ -866,24 +865,16 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
    * as caching the object, or may simply delete it.
    *
    * @param id The id to remove
+   * @return whether the id was unstored
    */
   @Override
-  public void remove(final Id id, Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> remove(final Id id) {
     if (backup != null) {
-      Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
-        @Override
-        public void receiveResult(Object storedObject) {
-          Futures.forward(backup.cache(id, storage.getMetadata(id), storedObject), new StandardContinuation<Boolean, Boolean, Exception>(parent) {
-            @Override
-            public void receiveResult(Boolean result) {
-              Futures.forward(storage.unstore(id), parent);
-            }
-          });
-        }
-      });
-    } else {
-      Futures.forward(storage.unstore(id), command);
+      return storage.getObject(id)
+          .thenCompose(storedObject -> backup.cache(id, storage.getMetadata(id), storedObject))
+          .thenCompose(_ -> storage.unstore(id));
     }
+    return storage.unstore(id);
   }
 
   /**
@@ -911,18 +902,13 @@ public class PastImpl implements Past, Application, ReplicationManagerClient {
   }
 
   @Override
-  public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
-    Futures.forward(lookupHandles(id, replicationFactor+1).thenApply(PastImpl::isAnyHandle), command);
+  public CompletableFuture<Boolean> existsInOverlay(Id id) {
+    return lookupHandles(id, replicationFactor+1).thenApply(PastImpl::isAnyHandle);
   }
 
   @Override
-  public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
-    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(final Object storedObject) {
-        Futures.forward(insert((PastContent)storedObject).thenApply(PastImpl::isAnyStored), parent);
-      }
-    });
+  public CompletableFuture<Boolean> reInsert(Id id) {
+    return storage.getObject(id).thenCompose(storedObject -> insert((PastContent)storedObject)).thenApply(PastImpl::isAnyStored);
   }
 
   /** Whether a replica answered with a handle. */

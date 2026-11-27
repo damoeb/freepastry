@@ -39,10 +39,9 @@ package rice.p2p.replication.manager;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.StandardContinuation;
 import rice.Futures;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -181,28 +180,18 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
 
     final CancellableTask timer = endpoint.scheduleMessage(new TimeoutMessage(id), TIMEOUT_DELAY);
 
-    Futures.forward(client.fetch(id, hint), new Continuation<Object, Exception>() {
-      @Override
-      public void receiveResult(Object result) {
-        if (! Boolean.TRUE.equals(result)) {
-          if (result instanceof Throwable throwable) {
-            logger.warn("Fetching of id {} failed with ", id, throwable);
-          } else {
-            logger.warn("Fetching of id {} failed with {}", id, result);
-          }
-        }
-
-        logger.debug("Successfully fetched id {}", id);
-
-        timer.cancel();
-        helper.message(id);
+    Futures.reportUnhandled(client.fetch(id, hint).whenComplete((result, failure) -> {
+      if (failure != null) {
+        logger.warn("Fetching of id {} failed with ", id, Futures.unwrap(failure));
+      } else if (! Boolean.TRUE.equals(result)) {
+        logger.warn("Fetching of id {} failed with {}", id, result);
       }
 
-      @Override
-      public void receiveException(Exception e) {
-        receiveResult(e);
-      }
-    });
+      logger.debug("Successfully fetched id {}", id);
+
+      timer.cancel();
+      helper.message(id);
+    }), environment);
   }
 
   /**
@@ -474,7 +463,7 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
   /**
    * Inner class which keeps track of the keys which we are currently deleting
    */
-  protected class ReplicationManagerDeleter implements Continuation<Boolean, Exception> {
+  protected class ReplicationManagerDeleter {
 
     /**
      * The set of ids we are responsible for deleting
@@ -532,42 +521,41 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
 
         logger.trace("Deciding whether to remove {}", id);
 
-        Futures.forward(client.existsInOverlay(id), new StandardContinuation<Boolean, Boolean, Exception>(this) {
-          @Override
-          public void receiveResult(Boolean result) {
-            if (Boolean.TRUE.equals(result)) {
-              logger.trace("Telling client to delete id {}", id);
-              logger.trace("RMImpl.go {}: removing id {}", instance, id);
-              Futures.forward(client.remove(id), parent);
-            } else {
-              logger.trace("Object to remove {} not found.  Reinserting.", id);
-              Futures.forward(client.reInsert(id), new StandardContinuation<Boolean, Boolean, Exception>(parent) {
-                @Override
-                public void receiveResult(Boolean result) {
-                  if (Boolean.TRUE.equals(result)) {
-                    logger.trace("Telling client to delete id {}", id);
-                    logger.trace("RMImpl.go {}: removing id {}", instance, id);
-                    Futures.forward(client.remove(id), parent);
-                  } else {
-                    logger.trace("Object to remove {} Could not be reinserted.  Ignoring remove.", id);
-                    // hand the failure to the deleter (our parent), which clears id and moves on
-                    parent.receiveResult(Boolean.FALSE);
-                  }
-                }
-              });
-            }
+        final Id deciding = id;
+        CompletableFuture<Boolean> decision = client.existsInOverlay(deciding).thenCompose(exists -> {
+          if (Boolean.TRUE.equals(exists)) {
+            logger.trace("Telling client to delete id {}", deciding);
+            logger.trace("RMImpl.go {}: removing id {}", instance, deciding);
+            return client.remove(deciding);
           }
+          logger.trace("Object to remove {} not found.  Reinserting.", deciding);
+          return client.reInsert(deciding).thenCompose(reinserted -> {
+            if (Boolean.TRUE.equals(reinserted)) {
+              logger.trace("Telling client to delete id {}", deciding);
+              logger.trace("RMImpl.go {}: removing id {}", instance, deciding);
+              return client.remove(deciding);
+            }
+            logger.trace("Object to remove {} Could not be reinserted.  Ignoring remove.", deciding);
+            // a failure for the deleter, which clears id and moves on
+            return CompletableFuture.completedFuture(Boolean.FALSE);
+          });
         });
+        Futures.reportUnhandled(decision.whenComplete((result, failure) -> {
+          if (failure == null) {
+            removed(result);
+          } else {
+            failed(Futures.unwrap(failure));
+          }
+        }), environment);
       }
     }
 
     /**
-     * Implementation of continuation
+     * The id is decided: removed, or left alone.
      *
-     * @param result The result
+     * @param result whether the client removed it
      */
-    @Override
-    public synchronized void receiveResult(Boolean result) {
+    private synchronized void removed(Boolean result) {
       if (id == null)
         logger.error("ERROR: RMImpl.deleter Received result {} unexpectedly!", result);
 
@@ -579,12 +567,11 @@ public class ReplicaFetchCoordinatorImpl implements ReplicaFetchCoordinator, Rep
     }
 
     /**
-     * Implementation of continuation
+     * Deciding about the id failed.
      *
      * @param e The exception
      */
-    @Override
-    public synchronized void receiveException(Exception e) {
+    private synchronized void failed(Throwable e) {
       logger.error("RMImpl.deleter Unstore of {} caused exception '{}'!", id, e, e);
 
       id = null;

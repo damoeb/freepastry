@@ -38,10 +38,9 @@ advised of the possibility of such damage.
 
 package rice.p2p.past;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
-import rice.Continuation;
-import rice.Continuation.StandardContinuation;
-import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 
@@ -58,30 +57,26 @@ final class ReplicaFetcher {
     this.logger = logger;
   }
 
-  void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
+  CompletableFuture<Boolean> fetch(final Id id, NodeHandle hint) {
     logger.trace("Sending out replication fetch request for the id {}", id);
 
-    Futures.forward(past.policy.fetch(id, hint, past.backup, past), new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        if (result == null) {
-          logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, past.getInstance());
-          parent.receiveResult(Boolean.valueOf(false));
-        } else {
-          logger.trace("inserting replica of id {}", id);
-
-          // the peer that answered is not trusted: store only what was asked for, never another id's object
-          if (!(result instanceof PastContent content)) {
-            logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, result.getClass().getName());
-            parent.receiveResult(Boolean.valueOf(false));
-          } else if (!id.equals(content.getId())) {
-            logger.warn("Dropping fetched replica of id {}: it carries the id {}", id, content.getId());
-            parent.receiveResult(Boolean.valueOf(false));
-          } else {
-            storeReplica(id, content, parent);
-          }
-        }
+    return past.policy.fetch(id, hint, past.backup, past).thenCompose(result -> {
+      if (result == null) {
+        logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, past.getInstance());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
       }
+      logger.trace("inserting replica of id {}", id);
+
+      // the peer that answered is not trusted: store only what was asked for, never another id's object
+      if (!(result instanceof PastContent content)) {
+        logger.warn("Dropping fetched replica of id {}: not PastContent but {}", id, result.getClass().getName());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      if (!id.equals(content.getId())) {
+        logger.warn("Dropping fetched replica of id {}: it carries the id {}", id, content.getId());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      return storeReplica(id, content);
     });
   }
 
@@ -89,18 +84,16 @@ final class ReplicaFetcher {
    * Stores a replica fetched for the id, letting the content check it against what is stored locally, as an
    * insert does. A refusal drops the replica.
    */
-  private void storeReplica(final Id id, final PastContent content, final Continuation<? super Boolean, Exception> command) {
-    Futures.forward(past.storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object existing) {
-        try {
-          PastContent checked = content.checkInsert(id, (PastContent) existing);
-          Futures.forward(past.storage.getStorage().store(id, null, checked), parent);
-        } catch (PastException e) {
-          logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
-          parent.receiveResult(Boolean.valueOf(false));
-        }
+  private CompletableFuture<Boolean> storeReplica(final Id id, final PastContent content) {
+    return past.storage.getObject(id).thenCompose(existing -> {
+      PastContent checked;
+      try {
+        checked = content.checkInsert(id, (PastContent) existing);
+      } catch (PastException e) {
+        logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
       }
+      return past.storage.getStorage().store(id, null, checked);
     });
   }
 }

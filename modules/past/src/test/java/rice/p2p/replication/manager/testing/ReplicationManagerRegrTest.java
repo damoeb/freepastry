@@ -38,7 +38,8 @@ package rice.p2p.replication.manager.testing;
 
 import java.io.IOException;
 
-import rice.Continuation;
+import java.util.concurrent.CompletableFuture;
+
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.IdRange;
@@ -395,15 +396,15 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     }
 
     @Override
-    public void fetch(Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
+    public CompletableFuture<Boolean> fetch(Id id, NodeHandle hint) {
       set.addId(id);
-      command.receiveResult(Boolean.valueOf(true));
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
     @Override
-    public void remove(Id id, Continuation<? super Boolean, Exception> command) {
+    public CompletableFuture<Boolean> remove(Id id) {
       set.removeId(id);
-      command.receiveResult(Boolean.valueOf(true));
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
     @Override
@@ -421,15 +422,15 @@ public class ReplicationManagerRegrTest extends CommonAPITest {
     }
 
     @Override
-    public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
+    public CompletableFuture<Boolean> existsInOverlay(Id id) {
       // TODO: existsInOverlay() and reInsert() are not tested yet
-      command.receiveResult(Boolean.TRUE);
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
     @Override
-    public void reInsert(Id id, Continuation<? super Boolean, Exception> command) {
+    public CompletableFuture<Boolean> reInsert(Id id) {
       // TODO: existsInOverlay() and reInsert() are not tested yet
-      command.receiveResult(Boolean.TRUE);
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
     @Override

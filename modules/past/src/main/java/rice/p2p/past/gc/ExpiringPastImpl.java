@@ -418,7 +418,7 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
                       receiveResult(true);
                     }
                   } else {
-                    setMissingMetadata(id.id(), expiration, this);
+                    Futures.forward(setMissingMetadata(id.id(), expiration), this);
                   }
                 } else {
                   /* a refresh carries no proof of ownership, so it must not bring back what the collection removed */
@@ -519,53 +519,47 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   // ---- REPLICATION MANAGER METHODS -----
 
   /**
-   * This upcall is invoked to tell the client to fetch the given id,
-   * and to call the given command with the boolean result once the fetch
-   * is completed.  The client *MUST* call the command at some point in the
-   * future, as the manager waits for the command to return before continuing.
+   * This upcall is invoked to tell the client to fetch the given id; the manager waits for the returned future
+   * before continuing.
    *
    * @param id The id to fetch
+   * @return whether the replica is stored (or expired, which needs nothing stored)
    */
   @Override
-  public void fetch(final Id id, NodeHandle hint, Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> fetch(final Id id, NodeHandle hint) {
     logger.trace("Sending out replication fetch request for the id {}", id);
     final ExpiringId expiringId = (ExpiringId) id;
     // the peer names the expiration: it counts only up to the maximum lease, like that of an insert
     final long expiration = cappedExpiration(expiringId.expiration());
 
     if (expiration < getEnvironment().getTimeSource().currentTimeMillis()) {
-      command.receiveResult(Boolean.TRUE);
-    } else if (storage.exists(expiringId.id())) {
+      return CompletableFuture.completedFuture(Boolean.TRUE);
+    }
+    if (storage.exists(expiringId.id())) {
       ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(expiringId.id());
 
       if (metadata == null) {
-        setMissingMetadata(expiringId.id(), expiration, command);
-      } else if (metadata.expiration() < expiration) {
-        Futures.forward(storage.setMetadata(expiringId.id(), metadata.setExpiration(expiration)), command);
-      } else {
-        command.receiveResult(Boolean.TRUE);
+        return setMissingMetadata(expiringId.id(), expiration);
       }
-    } else {
-      Futures.forward(policy.fetch(expiringId.id(), hint, backup, this), new StandardContinuation<Object, Boolean, Exception>(command) {
-        @Override
-        public void receiveResult(Object result) {
-          if (result == null) {
-            logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
-            parent.receiveResult(Boolean.valueOf(false));
-          } else {
-            // the peer that answered is not trusted: store only what was asked for
-            if (!(result instanceof ExpiringPastContent content) || !expiringId.id().equals(content.getId())) {
-              logger.warn("Dropping fetched replica of id {}: not ExpiringPastContent for that id: {}", id, result);
-              parent.receiveResult(Boolean.valueOf(false));
-              return;
-            }
-            logger.trace("inserting replica of id {}", id);
-
-            Futures.forward(storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content), parent);
-          }
-        }
-      });
+      if (metadata.expiration() < expiration) {
+        return storage.setMetadata(expiringId.id(), metadata.setExpiration(expiration));
+      }
+      return CompletableFuture.completedFuture(Boolean.TRUE);
     }
+    return policy.fetch(expiringId.id(), hint, backup, this).thenCompose(result -> {
+      if (result == null) {
+        logger.warn("Could not fetch id {} - policy returned null in namespace {}", id, getInstance());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      // the peer that answered is not trusted: store only what was asked for
+      if (!(result instanceof ExpiringPastContent content) || !expiringId.id().equals(content.getId())) {
+        logger.warn("Dropping fetched replica of id {}: not ExpiringPastContent for that id: {}", id, result);
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      logger.trace("inserting replica of id {}", id);
+
+      return storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content);
+    });
   }
 
   /**
@@ -576,8 +570,8 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
    * @param id The id to remove
    */
   @Override
-  public void remove(Id id, Continuation<? super Boolean, Exception> command) {
-    super.remove(((ExpiringId) id).id(), command);
+  public CompletableFuture<Boolean> remove(Id id) {
+    return super.remove(((ExpiringId) id).id());
   }
 
   /**
@@ -609,43 +603,32 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
   }
 
   @Override
-  public void existsInOverlay(Id id, Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> existsInOverlay(Id id) {
     if (id instanceof ExpiringId gcId) {
-      super.existsInOverlay(gcId.id(), command);
-    } else {
-      super.existsInOverlay(id, command);
+      return super.existsInOverlay(gcId.id());
     }
+    return super.existsInOverlay(id);
   }
 
   /** Gives an object that was stored without metadata the metadata of the given expiration. */
-  private void setMissingMetadata(Id id, long expiration, Continuation<? super Boolean, Exception> command) {
-    Futures.forward(storage.getObject(id), new StandardContinuation<Object, Boolean, Exception>(command) {
-      @Override
-      public void receiveResult(Object result) {
-        Futures.forward(storage.setMetadata(id, ((ExpiringPastContent) result).getMetadata(expiration)), parent);
-      }
-    });
+  private CompletableFuture<Boolean> setMissingMetadata(Id id, long expiration) {
+    return storage.getObject(id).thenCompose(result -> storage.setMetadata(id, ((ExpiringPastContent) result).getMetadata(expiration)));
   }
 
   @Override
-  public void reInsert(final Id id, Continuation<? super Boolean, Exception> command) {
+  public CompletableFuture<Boolean> reInsert(final Id id) {
     if (id instanceof ExpiringId gcId) {
       // what if the ExpiringId's expiration is different than the metadata's?
-      Futures.forward(storage.getObject(gcId.id()), new StandardContinuation<Object, Boolean, Exception>(command) {
-        @Override
-        public void receiveResult(final Object storedObject) {
-          Futures.forward(insert((PastContent)storedObject, gcId.expiration()).thenApply(PastImpl::isAnyStored), parent);
-        }
-      });
-    } else {
-      ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(id);
-      if (metadata == null) {
-        // no metadata, just reinsert with no expiration
-        super.reInsert(id, command);
-      } else {
-        reInsert(new ExpiringId(id, metadata.expiration()), command);
-      }
+      return storage.getObject(gcId.id())
+          .thenCompose(storedObject -> insert((PastContent)storedObject, gcId.expiration()))
+          .thenApply(PastImpl::isAnyStored);
     }
+    ExpiringPastMetadata metadata = (ExpiringPastMetadata) storage.getMetadata(id);
+    if (metadata == null) {
+      // no metadata, just reinsert with no expiration
+      return super.reInsert(id);
+    }
+    return reInsert(new ExpiringId(id, metadata.expiration()));
   }
 
   protected class ReplicaMap {
