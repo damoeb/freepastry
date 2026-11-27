@@ -39,9 +39,6 @@ package rice.p2p.past;
 
 import java.util.concurrent.CompletableFuture;
 
-import rice.Continuation;
-import rice.Continuation.StandardContinuation;
-import rice.Futures;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.persistence.Cache;
@@ -55,25 +52,13 @@ import rice.persistence.Cache;
  * @version $Id: PastPolicy.java 4654 2009-01-08 16:33:07Z jeffh $
  * @author Alan Mislove
  */
-@SuppressWarnings("unchecked")
 public interface PastPolicy {
 
   /**
    * This method is called when Past is told to fetch a key.  This method allows the application
    * to specify how a replica is fetched and authenticated.  The client should fetch the object
-   * (possibly using the past instance provided) and then return the object to the provided
-   * continuation.  The client *MUST* call the continuation at some point in the future, even if
-   * the request is lost.
-   *
-   * @param id The id to fetch
-   * @param past The local past instance
-   * @param backup The backup cache, where the object *might* be located
-   * @param command The command to call with the replica to store
-   */
-  public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Object, Exception> command);
-
-  /**
-   * Fetches the replica of a key, as {@link #fetch(Id, NodeHandle, Cache, Past, Continuation)}.
+   * (possibly using the past instance provided) and complete the returned future with it.  The
+   * future *MUST* complete at some point, even if the request is lost.
    *
    * @param id The id to fetch
    * @param hint A hint as to where the key might be
@@ -81,9 +66,7 @@ public interface PastPolicy {
    * @param past The local past instance
    * @return completed on the selector thread with the replica to store, or null if none was found
    */
-  public default CompletableFuture<Object> fetch(Id id, NodeHandle hint, Cache backup, Past past) {
-    return Futures.call(continuation -> fetch(id, hint, backup, past, continuation));
-  }
+  public CompletableFuture<Object> fetch(Id id, NodeHandle hint, Cache backup, Past past);
 
   /**
    * This method is call before an insert() is processed on the local node.  This allows applications
@@ -104,37 +87,29 @@ public interface PastPolicy {
   public static class DefaultPastPolicy implements PastPolicy {
 
     /**
-     * This method fetches the object via a lookup() call.
+     * This method fetches the object from the backup cache if it is there, else via a lookup() call, else from
+     * the hint.
      *
      * @param id The id to fetch
      * @param hint A hint as to where the key might be
      * @param backup The backup cache, where the object *might* be located
      * @param past The local past instance
-     * @param command The command to call with the replica to store
+     * @return the replica to store, or null if none was found
      */
     @Override
-    public void fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past, Continuation<? super Object, Exception> command) {
+    public CompletableFuture<Object> fetch(final Id id, final NodeHandle hint, final Cache backup, final Past past) {
       if ((backup != null) && backup.exists(id)) {
-        Futures.forward(backup.getObject(id), command);
-      } else {
-        Futures.forward(past.lookup(id, false), new StandardContinuation<PastContent, Object, Exception>(command) {
-          @Override
-          public void receiveResult(PastContent content) {
-            if (content != null)
-              parent.receiveResult(content);
-            else
-              Futures.forward(past.lookupHandle(id, hint), new StandardContinuation<PastContentHandle, Object, Exception>(parent) {
-                @Override
-                public void receiveResult(PastContentHandle handle) {
-                  if (handle != null)
-                    Futures.forward(past.fetch(handle), parent);
-                  else
-                    parent.receiveResult(null);
-                }
-              });
-          }
-        });
+        return backup.getObject(id);
       }
+      return past.lookup(id, false).thenCompose(content -> {
+        if (content != null)
+          return CompletableFuture.<Object>completedFuture(content);
+        return past.lookupHandle(id, hint).thenCompose(handle -> {
+          if (handle != null)
+            return past.fetch(handle).<Object>thenApply(fetched -> fetched);
+          return CompletableFuture.<Object>completedFuture(null);
+        });
+      });
     }
 
     /**

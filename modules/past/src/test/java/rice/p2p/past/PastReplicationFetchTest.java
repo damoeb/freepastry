@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import rice.Continuation;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.testing.DistPastTestContent;
@@ -63,8 +63,8 @@ class PastReplicationFetchTest {
   private PastImpl bootReplying(Object reply) throws Exception {
     PastPolicy lying = new PastPolicy() {
       @Override
-      public void fetch(Id id, NodeHandle hint, Cache backup, Past past, Continuation<? super Object, Exception> command) {
-        command.receiveResult(reply);
+      public CompletableFuture<Object> fetch(Id id, NodeHandle hint, Cache backup, Past past) {
+        return CompletableFuture.completedFuture(reply);
       }
 
       @Override
