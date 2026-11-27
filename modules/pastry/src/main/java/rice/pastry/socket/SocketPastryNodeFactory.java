@@ -398,6 +398,7 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
   protected TransportLayer<InetSocketAddress, ByteBuffer> buildWireTransportLayer(InetSocketAddress innermostAddress, final PastryNode pn) throws IOException {
     Environment environment = pn.getEnvironment();
     WireTransportLayer wireTransportLayer = new WireTransportLayer(innermostAddress,environment, null);
+    wireTransportLayer.setDatagramPinPolicy(getSocketPinPolicy(pn));
     return wireTransportLayer;
   }
 

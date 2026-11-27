@@ -48,10 +48,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
 import org.mpisws.p2p.transport.util.MessageRequestHandleImpl;
 import org.mpisws.p2p.transport.util.PrefixKey;
 import org.mpisws.p2p.transport.util.TokenBucketMap;
@@ -93,6 +95,8 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   /** Datagrams each network prefix may send; a datagram that finds its bucket empty is dropped unread. */
   private final TokenBucketMap<PrefixKey> datagramBucketsByPrefix;
   private final PrefixKey.Lengths prefixLengths;
+  /** sources whose datagrams the per-prefix budget never drops; set by the node factory */
+  private volatile SocketPinPolicy<InetSocketAddress> pinPolicy = () -> source -> false;
 
   WireTransportLayer wire;
 
@@ -208,7 +212,9 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
   /**
    * Reads the pending datagrams from the channel, up to {@code transport_wire_max_datagrams_per_read}, and passes them
    * up. The key stays readable, so the selector comes back for the rest after its other work. A datagram whose network
-   * prefix used up its bucket ({@code transport_wire_datagram_rate_per_prefix_per_second}) is dropped unread.
+   * prefix used up its bucket ({@code transport_wire_datagram_rate_per_prefix_per_second}) is dropped unread, unless its
+   * source is pinned (a neighbour): the source address can be spoofed, so a flood in a neighbour's name must not drop
+   * the neighbour's own datagrams. A pinned source is still bounded by {@code transport_wire_max_datagrams_per_read}.
    *
    * @param key the selection key of the channel
    */
@@ -220,15 +226,20 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
       InetSocketAddress address = null;
       int datagramsRead = 0;
       long nowMillis = wire.getEnvironment().getTimeSource().currentTimeMillis();
+      // asked for at most once per read, and only when a bucket is empty
+      @Nullable Predicate<InetSocketAddress> isPinned = null;
 
       while (datagramsRead < maxDatagramsPerRead && (address = (InetSocketAddress) channel.receive(readBuffer)) != null) {
         datagramsRead++;
         readBuffer.flip();
         if (!datagramBucketsByPrefix.tryTake(prefixLengths.of(address.getAddress()), nowMillis)) {
-          wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.datagram-budget")
-              .log("Dropping a datagram from {}: its network sent more than its datagram budget", address);
-          readBuffer.clear();
-          continue;
+          if (isPinned == null) isPinned = pinPolicy.pinnedIdentifiers();
+          if (!isPinned.test(address)) {
+            wire.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "wire.datagram-budget")
+                .log("Dropping a datagram from {}: its network sent more than its datagram budget", address);
+            readBuffer.clear();
+            continue;
+          }
         }
 
         if (readBuffer.remaining() > 0) {
@@ -255,6 +266,11 @@ public class UDPLayerImpl extends SelectionKeyHandler implements UDPLayer {
     } finally {
       readBuffer.clear();
     }
+  }
+
+  @Override
+  public void setPinPolicy(SocketPinPolicy<InetSocketAddress> pinPolicy) {
+    this.pinPolicy = pinPolicy;
   }
 
   protected void readHeader(InetSocketAddress address) throws IOException {

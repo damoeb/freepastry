@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
 import org.mpisws.p2p.transport.ErrorHandler;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
@@ -216,6 +217,14 @@ public class WireTransportLayer
   @Override
   public void acceptMessages(boolean enabled) {
     udp.acceptMessages(enabled);
+  }
+
+  /**
+   * Exempts datagrams from these sources (the node's neighbours) from the per-prefix datagram budget, which is keyed on
+   * a spoofable source address; see {@link UDPLayer#setPinPolicy}.
+   */
+  public void setDatagramPinPolicy(SocketPinPolicy<InetSocketAddress> pinPolicy) {
+    udp.setPinPolicy(pinPolicy);
   }
 
   @Override

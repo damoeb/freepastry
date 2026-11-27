@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
 import org.mpisws.p2p.transport.MessageCallback;
 import org.mpisws.p2p.transport.MessageRequestHandle;
 import rice.Destructible;
@@ -48,6 +49,12 @@ import rice.Destructible;
 public interface UDPLayer extends Destructible {
 
   void acceptMessages(boolean enabled);
+
+  /**
+   * Datagrams from pinned sources (the node's neighbours) are exempt from the per-prefix datagram budget: that budget
+   * is keyed on a source address anyone can spoof, so it must not be able to drop a neighbour's liveness pongs.
+   */
+  default void setPinPolicy(SocketPinPolicy<InetSocketAddress> pinPolicy) {}
 
   MessageRequestHandle<InetSocketAddress, ByteBuffer> sendMessage(
       InetSocketAddress destination, ByteBuffer msg,

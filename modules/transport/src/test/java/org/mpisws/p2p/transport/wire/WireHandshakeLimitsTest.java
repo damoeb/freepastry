@@ -205,6 +205,42 @@ class WireHandshakeLimitsTest {
     assertEquals(DATAGRAM_BURST, received.get(), "datagrams passed up");
   }
 
+  @Test
+  @DisplayName("a flood from a neighbour's prefix does not drop the datagrams of the pinned neighbour itself")
+  void pinnedSourceBypassesPrefixBudget() throws Exception {
+    env.getParameters().setDouble("transport_wire_datagram_rate_per_prefix_per_second", 0.001);
+    env.getParameters().setInt("transport_wire_datagram_burst_per_prefix", DATAGRAM_BURST);
+    InetSocketAddress address = new InetSocketAddress(localhost, FreePorts.freePort(localhost));
+    WireTransportLayer wire = new WireTransportLayer(address, env, null);
+    AtomicInteger fromNeighbour = new AtomicInteger();
+    try (DatagramSocket flooder = new DatagramSocket(0, localhost); DatagramSocket neighbour = new DatagramSocket(0, localhost)) {
+      InetSocketAddress neighbourAddress = (InetSocketAddress) neighbour.getLocalSocketAddress();
+      wire.setDatagramPinPolicy(() -> neighbourAddress::equals);
+      wire.setCallback(new TransportLayerCallback<>() {
+        @Override
+        public void messageReceived(InetSocketAddress i, ByteBuffer m, @Nullable Map<String, Object> options) {
+          if (i.equals(neighbourAddress)) fromNeighbour.incrementAndGet();
+        }
+
+        @Override
+        public void incomingSocket(P2PSocket<InetSocketAddress> socket) {
+        }
+      });
+
+      for (int i = 0; i < FLOOD_DATAGRAMS; i++) {
+        flooder.send(new DatagramPacket(new byte[] {(byte) i}, 1, address));
+      }
+      Thread.sleep(300);
+      for (int i = 0; i < DATAGRAM_BURST * 2; i++) {
+        neighbour.send(new DatagramPacket(new byte[] {(byte) i}, 1, address));
+      }
+      Thread.sleep(300);
+    }
+    awaitSelectorLoop();
+
+    assertEquals(DATAGRAM_BURST * 2, fromNeighbour.get(), "datagrams of the pinned neighbour passed up");
+  }
+
   /** Stands for the identity and other header layers: reads until it has the whole header, which never comes. */
   private static TransportLayerCallback<InetSocketAddress, ByteBuffer> headerLayerThatWaitsFor(int headerBytes) {
     return new TransportLayerCallback<>() {

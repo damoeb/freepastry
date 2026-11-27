@@ -35,7 +35,9 @@ transport_wire_accept_rate_per_second = 100
 transport_wire_accept_burst = 200
 # datagrams read in one selection before the selector thread turns to other work
 transport_wire_max_datagrams_per_read = 64
-# token bucket of datagrams per network prefix; a datagram that finds it empty is dropped unread
+# token bucket of datagrams per network prefix; a datagram that finds it empty is dropped unread, unless its
+# source is pinned (leaf set, routing table): source addresses can be spoofed, so a flood in a neighbour's
+# name must not drop the neighbour's own datagrams (liveness pongs)
 transport_wire_datagram_rate_per_prefix_per_second = 200
 transport_wire_datagram_burst_per_prefix = 400
 # budgets that many addresses of one network share are kept per prefix of this length: an IPv4 /24, an IPv6 /64
