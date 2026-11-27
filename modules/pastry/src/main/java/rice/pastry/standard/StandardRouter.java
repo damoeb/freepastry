@@ -39,10 +39,8 @@ package rice.pastry.standard;
 import java.net.NoRouteToHostException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.mpisws.p2p.transport.exception.NodeIsFaultyException;
@@ -446,15 +444,9 @@ public class StandardRouter extends PastryAppl implements Router {
     // if we both have the same prefix (in other words the previous node didn't make a prefix of progress)
     if (diffDigit >= 0 &&
         diffDigit == thePastryNode.getNodeId().indexOfMostSignificantDifferingDigit(key, thePastryNode.getRoutingTable().baseBitLength())) {
-      synchronized(lastTimeSentRouteTablePatch) {
-        if (lastTimeSentRouteTablePatch.containsKey(prevNode)) {
-          long lastTime = lastTimeSentRouteTablePatch.get(prevNode);
-          if (lastTime > (thePastryNode.getEnvironment().getTimeSource().currentTimeMillis() - ROUTE_TABLE_PATCH_THROTTLE)) {
-            logger.info("not sending route table patch to {} because throttled.  Last Time:{}", prevNode, lastTime);
-            return;
-          }
-        }
-        lastTimeSentRouteTablePatch.put(prevNode, thePastryNode.getEnvironment().getTimeSource().currentTimeMillis());
+      if (!routeTablePatchThrottle.mayPatch(prevNode, thePastryNode.getEnvironment().getTimeSource().currentTimeMillis())) {
+        logger.info("not sending route table patch to {} because throttled", prevNode);
+        return;
       }
 
       // the previous node is missing a RT entry, send the row
@@ -470,12 +462,12 @@ public class StandardRouter extends PastryAppl implements Router {
     }
   }
 
-  private final int ROUTE_TABLE_PATCH_THROTTLE = 5000;
+  private static final int ROUTE_TABLE_PATCH_THROTTLE = 5000;
   /**
    * We can end up causing a nasty feedback if we blast too many BRRs, so we're
    * going to throttle.
    */
-  private final Map<NodeHandle, Long> lastTimeSentRouteTablePatch = new HashMap<NodeHandle, Long>();
+  final RouteTablePatchThrottle<NodeHandle> routeTablePatchThrottle = new RouteTablePatchThrottle<>(ROUTE_TABLE_PATCH_THROTTLE);
 
 
   @Override
