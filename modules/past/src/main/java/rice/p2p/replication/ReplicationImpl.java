@@ -40,9 +40,13 @@ package rice.p2p.replication;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.Destructible;
 import rice.Executable;
@@ -126,6 +130,13 @@ public class ReplicationImpl implements Replication, Application, Destructible {
   Environment environment;
 
   Logger logger;
+
+  /**
+   * The ranges of the request this node sent each neighbor in the current maintenance round, by the id of the
+   * neighbor: only the response of that neighbor with those ranges is acted on, once. Cleared when a round starts,
+   * so it holds at most one entry per neighbor.
+   */
+  private final Map<Id, IdRange[]> outstandingRequests = new ConcurrentHashMap<Id, IdRange[]>();
 
   /**
    * Constructor
@@ -221,6 +232,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
    */
   @Override
   public void replicate() {
+    outstandingRequests.clear();
     final NodeHandleSet handles = endpoint.neighborSet(Integer.MAX_VALUE);
     final IdRange ourRange = endpoint.range(handle, 0, handle.getId());
 
@@ -251,6 +263,7 @@ public class ReplicationImpl implements Replication, Application, Destructible {
             logger.debug("COUNT: Sending request to {} for range {}, {} in instance {}", handle, range, ourRange, instance);
 
             RequestMessage request = new RequestMessage(ReplicationImpl.this.handle, new IdRange[] {range, ourRange}, new IdBloomFilter[] {filter, ourFilter});
+            outstandingRequests.put(handle.getId(), request.getRanges());
             endpoint.route(null, request, handle);
             return null;
           }), environment);
@@ -298,6 +311,21 @@ public class ReplicationImpl implements Replication, Application, Destructible {
    */
   @Override
   public void deliver(Id id, Message message) {
+    deliver(id, message, null);
+  }
+
+  /**
+   * Delivers a message; a response is acted on only if it answers a request this node sent the node it arrived
+   * from, with the ranges of that request. An unsolicited response would make this node fetch, and extend the
+   * expiration of, whatever ids the sender lists.
+   *
+   * @param id The destination id of the message
+   * @param message The message being sent
+   * @param previousHop the node the message arrived from (authenticated in certified mode), null if it was created
+   *     here or the endpoint cannot tell; then the source the response names is used
+   */
+  @Override
+  public void deliver(Id id, Message message, @Nullable NodeHandle previousHop) {
     logger.debug("COUNT: Replication {} received message {}", instance, message);
 
     if (!(message instanceof ReplicationMessage replicationMessage)) {
@@ -331,6 +359,11 @@ public class ReplicationImpl implements Replication, Application, Destructible {
         }), environment);
       }
       case ReplicationResponseMessage rm -> {
+        NodeHandle responder = previousHop != null ? previousHop : rm.getSource();
+        if (!isAnswerToOutstandingRequest(responder, rm)) {
+          logger.info("Dropping replication response from {}: this node has no request with its ranges outstanding there", responder);
+          return;
+        }
 
         for (int i=0; i<rm.getIdSets().length; i++) {
           IdSet receivedIdSet = factory.buildIdSet();
@@ -352,6 +385,15 @@ public class ReplicationImpl implements Replication, Application, Destructible {
         updateClient();
       }
     }
+  }
+
+  /** Whether the response answers the outstanding request to the responder; if so, that request is answered. */
+  private boolean isAnswerToOutstandingRequest(@Nullable NodeHandle responder, ReplicationResponseMessage response) {
+    if (responder == null) {
+      return false;
+    }
+    IdRange[] asked = outstandingRequests.get(responder.getId());
+    return asked != null && Arrays.equals(asked, response.getRanges()) && outstandingRequests.remove(responder.getId(), asked);
   }
 
   /**
