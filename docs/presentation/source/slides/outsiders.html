@@ -1,0 +1,15 @@
+<section id="outsiders">
+<p class="eyebrow">DEFENCE · STOPPED: OUTSIDERS</p>
+<h2>Outsiders can no longer crash a node</h2>
+<table class="tbl-small rise">
+<tr class="tbl-head"><th style="width:48%">Attack</th><th style="width:52%">Defence now</th></tr>
+<tr><td>Malformed or truncated messages crash the node</td><td>Bounded readers and fuzz tests; a bad datagram is dropped, a bad socket closed</td></tr>
+<tr><td>A Glacier response sent as a request stops every node in the JVM</td><td>Dropped and logged; a test forbids <span class="mono">new Error(</span> in main code</td></tr>
+<tr><td>Spoofed handles fill memory until it runs out</td><td>Weak handle cache; identity and liveness tables are size-bounded</td></tr>
+<tr><td>Slow handshakes hold sockets open (slowloris)</td><td>10 s handshake deadline, at most 32 handshakes per IP</td></tr>
+<tr><td>A burst of tiny TLS frames overflows the stack</td><td>A bounded read loop, at most 64 reads per socket per selector turn</td></tr>
+<tr><td>A forged PONG marks a dead route alive</td><td>Each ping carries a random 64-bit nonce</td></tr>
+<tr><td>A node relays traffic to any address</td><td>Address policy on every hop: no wildcard, multicast or self</td></tr>
+</table>
+<aside>Every row was reproduced first: a test that failed on the old code for the right reason, then the fix. The two most dangerous were kill switches: any Error on the selector thread destroyed the whole Environment, which stops every node in that JVM. One forged Glacier message, or a burst of about 1,600 one-byte TLS messages, was enough.</aside>
+</section>

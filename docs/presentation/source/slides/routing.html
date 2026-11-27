@@ -1,0 +1,14 @@
+<section id="routing">
+<p class="eyebrow">HOW IT WORKS · PREFIX ROUTING</p>
+<h2>Each hop matches one more digit of the key</h2>
+<p class="keyline">Key k = <span class="mono atk">3A7F 02C1 …</span></p>
+<div class="hops">
+<div class="hop rise" style="--i:0"><p class="hop-label">Source</p><p class="hop-id">9C21 4E0B …</p><p class="hop-note">Starts anywhere on the ring</p></div>
+<div class="hop rise" style="--i:1"><p class="hop-label">Hop 1</p><p class="hop-id"><span class="hl">3</span>B05 91AA …</p><p class="hop-note">Routing table row 0: shares “3”</p></div>
+<div class="hop rise" style="--i:2"><p class="hop-label">Hop 2</p><p class="hop-id"><span class="hl">3A</span>12 7F30 …</p><p class="hop-note">Row 1: shares “3A”</p></div>
+<div class="hop rise" style="--i:3"><p class="hop-label">Hop 3</p><p class="hop-id"><span class="hl">3A7</span>C 0D19 …</p><p class="hop-note">Row 2: shares “3A7”, and k lies in its leaf set</p></div>
+<div class="hop rise" style="--i:4"><p class="hop-label">Root</p><p class="hop-id"><span class="hl">3A7</span>E F5C2 …</p><p class="hop-note">Numerically closest to k: delivers the message</p></div>
+</div>
+<p class="body">Row r of a routing table holds nodes that share r digits with this node, one for each possible next digit. If a hop is down, a node picks another entry with the same prefix or a leaf-set neighbour.</p>
+<aside>The routing table has one row per prefix length and 16 columns, one per next hex digit. A node forwards to the entry that extends the shared prefix with the key by one digit; when the key falls within its leaf set, it delivers to the numerically closest neighbour. This is why routing is fast, and also why it is sensitive to who fills those table slots: that comes back on the limits slide.</aside>
+</section>

@@ -1,0 +1,13 @@
+<section id="stack">
+<p class="eyebrow">HOW IT WORKS · THE NODE STACK</p>
+<h2>Each layer checks what passes through it</h2>
+<div class="stack">
+<div class="layer rise" style="--i:0"><p class="layer-name">Applications<br>Past, Scribe, Glacier, PeerReview</p><p class="layer-def">Content hashes, owner-signed Glacier manifests, Scribe sources must match the previous hop, certificates checked against the CA</p></div>
+<div class="layer rise" style="--i:1"><p class="layer-name">Pastry overlay<br>routing table, leaf set, join</p><p class="layer-def">Only verified handles are admitted; join answers come from authenticated senders; ready state changes on the selector thread only</p></div>
+<div class="layer rise" style="--i:2"><p class="layer-name">Liveness and priority</p><p class="layer-def">Pings carry a random nonce; trackers and big-message buffers are bounded; TLS reads are fair per selector turn</p></div>
+<div class="layer layer-cert rise" style="--i:3"><p class="layer-name">Identity binding (certified)<br>(id, address, epoch)</p><p class="layer-def">A certificate proves the id; only a connection this node dialled proves the address</p></div>
+<div class="layer layer-cert rise" style="--i:4"><p class="layer-name">TLS 1.3 (certified mode)</p><p class="layer-def">Trust store holds only the CA; node certificates carry proper extensions and random serials</p></div>
+<div class="layer rise" style="--i:5"><p class="layer-name">Wire: TCP and UDP</p><p class="layer-def">10 s handshake deadline, 32 handshakes per IP, bounded readers that drop bad input instead of crashing</p></div>
+</div>
+<aside>FreePastry is a stack of transport layers under the Pastry node, with applications on top. Everything runs on one selector thread, which is why a single uncaught Error used to stop every node in the JVM. Each layer now bounds what it keeps and drops what it cannot verify. The identity and TLS layers are what certified mode adds.</aside>
+</section>

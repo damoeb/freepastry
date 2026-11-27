@@ -1,0 +1,42 @@
+<section id="ring">
+<p class="eyebrow">HOW IT WORKS · THE RING</p>
+<h2>Every node and every key sits on one ring</h2>
+<div class="cols">
+<div class="col ringtext">
+<p class="body rise" style="--i:0">Node ids and keys are 128-bit numbers on a circle. A message for key <span class="atk">k</span> goes to the node whose id is numerically closest: the <span class="hl">root</span> of k.</p>
+<p class="body rise" style="--i:1">Each node knows its nearest neighbours on both sides (the <span class="hl">leaf set</span>) and, in a routing table, a few distant nodes for every id prefix.</p>
+<p class="body rise" style="--i:2">Every hop fixes at least one more hex digit of the key, so a message needs about log₁₆ N hops: five hops for a million nodes.</p>
+<div class="legend rise" style="--i:3">
+<div class="legend-row"><div class="swatch" style="background:#14213D"></div><p class="legend-text">Node</p></div>
+<div class="legend-row"><div class="swatch" style="background:#B4491A;border-radius:4px"></div><p class="legend-text">Key k</p></div>
+<div class="legend-row"><div class="swatch" style="background:#2F6FB3"></div><p class="legend-text">Route of the message, and the root’s leaf set</p></div>
+</div>
+</div>
+<div class="ringbox fadein" style="--i:1">
+<svg aria-label="A ring of ten nodes. A message hops from a source node across the ring in three steps to the root node next to key k; an arc marks the root's leaf set." width="640" height="640" viewBox="0 0 640 640" style="position:absolute;left:0;top:0;width:640px;height:640px">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker></defs>
+<circle cx="320" cy="320" r="270" fill="none" stroke="#D5D1C6" stroke-width="4"/>
+<path d="M455 554 A270 270 0 0 1 66 412" fill="none" stroke="#9DBEE6" stroke-width="18" stroke-linecap="round"/>
+<path d="M486 120 L80 402" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<path d="M74 424 L152 525" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<path d="M181 548 L254 578" fill="none" stroke="#2F6FB3" stroke-width="5" marker-end="url(#arr)"/>
+<circle cx="367" cy="54" r="13" fill="#14213D"/>
+<circle cx="494" cy="113" r="16" fill="#14213D"/>
+<circle cx="581" cy="250" r="13" fill="#14213D"/>
+<circle cx="574" cy="412" r="13" fill="#14213D"/>
+<circle cx="455" cy="554" r="13" fill="#14213D"/>
+<circle cx="273" cy="586" r="18" fill="#2F6FB3"/>
+<circle cx="165" cy="541" r="13" fill="#14213D"/>
+<circle cx="66" cy="412" r="13" fill="#14213D"/>
+<circle cx="66" cy="228" r="13" fill="#14213D"/>
+<circle cx="185" cy="86" r="13" fill="#14213D"/>
+<rect x="217" y="563" width="22" height="22" transform="rotate(45 228 574)" fill="#B4491A"/>
+</svg>
+<p class="lbl" style="left:516px;top:84px;width:140px">source</p>
+<p class="lbl lbl-key" style="left:140px;top:600px;width:110px">key k</p>
+<p class="lbl lbl-root" style="left:290px;top:604px;width:150px">root of k</p>
+<p class="lbl lbl-root" style="left:478px;top:560px;width:150px">leaf set</p>
+</div>
+</div>
+<aside>Pastry places nodes and keys in the same 128-bit id space, drawn as a ring. The root of a key is the live node whose id is numerically closest. The source sends towards the key; each hop forwards to a node that shares a longer id prefix with the key, and the last hop lands in the root’s leaf set. Applications such as Past and Scribe build on this: Past stores an object at the root and its leaf-set neighbours, Scribe roots a multicast tree at the topic’s root.</aside>
+</section>

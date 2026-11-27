@@ -1,0 +1,44 @@
+<section id="join">
+<p class="eyebrow">USE CASE · ENTERING THE NETWORK</p>
+<h2>A new node joins the ring</h2>
+<div class="uc">
+<div class="seq fadein">
+<svg aria-label="Sequence diagram: new node N talks to bootstrap B, the join request is routed over hops to the root R, R answers N with its leaf set, and N probes every returned handle." width="1060" height="600" viewBox="0 0 1060 600" style="position:absolute;left:0;top:0;width:1060px;height:600px">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker><marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#B4491A"/></marker></defs>
+<rect x="10" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="300" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="590" y="0" width="200" height="60" rx="10" fill="#14213D"/>
+<rect x="850" y="0" width="200" height="60" rx="10" fill="#2F6FB3"/>
+<line x1="110" y1="60" x2="110" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="400" y1="60" x2="400" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="690" y1="60" x2="690" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="950" y1="60" x2="950" y2="595" stroke="#D5D1C6" stroke-width="3" stroke-dasharray="8 8"/>
+<line x1="110" y1="140" x2="394" y2="140" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="110" y1="220" x2="394" y2="220" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="400" y1="300" x2="684" y2="300" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="690" y1="380" x2="944" y2="380" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="950" y1="460" x2="116" y2="460" stroke="#2F6FB3" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="110" y1="540" x2="944" y2="540" stroke="#B4491A" stroke-width="4" stroke-dasharray="12 8" marker-end="url(#ahp)"/>
+</svg>
+<p class="seq-head" style="left:10px">New node N</p>
+<p class="seq-head" style="left:300px">Bootstrap B</p>
+<p class="seq-head" style="left:590px">Hops on route</p>
+<p class="seq-head" style="left:850px">Root R</p>
+<p class="seq-lbl" style="left:126px;top:100px;width:260px">1 · TLS, N dials</p>
+<p class="seq-lbl" style="left:126px;top:180px;width:260px">2 · JoinRequest</p>
+<p class="seq-lbl" style="left:416px;top:260px;width:260px">3 · route to N’s id</p>
+<p class="seq-lbl" style="left:706px;top:340px;width:240px">4 · reaches root</p>
+<p class="seq-lbl" style="left:400px;top:420px;width:520px">5 · accepted: leaf set and table rows</p>
+<p class="seq-lbl seq-lbl-probe" style="left:400px;top:500px;width:520px">6 · probe each handle at its own address</p>
+</div>
+<ol class="steps rise" style="--i:1">
+<li>N holds a CA certificate with a random id and dials a known bootstrap B over TLS.</li>
+<li>N sends a JoinRequest for its own id.</li>
+<li>Pastry routes it towards N’s id; every hop adds a row of its routing table.</li>
+<li>The root R, the existing node closest to N’s id, accepts the request.</li>
+<li>N adopts the answer only from an authenticated sender.</li>
+<li>N probes every returned handle, announces itself to its leaf set and turns ready.</li>
+</ol>
+</div>
+<aside>Joining reuses routing: the JoinRequest is a message addressed to the new node’s own id, so it ends at the node that will become its neighbour. Steps 5 and 6 are certified-mode checks added in 2026; plain mode takes the answer as it comes. Still open: a malicious bootstrap or root can answer with colluders (wave C4 adds several bootstraps and a density test).</aside>
+</section>

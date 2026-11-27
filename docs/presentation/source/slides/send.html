@@ -1,0 +1,18 @@
+<section id="send">
+<p class="eyebrow">USE CASE · SENDING A MESSAGE</p>
+<h2>A message travels hop by hop to the root of its key</h2>
+<div class="hopsrow">
+<div class="hopcard rise" style="--i:0"><p class="hopcard-name">Sender S</p><p class="hopcard-text">The app calls route(key, msg). S picks the table entry that shares the longest prefix with the key and queues the message by priority.</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:1"><p class="hopcard-name">Hop</p><p class="hopcard-text">Receives over TLS: the previous hop is the id in its certificate. Apps on the hop may see the message on the way (forward).</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:2"><p class="hopcard-name">Hop</p><p class="hopcard-text">If the next node is down, it picks another entry with the same prefix. Liveness comes from pings with a random nonce.</p></div>
+<x-shape kind="arrow-right" class="hoparrow"></x-shape>
+<div class="hopcard rise" style="--i:3"><p class="hopcard-name">Root R</p><p class="hopcard-text">The key falls in its leaf set, so it delivers the message to the app, which can ask which node it came from.</p></div>
+</div>
+<div class="notes rise" style="--i:4">
+<p class="note note-ok">Each hop drops what it cannot read, bounds what it keeps, and in certified mode binds the sender to its certificate.</p>
+<p class="note note-atk">Not yet: a malicious hop can drop or misroute the message. Redundant routing and a routing failure test come in wave D.</p>
+</div>
+<aside>Messages are routed, not sent end to end: each hop decides the next one from its own routing table. That keeps state small and routes short, but it means every hop on the path must be honest for the message to arrive. The hop-by-hop acknowledgements only show that the next hop got the message, not that the root did.</aside>
+</section>

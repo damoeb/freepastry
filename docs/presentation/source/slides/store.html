@@ -1,0 +1,37 @@
+<section id="store">
+<p class="eyebrow">USE CASE · STORING AND FINDING AN OBJECT</p>
+<h2>Past keeps copies next to the object’s id</h2>
+<div class="uc">
+<ol class="steps rise" style="--i:0;font-size:28px">
+<li>The object’s id is the SHA-256 hash of its content (in Glacier: of the owner’s key and the object’s name).</li>
+<li>The insert is routed to the root of that id.</li>
+<li>The root and its nearest leaf-set neighbours store replicas and acknowledge; the insert succeeds once enough of them have.</li>
+<li>A lookup is routed towards the id and answered by the first replica it meets.</li>
+<li>The reader checks the hash and rejects a wrong answer.</li>
+</ol>
+<div class="storebox fadein" style="--i:1">
+<svg aria-label="A ring: a writer node sends an insert to the root; the root and three neighbours hold replicas; a reader's lookup reaches the nearest replica." width="500" height="500" viewBox="0 0 640 640" style="position:absolute;left:0;top:0;width:500px;height:500px">
+<defs><marker id="sa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2F6FB3"/></marker><marker id="sb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#B4491A"/></marker></defs>
+<circle cx="320" cy="320" r="270" fill="none" stroke="#D5D1C6" stroke-width="4"/>
+<path d="M455 554 A270 270 0 0 1 66 412" fill="none" stroke="#9DBEE6" stroke-width="18" stroke-linecap="round"/>
+<path d="M486 128 Q320 320 280 566" fill="none" stroke="#2F6FB3" stroke-width="5" stroke-dasharray="12 8" marker-end="url(#sa)"/>
+<path d="M66 246 L66 392" fill="none" stroke="#B4491A" stroke-width="5" marker-end="url(#sb)"/>
+<circle cx="367" cy="54" r="13" fill="#14213D"/>
+<circle cx="494" cy="113" r="16" fill="#14213D"/>
+<circle cx="581" cy="250" r="13" fill="#14213D"/>
+<circle cx="574" cy="412" r="13" fill="#14213D"/>
+<circle cx="455" cy="554" r="16" fill="#2F6FB3"/>
+<circle cx="273" cy="586" r="20" fill="#2F6FB3"/>
+<circle cx="165" cy="541" r="16" fill="#2F6FB3"/>
+<circle cx="66" cy="412" r="16" fill="#2F6FB3"/>
+<circle cx="66" cy="228" r="16" fill="#14213D"/>
+<circle cx="185" cy="86" r="13" fill="#14213D"/>
+</svg>
+<p class="lbl" style="left:404px;top:58px;width:110px">writer</p>
+<p class="lbl lbl-key" style="left:75px;top:156px;width:120px">reader</p>
+<p class="lbl lbl-root" style="left:175px;top:462px;width:260px">root and replicas</p>
+</div>
+</div>
+<p class="note note-atk">Not yet: one malicious replica can answer a lookup of mutable content (waves B2 and C6).</p>
+<aside>Past is the storage layer on top of Pastry; ExpiringPast adds leases capped at a year, and Glacier adds erasure-coded, owner-signed archives. Because replicas sit on the leaf set of the root, the set heals itself when nodes come and go: replication moves copies to the new neighbours.</aside>
+</section>
