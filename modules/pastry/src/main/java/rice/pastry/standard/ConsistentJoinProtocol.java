@@ -415,6 +415,13 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
   private void respondToJoiner(final JoinRequest joinRequest) {
     NodeHandle joiner = joinRequest.getHandle();
 
+    // design 3f: a joiner, and all joiners together, get a bounded number of answers; the joiner retries with backoff
+    if (!thePastryNode.getMaintenanceBudget().admitJoin(joiner.getNodeId())) {
+      thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "budget.join")
+          .log("Ignoring JoinRequest {}, the joiner or the node is over its join budget", joinRequest);
+      return;
+    }
+
     // this is the terminal node on the request path
     if (thePastryNode.isReady()) {
       logger.info("acceptJoin {}", joinRequest);

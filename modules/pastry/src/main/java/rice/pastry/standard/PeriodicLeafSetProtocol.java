@@ -39,6 +39,7 @@ package rice.pastry.standard;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.event.Level;
 
 import rice.environment.random.RandomSource;
 import rice.environment.random.simple.SimpleRandomSource;
@@ -251,6 +252,14 @@ public class PeriodicLeafSetProtocol extends PastryAppl implements ReadyStrategy
 
     } else if (msg instanceof RequestLeafSet requestLeafSet) {
       // request for leaf set from a remote node
+      NodeHandle requester = requestLeafSet.returnHandle();
+      if (requester != null && !requester.equals(localHandle)
+          && !thePastryNode.getMaintenanceBudget().admitLeafSetRequest(requester)) {
+        // design 3f: the requester asks again at its next lease renewal or maintenance round
+        thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "budget.leaf-set-request")
+            .log("Ignoring a leaf set request from {}, it is over its maintenance budget", requester);
+        return;
+      }
 
       if (requestLeafSet.getTimeStamp() > 0) { // without a timestamp, this is just a normal request, not a lease request
         // remember that we gave out a lease, and go unReady() if the node goes faulty

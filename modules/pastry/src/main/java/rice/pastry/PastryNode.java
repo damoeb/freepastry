@@ -88,6 +88,7 @@ import rice.pastry.routing.RoutingTable;
 import rice.pastry.transport.DefaultPastryMessageReceipt;
 import rice.pastry.transport.PastryMessageReceipt;
 import rice.pastry.transport.PastryMessageSendListener;
+import rice.pastry.standard.MaintenanceBudget;
 import rice.selector.SelectorLoop;
 
 import static org.mpisws.p2p.transport.liveness.LivenessTypes.LIVENESS_ALIVE;
@@ -177,6 +178,9 @@ public class PastryNode implements
 
   private final AppSocketHandshake appSockets;
 
+  /** the maintenance work remote peers may make this node do (design 3f) */
+  private final MaintenanceBudget maintenanceBudget;
+
   public PastryNode(Id id, Environment e) {
     myEnvironment = e;
     myNodeId = id;
@@ -186,7 +190,16 @@ public class PastryNode implements
 
     logger = e.getLogManager().getLogger(getClass(), null);
     appSockets = new AppSocketHandshake(this, logger);
+    maintenanceBudget = new MaintenanceBudget(this, MaintenanceBudget.Config.fromParameters(e.getParameters()));
     e.addDestructable(this);
+  }
+
+  /**
+   * The budgets of the maintenance work remote peers may make this node do: route row and leaf set requests, route
+   * rows, join requests at the root (design 3f). Used on the selector thread.
+   */
+  public MaintenanceBudget getMaintenanceBudget() {
+    return maintenanceBudget;
   }
 
   public void boot(Object o) {

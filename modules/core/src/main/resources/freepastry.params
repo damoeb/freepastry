@@ -45,6 +45,26 @@ transport_prefix_bits_v4 = 24
 transport_prefix_bits_v6 = 64
 # the most prefixes or peers a budget keeps a token bucket for; the least recently used one is forgotten beyond
 pastry_socket_budget_max_peers = 10000
+# maintenance work a remote peer can make a node do at will (token buckets per peer, the authenticated sender in
+# certified mode); a request beyond its bucket is ignored, the honest requester asks again on its own schedule
+# route row requests a peer gets answered
+pastry_budget_route_row_requests_per_second = 1
+pastry_budget_route_row_request_burst = 5
+# route rows a peer sends that the node takes in (answers to its requests and unsolicited ones)
+pastry_budget_route_row_broadcasts_per_second = 0.2
+pastry_budget_route_row_broadcast_burst = 3
+# leaf set requests (and the leases they ask for) a peer gets answered
+pastry_budget_leaf_set_requests_per_second = 1
+pastry_budget_leaf_set_request_burst = 5
+# join requests the node answers as the root: per joiner id (2 per minute), and for all joiners together
+pastry_budget_joins_per_joiner_per_second = 0.0333
+pastry_budget_join_burst_per_joiner = 2
+pastry_budget_joins_per_second = 20
+pastry_budget_join_burst = 40
+# leaf set and routing table members get this many times the rate and burst
+pastry_budget_pinned_factor = 4
+# peers that have a bucket of a kind; beyond it the least recently used one is forgotten
+pastry_budget_max_peers = 10000
 # read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
 # waits for the next turn, so that a burst on one socket neither nests calls nor starves others
 transport_ssl_max_read_callbacks_per_select = 64

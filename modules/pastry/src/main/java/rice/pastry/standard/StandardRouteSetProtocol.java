@@ -38,6 +38,8 @@ package rice.pastry.standard;
 
 import java.io.IOException;
 
+import org.jspecify.annotations.Nullable;
+import org.slf4j.event.Level;
 import rice.environment.Environment;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.commonapi.rawserialization.MessageDeserializer;
@@ -83,7 +85,12 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
     public Message deserialize(InputBuffer buf, short type, int priority, NodeHandle sender) throws IOException {
       return switch (RouteSetMessageType.find(type)) {
         case REQUEST_ROUTE_ROW -> new RequestRouteRow(sender,buf);
-        case BROADCAST_ROUTE_ROW -> new BroadcastRouteRow(buf,pn,pn);
+        case BROADCAST_ROUTE_ROW -> {
+          BroadcastRouteRow broadcastRouteRow = new BroadcastRouteRow(buf,pn,pn);
+          // the connection's sender, for the maintenance budget; the body names a sender too
+          broadcastRouteRow.setSender(sender);
+          yield broadcastRouteRow;
+        }
         case null -> throw new IOException("Unknown message type " + type + " for " + getClass().getName());
       };
     }
@@ -122,6 +129,9 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
     switch (routeSetMessage) {
       case BroadcastRouteRow broadcastRouteRow -> {
         if (logger.isTraceEnabled()) logger.trace("Received "+broadcastRouteRow.toStringFull());
+        if (!isWithinBudget(broadcastRouteRow.getSender(), false)) {
+          return;
+        }
 
         RouteSet[] row = broadcastRouteRow.getRow();
 
@@ -146,6 +156,9 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
 
         int reqRow = requestRouteRow.getRow();
         NodeHandle currentHandle = requestRouteRow.returnHandle();
+        if (!isWithinBudget(currentHandle, true)) {
+          return;
+        }
 
         RouteSet row[] = routeTable.getRow(reqRow);
         BroadcastRouteRow brr = new BroadcastRouteRow(thePastryNode.getLocalHandle(), row);
@@ -160,6 +173,19 @@ public class StandardRouteSetProtocol extends PastryAppl implements RouteSetProt
       }
     }
 
+  }
+
+  /**
+   * Whether the peer's maintenance budget (design 3f) admits a route row request or broadcast from it. Messages
+   * created on this node have no sender and are always admitted.
+   */
+  private boolean isWithinBudget(@Nullable NodeHandle sender, boolean isRequest) {
+    if (sender == null || sender.equals(thePastryNode.getLocalHandle())) return true;
+    MaintenanceBudget budget = thePastryNode.getMaintenanceBudget();
+    if (isRequest ? budget.admitRouteRowRequest(sender) : budget.admitRouteRowBroadcast(sender)) return true;
+    thePastryNode.getEnvironment().getLogRateLimiter().at(logger, Level.INFO, "budget.route-row")
+        .log("Ignoring a route row {} from {}, it is over its maintenance budget", isRequest ? "request" : "broadcast", sender);
+    return false;
   }
 
   /**
