@@ -46,6 +46,11 @@ pastry_socket_budget_max_peers = 10000
 # read callbacks one TLS socket runs on already decrypted bytes in one selector turn; the rest
 # waits for the next turn, so that a burst on one socket neither nests calls nor starves others
 transport_ssl_max_read_callbacks_per_select = 64
+# threads that run the CPU work (RSA, key exchange) of incoming TLS handshakes, off the selector and the
+# shared processing thread, and the incoming handshakes that may wait for one; a handshake that finds the
+# queue full is refused (its socket closed). Handshakes this node starts have a thread of their own
+transport_ssl_handshake_threads = 2
+transport_ssl_handshake_queue_length = 64
 # log lines of one kind that remote input can trigger at will (a dropped malformed datagram, a
 # refused handshake, an exception contained on the selector thread) per interval; further lines of
 # that kind are counted and reported in one summary line with the next line of the kind

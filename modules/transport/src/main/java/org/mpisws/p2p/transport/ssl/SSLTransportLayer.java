@@ -40,6 +40,11 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -86,6 +91,10 @@ public class SSLTransportLayer<Identifier, MessageType>
   public static final int CLIENT_AUTH_REQUIRED = 1;
   /** the parameter that bounds the read callbacks one TLS socket runs per selector turn */
   public static final String MAX_READ_CALLBACKS_PER_SELECT_PARAM = "transport_ssl_max_read_callbacks_per_select";
+  /** the parameter that sets the threads that run the CPU work of incoming TLS handshakes */
+  public static final String HANDSHAKE_THREADS_PARAM = "transport_ssl_handshake_threads";
+  /** the parameter that bounds the incoming TLS handshakes waiting for a thread; beyond it a handshake is refused */
+  public static final String HANDSHAKE_QUEUE_LENGTH_PARAM = "transport_ssl_handshake_queue_length";
 
   private final TransportLayer<Identifier, MessageType> transportLayer;
   @SuppressWarnings("NullAway.Init") // set by setCallback() before the layer is used
@@ -102,6 +111,18 @@ public class SSLTransportLayer<Identifier, MessageType>
 
   /** read callbacks one socket runs on buffered plaintext before the selector thread turns to other work */
   private final int maxReadCallbacksPerSelect;
+
+  /**
+   * Runs the delegated tasks (the RSA and key exchange work) of incoming handshakes: a few threads and a bounded queue
+   * of its own, so that a handshake flood neither delays the shared processing thread nor queues without bound. A task
+   * the queue cannot take fails its handshake.
+   */
+  private final ThreadPoolExecutor incomingHandshakeExecutor;
+  /**
+   * Runs the delegated tasks of handshakes this node started: a thread of their own, which a flood of incoming
+   * handshakes cannot fill, so that the node can always dial its own neighbours.
+   */
+  private final ExecutorService outgoingHandshakeExecutor;
 
   public SSLTransportLayer(TransportLayer<Identifier, MessageType> transportLayer, KeyStore keyStore, KeyStore trustStore, Environment env) throws IOException {
     this(transportLayer,keyStore,trustStore,CLIENT_AUTH_REQUIRED,env);
@@ -151,10 +172,16 @@ public class SSLTransportLayer<Identifier, MessageType>
     TrustManager[] tms = tmf.getTrustManagers();
     context.init(kmf.getKeyManagers(), tms, null);
 
-    transportLayer.setCallback(this);
     } catch (GeneralSecurityException gse) {
       throw new RuntimeException(gse);
     }
+
+    int handshakeThreads = requirePositive(HANDSHAKE_THREADS_PARAM, env.getParameters().getInt(HANDSHAKE_THREADS_PARAM));
+    int handshakeQueueLength = requirePositive(HANDSHAKE_QUEUE_LENGTH_PARAM, env.getParameters().getInt(HANDSHAKE_QUEUE_LENGTH_PARAM));
+    incomingHandshakeExecutor = new ThreadPoolExecutor(handshakeThreads, handshakeThreads, 0L, TimeUnit.MILLISECONDS,
+        new ArrayBlockingQueue<>(handshakeQueueLength), Thread.ofPlatform().daemon().name("TLS handshake (incoming) ", 0).factory());
+    outgoingHandshakeExecutor = Executors.newSingleThreadExecutor(Thread.ofPlatform().daemon().name("TLS handshake (outgoing) ", 0).factory());
+    transportLayer.setCallback(this);
 
   }
 
@@ -230,7 +257,21 @@ public class SSLTransportLayer<Identifier, MessageType>
 
   @Override
   public void destroy() {
+    incomingHandshakeExecutor.shutdownNow();
+    outgoingHandshakeExecutor.shutdownNow();
     transportLayer.destroy();
+  }
+
+  /**
+   * Runs the CPU work of a handshake off the selector thread; the work hands its result back with
+   * {@code SelectorManager.invoke()}.
+   *
+   * @param isIncoming whether the peer started the handshake: only those can be refused
+   * @throws java.util.concurrent.RejectedExecutionException if the queue of incoming handshakes is full, or the layer
+   *     is destroyed
+   */
+  void executeHandshakeTask(boolean isIncoming, Runnable work) {
+    (isIncoming ? incomingHandshakeExecutor : outgoingHandshakeExecutor).execute(work);
   }
 
   @Override

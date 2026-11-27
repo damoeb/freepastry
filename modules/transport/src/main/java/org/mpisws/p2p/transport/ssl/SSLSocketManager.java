@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -58,7 +59,7 @@ import org.mpisws.p2p.transport.util.OptionsFactory;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 import rice.Continuation;
-import rice.Futures;
+import rice.selector.SelectorLoop;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
@@ -360,40 +361,55 @@ public class SSLSocketManager<Identifier> implements P2PSocket<Identifier>,
     return false;
   }
 
-  /*
-   * If the result indicates that we have outstanding tasks to do, go ahead and
-   * run them in this thread.
+  /**
+   * True while the delegated tasks of the handshake run on the handshake executor of {@link SSLTransportLayer}; the
+   * handshake waits for them (selector thread only).
    */
   boolean runningTaskLock = false;
 
-  @SuppressWarnings("NullAway") // the delegated-task job has no result
+  /**
+   * Runs the delegated tasks of the engine (the RSA and key exchange work) on the handshake executor of the layer, not
+   * on the selector thread nor on the shared processing thread; the result comes back to the selector thread. An
+   * incoming handshake that finds the executor's queue full fails, which closes its socket.
+   */
   private void runDelegatedTasks() {
-    if (status == HandshakeStatus.NEED_TASK) {
-      runningTaskLock = true;
-      Futures.forward(sslTL.getEnvironment().getProcessor().process(() -> {
-        Runnable runnable;
-        while ((runnable = engine.getDelegatedTask()) != null) {
-          runnable.run();
+    if (status != HandshakeStatus.NEED_TASK) return;
+    runningTaskLock = true;
+    SelectorLoop selector = sslTL.getEnvironment().getSelectorManager();
+    try {
+      sslTL.executeHandshakeTask(server, () -> {
+        RuntimeException failure = null;
+        try {
+          Runnable task;
+          while ((task = engine.getDelegatedTask()) != null) {
+            task.run();
+          }
+        } catch (RuntimeException e) {
+          failure = e;
         }
-        status = engine.getHandshakeStatus();
-        if (status == HandshakeStatus.NEED_TASK) {
-          fail(new IOException("handshake shouldn't need additional tasks"));
-          return null;
-        }
-        return null;
-      }, sslTL.getEnvironment().getSelectorManager(), sslTL.getEnvironment().getTimeSource(), sslTL.getEnvironment().getLogManager()), new Continuation<Object, Exception>() {
-        @Override
-        public void receiveException(Exception exception) {
-          sslTL.getEnvironment().getLogRateLimiter().at(logger, Level.WARN, "ssl.handshake-task-failed")
-              .setCause(exception).log("SSL handshake task failed");
-        };
-        @Override
-        public void receiveResult(Object result) {
-          runningTaskLock = false;
-          continueHandshaking();
-        };
-      }, sslTL.getEnvironment());
+        RuntimeException taskFailure = failure;
+        selector.invoke(() -> delegatedTasksDone(taskFailure));
+      });
+    } catch (RejectedExecutionException full) {
+      runningTaskLock = false;
+      fail(new IOException("Refused the TLS handshake: no room in the handshake queue", full));
     }
+  }
+
+  /** Continues the handshake after its delegated tasks ran (selector thread). */
+  private void delegatedTasksDone(@Nullable RuntimeException failure) {
+    runningTaskLock = false;
+    if (handshakeFail) return;
+    if (failure != null) {
+      fail(failure);
+      return;
+    }
+    status = engine.getHandshakeStatus();
+    if (status == HandshakeStatus.NEED_TASK) {
+      fail(new IOException("handshake shouldn't need additional tasks"));
+      return;
+    }
+    continueHandshaking();
   }
 
   @Override
