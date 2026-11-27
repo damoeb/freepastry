@@ -207,6 +207,7 @@ The priority layer (`PriorityTransportLayer`) works like this:
 - The queue holds at most `pastry_socket_writer_max_queue_length` messages (30). When it is full, the lowest-priority message is dropped and its sender gets `QueueOverflowException`.
 - Messages larger than `pastry_socket_writer_max_msg_size` (20480 bytes) get a socket of their own.
 - Queued messages fail when the destination is declared dead.
+- Incoming messages are delivered within token buckets per peer (`pastry_socket_msg_rate_per_peer_per_second`) and per network prefix, and at most `pastry_socket_max_messages_per_pass` per selector pass; beyond them the layer stops reading the socket until the bucket refills (TCP slows the sender, nothing is dropped). Leaf set and routing table peers get `pastry_socket_pinned_rate_factor` times the allowance. Big messages still arriving share `pastry_socket_receive_budget` with a cap per peer, and a big message that arrives slower than `pastry_socket_receive_min_rate_bytes_per_second` is closed at its deadline.
 
 Subclasses swap or insert layers by overriding these protected factory methods:
 
