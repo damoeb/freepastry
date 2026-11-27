@@ -38,3 +38,6 @@ classes/
 
 # Jazzer
 .cifuzz-corpus/
+
+# jqwik
+.jqwik-database

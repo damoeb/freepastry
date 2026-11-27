@@ -65,6 +65,14 @@ Tests run sequentially to avoid port conflicts. A failing test fails the build.
 
 This creates `modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar`, which bundles every FreePastry module with Bouncy Castle and the SLF4J API. The distribution module `freepastry-all` builds it during `package`, so no `assembly:single` is needed. It contains no SLF4J backend: add one to the classpath (see [Logging](#logging)) to see log output.
 
+### SBOM and dependency scan
+
+`package` writes a CycloneDX software bill of materials for every module to `modules/<name>/target/bom.json` and `bom.xml`; this needs no network beyond the Maven Central dependencies. `./mvnw verify -Psecurity-scan` also runs OWASP dependency-check over every module (report in `target/dependency-check-report.html`); it downloads the NVD feed, so it is not part of the default build, and an [NVD API key](https://nvd.nist.gov/developers/request-an-api-key) in the `NVD_API_KEY` environment variable makes the first run much faster. In CI, scan the SBOMs with [OSV-Scanner](https://google.github.io/osv-scanner/): `osv-scanner scan source --sbom=modules/pastry/target/bom.json` (one call per module, or `osv-scanner scan source -r modules` to read them all).
+
+### Property-based tests
+
+Some tests use [jqwik](https://jqwik.net/) (for example `IdPropertyTest` in `freepastry-pastry`): a `@Property` method runs many generated inputs and shrinks a failure to a small example. jqwik is its own JUnit platform engine and runs next to Jupiter in `./mvnw verify`.
+
 ### Run Hello World Example
 
 The example programs are in each module's `src/test/java` and the tutorials in `modules/tutorials/src/main/java/rice/tutorial/`. Run a tutorial with the jar with dependencies, for example a node that starts a new ring on port 9001 (it boots from its own address):

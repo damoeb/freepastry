@@ -29,6 +29,11 @@
 
         <!-- Test only -->
         <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>freepastry-core</artifactId>
             <type>test-jar</type>
