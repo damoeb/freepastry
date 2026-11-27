@@ -67,7 +67,7 @@ This creates `modules/all/target/freepastry-2.1.0-jar-with-dependencies.jar`, wh
 
 ### SBOM and dependency scan
 
-`package` writes a CycloneDX software bill of materials for every module to `modules/<name>/target/bom.json` and `bom.xml`; this needs no network beyond the Maven Central dependencies. `./mvnw verify -Psecurity-scan` also runs OWASP dependency-check over every module (report in `target/dependency-check-report.html`); it downloads the NVD feed, so it is not part of the default build, and an [NVD API key](https://nvd.nist.gov/developers/request-an-api-key) in the `NVD_API_KEY` environment variable makes the first run much faster. In CI, scan the SBOMs with [OSV-Scanner](https://google.github.io/osv-scanner/): `osv-scanner scan source --sbom=modules/pastry/target/bom.json` (one call per module, or `osv-scanner scan source -r modules` to read them all).
+`package` writes a CycloneDX software bill of materials for every module to `modules/<name>/target/bom.json` and `bom.xml`; this needs no network beyond the Maven Central dependencies. `./mvnw verify -Psecurity-scan` also runs OWASP dependency-check over every module (report in `target/dependency-check-report.html`); it downloads the NVD feed, so it is not part of the default build, and it needs an [NVD API key](https://nvd.nist.gov/developers/request-an-api-key) in the `NVD_API_KEY` environment variable (without one, dependency-check 13 cannot load the feed). Without a key, scan the SBOMs with [OSV-Scanner](https://google.github.io/osv-scanner/) after a build, locally or in CI: `osv-scanner scan source $(for f in modules/*/target/bom.json; do printf -- '-L %s ' "$f"; done)`.
 
 ### Property-based tests
 
