@@ -37,6 +37,8 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.join.JoinRequest;
 import rice.pastry.leafset.LeafSet;
+import rice.pastry.routing.BroadcastRouteRow;
+import rice.pastry.routing.RouteSet;
 import rice.pastry.socket.CertifiedSocketPastryNodeFactory;
 import rice.pastry.socket.SocketNodeHandle;
 import rice.pastry.socket.SocketNodeHandleFactory;
@@ -56,6 +58,8 @@ class CertifiedHandleAdmissionTest {
   static final int LEAF_SET_SIZE = 24;
   static final int FORGED_IDS = 10;
   static final long BETWEEN_FORGERIES_MILLIS = 200;
+  static final int SUPPLIED_HANDLES = 20;
+  static final long PROBE_SETTLE_MILLIS = 3_000;
 
   final List<Environment> environments = new ArrayList<>();
   final List<PastryNode> nodes = new ArrayList<>();
@@ -186,6 +190,45 @@ class CertifiedHandleAdmissionTest {
     assertEquals(1, connections.get(), "connections A opened to the address the forged ids name");
     target.close();
     acceptor.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
+  @DisplayName("an insider's route row of unknown handles at many addresses makes the node connect to a few of them, not to each")
+  void oneSuppliersHandlesCauseAFewProbes() throws Exception {
+    PastryNode mallory = alone(MALLORY);
+    SocketNodeHandle malloryHandle = (SocketNodeHandle) mallory.getLocalHandle();
+    NodeHandle malloryAtA = handle(factoryA, a, malloryHandle.getAddress(), malloryHandle.getEpoch(), MALLORY);
+    InetAddress loopback = factoryA.getBindAddress();
+    AtomicInteger connections = new AtomicInteger();
+    RouteSet row = onSelector(a, () -> new RouteSet(SUPPLIED_HANDLES, 0, 0, a));
+    for (int i = 0; i < SUPPLIED_HANDLES; i++) {
+      // an address that counts the connections it gets and closes them, and swallows datagrams
+      ServerSocket target = new ServerSocket(0, 50, loopback);
+      sockets.add(target);
+      sockets.add(new DatagramSocket(target.getLocalPort(), loopback));
+      Thread.ofVirtual().start(() -> {
+        while (!target.isClosed()) {
+          try (Socket socket = target.accept()) {
+            connections.incrementAndGet();
+          } catch (IOException e) {
+            // closed by the test
+          }
+        }
+      });
+      MultiInetSocketAddress address = new MultiInetSocketAddress(new InetSocketAddress(loopback, target.getLocalPort()));
+      NodeHandle supplied = handle(factoryA, a, address, 1, Id.build(String.format("%040X", 0xA00 + i)));
+      onSelector(a, () -> row.put(supplied));
+    }
+
+    onSelector(a, () -> {
+      BroadcastRouteRow broadcast = new BroadcastRouteRow(malloryAtA, new RouteSet[] {row});
+      broadcast.setSender(malloryAtA);
+      a.receiveMessage(broadcast);
+      return null;
+    });
+    Thread.sleep(PROBE_SETTLE_MILLIS);
+
+    assertTrue(connections.get() <= 4, "connections A opened for the " + SUPPLIED_HANDLES + " handles one insider supplied: " + connections.get());
   }
 
   // helpers
