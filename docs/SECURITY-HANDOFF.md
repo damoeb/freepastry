@@ -1,18 +1,19 @@
 # FreePastry security handoff
 
-2026-11-19
+2026-11-27
 
-Every finding of the 2026-11-05 security review is fixed on `java25-upgrade` (tip `04c03ea1`, not pushed): critical and high on 2026-11-05, medium and low on 2026-11-19. What remains is a short list of known limits and watch items.
+Every finding of the 2026-11-05 security review is fixed on `java25-upgrade`: critical and high on 2026-11-05, medium and low on 2026-11-19. A second, resilience-focused analysis (2026-11-23: overlay attacks, denial of service, applications and trust) added waves A to D; waves A and B (apart from Past and Glacier response binding) and phases P0b, P2 and P3 of the secure design are fixed below. The plan for the rest: `docs/security/SECURE-DESIGN.md` (approved 2026-11-27), coverage of the team's attack taxonomy: `docs/security/ATTACK-COVERAGE.md`, overview for readers: the slide deck in `docs/presentation/`.
 
 ## Where things stand
 
 | Item | State |
 | --- | --- |
-| Branch | `java25-upgrade` (the user calls it "develop"), tip `04c03ea1`, not pushed, tree clean |
-| Default build | `./mvnw -B clean verify`: BUILD SUCCESS, 1250 tests, 0 failures, 0 skipped |
+| Branch | `java25-upgrade` (the user calls it "develop"), pushed, PR #1 on GitHub `damoeb/freepastry` |
+| Default build | `./mvnw -B clean verify`: BUILD SUCCESS at `0407ff49`, 1527 tests, 0 failures, 1 skipped (a POSIX-only test) |
 | Integration build | `./mvnw -B clean verify -Pintegration`: BUILD SUCCESS, 11 tests, about 20 min. It runs only the integration-tagged tests, so run both builds |
 | Java | `export JAVA_HOME=$HOME/.sdkman/candidates/java/25.0.5.0+9-amzn PATH=$JAVA_HOME/bin:$PATH` before `./mvnw` |
-| Other branches | `master`, `upgdate`, `wip-ep-snapshot` (old, user-made). No agent worktrees or branches left |
+| Other branches | `master`, `upgdate`, `wip-ep-snapshot` (old, user-made); agent worktrees under `.claude/worktrees/` while work is in flight |
+| Dependency scan | Every build writes a CycloneDX SBOM per module; OSV-Scanner on all of them at `0407ff49`: no known vulnerabilities. `-Psecurity-scan` (OWASP dependency-check) needs `NVD_API_KEY` |
 | Local notes (not versioned) | `.git/q4/HANDOFF.md` (overall brief) and `.git/q4/security-review-2026-11-05.md` (full review with file and line references) |
 
 Tests have a default JUnit timeout (120 s, 1200 s with `-Pintegration`) and print a thread dump when they hit it.
@@ -53,27 +54,52 @@ Each fix has a test that fails on `bf507352` (the tip before the review) and pas
 
 Behaviour change in certified mode: a node restarting at the same address is recognised only once it reconnects over TLS, which it does when it rejoins.
 
+## Fixed in the resilience waves (2026-11-23 to 2026-11-27)
+
+Each fix has a test that fails on the code before it, reproducing the attack (forged message, spoofed handle, malicious header, flood).
+
+| Finding | Commit | What changed |
+| --- | --- | --- |
+| One forged Glacier message (a response type flagged as a request) or an out-of-range sync offset threw `Error` and destroyed the Environment, stopping every node in the JVM | `7009a331`, `18a3f9c7`, `98df9bc5`, `fd6c0b51` | Dropped and logged; offsets and fragment ids bounded; a source-scan test forbids `new Error(` in main code |
+| A burst of tiny TLS frames overflowed the selector stack (`StackOverflowError` after about 1,600 messages); same on the write side | `b2610fb0`, `94ccc302` | Bounded loops, at most `transport_ssl_max_read_callbacks_per_select` (64) callbacks per socket per selector turn |
+| Spoofed identity headers filled `SocketNodeHandleFactory`'s cache until out of memory (both modes) | `111cc9a6` | Weak canonicalisation map |
+| Certified insider claimed an honest node's address before TLS; the victim rebound it and marked the honest node dead forever (eclipse) | `cb44a779` | An incoming connection proves the id only; only a connection this node dialled proves an address; a claim never marks a node dead |
+| A datagram naming a dead node revived it; datagrams and incoming headers marked routes alive | `878c87f0` | Only a connection this node opened to a certified handle marks its route alive |
+| Leaf-set broadcasts, consistent-join messages and PNS leaf-set responses that name another node as sender took effect (forged leases, two roots for one key) | `5f45de58` | In certified mode the named sender must be the authenticated connection (`PastryNode.acceptsNamedSender`); plain mode unchanged |
+| Scribe trusted the `source` inside messages: forged acks, unsubscribes and publishes; unbounded topics, children, pending subscribes, anycast walks | `5882a2f9`, `735bdd85` | Source must be the authenticated previous hop; acks only for open subscribes; bounds. New `Application.deliver(id, msg, previousHop)` |
+| PeerReview stored any certificate a peer returned (rogue CA, colluder's certificate for an honest id, expired) and replaced valid ones; unbounded certificate and pending-authenticator stores | `75a1fc52`, `80f1701a` | CA and subject check, no replacement of a valid certificate, bounded stores |
+| CA tool: `java.util.Random` ids, requester-chosen ids, no issuance log, v1 CA certificate | `93f620f7` | SecureRandom; `-cn` only with `-allow-chosen-id`; 0600 issuance log; v3 CA certificate, `-reissue-ca` keeps existing node certificates valid |
+| A node set ready off the selector thread when an app registered while the lease changed | `af1d50b8` | State changes only on the selector thread |
+| A `RuntimeException` in a selector task or timer task destroyed the Environment | `d64f7c8e` | Contained per task; only `VirtualMachineError`, `LinkageError` or a broken `select()` destroy |
+| After the TLS handshake a peer close never reached the reader | `94ccc302` | End of stream and resets reach reader and writer |
+| Certified nodes relayed source routes for anyone | `46f5f3fe` | Off unless `pastry_socket_relay_source_routes_certified` |
+| Storage and parameter files were world-readable | `9630d7ec` | `PrivateFiles`: 0600 files, 0700 directories |
+| Remote input could flood the log | `e3d0d70d` | Rate-limited security log lines |
+| Half-open sockets from a few IPs evicted every established peer; TLS handshake floods delayed processing (P2) | `15984089`, `9d976c19`, `0f8a9134`, `1613c84a`, `5039c292` | Accept and datagram token buckets per /24 or /64 and global; unauthenticated and established socket pools with pinning of leaf-set and routing-table peers; bounded TLS handshake executor; pinned sources bypass the per-prefix datagram budget so a spoofed flood cannot drop a neighbour's pongs |
+| One peer could flood messages, hog big-message memory or trickle a message forever; Past sockets preallocated announced sizes (OOM); FileTransfer had no file cap or read timeout; maintenance requests were unbounded (P3) | `73f9c8f7`, `7750a324`, `f6ec198c`, `36922c8a`, `0407ff49` | Per-peer and per-prefix message buckets with read pausing and a per-pass cap; per-peer memory shares and deadlines; Past buffers grow with arriving bytes; FileTransfer caps and timeout; maintenance budgets |
+| PAST: an insert whose `checkAndStore` failed kept its lock | `bb0ba4a3` | Lock released on every path |
+
 ## Open security findings
 
 None from the review. Known remaining limits (by design or not worth the change so far):
 
-- **Open relay to non-Pastry hosts:** a hop still relays to any other routable address that passes the address policy, because a relay node cannot tell peers from strangers.
+- **Open relay to non-Pastry hosts (plain mode):** a plain-mode hop still relays to any routable address that passes the address policy, because a relay node cannot tell peers from strangers. Certified nodes relay nothing for others unless `pastry_socket_relay_source_routes_certified` is set.
 - **Refresh authorization:** anyone can refresh an object up to the lease cap; restricting refreshes to the owner needs signed content.
 - **On-path liveness spoofing:** the PING nonce only stops off-path senders; an on-path observer can still echo a ping.
 - **Plain mode** trusts join answers and unauthenticated senders; use certified mode on untrusted networks.
-- **CA certificate** is still a v1 certificate without a CA:true extension.
+- **Routing and joins under a colluding minority:** routing-table slots go to the lowest RTT, one bootstrap answer is trusted, routes are single-path, mutable Past lookups trust one answer, there is no revocation. Planned in `docs/security/SECURE-DESIGN.md` (phases P0 to P9) and waves C and D; privacy and metadata are wave E.
+- **Past and Glacier response binding:** requests are matched by a counter and the responder is not checked (wave B2, in progress for Past, Glacier after its futures migration).
 
 ## Watch items and known limits
 
 - **pki test hang:** not reproduced in about 660 runs. The original log showed the forked test JVM stuck at shutdown after all tests passed; the suspect is Jazzer's agent attach. If it recurs, capture a `jstack` of the fork before the worktree is removed.
-- **Direct re-send priority:** a non-routed message whose deserializer ignores the wire priority goes out at its default priority if an application re-sends the received object. A central fix needs `setPriority` on `commonapi.Message` plus a test per module.
 - **Rendezvous/NAT and the handshake deadline:** these paths call `handshakeCompleted()` but have only unit coverage of it; watch the integration tests.
-- **Log volume:** the "per-address handshake cap reached" message is logged at info, one line per refused connection under a flood.
+- **Budgets keyed on claimed addresses:** the priority layer's message buckets use the address a peer claims in its header, so a certified insider claiming a neighbour's address shares its bucket and pinned factor (only pauses reads). Fix in progress.
 - **Simulator blind spot:** the direct simulator passes message objects, not bytes, so wire bugs show only in the socket-ring tests (`SocketRing`, `WireRoundTrip` in the pastry test-jar).
 
 ## How to work in this repo
 
-- **No PRs, no push** unless the user asks; never touch `master`. Agent work happens in a worktree branch and is cherry-picked into `java25-upgrade`.
+- **Pushes go to PR #1** (`java25-upgrade` → `master` on GitHub, approved); never touch `master`. Agent work happens in a worktree branch and is cherry-picked into `java25-upgrade`.
 - **Prove every fix:** the test must fail on the pre-fix code for the right reason, then pass.
 - **Verify after merging:** run both full builds (default and `-Pintegration`). Parallel Maven runs share `~/.m2`, so serialize builds with a lock directory.
 - **Commits** use Arlo notation (`B:`, `t:`, `D:` …) and end with the `Co-Authored-By: Claude` trailer.
@@ -83,9 +109,9 @@ None from the review. Known remaining limits (by design or not worth the change 
 
 ## Next steps
 
-- [x] Fix the medium findings (2026-11-19, all eight)
-- [x] Close the CA and key-store password and file-permission issues
-- [x] Replace or gate the Glacier default signature policy before anyone relies on Glacier integrity
-- [x] Fix the low findings (2026-11-19)
-- [ ] Decide on the direct re-send priority fix and the remaining limits above
-- [ ] Push `java25-upgrade` and open a PR with `bb` when the user asks
+- [x] Medium and low findings of the 2026-11-05 review (2026-11-19)
+- [x] Resilience wave A and wave B outside Past and Glacier (2026-11-23 to 27)
+- [x] Secure design approved; P0b (SBOM, scan profile, jqwik), P2 (socket budgets), P3 (peer budgets)
+- [ ] Wave B for Past and Glacier (response binding, replica checks, Glacier fragment ids and key limits)
+- [ ] Secure design P0 (adversarial harness, baseline) and then P1, P4 to P9
+- [ ] Wave E (privacy and metadata)
