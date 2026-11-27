@@ -101,6 +101,27 @@ class PastDeliveryTest {
   }
 
   @Test
+  @DisplayName("the replication manager's calls and the default policy's fetch deliver on the selector thread")
+  void replicationCallsDeliverOnTheSelectorThread() throws Exception {
+    ring = new SocketRing();
+    PastryIdFactory idFactory = new PastryIdFactory(ring.env);
+    List<PastImpl> pasts = ring.boot(3, node -> newPast(node, idFactory));
+    DistPastTestContent content = new DistPastTestContent(ring.env, idFactory, "replicated");
+    deliver(ring.env, () -> pasts.get(0).insert(content));
+    PastImpl other = pasts.get(1);
+
+    Delivery exists = deliver(ring.env, () -> other.existsInOverlay(content.getId()));
+    Delivery policyFetched = deliver(ring.env, () -> new PastPolicy.DefaultPastPolicy().fetch(content.getId(), pasts.get(0).getLocalNodeHandle(), null, other));
+    PastImpl without = pasts.stream().filter(past -> !past.exists(content.getId())).findFirst().orElseThrow();
+    Delivery fetched = deliver(ring.env, () -> without.fetch(content.getId(), pasts.get(0).getLocalNodeHandle()));
+
+    assertEquals(new Delivery(true, true), exists);
+    assertEquals(new Delivery("replicated", true), new Delivery(((DistPastTestContent) policyFetched.outcome()).getContent(), policyFetched.isOnSelector()));
+    assertEquals(new Delivery(true, true), fetched);
+    ring.assertNoExceptions();
+  }
+
+  @Test
   @DisplayName("an insert that every replica refuses fails with a PastException, on the selector thread")
   void refusedInsertFailsWithPastException() throws Exception {
     ring = new SocketRing();
