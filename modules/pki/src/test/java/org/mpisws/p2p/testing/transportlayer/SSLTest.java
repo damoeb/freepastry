@@ -690,4 +690,56 @@ public class SSLTest {
   }
 
   static final long PEER_CLOSE_TIMEOUT_SECONDS = 5;
+
+  /** one-byte writes in the write-burst test: far more TLS records than fit in the socket's send buffer */
+  static final int BURST_WRITES = 20_000;
+  /** more stack frames than any non-recursive write path needs, far fewer than one frame per write */
+  static final int MAX_WRITE_STACK_DEPTH = 500;
+
+  @Test
+  @DisplayName("a writer that writes a little and registers again is called in a loop, not from inside its own register()")
+  void writeCallbacksDoNotNest() throws Exception {
+    CompletableFuture<Integer> deepestStack = new CompletableFuture<Integer>();
+    SSLTransportLayer<InetSocketAddress, ByteBuffer> alice = layer("alice", alicePort, store("alice", ca(false), null), null, SSLTransportLayer.CLIENT_AUTH_NONE);
+    alice.setCallback(new TransportLayerCallback<InetSocketAddress, ByteBuffer>() {
+      @Override
+      public void incomingSocket(P2PSocket<InetSocketAddress> incomingSocket) throws IOException {
+        incomingSocket.register(false, true, new P2PSocketReceiver<InetSocketAddress>() {
+          int written;
+          int deepest;
+
+          @Override
+          public void receiveSelectResult(P2PSocket<InetSocketAddress> socket, boolean canRead, boolean canWrite) throws IOException {
+            deepest = Math.max(deepest, Thread.currentThread().getStackTrace().length);
+            if (socket.write(ByteBuffer.wrap(new byte[] {(byte) written})) == 1) written++;
+            if (written < BURST_WRITES) {
+              socket.register(false, true, this);
+            } else {
+              deepestStack.complete(deepest);
+            }
+          }
+
+          @Override
+          public void receiveException(P2PSocket<InetSocketAddress> socket, Exception ioe) {
+            deepestStack.completeExceptionally(ioe);
+          }
+        });
+      }
+
+      @Override
+      public void messageReceived(InetSocketAddress i, ByteBuffer msg, Map<String, Object> options) throws IOException {
+      }
+    });
+    try (java.net.Socket tcp = new java.net.Socket(addr, alicePort)) {
+      // a selector thread that died of a StackOverflowError would never write the rest
+      tcp.setSoTimeout((int) TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+      javax.net.ssl.SSLSocket tls = tlsClientOver(tcp);
+      java.io.InputStream in = tls.getInputStream();
+      for (int i = 0; i < BURST_WRITES; i++) {
+        assertEquals(i & 0xFF, in.read(), "byte " + i);
+      }
+      int deepest = deepestStack.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      assertTrue(deepest < MAX_WRITE_STACK_DEPTH, "the stack of a write callback was " + deepest + " frames deep");
+    }
+  }
 }
