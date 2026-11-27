@@ -38,8 +38,8 @@ final class PeerBudgets<Identifier> {
    */
   static <Identifier> PeerBudgets<Identifier> of(PeerBudgetConfig config, long receiveBudgetBytes, long maxBigMessageBytes,
       ReadScheduler scheduler) {
-    // not enforced yet: every message at once, one total for the memory, no deadlines
-    return unlimited(receiveBudgetBytes);
+    // messages per peer and pass; the memory has one total for all peers and no deadlines yet
+    return new PeerBudgets<>(scheduler, PeerReadBudget.of(config, scheduler), ReceiveBudget.withoutShares(receiveBudgetBytes), null);
   }
 
   /**
