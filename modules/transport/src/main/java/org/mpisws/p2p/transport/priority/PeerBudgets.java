@@ -1,5 +1,8 @@
 package org.mpisws.p2p.transport.priority;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.mpisws.p2p.transport.P2PSocket;
@@ -55,10 +58,17 @@ final class PeerBudgets {
   }
 
   /**
-   * The peer whose budgets a socket's messages draw on: its identifier. The wire layer also passes up where the
-   * socket really connects to ({@link WireTransportLayer#OPTION_REMOTE_ADDRESS}).
+   * The peer whose budgets a socket's messages draw on: the IP address ({@code InetAddress}) the socket really
+   * connects to, which the wire layer passes up ({@link WireTransportLayer#OPTION_REMOTE_ADDRESS}), and only without
+   * it the socket's identifier. An identifier is what the peer claims in a header, so a peer that claims another's
+   * would share that peer's bucket and pin. Several nodes behind one IP address (a NAT, a relay) share one peer.
    */
   static Object peerKey(P2PSocket<?> socket) {
+    Map<String, Object> options = socket.getOptions();
+    if (options != null && options.get(WireTransportLayer.OPTION_REMOTE_ADDRESS) instanceof InetSocketAddress remote) {
+      InetAddress address = remote.getAddress();
+      if (address != null) return address;
+    }
     return socket.getIdentifier();
   }
 

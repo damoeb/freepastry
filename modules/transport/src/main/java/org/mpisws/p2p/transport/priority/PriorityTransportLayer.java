@@ -335,8 +335,10 @@ public class PriorityTransportLayer<Identifier>
   /**
    * Tells the budgets of design 3d and 3e which peers are pinned (leaf set, routing table: they get the pinned rate
    * factor, skip the prefix bucket and keep their minimum memory share) and which network prefix a peer belongs to
-   * (null: none, the peer has only its own bucket). A peer is what a socket's messages are counted against: the
-   * identifier of the socket. Without a policy no peer is pinned and there are no prefix buckets. Call it before the
+   * (null: none, the peer has only its own bucket). A peer is what a socket's messages are counted against: the IP
+   * address ({@code java.net.InetAddress}) the socket really connects to, from the wire layer's
+   * {@link WireTransportLayer#OPTION_REMOTE_ADDRESS}, or the socket's identifier where no wire layer passed one up.
+   * The identifier is only claimed, so it never decides a pin. Without a policy no peer is pinned and there are no prefix buckets. Call it before the
    * layer reads.
    */
   public void setPeerBudgetPolicy(SocketPinPolicy<Object> pinPolicy, Function<Object, @Nullable PrefixKey> prefixOf) {
