@@ -101,17 +101,26 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
   static final String PARAM_MAX_NAME_SIZE = "p2p_filetransfer_max_name_size";
   static final String PARAM_MAX_CHUNK_SIZE = "p2p_filetransfer_max_chunk_size";
   static final String PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT = "p2p_filetransfer_max_message_bytes_in_flight";
+  static final String PARAM_MAX_INCOMING_FILES = "p2p_filetransfer_max_incoming_files";
+  static final String PARAM_READ_TIMEOUT_MILLIS = "p2p_filetransfer_read_timeout_millis";
   static final int DEFAULT_MAX_MESSAGE_SIZE = 16 * 1024 * 1024;
   static final long DEFAULT_MAX_FILE_SIZE = 4L * 1024 * 1024 * 1024;
   static final int DEFAULT_MAX_NAME_SIZE = 4096;
   static final int DEFAULT_MAX_CHUNK_SIZE = 1024 * 1024;
   static final long DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT = 64L * 1024 * 1024;
+  /** as many as an honest sender queues at most ({@link #MAX_QUEUE_SIZE}) */
+  static final int DEFAULT_MAX_INCOMING_FILES = 1024;
+  static final long DEFAULT_READ_TIMEOUT_MILLIS = 120_000;
 
   final int maxMessageSize;
   final long maxFileSize;
   final int maxNameSize;
   final int maxChunkSize;
   final long maxMessageBytesInFlight;
+  /** files a peer may have in progress at once; each has a file of its own on disk */
+  final int maxIncomingFiles;
+  /** how long an incoming transfer may go without a byte arriving before the socket is closed; 0: forever */
+  final long readTimeoutMillis;
 
   final Logger logger;
 
@@ -153,6 +162,8 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
     // a chunk is at least as large as this node's own chunk size
     this.maxChunkSize = Math.max(CHUNK_SIZE, params.contains(PARAM_MAX_CHUNK_SIZE) ? params.getInt(PARAM_MAX_CHUNK_SIZE) : DEFAULT_MAX_CHUNK_SIZE);
     this.maxMessageBytesInFlight = params.contains(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) ? params.getLong(PARAM_MAX_MESSAGE_BYTES_IN_FLIGHT) : DEFAULT_MAX_MESSAGE_BYTES_IN_FLIGHT;
+    this.maxIncomingFiles = params.contains(PARAM_MAX_INCOMING_FILES) ? params.getInt(PARAM_MAX_INCOMING_FILES) : DEFAULT_MAX_INCOMING_FILES;
+    this.readTimeoutMillis = params.contains(PARAM_READ_TIMEOUT_MILLIS) ? params.getLong(PARAM_READ_TIMEOUT_MILLIS) : DEFAULT_READ_TIMEOUT_MILLIS;
 
     this.sender = new FileTransferSender(this);
     this.receiver = new FileTransferReceiver(this, sender);
@@ -275,6 +286,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
       }
     }
     if (canRead) {
+      receiver.noteRead();
       try {
         // keep reading
         while(receiver.read(socket));
@@ -297,7 +309,7 @@ public class FileTransferImpl implements FileTransfer, AppSocketReceiver {
    * The peer broke the protocol or the socket failed: close the socket, then tell the user and drop everything. The
    * socket is closed first so that whoever is told of the failure never sees a socket that is still open.
    */
-  private void failAndClose(IOException ioe) {
+  void failAndClose(IOException ioe) {
     try {
       socket.close();
     } finally {

@@ -44,6 +44,7 @@ import static org.mpisws.p2p.filetransfer.FileTransferImpl.MSG_FILE_HEADER;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,6 +58,7 @@ import rice.environment.Environment;
 import rice.environment.processing.Processor;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.util.MathUtils;
+import rice.selector.TimerTask;
 
 /**
  * The receiving half of a {@link FileTransferImpl}: reads the wire protocol off the socket, one frame at a time, and
@@ -78,6 +80,11 @@ class FileTransferReceiver {
    * can be reading when below MAX_PENDING_CHUNKS, allowed to be greater
    */
   private int fileChunksInMemory = 0;
+
+  /** when the socket last had something to read, on the environment's clock */
+  private long lastReadMillis;
+  /** closes the socket when an incoming transfer stalls; scheduled while transfers are in progress */
+  private TimerTask readWatchdog;
 
   FileTransferReceiver(FileTransferImpl transfer, FileTransferSender sender) {
     this.transfer = transfer;
@@ -101,6 +108,43 @@ class FileTransferReceiver {
     for (DataReader dataReader : new ArrayList<DataReader>(incomingData.values())) {
       transfer.notifyListenersTransferFailed(dataReader, true);
     }
+  }
+
+  /** The socket had something to read: an incoming transfer makes progress. */
+  void noteRead() {
+    lastReadMillis = environment.getTimeSource().currentTimeMillis();
+  }
+
+  /**
+   * Starts the read timeout for the transfers now in progress: if no byte arrives for
+   * {@link FileTransferImpl#readTimeoutMillis} while one is in progress and this side is reading, the socket is closed
+   * and the transfers fail (design 3e).
+   */
+  private void watchReads() {
+    if (transfer.readTimeoutMillis <= 0 || readWatchdog != null) return;
+    noteRead();
+    scheduleWatchdog(transfer.readTimeoutMillis);
+  }
+
+  private void scheduleWatchdog(long delayMillis) {
+    readWatchdog = environment.getSelectorManager().schedule(new TimerTask() {
+      @Override
+      public void run() {
+        readWatchdog = null;
+        if (incomingData.isEmpty() || transfer.socket == null) return;
+        long now = environment.getTimeSource().currentTimeMillis();
+        if (fileChunksInMemory >= FileTransferImpl.MAX_FILE_CHUNKS_IN_MEMORY) {
+          // this side stopped reading itself (chunks wait for the disk): the peer is not stalling
+          lastReadMillis = now;
+        }
+        long idleMillis = now - lastReadMillis;
+        if (idleMillis >= transfer.readTimeoutMillis) {
+          transfer.failAndClose(new SocketTimeoutException("Nothing arrived for " + idleMillis + " ms while " + incomingData.size() + " incoming transfers were in progress"));
+          return;
+        }
+        scheduleWatchdog(transfer.readTimeoutMillis - idleMillis);
+      }
+    }, delayMillis);
   }
 
   void incrementFileChunksInMemory() {
@@ -339,6 +383,7 @@ class FileTransferReceiver {
     if (inFlight > transfer.maxMessageBytesInFlight) throw new IOException("Protocol error: message " + uid + " would bring the incoming messages to " + inFlight + " bytes, at most " + transfer.maxMessageBytesInFlight + " are accepted");
     BBDataReader bbdr = new BBDataReader(uid, size);
     incomingData.put(uid,bbdr);
+    watchReads();
     transfer.notifyListenersReceiveMsgProgress(bbdr, 0, size);
     // the sender writes a chunk only for a message that has bytes, so nothing else would complete an empty one
     if (size == 0) {
@@ -349,9 +394,12 @@ class FileTransferReceiver {
   void addIncomingFile(int uid, byte[] metadata, long offset, long length) throws IOException {
     // check before the allocater creates a temp file
     if (incomingData.containsKey(uid)) throw new IOException("Protocol error: file "+uid+" is announced twice");
+    long incomingFiles = incomingData.values().stream().filter(FileDataReader.class::isInstance).count();
+    if (incomingFiles >= transfer.maxIncomingFiles) throw new IOException("Protocol error: file " + uid + " would be incoming file " + (incomingFiles + 1) + ", at most " + transfer.maxIncomingFiles + " are accepted at once");
     Path path = fileAllocater.getFile(ByteBuffer.wrap(metadata), offset, length);
     FileDataReader fdr = new FileDataReader(uid, metadata, path, offset, length);
     incomingData.put(uid,fdr);
+    watchReads();
     transfer.notifyListenersReceiveFileProgress(fdr, 0, length);
     // the sender writes a chunk only for a file that has bytes, so nothing else would complete an empty one
     if (length == 0) {

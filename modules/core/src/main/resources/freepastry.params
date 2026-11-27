@@ -299,6 +299,10 @@ p2p_filetransfer_max_file_size = 4294967296
 p2p_filetransfer_max_name_size = 4096
 # largest chunk of a file the receiver accepts, in bytes (never below its own chunk size)
 p2p_filetransfer_max_chunk_size = 1048576
+# files a peer may have in progress at once (each has a file on disk); as many as a sender queues at most
+p2p_filetransfer_max_incoming_files = 1024
+# an incoming transfer that gets no byte for this long, while the receiver is reading, closes the socket; 0 = never
+p2p_filetransfer_read_timeout_millis = 120000
 
 #past
 p2p_past_messageTimeout = 30000
