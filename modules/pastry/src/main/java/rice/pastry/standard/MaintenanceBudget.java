@@ -39,6 +39,9 @@ public final class MaintenanceBudget {
    * @param joinBurstPerJoiner {@code pastry_budget_join_burst_per_joiner}
    * @param joinsPerSecond {@code pastry_budget_joins_per_second}: join requests of all joiners together
    * @param joinBurst {@code pastry_budget_join_burst}
+   * @param identityProbesPerSecond {@code pastry_budget_identity_probes_per_second}: verification connections
+   *        (certified mode) to handles one peer supplied, in a message this node is handling
+   * @param identityProbeBurst {@code pastry_budget_identity_probe_burst}
    * @param pinnedFactor {@code pastry_budget_pinned_factor}: the factor of leaf set and routing table members, at
    *        least 1
    * @param maxPeers {@code pastry_budget_max_peers}: peers that have a bucket of a kind; beyond it the least recently
@@ -55,6 +58,8 @@ public final class MaintenanceBudget {
       double joinBurstPerJoiner,
       double joinsPerSecond,
       double joinBurst,
+      double identityProbesPerSecond,
+      double identityProbeBurst,
       double pinnedFactor,
       int maxPeers) {
 
@@ -76,6 +81,8 @@ public final class MaintenanceBudget {
           parameters.getDouble("pastry_budget_join_burst_per_joiner"),
           parameters.getDouble("pastry_budget_joins_per_second"),
           parameters.getDouble("pastry_budget_join_burst"),
+          parameters.getDouble("pastry_budget_identity_probes_per_second"),
+          parameters.getDouble("pastry_budget_identity_probe_burst"),
           parameters.getDouble("pastry_budget_pinned_factor"),
           parameters.getInt("pastry_budget_max_peers"));
     }
@@ -102,6 +109,7 @@ public final class MaintenanceBudget {
   private final PerPeer<Id> routeRowBroadcasts;
   private final PerPeer<Id> leafSetRequests;
   private final PerPeer<Id> joinsPerJoiner;
+  private final PerPeer<Id> identityProbes;
   private final TokenBucketMap<Boolean> joins;
 
   /** @throws IllegalArgumentException if a value of the configuration is out of range */
@@ -113,6 +121,7 @@ public final class MaintenanceBudget {
     leafSetRequests = new PerPeer<>(config.leafSetRequestsPerSecond(), config.leafSetRequestBurst(), config.pinnedFactor(), config.maxPeers());
     joinsPerJoiner = new PerPeer<>(config.joinsPerJoinerPerSecond(), config.joinBurstPerJoiner(), 1, config.maxPeers());
     joins = new TokenBucketMap<>(config.joinsPerSecond(), config.joinBurst(), 1);
+    identityProbes = new PerPeer<>(config.identityProbesPerSecond(), config.identityProbeBurst(), config.pinnedFactor(), config.maxPeers());
   }
 
   /** Whether to answer this route row request of the sender. */
@@ -134,6 +143,14 @@ public final class MaintenanceBudget {
   public boolean admitJoin(Id joiner) {
     long now = timeSource.currentTimeMillis();
     return joinsPerJoiner.tryTake(joiner, false, now) && joins.tryTake(Boolean.TRUE, now);
+  }
+
+  /**
+   * Whether to open a verification connection (certified mode) to a handle that the supplier sent in the message
+   * this node is handling. Beyond the budget the handle is not admitted now; it is checked again when it comes back.
+   */
+  public boolean admitIdentityProbe(NodeHandle supplier) {
+    return identityProbes.tryTake(supplier.getNodeId(), isNeighbour(supplier), timeSource.currentTimeMillis());
   }
 
   /** Whether the peer is in the leaf set or the routing table. */

@@ -187,6 +187,11 @@ public class CertifiedSocketPastryNodeFactory extends SocketPastryNodeFactory {
         || (failedMillis != null && nowMillis - failedMillis < PROBE_RETRY_DELAY_MILLIS)) {
       return false;
     }
+    // design 3f: the peer that supplied the handle pays for its verification, so it cannot make this node dial many
+    NodeHandle supplier = pn.getDispatchingSender();
+    if (supplier != null && !supplier.equals(pn.getLocalHandle()) && !pn.getMaintenanceBudget().admitIdentityProbe(supplier)) {
+      return false;
+    }
     probedAddresses.add(address);
     pn.probe(handle, verified -> {
       probedAddresses.remove(address);

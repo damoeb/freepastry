@@ -61,6 +61,10 @@ pastry_budget_joins_per_joiner_per_second = 0.0333
 pastry_budget_join_burst_per_joiner = 2
 pastry_budget_joins_per_second = 20
 pastry_budget_join_burst = 40
+# certified mode: verification connections (TLS probes) the node opens to unauthenticated handles that one peer
+# supplied in a message; beyond it the handle is not admitted now
+pastry_budget_identity_probes_per_second = 0.1
+pastry_budget_identity_probe_burst = 4
 # leaf set and routing table members get this many times the rate and burst
 pastry_budget_pinned_factor = 4
 # peers that have a bucket of a kind; beyond it the least recently used one is forgotten

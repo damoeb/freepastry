@@ -178,6 +178,9 @@ public class PastryNode implements
 
   private final AppSocketHandshake appSockets;
 
+  /** the sender of the message being dispatched, see {@link #getDispatchingSender()} */
+  private @Nullable NodeHandle dispatchingSender;
+
   /** the maintenance work remote peers may make this node do (design 3f) */
   private final MaintenanceBudget maintenanceBudget;
 
@@ -552,7 +555,22 @@ public class PastryNode implements
   public synchronized void receiveMessage(Message msg) {
     if (isDestroyed) return;
     logger.debug("receiveMessage({})", msg);
-    myMessageDispatch.dispatchMessage(msg);
+    NodeHandle outerSender = dispatchingSender;
+    dispatchingSender = msg.getSender();
+    try {
+      myMessageDispatch.dispatchMessage(msg);
+    } finally {
+      dispatchingSender = outerSender;
+    }
+  }
+
+  /**
+   * The sender of the message this node is handling now, on the selector thread, or null outside a message (a timer,
+   * a call from an application) or if the message has none. Handles that come up while a message is handled were
+   * supplied by its sender, so their verification draws on the sender's budget (design 3f).
+   */
+  public @Nullable NodeHandle getDispatchingSender() {
+    return dispatchingSender;
   }
 
   /**
