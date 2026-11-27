@@ -41,8 +41,10 @@ import java.nio.ByteBuffer;
 
 import org.mpisws.p2p.transport.P2PSocket;
 import org.mpisws.p2p.transport.P2PSocketReceiver;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import rice.environment.Environment;
+import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.appsocket.AppSocket;
 import rice.p2p.commonapi.appsocket.AppSocketReceiver;
 
@@ -53,6 +55,12 @@ public class SocketAdapter<Identifier> implements AppSocket, P2PSocketReceiver<I
   public SocketAdapter(P2PSocket<Identifier> socket, Environment env) {
     this.internal = socket;
     this.logger = env.getLogManager().getLogger(SocketAdapter.class, null);
+  }
+
+  /** The node the transport identified at the other end, if its identifier is a node handle. */
+  @Override
+  public @Nullable NodeHandle getRemoteNodeHandle() {
+    return internal.getIdentifier() instanceof NodeHandle handle ? handle : null;
   }
 
   @Override

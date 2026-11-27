@@ -42,6 +42,9 @@ package rice.p2p.commonapi.appsocket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.jspecify.annotations.Nullable;
+import rice.p2p.commonapi.NodeHandle;
+
 /**
  * Interface for sending bulk data from the application.  Mimics
  * java's non-blocking SocketChannel interface this should make it
@@ -81,4 +84,14 @@ public interface AppSocket {
    */
   void close();
 
+
+  /**
+   * The node at the other end of this socket, as the transport identified it: the same identity an endpoint reports
+   * as the previous hop of a message (authenticated in certified mode). The default cannot tell.
+   *
+   * @return the remote node, or null if this socket cannot tell
+   */
+  default @Nullable NodeHandle getRemoteNodeHandle() {
+    return null;
+  }
 }
