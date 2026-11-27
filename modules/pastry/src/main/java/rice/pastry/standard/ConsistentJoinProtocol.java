@@ -425,7 +425,7 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     // this is the terminal node on the request path
     if (thePastryNode.isReady()) {
       logger.info("acceptJoin {}", joinRequest);
-      joinRequest.acceptJoin(localHandle, leafSet);
+      joinRequest.acceptJoin(localHandle, leafSetForJoiner(joinRequest));
       thePastryNode.send(joiner,joinRequest,new PastryMessageSendListener(){
         @Override
         public void sent(PastryMessageReceipt msg) {
@@ -446,6 +446,14 @@ public class ConsistentJoinProtocol extends PastryAppl implements JoinProtocol, 
     } else {
       logger.info("NOTE: Dropping incoming JoinRequest {} because local node is not ready!", joinRequest);
     }
+  }
+
+  /**
+   * The leaf set the root sends to the joiner of {@code joinRequest}: its own. A subclass can answer differently; the
+   * adversarial harness uses this for a lying root.
+   */
+  protected LeafSet leafSetForJoiner(JoinRequest joinRequest) {
+    return leafSet;
   }
 
   /**

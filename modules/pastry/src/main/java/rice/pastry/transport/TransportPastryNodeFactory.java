@@ -100,7 +100,7 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     RoutingTable routeTable = new RoutingTable(localhandle, rtMax, rtBase,
         pn);
     LeafSet leafSet = new LeafSet(localhandle, lSetSize, routeTable);
-    StandardRouter router = new RapidRerouter(pn, msgDisp, getRouterStrategy(pn));
+    StandardRouter router = getRouter(pn, msgDisp, getRouterStrategy(pn));
     pn.setElements(localhandle, msgDisp, leafSet, routeTable, router);
 
 
@@ -114,6 +114,16 @@ public abstract class TransportPastryNodeFactory extends PastryNodeFactory {
     registerApps(pn, leafSet, routeTable, nodeHandleAdapter, handleFactory);
 
     return pn;
+  }
+
+  /**
+   * The router of a new node; a subclass can install another one (the secure router of a later phase, or a router of
+   * the adversarial harness). The default is a {@link RapidRerouter}.
+   *
+   * @param strategy the strategy from {@link #getRouterStrategy(PastryNode)}, null for the default one
+   */
+  protected StandardRouter getRouter(PastryNode pn, MessageDispatch msgDisp, RouterStrategy strategy) {
+    return new RapidRerouter(pn, msgDisp, strategy);
   }
 
   protected RouterStrategy getRouterStrategy(PastryNode pn) {

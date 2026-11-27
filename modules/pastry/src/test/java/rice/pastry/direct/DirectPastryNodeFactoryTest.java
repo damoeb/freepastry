@@ -12,7 +12,10 @@ import rice.pastry.NodeHandle;
 import rice.pastry.PastryNode;
 import rice.pastry.PastryNodeFactory;
 import rice.pastry.PastryNodeListener;
+import rice.pastry.messaging.MessageDispatch;
+import rice.pastry.routing.RouterStrategy;
 import rice.pastry.standard.RapidRerouter;
+import rice.pastry.standard.StandardRouter;
 import rice.pastry.standard.RandomNodeIdFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,5 +80,18 @@ class DirectPastryNodeFactoryTest {
     PastryNode node = factory.newNode();
 
     assertInstanceOf(RapidRerouter.class, node.getRouter());
+  }
+
+  @Test
+  void aSubclassCanInstallItsOwnRouter() throws Exception {
+    PastryNodeFactory custom = new DirectPastryNodeFactory(new RandomNodeIdFactory(env),
+        new EuclideanNetwork<DirectNodeHandle, RawMessage>(env), env) {
+      @Override
+      protected StandardRouter getRouter(PastryNode pn, MessageDispatch msgDisp, RouterStrategy strategy) {
+        return new StandardRouter(pn, msgDisp, strategy);
+      }
+    };
+
+    assertSame(StandardRouter.class, custom.newNode().getRouter().getClass());
   }
 }
