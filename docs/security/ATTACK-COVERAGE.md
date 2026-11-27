@@ -37,16 +37,16 @@ Status: **Done** (fixed, with a test that failed before), **Partial** (some defe
 | --- | --- | --- | --- |
 | 4.4.1 Selective message dropping | Planned | Hop-by-hop acknowledgements only | Routing failure test with a signed receipt from the root, redundant routing (D1) |
 | 4.4.2 Message modification | Partial | TLS protects every link; Past content is hash-checked; Glacier manifests are owner-signed | A malicious hop can change a routed payload: optional end-to-end signatures for routed messages (**New**); signed Scribe topics (D2) |
-| 4.4.3 Message replay | Partial | Pings carry nonces; PeerReview authenticators carry sequence numbers | Random request ids bound to the responder (B2); signed refresh with a counter (C6); a replay window for signed application operations (**New**) |
+| 4.4.3 Message replay | Partial | Pings carry nonces; PeerReview authenticators carry sequence numbers; Past requests carry random 64-bit ids, a response must have the request's type and, for a request sent to a node, come from that node (B2, Glacier still open) | Signed refresh with a counter (C6); a replay window for signed application operations (**New**) |
 | 4.4.4 Routing state desynchronization | Partial | Ready state changes only on the selector thread; ArchUnit rules for futures | Periodic leaf-set and routing-table reconciliation checks (**New**) |
 
 ## 4.5 Object storage and applications
 
 | Attack | Status | Today | Gap and roadmap |
 | --- | --- | --- | --- |
-| 4.5.1 Object poisoning | Partial | Content-hash objects verified on insert, cache and lookup; Glacier owner-signed manifests | Mutable Past content trusts one answer: quorum or signed content (C6); replica-set membership check (B3) |
+| 4.5.1 Object poisoning | Partial | Content-hash objects verified on insert, cache and lookup; Glacier owner-signed manifests | Mutable Past content trusts one answer: quorum or signed content (C6); a routed Past request (lookup, replica set) may still be answered by any node on its route (D1). Done: a node stores an insert only as a replica of the id (B3) |
 | 4.5.2 Object suppression | Planned | Replication on the leaf set | Quorum lookups (C6), redundant routing (D1), availability monitoring (**New**) |
-| 4.5.3 Stale object resurrection | Partial | Lease cap (365 days) on insert, refresh and replica fetch; a refresh never restores from the trash | Unsolicited replication responses still extend expirations (B3); signed expiration (C6) |
+| 4.5.3 Stale object resurrection | Partial | Lease cap (365 days) on insert, refresh and replica fetch; a refresh never restores from the trash | Signed expiration (C6): a neighbor the node asked can still list ids with later expirations. Done: unsolicited replication responses are dropped, the ExpiringPast replica fetch runs checkInsert (B3) |
 
 ## 4.6 Availability and resource exhaustion
 
