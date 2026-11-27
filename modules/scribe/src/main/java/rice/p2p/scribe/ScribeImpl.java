@@ -287,11 +287,23 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   @Override
   public void subscribe(Topic topic, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(Collections.singletonList(topic), client, content, hint);
+    onSelector(() -> doSubscribe(Collections.singletonList(topic), client, content, hint));
   }
   @Override
   public void subscribe(Collection<Topic> theTopics, ScribeMultiClient client, ScribeContent content, NodeHandle hint) {
-    doSubscribe(theTopics, client, content, hint);
+    onSelector(() -> doSubscribe(theTopics, client, content, hint));
+  }
+
+  /**
+   * Runs the task on the selector thread, where Scribe's tree state lives: at once if this is the selector thread,
+   * else queued with {@code invoke}. Applications call the public methods from their own threads.
+   */
+  private void onSelector(Runnable task) {
+    if (environment.getSelectorManager().isSelectorThread()) {
+      task.run();
+    } else {
+      environment.getSelectorManager().invoke(task);
+    }
   }
 
   /**
@@ -307,7 +319,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
     unsubscribe(Collections.singletonList(topic), client);
   }
   public void unsubscribe(Collection<Topic> topicsToUnsubscribe, ScribeMultiClient client) {
-    subscriptions.unsubscribe(topicsToUnsubscribe, client);
+    onSelector(() -> subscriptions.unsubscribe(topicsToUnsubscribe, client));
   }
 
   /**
@@ -318,7 +330,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   @Override
   public void publish(Topic topic, ScribeContent content) {
-    publisher.publish(topic, content);
+    onSelector(() -> publisher.publish(topic, content));
   }
 
   /**
@@ -333,7 +345,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
   }
 
   public void anycast(Topic topic, ScribeContent content, NodeHandle hint) {
-    anycasts.anycast(topic, content, hint);
+    onSelector(() -> anycasts.anycast(topic, content, hint));
   }
 
   /**
@@ -344,7 +356,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    */
   @Override
   public void addChild(Topic topic, NodeHandle child) {
-    children.addChild(topic, child);
+    onSelector(() -> children.addChild(topic, child));
   }
 
   /**
@@ -366,7 +378,7 @@ public class ScribeImpl implements Scribe, MaintainableScribe, Application, Node
    * @param sendDrop Whether or not to send a drop message to the chil
    */
   protected void removeChild(Topic topic, NodeHandle child, boolean sendDrop) {
-    children.removeChild(topic, child, sendDrop);
+    onSelector(() -> children.removeChild(topic, child, sendDrop));
   }
 
   protected void recvAnycastFail(Topic topic, NodeHandle failedAtNode,
