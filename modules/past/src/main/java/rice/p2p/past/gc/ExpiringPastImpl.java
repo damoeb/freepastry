@@ -62,6 +62,7 @@ import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.commonapi.rawserialization.InputBuffer;
 import rice.p2p.past.ObjectNotFoundException;
 import rice.p2p.past.PastContent;
+import rice.p2p.past.PastException;
 import rice.p2p.past.PastImpl;
 import rice.p2p.past.PastPolicy;
 import rice.environment.params.ConfigChecks;
@@ -529,7 +530,28 @@ public class ExpiringPastImpl extends PastImpl implements ExpiringPast {
       }
       logger.trace("inserting replica of id {}", id);
 
-      return storage.getStorage().store(expiringId.id(), content.getMetadata(expiration), content);
+      return storeReplica(expiringId.id(), content, expiration);
+    });
+  }
+
+  /**
+   * Stores a replica fetched for the id with the expiration as metadata, letting the content check it against what
+   * is stored locally, as an insert does. A refusal drops the replica.
+   */
+  private CompletableFuture<Boolean> storeReplica(Id id, ExpiringPastContent content, long expiration) {
+    return storage.getObject(id).thenCompose(existing -> {
+      PastContent checked;
+      try {
+        checked = content.checkInsert(id, (PastContent) existing);
+      } catch (PastException e) {
+        logger.warn("Dropping fetched replica of id {}: {}", id, e.getMessage());
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      if (!(checked instanceof ExpiringPastContent expiring)) {
+        logger.warn("Dropping fetched replica of id {}: its checkInsert gave {}", id, checked);
+        return CompletableFuture.completedFuture(Boolean.FALSE);
+      }
+      return storage.getStorage().store(id, expiring.getMetadata(expiration), expiring);
     });
   }
 
