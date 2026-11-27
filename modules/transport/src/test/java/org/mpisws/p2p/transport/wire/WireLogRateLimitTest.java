@@ -73,7 +73,7 @@ class WireLogRateLimitTest {
           try {
             receiverFailed.invoke(socket, receiver, new IllegalStateException("crafted"));
           } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+            throw new LinkageError(e.getMessage(), e);
           }
         }
       });
