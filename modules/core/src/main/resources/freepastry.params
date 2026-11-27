@@ -104,7 +104,15 @@ pastry_socket_srm_rto_ubound = 10000
 pastry_socket_srm_rto_lbound = 50
 pastry_socket_srm_gain_h = 0.25
 pastry_socket_srm_gain_g = 0.125
+# established sockets (opened by this node, or incoming ones past their handshake: priority header, over
+# TLS also the TLS handshake); beyond it the least recently used idle socket that is not pinned (leaf set,
+# routing table, a message waiting to be written) is closed, or if there is none the newcomer is refused
 pastry_socket_scm_max_open_sockets = 300
+# incoming sockets still in their handshake; beyond it the oldest of them is closed. Kept apart from the
+# established sockets, so that half-open sockets never push out an established peer
+pastry_socket_scm_max_unauthenticated_sockets = 128
+# an established socket active more recently than this is never closed to make room for a newcomer
+pastry_socket_scm_min_idle_millis_before_eviction = 10000
 # the maximum number of source routes to attempt, setting this to 0 will 
 # effectively eliminate source route attempts
 # setting higher than the leafset does no good, it will be bounded by the leafset

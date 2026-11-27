@@ -35,9 +35,11 @@ advised of the possibility of such damage.
 
 *******************************************************************************/
 /**
- * {@link org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer} caps the number of open
- * sockets ({@code pastry_socket_scm_max_open_sockets}) and closes the least recently used one when the
- * limit is reached.
+ * {@link org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer} caps the open sockets in two
+ * pools: sockets still in the handshake ({@code pastry_socket_scm_max_unauthenticated_sockets}, the oldest is
+ * closed beyond it) and established ones ({@code pastry_socket_scm_max_open_sockets}, the least recently used
+ * idle socket that is not pinned by a {@link org.mpisws.p2p.transport.limitsockets.SocketPinPolicy} is closed
+ * beyond it, or the newcomer is refused).
  */
 @NullMarked
 package org.mpisws.p2p.transport.limitsockets;

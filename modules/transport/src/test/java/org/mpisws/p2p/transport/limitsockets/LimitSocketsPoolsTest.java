@@ -2,6 +2,7 @@ package org.mpisws.p2p.transport.limitsockets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,6 +87,125 @@ class LimitSocketsPoolsTest {
     }
 
     assertFalse(lower.outgoing.get(0).isShutDownOrClosed(), "the outgoing socket was closed by the half-open flood");
+  }
+
+  @Test
+  @DisplayName("the unauthenticated pool closes its oldest socket when it overflows")
+  void unauthenticatedPoolClosesOldest() throws IOException {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(MAX_OPEN_SOCKETS, 2, 0, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+    FakeSocket oldest = new FakeSocket("first");
+    FakeSocket middle = new FakeSocket("second");
+    FakeSocket newest = new FakeSocket("third");
+
+    lower.callback.incomingSocket(oldest);
+    lower.callback.incomingSocket(middle);
+    lower.callback.incomingSocket(newest);
+
+    assertTrue(oldest.isClosed);
+    assertFalse(middle.isShutDownOrClosed());
+    assertFalse(newest.isShutDownOrClosed());
+    assertEquals(2, layer.getUnauthenticatedSocketCount());
+    assertEquals(0, layer.getEstablishedSocketCount());
+  }
+
+  @Test
+  @DisplayName("a socket moves to the established pool when its handshake completes, and leaves both pools when closed")
+  void handshakeMovesSocketToEstablishedPool() throws IOException {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(MAX_OPEN_SOCKETS, 2, 0, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+
+    lower.callback.incomingSocket(new FakeSocket("peer"));
+    delivered.get(0).handshakeCompleted();
+    assertEquals(1, layer.getEstablishedSocketCount());
+    assertEquals(0, layer.getUnauthenticatedSocketCount());
+
+    delivered.get(0).close();
+    assertEquals(0, layer.getEstablishedSocketCount());
+  }
+
+  @Test
+  @DisplayName("a full established pool closes the least recently used idle socket that is not pinned")
+  void establishedPoolEvictsLeastRecentlyUsedUnpinned() throws IOException {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(2, MAX_OPEN_SOCKETS, 0, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+    layer.setPinPolicy(() -> "pinned"::equals);
+    FakeSocket pinned = establish("pinned");
+    FakeSocket unpinned = establish("unpinned");
+    // the pinned one is the least recently used now
+
+    FakeSocket newcomer = establish("newcomer");
+
+    assertFalse(pinned.isShutDownOrClosed(), "the pinned socket was closed");
+    assertTrue(unpinned.isShutDown, "the unpinned socket was not closed");
+    assertFalse(newcomer.isShutDownOrClosed());
+    assertEquals(2, layer.getEstablishedSocketCount());
+  }
+
+  @Test
+  @DisplayName("when every established socket is pinned, an unpinned newcomer is refused and a pinned one admitted")
+  void establishedPoolOfPinnedSocketsRefusesUnpinnedNewcomer() throws IOException {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(2, MAX_OPEN_SOCKETS, 0, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+    layer.setPinPolicy(() -> identifier -> identifier.startsWith("neighbour"));
+    FakeSocket first = establish("neighbour-1");
+    FakeSocket second = establish("neighbour-2");
+
+    FakeSocket stranger = establish("stranger");
+    FakeSocket third = establish("neighbour-3");
+
+    assertFalse(first.isShutDownOrClosed());
+    assertFalse(second.isShutDownOrClosed());
+    assertTrue(stranger.isShutDown, "the unpinned newcomer was admitted");
+    assertFalse(third.isShutDownOrClosed(), "a pinned newcomer was refused");
+    assertEquals(3, layer.getEstablishedSocketCount());
+  }
+
+  @Test
+  @DisplayName("an established socket active within the idle time is not closed for a newcomer, the newcomer is refused")
+  void recentlyActiveSocketIsNotEvicted() throws IOException {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(1, MAX_OPEN_SOCKETS, 3_600_000, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+    FakeSocket active = establish("active");
+
+    FakeSocket newcomer = establish("newcomer");
+
+    assertFalse(active.isShutDownOrClosed());
+    assertTrue(newcomer.isShutDown);
+  }
+
+  @Test
+  @DisplayName("an outgoing socket that finds the established pool full of pinned sockets is refused")
+  void outgoingSocketIsRefusedWhenPoolIsPinned() {
+    LimitSocketsTransportLayer<String, ByteBuffer> layer = new LimitSocketsTransportLayer<>(1, MAX_OPEN_SOCKETS, 0, lower, null, env);
+    layer.setCallback(new RecordingCallback());
+    layer.setPinPolicy(() -> "neighbour"::equals);
+    List<Exception> failures = new ArrayList<>();
+    SocketCallback<String> recordFailures = new SocketCallback<>() {
+      @Override
+      public void receiveResult(SocketRequestHandle<String> cancellable, P2PSocket<String> sock) {
+      }
+
+      @Override
+      public void receiveException(SocketRequestHandle<String> s, Exception ex) {
+        failures.add(ex);
+      }
+    };
+    layer.openSocket("neighbour", recordFailures, null);
+
+    layer.openSocket("stranger", recordFailures, null);
+
+    assertEquals(1, failures.size());
+    assertTrue(lower.outgoing.get(1).isClosed);
+    assertFalse(lower.outgoing.get(0).isShutDownOrClosed());
+  }
+
+  /** An incoming socket whose handshake completes at once. */
+  private FakeSocket establish(String identifier) throws IOException {
+    FakeSocket socket = new FakeSocket(identifier);
+    lower.callback.incomingSocket(socket);
+    delivered.get(delivered.size() - 1).handshakeCompleted();
+    return socket;
   }
 
   private final class RecordingCallback implements TransportLayerCallback<String, ByteBuffer> {

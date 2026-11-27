@@ -45,7 +45,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.mpisws.p2p.transport.ErrorHandler;
@@ -63,6 +65,7 @@ import org.mpisws.p2p.transport.identity.NodeChangeStrategy;
 import org.mpisws.p2p.transport.identity.SanityChecker;
 import org.mpisws.p2p.transport.identity.UpperIdentity;
 import org.mpisws.p2p.transport.limitsockets.LimitSocketsTransportLayer;
+import org.mpisws.p2p.transport.limitsockets.SocketPinPolicy;
 import org.mpisws.p2p.transport.liveness.LivenessConfig;
 import org.mpisws.p2p.transport.liveness.LivenessProvider;
 import org.mpisws.p2p.transport.liveness.LivenessTransportLayer;
@@ -410,7 +413,38 @@ public class SocketPastryNodeFactory extends TransportPastryNodeFactory {
     Environment environment = pn.getEnvironment();
     LimitSocketsTransportLayer<InetSocketAddress, ByteBuffer> lstl =
       new LimitSocketsTransportLayer<InetSocketAddress, ByteBuffer>(socketConfig.maxOpenSockets(),mntl,null,environment);
+    lstl.setPinPolicy(getSocketPinPolicy(pn));
     return lstl;
+  }
+
+  /**
+   * Pins the sockets of the peers in the node's leaf set and routing table: the limit-sockets layer never closes them
+   * to make room for a newcomer. The layer sees remote addresses only, and an incoming socket carries the peer's
+   * ephemeral port there, so a socket is pinned when its IP address is one of a neighbour's addresses. Another host
+   * behind that IP address (a NAT) shares the pin, but its sockets get there only after their handshake.
+   */
+  protected SocketPinPolicy<InetSocketAddress> getSocketPinPolicy(PastryNode pn) {
+    return () -> {
+      Set<InetAddress> neighbourAddresses = new HashSet<>();
+      NodeHandle localHandle = pn.getLocalHandle();
+      LeafSet leafSet = pn.getLeafSet();
+      if (leafSet != null) {
+        for (NodeHandle handle : leafSet.asList()) addAddresses(handle, localHandle, neighbourAddresses);
+      }
+      RoutingTable routingTable = pn.getRoutingTable();
+      if (routingTable != null) {
+        for (NodeHandle handle : routingTable.asList()) addAddresses(handle, localHandle, neighbourAddresses);
+      }
+      return address -> neighbourAddresses.contains(address.getAddress());
+    };
+  }
+
+  private static void addAddresses(NodeHandle handle, NodeHandle localHandle, Set<InetAddress> addresses) {
+    if (handle.equals(localHandle) || !(handle instanceof SocketNodeHandle socketHandle)) return;
+    MultiInetSocketAddress address = socketHandle.getAddress();
+    for (int i = 0; i < address.getNumAddresses(); i++) {
+      addresses.add(address.getAddress(i).getAddress());
+    }
   }
 
   public static final byte NETWORK_INFO_NODE_HANDLE_INDEX = 1;
